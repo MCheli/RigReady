@@ -323,4 +323,45 @@ describe('PLAT-018 a failure of the MCP server can be explained from a support e
     // A read that worked is in the detailed log only: the normal log is not a list of reads.
     expect(lines.join('\n')).not.toContain('"tool":"rigready_channels"');
   });
+
+  it("a call's line names the tool, the channel and how it ended, never what the call was given", async () => {
+    const { app: running } = await started();
+    const host = running.wiring.context.mcp.host()!;
+    const typed = 'words-the-assistant-typed-7f3a';
+    // A tool whose line in words names its input, refused for that input.
+    const read = await host.call(caller(), 'setup_read', { setup: typed });
+    expect(!read.ok && read.error.code).toBe('ai.setup');
+    // A change the user says no to, and a call that fails on its input.
+    answerNextQuestion(running, false);
+    const denied = await host.call(caller(), 'rigready_call', {
+      channel: 'profiles:remove',
+      input: { id: typed },
+    });
+    expect(!denied.ok && denied.error.code).toBe('mcp.denied');
+    const failed = await host.call(caller(), 'rigready_call', {
+      channel: 'profiles:get',
+      input: { id: typed },
+    });
+    expect(failed.ok).toBe(false);
+
+    const lines = (await running.logText())
+      .split('\n')
+      .filter((l) => l.includes('an assistant call did not go through'));
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toContain('"tool":"setup_read"');
+    expect(lines[0]).toContain('"code":"ai.setup"');
+    expect(lines[1]).toContain('"channel":"profiles:remove"');
+    expect(lines[1]).toContain('"outcome":"denied"');
+    expect(lines[1]).toContain('"code":"mcp.denied"');
+    expect(lines[2]).toContain('"outcome":"error"');
+    for (const line of lines) {
+      expect(line).not.toContain(typed);
+      expect(line).not.toContain('"summary"');
+      expect(line).not.toContain('"message"');
+    }
+    // The list of what assistants did still says it in words, for the user in the window.
+    const listed = await running.invoke<{ entries: ActivityEntry[] }>('mcp:activity', {});
+    if (!listed.ok) throw new Error(listed.error.message);
+    expect(listed.value.entries.find((e) => e.tool === 'setup_read')?.summary).toContain(typed);
+  });
 });

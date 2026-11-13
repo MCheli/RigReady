@@ -20,6 +20,7 @@ const contract = defineContract('demo', {
     tier: 'change',
   }),
   stop: channel(z.object({}), z.object({}), { describe: 'Stops.', tier: 'read' }),
+  stopAssistant: channel(z.object({}), z.object({}), { describe: 'Stops.', tier: 'read' }),
 });
 
 function wired(outcome: 'fails' | 'works') {
@@ -35,6 +36,9 @@ function wired(outcome: 'fails' | 'works') {
           ? ok({ saved: true })
           : err('demo.full', 'The folder is full.', 'ENOSPC at C:\\Users\\jane\\x.yaml'),
       stop: async () => err('http.cancelled', 'Stopped.'),
+      // What the built-in assistant answers when the user presses its Stop (ai-assist wire.ts).
+      stopAssistant: async () =>
+        err('ai.stopped', 'Stopped before the answer came. Nothing was changed.'),
     }),
     log,
     clock
@@ -72,6 +76,7 @@ describe('PLAT-018 a channel that answers with an error leaves a line in the log
     const { call, entries } = wired('works');
     expect(await call('save', { text: 'x' })).toMatchObject({ ok: true });
     expect(await call('stop', {})).toMatchObject({ ok: false });
+    expect(await call('stopAssistant', {})).toMatchObject({ ok: false });
     expect(entries()).toEqual([]);
   });
 
@@ -83,6 +88,7 @@ describe('PLAT-018 a channel that answers with an error leaves a line in the log
       bind(contract, {
         save: async () => err('demo.long', 'x'.repeat(5000)),
         stop: async () => ok({}),
+        stopAssistant: async () => ok({}),
       }),
       log,
       clock

@@ -778,9 +778,11 @@ test('ai-assist: with no AI key, a binding guide is imported from a file or writ
   await page.getByTestId('ai-guide-open').click();
   await expect(page.getByTestId('ai-guide-note')).toContainText('The file is open in Notepad.');
 
-  // Deleting asks first. "Keep it" keeps it.
+  // Deleting asks first, and says a copy is kept. "Keep it" keeps it.
   await page.getByTestId('ai-guide-delete').click();
-  await expect(page.getByTestId('ai-guide-delete-dialog')).toContainText('This cannot be undone.');
+  await expect(page.getByTestId('ai-guide-delete-dialog')).toContainText(
+    'A copy is kept: the Safety page can put it back.'
+  );
   await shot('delete-asks-first');
   await page.getByTestId('ai-guide-delete-no').click();
   await expect(page.getByTestId('ai-guide-delete-dialog')).toHaveCount(0);
@@ -789,6 +791,9 @@ test('ai-assist: with no AI key, a binding guide is imported from a file or writ
   await page.getByTestId('ai-guide-delete-yes').click();
   await expect(page.getByTestId('ai-no-guide')).toContainText(
     'There is no guide for the UH-1H Gunner'
+  );
+  await expect(page.getByTestId('ai-guide-note')).toHaveText(
+    'The guide is deleted. The Safety page can put it back.'
   );
   await expect(fs.stat(kept)).rejects.toThrow();
   // The file it was imported from is where it was.

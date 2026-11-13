@@ -25,29 +25,62 @@ const SETUPS = [
 ];
 
 describe('which setup an assistant means', () => {
-  it('takes the id, the whole name, or a part of the name only one setup has', () => {
+  it('takes the id, or the whole name in any case, and nothing less', () => {
     expect(matchSetup('dcs-f-a-18c', SETUPS)).toMatchObject({ ok: true, value: SETUPS[0] });
     expect(matchSetup('  dcs f/a-18c ', SETUPS)).toMatchObject({ ok: true, value: SETUPS[0] });
-    expect(matchSetup('FA-18C', SETUPS)).toMatchObject({ ok: true, value: SETUPS[0] });
-    expect(matchSetup('the F-16C', SETUPS).ok).toBe(false);
-    expect(matchSetup('f16', SETUPS)).toMatchObject({ ok: true, value: SETUPS[1] });
-    expect(matchSetup('iRacing setup', SETUPS)).toMatchObject({ ok: true, value: SETUPS[2] });
+    expect(matchSetup('DCS   F/A-18C', SETUPS)).toMatchObject({ ok: true, value: SETUPS[0] });
+    expect(matchSetup('IRACING', SETUPS)).toMatchObject({ ok: true, value: SETUPS[2] });
+    // A part of a name, or a name with more to it, is not the setup.
+    for (const asked of ['FA-18C', 'F/A-18C', 'f16', 'the F-16C', 'iRacing setup', 'c']) {
+      expect(matchSetup(asked, SETUPS).ok, asked).toBe(false);
+    }
+  });
+
+  it('matches a name in any script exactly, and never takes one for a name it is not', () => {
+    const setups = [
+      ...SETUPS,
+      { id: 'shturmovik', name: 'Штурмовик' },
+      { id: 'zero', name: '零戦' },
+      { id: 'greek', name: 'ΟΔΟΣ' },
+      { id: 'marks', name: '***' },
+    ];
+    expect(matchSetup('штурмовик', setups)).toMatchObject({ ok: true, value: setups[3] });
+    expect(matchSetup('零戦', setups)).toMatchObject({ ok: true, value: setups[4] });
+    expect(matchSetup('οδος', setups)).toMatchObject({ ok: true, value: setups[5] });
+    expect(matchSetup('***', setups)).toMatchObject({ ok: true, value: setups[6] });
+    for (const asked of ['iRacing GT3', 'nonexistent', 'Штурм', '零', '**', '---', '  ']) {
+      const found = matchSetup(asked, setups);
+      expect(found.ok, asked).toBe(false);
+      if (found.ok) continue;
+      expect(found.error.code).toBe('ai.setup');
+    }
+    const none = matchSetup('iRacing GT3', setups);
+    if (none.ok) throw new Error('expected a refusal');
+    expect(none.error.message).toBe(
+      'There is no setup "iRacing GT3". Name it by its id or its whole name.'
+    );
+    const blank = matchSetup('  ', setups);
+    if (blank.ok) throw new Error('expected a refusal');
+    expect(blank.error.message).toBe('Name the setup by its id or its whole name.');
   });
 
   it('never guesses between two: it names them, and names all when none fits', () => {
-    const two = matchSetup('DCS', SETUPS);
+    const twins = [...SETUPS, { id: 'dcs-f-16c-2', name: 'dcs f-16c' }];
+    const two = matchSetup('DCS F-16C', twins);
     expect(two).toMatchObject({ ok: false, error: { code: 'ai.setup' } });
     if (two.ok) throw new Error('expected a refusal');
-    expect(two.error.message).toBe('More than one setup fits "DCS".');
+    expect(two.error.message).toBe('More than one setup is called "DCS F-16C".');
     expect(two.error.detail).toBe(
-      'They are: DCS F/A-18C (dcs-f-a-18c), DCS F-16C (dcs-f-16c). Ask again with one id.'
+      'They are: DCS F-16C (dcs-f-16c), dcs f-16c (dcs-f-16c-2). Ask again with one id.'
     );
+    // The id settles it.
+    expect(matchSetup('dcs-f-16c-2', twins)).toMatchObject({ ok: true, value: twins[3] });
     const none = matchSetup('MSFS', SETUPS);
     if (none.ok) throw new Error('expected a refusal');
-    expect(none.error.message).toBe('There is no setup "MSFS".');
+    expect(none.error.message).toBe(
+      'There is no setup "MSFS". Name it by its id or its whole name.'
+    );
     expect(none.error.detail).toContain('iRacing (iracing)');
-    // One letter fits nearly everything, so it fits nothing.
-    expect(matchSetup('c', SETUPS).ok).toBe(false);
     const empty = matchSetup('anything', []);
     if (empty.ok) throw new Error('expected a refusal');
     expect(empty.error.detail).toBe('Setups: none.');

@@ -169,8 +169,12 @@ interface Conversation {
   question: Meter;
   /** The question's line is in the log. */
   logged: boolean;
-  /** Dollars the question may reach before the user is asked again; null when nothing limits it. */
-  allowed: number | null;
+  /**
+   * Where the user said to go on past the ceiling in this question: what it had cost and what
+   * the request then was estimated at. Null until they do. The question may then reach that
+   * much plus the ceiling as Settings say now, so a ceiling lowered meanwhile still holds.
+   */
+  pastAt: { spent: number; estimate: number } | null;
   /** What the provider holds in its cache from the last request it took. */
   warm: { tokens: number; at: number; host: string; model: string } | undefined;
   /** The send under way, so that Stop can end it. */
@@ -227,17 +231,80 @@ function wireOf(target: AssistantTarget): Wire {
       };
 }
 
+const escapeRegex = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Between two folders of a path: \ or /, doubled in JSON, or escaped in a file:/// URL. */
+const SEPARATOR = String.raw`(?:[\\/]|%5C|%2F)+`;
+/** What may not follow a name for it to be the whole name: more of a word. */
+const WORD_ENDS = String.raw`(?![\p{L}\p{N}])`;
+
+/** One character as it can stand in a path: itself in any case, or escaped in a file:/// URL. */
+function charPattern(char: string): string {
+  const forms = new Set([escapeRegex(char)]);
+  if (!/^[A-Za-z0-9]$/.test(char)) {
+    for (const variant of [char, char.toLowerCase(), char.toUpperCase()]) {
+      const bytes = [...new TextEncoder().encode(variant)];
+      forms.add(bytes.map((b) => `%${b.toString(16).padStart(2, '0')}`).join(''));
+    }
+  }
+  return forms.size === 1 ? [...forms][0]! : `(?:${[...forms].join('|')})`;
+}
+
+/**
+ * The short (8.3) names Windows may give a folder: "JANESM~1" for "Jane Smith", "JANES~12"
+ * after many alike, "JA3F2B~1" after more. Spaces and dots go, a few marks become "_", and a
+ * letter outside plain ASCII may stand as any one character.
+ */
+function shortPattern(name: string): string | undefined {
+  const dot = name.lastIndexOf('.');
+  const clean = (part: string): string[] => [
+    ...part.replace(/[\s.]/g, '').replace(/[+,;=[\]]/g, '_'),
+  ];
+  const base = clean(dot > 0 ? name.slice(0, dot) : name);
+  if (base.length === 0) return undefined;
+  const ext = dot > 0 ? clean(name.slice(dot + 1)).slice(0, 3) : [];
+  const one = (c: string): string =>
+    /^[\x21-\x7e]$/.test(c) ? escapeRegex(c) : String.raw`[^\\/\s~]`;
+  const start = (n: number): string => base.slice(0, n).map(one).join('');
+  const forms = [1, 2, 3, 4, 5, 6].map((digits) => `${start(7 - digits)}~\\d{${digits}}`);
+  forms.push(`${start(2)}[0-9a-f]{4}~\\d`);
+  const suffix = ext.length > 0 ? `(?:\\.${ext.map(one).join('')})?` : '';
+  return `(?:${forms.join('|')})${suffix}`;
+}
+
+/**
+ * The user's folder as it can stand in text: in any case, with \ or / or both, doubled in
+ * JSON, in its short form or a mix of the two, in a file:/// URL with escaped characters,
+ * or without its drive (a device path). Only the whole folder: "C:\Users\Jane" is not found
+ * in "C:\Users\Janet".
+ */
+function homePattern(home: string): RegExp | undefined {
+  const drive = /^([A-Za-z]):[\\/]/.exec(home);
+  const parts = home
+    .slice(drive ? 2 : 0)
+    .split(/[\\/]+/)
+    .filter((part) => part !== '');
+  if (parts.length === 0) return undefined;
+  const lead = drive ? `(?:${drive[1]}(?::|%3A|\\|))?` : '';
+  const folders = parts.map((part) => {
+    const long = [...part].map(charPattern).join('');
+    const short = shortPattern(part);
+    return `${SEPARATOR}(?:${long}${short ? `|${short}` : ''})`;
+  });
+  return new RegExp(`${lead}${folders.join('')}${WORD_ENDS}`, 'giu');
+}
+
 /** Text of the user's PC that says who they are, written as the path variable that stands for it. */
 export function privacyScrub(text: string, ports: Pick<Ports, 'folders'>): string {
   const home = ports.folders.home();
   let out = text;
-  if (home.length > 3) {
-    for (const form of [home, home.replace(/\\/g, '/'), home.replace(/\\/g, '\\\\')]) {
-      out = out.split(form).join('{USER}');
-    }
-  }
+  const pattern = home.length > 3 ? homePattern(home) : undefined;
+  if (pattern) out = out.replace(pattern, '{USER}');
   const machine = ports.folders.machineName();
-  if (machine.length >= 5) out = out.split(machine).join('{PC}');
+  if (machine.length >= 5) {
+    const name = [...machine].map(charPattern).join('');
+    out = out.replace(new RegExp(`(?<![\\p{L}\\p{N}])${name}${WORD_ENDS}`, 'giu'), '{PC}');
+  }
   return out;
 }
 
@@ -440,11 +507,15 @@ export class Assistant {
     });
   }
 
-  /** Dollars the question a request belongs to may reach: the ceiling, or what the user allowed past it. */
+  /**
+   * Dollars the question a request belongs to may reach: the ceiling of Settings as it is
+   * now, or past where the user said to go on, as much again of it.
+   */
   private async limitFor(conversation: Conversation, fresh: boolean): Promise<number | null> {
     const ceiling = await this.ceiling();
     if (ceiling === null) return null;
-    return fresh ? ceiling : (conversation.allowed ?? ceiling);
+    const past = fresh ? null : conversation.pastAt;
+    return past ? past.spent + Math.max(ceiling, past.estimate) : ceiling;
   }
 
   /** Builds the request for a message of the user. Nothing is sent. */
@@ -474,7 +545,7 @@ export class Assistant {
         total: emptyMeter(),
         question: emptyMeter(),
         logged: false,
-        allowed: null,
+        pastAt: null,
         warm: undefined,
         running: undefined,
       };
@@ -605,7 +676,7 @@ export class Assistant {
     const fresh = prepared.text !== undefined;
     const spent = prepared.estimate === null ? null : fresh ? 0 : conversation.question.cost;
     const limit = await this.limitFor(conversation, fresh);
-    let allowed = limit;
+    let pastAt = fresh ? null : conversation.pastAt;
     if (over(spent, prepared.estimate, limit)) {
       if (!options.pastCeiling) {
         return err(
@@ -614,15 +685,14 @@ export class Assistant {
         );
       }
       // The user's yes is good for as much again, or for this request when it alone is more.
-      const ceiling = (await this.ceiling()) ?? 0;
-      allowed = (spent ?? 0) + Math.max(ceiling, prepared.estimate ?? 0);
+      pastAt = { spent: spent ?? 0, estimate: prepared.estimate ?? 0 };
     }
     const controller = new AbortController();
     conversation.running = controller;
     try {
       return await this.run(conversation, requestId, prepared, target.value, controller.signal, {
         fresh,
-        allowed,
+        pastAt,
       });
     } finally {
       conversation.running = undefined;
@@ -635,7 +705,7 @@ export class Assistant {
     prepared: Prepared,
     target: AssistantTarget,
     signal: AbortSignal,
-    given: { fresh: boolean; allowed: number | null }
+    given: { fresh: boolean; pastAt: Conversation['pastAt'] }
   ): Promise<Result<TurnOutcome>> {
     const provider = target.provider;
     const round = given.fresh ? 1 : conversation.question.requests + 1;
@@ -670,7 +740,7 @@ export class Assistant {
       conversation.entries.push({ kind: 'user', text: prepared.text });
     }
     conversation.logged = false;
-    conversation.allowed = given.allowed;
+    conversation.pastAt = given.pastAt;
     conversation.messages.push(prepared.adds);
     conversation.pendingResults = [];
     const { blocks, usage, stopReason } = answer.value;

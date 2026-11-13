@@ -1,5 +1,5 @@
 import { errorText } from '../../../renderer/ipc';
-import type { Photo } from '../core/drawings';
+import { MAX_PICTURE_CHARS, type Photo } from '../core/drawings';
 import type { useCheatSheets } from './store';
 
 /**
@@ -10,8 +10,6 @@ import type { useCheatSheets } from './store';
 /** A photo is kept no larger than this on its long side: plenty for a sheet. */
 const LONG_SIDE = 1400;
 const QUALITY = 0.85;
-/** All the photos of one drawing together, as text in the layout file of the device. */
-export const MAX_PHOTOS_CHARS = 7_000_000;
 
 function load(image: string): Promise<HTMLImageElement | undefined> {
   return new Promise((resolve) => {
@@ -72,7 +70,8 @@ export async function choosePhoto(
       problem: `${file ?? 'That file'} could not be opened as a picture. Choose a JPEG, PNG or WebP photo.`,
     };
   }
-  if (kept + photo.image.length > MAX_PHOTOS_CHARS) {
+  // All the photos of one drawing together: the most a layout holds (MAX_PICTURE_CHARS).
+  if (kept + photo.image.length > MAX_PICTURE_CHARS) {
     return {
       problem:
         'The photos of this device are too large together. Remove one, or choose a smaller photo.',

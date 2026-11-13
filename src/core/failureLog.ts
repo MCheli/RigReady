@@ -19,7 +19,7 @@ import type { Clock } from './ports';
 export const SAME_FAILURE_EVERY_MS = 60_000;
 
 /** The user's own Stop is not a failure: nothing is written for it. */
-const QUIET: ReadonlySet<string> = new Set(['http.cancelled', 'ai.cancelled']);
+const QUIET: ReadonlySet<string> = new Set(['http.cancelled', 'ai.cancelled', 'ai.stopped']);
 
 const MAX_MESSAGE = 300;
 

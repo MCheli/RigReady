@@ -110,6 +110,7 @@ export default defineFeatureMain({
         reviewSuggestions: ({ roundId, selected }) => ai.reviewSuggestions(roundId, selected),
         applySuggestions: ({ roundId, selected }) => ai.applySuggestions(roundId, selected),
         deleteDraft: ({ aircraftId }) => ai.deleteDraft(aircraftId),
+        deleteGuide: ({ aircraftId }) => ai.deleteGuide(aircraftId),
         importGuide: ({ aircraftId }) => ai.importGuide(aircraftId),
         startOwnGuide: ({ aircraftId }) => ai.startOwnGuide(aircraftId),
         openGuideFile: ({ aircraftId }) => ai.openGuideFile(aircraftId),

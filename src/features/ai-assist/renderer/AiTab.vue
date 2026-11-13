@@ -216,7 +216,7 @@ const selectedCount = computed(() => store.selected.size);
           size="small"
           variant="text"
           data-testid="ai-delete-draft"
-          @click="store.deleteDraft()"
+          @click="store.deleteGuide('draft')"
         >
           Delete the drafted guide
         </v-btn>

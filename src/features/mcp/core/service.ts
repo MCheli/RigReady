@@ -180,9 +180,10 @@ export class McpService {
 
   /**
    * One line in the log for a call an assistant made: who, which tool and channel, how it
-   * ended and how long it took, and for one that did not work, why. A read that worked is in
-   * the detailed log only. Never the call's input or its answer. A flood over the rate limit
-   * writes one line every ten seconds, not one a call.
+   * ended and how long it took, and for one that did not work, the error's code. A read that
+   * worked is in the detailed log only. Never the call's input or its answer: the line in
+   * words and the message can hold both, so they stay in the list of what assistants did.
+   * A flood over the rate limit writes one line every ten seconds, not one a call.
    */
   private logCall(entry: ActivityEntry): void {
     const { log, ports } = this.deps;
@@ -192,8 +193,8 @@ export class McpService {
       ...(entry.channel ? { channel: entry.channel } : {}),
       tier: entry.tier,
       outcome: entry.outcome,
+      ...(entry.code ? { code: entry.code } : {}),
       ms: entry.ms,
-      summary: entry.summary,
     };
     if (entry.outcome === 'ok') {
       if (entry.tier === 'read') log.debug('an assistant call ran', line);
@@ -206,7 +207,7 @@ export class McpService {
       if (last !== undefined && now - last < RATE_LINE_EVERY_MS) return;
       this.rateLines.set(entry.client, now);
     }
-    log.warn('an assistant call did not go through', { ...line, message: entry.message });
+    log.warn('an assistant call did not go through', line);
   }
 
   /** The surface the settings name right now; the catalogue is rebuilt when it changes. */

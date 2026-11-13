@@ -13,7 +13,7 @@ const store = useAiStore();
 const guide = computed(() => store.guide);
 const kept = computed(() => guide.value?.stored ?? null);
 
-/** Deleting asks first: the file is in the data folder, where nothing keeps a copy of it. */
+/** Deleting asks first. A copy is kept, and the Safety page can put the file back. */
 const deleting = ref(false);
 watch(
   () => store.aircraftId,
@@ -22,7 +22,7 @@ watch(
 
 async function remove(): Promise<void> {
   deleting.value = false;
-  await store.deleteDraft();
+  await store.deleteGuide('kept');
 }
 </script>
 
@@ -109,8 +109,8 @@ async function remove(): Promise<void> {
         <v-card-title>Delete this guide?</v-card-title>
         <v-card-text>
           The guide file for the {{ guide.aircraftName }} is removed from RigReady's data folder. A
-          file you imported it from stays where it is, and your bindings are not touched. This
-          cannot be undone.
+          file you imported it from stays where it is, and your bindings are not touched. A copy is
+          kept: the Safety page can put it back.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
