@@ -5,13 +5,23 @@ import type { z } from 'zod';
 import type { CaptureCandidateSchema } from '../../../core/checks/engine';
 import { CHECK_GROUPS, type CheckGroup } from '../../../core/profile/schema';
 import { errorText, useClient } from '../../../renderer/ipc';
-import { profilesContract, type CaptureGame, type CaptureResult } from '../contract';
 import {
+  profilesContract,
+  type CaptureGame,
+  type CaptureResult,
+  type CaptureStep,
+} from '../contract';
+import {
+  choiceFor,
   keptByDefault as isKeptByDefault,
   offered as isOffered,
+  stepAction,
+  stepDefault,
+  stepsFor,
   type CaptureChoice,
 } from '../core/captureDefaults';
 import MonitorDiagram from './MonitorDiagram.vue';
+import { pickerItems, pickerNote, type PickerItem, type PickerNote } from './pickerForm';
 
 /**
  * "Capture what is true right now": the rig as it is becomes a setup. The screen is the
@@ -54,6 +64,10 @@ const expanded = reactive<Record<string, boolean>>({});
 const appFilter = ref('');
 const trackedOn = reactive<Record<string, boolean>>({});
 const trackedTouched = reactive<Record<string, boolean>>({});
+/** The steps before launch the game needs, by step type: kept or not, and what each uses. */
+const stepOn = reactive<Record<string, boolean>>({});
+const stepValue = reactive<Record<string, string>>({});
+const stepTouched = reactive<Record<string, boolean>>({});
 
 const candidates = computed(() => captured.value?.candidates ?? []);
 const games = computed(() => captured.value?.games ?? []);
@@ -64,8 +78,6 @@ const chosenInstall = computed(
     chosenGame.value?.installs.find((i) => i.installDir === installDir.value) ??
     chosenGame.value?.installs[0]
 );
-/** The family whose gear and helpers suit this setup: the game's, else what the rig itself says. */
-const family = computed(() => chosenGame.value?.kind ?? captured.value?.suggested.kind);
 
 /** The aircraft or cars of the chosen game that something on this PC is set up for. */
 const variants = computed(() => {
@@ -79,11 +91,10 @@ const variants = computed(() => {
 });
 const chosenVariant = computed(() => variants.value.find((v) => v.id === variant.value));
 
-const choice = computed<CaptureChoice>(() => ({
-  game: game.value,
-  variant: variant.value,
-  family: family.value,
-}));
+/** The game, its family and what it is played with: what decides which rows come ticked. */
+const choice = computed<CaptureChoice>(() =>
+  choiceFor(captured.value ?? { games: [], suggested: {} }, game.value, variant.value)
+);
 const offered = (candidate: Candidate): boolean => isOffered(candidate, choice.value);
 const keptByDefault = (candidate: Candidate): boolean => isKeptByDefault(candidate, choice.value);
 function applyDefaults(): void {
@@ -95,6 +106,14 @@ function applyDefaults(): void {
   for (const item of captured.value?.tracked ?? []) {
     if (!trackedOffered(item)) trackedOn[item.key] = false;
     else if (!trackedTouched[item.key]) trackedOn[item.key] = item.selectedByDefault;
+  }
+  for (const step of captured.value?.steps ?? []) {
+    if (!steps.value.includes(step)) {
+      stepOn[step.type] = false;
+      continue;
+    }
+    stepValue[step.type] ??= stepDefault(step) ?? '';
+    if (!stepTouched[step.type]) stepOn[step.type] = stepValue[step.type] !== '';
   }
 }
 function toggle(candidate: Candidate, value: boolean | null): void {
@@ -213,6 +232,26 @@ const SECTIONS: Record<
   },
 };
 
+/** With a game chosen, the lead says that the ticks follow the game. */
+function leadOf(group: CheckGroup): string {
+  const gameName = chosenGame.value?.name;
+  if (gameName && group === 'devices') {
+    return (
+      'What ' +
+      gameName +
+      ' is played with is kept. The rest is listed, not ticked. Each kept device becomes a "connected" check.'
+    );
+  }
+  if (gameName && group === 'apps') {
+    return (
+      'Helpers for ' +
+      gameName +
+      ' that are running now are kept. Make ready starts the ones that are missing.'
+    );
+  }
+  return SECTIONS[group].lead;
+}
+
 const sections = computed(() =>
   CHECK_GROUPS.map((group) => {
     const all = candidates.value.filter((c) => c.group === group && offered(c));
@@ -228,6 +267,7 @@ const sections = computed(() =>
     return {
       group,
       ...SECTIONS[group],
+      lead: leadOf(group),
       total: all.length,
       chosen: all.filter((c) => selected[c.key]).length,
       main,
@@ -239,6 +279,42 @@ const sections = computed(() =>
 
 const diagram = computed(
   () => candidates.value.find((c) => c.group === 'displays' && c.monitors)?.monitors
+);
+
+// ---- steps before launch ----
+/** What the steps are for, said once above them, with the game's own name. */
+const STEP_LEADS: Record<CaptureStep['need'], (gameName: string) => string> = {
+  gamepad: (gameName) =>
+    `${gameName} reads a gamepad. A virtual controller lets it read your own gear as one. Make ready starts it before the game.`,
+};
+const steps = computed(() => stepsFor(captured.value?.steps ?? [], choice.value));
+const stepLead = computed(() => {
+  const first = steps.value[0];
+  return first ? STEP_LEADS[first.need](chosenGame.value?.name ?? 'This game') : '';
+});
+const stepParams = (step: CaptureStep): Record<string, unknown> =>
+  stepValue[step.type] ? { [step.picker.param]: stepValue[step.type] } : {};
+const stepItems = (step: CaptureStep): PickerItem[] => pickerItems(step.picker, stepParams(step));
+const stepNote = (step: CaptureStep): PickerNote | undefined =>
+  pickerNote(step.picker, stepParams(step));
+/** Choosing one keeps the step; clearing the choice leaves it out. */
+function chooseStep(step: CaptureStep, value: unknown): void {
+  stepValue[step.type] = typeof value === 'string' ? value : '';
+  stepOn[step.type] = stepValue[step.type] !== '';
+  stepTouched[step.type] = true;
+}
+function toggleStep(step: CaptureStep, value: boolean | null): void {
+  stepOn[step.type] = value === true && stepValue[step.type] !== '';
+  stepTouched[step.type] = true;
+}
+/** The steps that go into the setup: kept, and with a choice that is in the list. */
+const keptSteps = computed(() =>
+  steps.value.flatMap((step, index) => {
+    if (!stepOn[step.type]) return [];
+    const action = stepAction(step, stepValue[step.type], 'a' + (index + 1));
+    const chosen = step.picker.choices.find((c) => c.value === stepValue[step.type]);
+    return action && chosen ? [{ step, action, chosen }] : [];
+  })
 );
 
 // ---- tracked files ----
@@ -356,6 +432,15 @@ async function save(): Promise<void> {
         ...(c.ask && answer ? { params: { ...c.check.params, [c.ask.param]: answer } } : {}),
       };
     }),
+    ...(keptSteps.value.length > 0
+      ? {
+          actions: {
+            preLaunch: keptSteps.value.map((kept) => kept.action),
+            postLaunch: [],
+            standDown: [],
+          },
+        }
+      : {}),
     tracked: trackedChosen.value.map((t) => ({
       label: t.label,
       path: t.path,
@@ -594,6 +679,74 @@ onMounted(capture);
                 </div>
               </div>
             </template>
+          </div>
+        </section>
+
+        <!-- What the game needs before it starts, that the rig does not have by itself -->
+        <section v-if="steps.length > 0" class="cap-section" data-testid="capture-steps">
+          <div class="cap-head">
+            <v-icon icon="mdi-play-circle-outline" size="18" />
+            <h2 class="rr-section-title">Before launch</h2>
+            <span class="cap-count">{{ keptSteps.length }} of {{ steps.length }} kept</span>
+          </div>
+          <p class="cap-lead" data-testid="capture-steps-lead">{{ stepLead }}</p>
+          <div class="rr-panel">
+            <div
+              v-for="step in steps"
+              :key="step.type"
+              class="rr-row cap-row"
+              data-testid="capture-step"
+              :data-type="step.type"
+              :data-kept="stepOn[step.type] ? 'yes' : 'no'"
+            >
+              <v-checkbox
+                :model-value="stepOn[step.type]"
+                :disabled="!stepValue[step.type]"
+                :aria-label="`Keep ${step.label}`"
+                @update:model-value="toggleStep(step, $event)"
+              />
+              <v-icon
+                icon="mdi-controller"
+                size="18"
+                class="cap-row-icon"
+                :class="{ dim: !stepOn[step.type] }"
+              />
+              <div class="rr-row-main">
+                <div class="rr-row-title">{{ step.label }}</div>
+                <div
+                  v-if="step.picker.problem"
+                  class="rr-row-sub rr-bad"
+                  data-testid="capture-step-problem"
+                >
+                  {{ step.picker.problem }}
+                </div>
+                <div
+                  v-else-if="step.picker.choices.length === 0"
+                  class="rr-row-sub"
+                  data-testid="capture-step-empty"
+                >
+                  {{ step.picker.empty }}
+                </div>
+                <template v-else>
+                  <v-select
+                    :model-value="stepValue[step.type] || null"
+                    :items="stepItems(step)"
+                    item-props
+                    :label="step.picker.label"
+                    :hint="stepValue[step.type] ? undefined : 'Choose one to keep this step.'"
+                    persistent-hint
+                    clearable
+                    density="compact"
+                    class="cap-ask"
+                    data-testid="capture-step-choice"
+                    @update:model-value="chooseStep(step, $event)"
+                  />
+                  <div v-if="stepNote(step)" class="rr-row-sub" data-testid="capture-step-note">
+                    {{ stepNote(step)?.text }}
+                  </div>
+                </template>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -894,6 +1047,18 @@ onMounted(capture);
               }}<span v-if="part.items.length > 4"> · +{{ part.items.length - 4 }} more</span>
             </div>
           </div>
+          <template v-if="keptSteps.length > 0">
+            <div class="rr-section-title cap-summary-gap">Before launch</div>
+            <div
+              v-for="keptStep in keptSteps"
+              :key="keptStep.step.type"
+              class="cap-summary-line"
+              data-testid="capture-summary-step"
+            >
+              <v-icon icon="mdi-play-circle-outline" size="15" />
+              <span>{{ keptStep.step.label }}: {{ keptStep.chosen.label }}</span>
+            </div>
+          </template>
           <template v-if="closedAtStandDown.length > 0">
             <div class="rr-section-title cap-summary-gap">Stand down</div>
             <div class="cap-summary-line" data-testid="capture-summary-standdown">

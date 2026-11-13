@@ -4,7 +4,7 @@ description: A virtual Xbox 360 controller or DualShock 4 driven by your stick, 
 order: 70
 ---
 
-Some games read only a gamepad: ACE COMBAT 8, many console ports, older driving games, and console emulators such as PCSX2, DuckStation, Dolphin and RetroArch. **Configure > Virtual controller** plugs in a virtual Xbox 360 controller (or a DualShock 4) that those programs see like any other gamepad, and drives it from the controllers you already have: a flight stick, rudder pedals, a throttle, a wheel and pedals, a button box.
+Some games read only a gamepad: Ace Combat 8, many console ports, older driving games, and console emulators such as PCSX2, DuckStation, Dolphin and RetroArch. **Configure > Virtual controller** plugs in a virtual Xbox 360 controller (or a DualShock 4) that those programs see like any other gamepad, and drives it from the controllers you already have: a flight stick, rudder pedals, a throttle, a wheel and pedals, a button box.
 
 ![The Virtual controller page](../../../artifacts/screens/virtual-controller-editor/01-page.png)
 
@@ -24,7 +24,7 @@ The page then says **Installed**. The project is retired (it gets no more update
 
 ## Profiles
 
-A profile says which of your controls drives each part of the virtual controller. Profiles belong to no game: one profile can serve ACE COMBAT 8 today and an emulator tomorrow.
+A profile says which of your controls drives each part of the virtual controller. Profiles belong to no game: one profile can serve Ace Combat 8 today and an emulator tomorrow.
 
 **Starting points** say what each part is for and map nothing yet, because only you know which controls you have. Press **Make a copy** on one and map your own controls in the copy:
 
@@ -67,7 +67,7 @@ When RigReady quits, or stops in any other way, the virtual controller goes with
 
 ## In a setup
 
-Add the step **Start a virtual controller** to a setup's [steps before launch](../setups/launch.md), with the profile's id (shown at the top of the editor as "Id for a setup step", such as `my-ace-combat-stick`) and, if you want, **Hide controllers**. Make ready and launch then starts it before the game, so the game finds it when it starts. [Stand down](../play/stand-down.md) stops a virtual controller that a setup started and shows hidden controllers again. A step **Stop the virtual controller** exists for a setup's Stand down steps too.
+Add the step **Start a virtual controller** to a setup's [steps before launch](../setups/launch.md) and choose your virtual controller from the list, by name. If you want, turn on **Hide controllers**. Two virtual controllers of the same name are told apart in the list: each line says what the controller is made of, and its id (the "Id for a setup step" at the top of its editor, such as `my-ace-combat-stick`). A new setup for a game that reads a gamepad offers the step by itself; see [Creating a setup from the rig](../setups/capture.md#before-launch). Make ready and launch then starts it before the game, so the game finds it when it starts. [Stand down](../play/stand-down.md) stops a virtual controller that a setup started and shows hidden controllers again. A step **Stop the virtual controller** exists for a setup's Stand down steps too.
 
 The check **Virtual controller driver installed** fails on a PC without the driver, with the steps to install it.
 
@@ -86,7 +86,7 @@ Hide the real controllers too if the emulator picks your stick as player 1.
 
 ## Anti-cheat and online play
 
-ACE COMBAT 8 uses Easy Anti-Cheat online. Nothing has been reported of it refusing a virtual controller made with ViGEmBus, and RigReady changes nothing in the game itself, but try it offline first. Anti-cheat in some other games (EA's, for one) blocks virtual controllers; when a game refuses to start or warns you, stop the virtual controller.
+Ace Combat 8 uses Easy Anti-Cheat online. Nothing has been reported of it refusing a virtual controller made with ViGEmBus, and RigReady changes nothing in the game itself, but try it offline first. Anti-cheat in some other games (EA's, for one) blocks virtual controllers; when a game refuses to start or warns you, stop the virtual controller.
 
 ## What RigReady does not do
 

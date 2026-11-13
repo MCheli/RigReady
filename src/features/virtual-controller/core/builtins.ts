@@ -13,7 +13,7 @@ const flightStick = PadProfileSchema.parse({
   id: 'starting-flight-stick-ace-combat',
   name: 'Flight stick to gamepad (Ace Combat 8)',
   description:
-    "For games that read only a gamepad, such as ACE COMBAT 8: WINGS OF THEVE. Follows the game's Standard Xbox layout: pitch and roll on the left stick, yaw on the right stick, throttle forward on RT and back on LT. A starting point: press or move your own control for each part, then check every axis in the game.",
+    "For games that read only a gamepad, such as Ace Combat 8: Wings of Theve. Follows the game's Standard Xbox layout: pitch and roll on the left stick, yaw on the right stick, throttle forward on RT and back on LT. A starting point: press or move your own control for each part, then check every axis in the game.",
   kind: 'xbox360',
   sticks: {
     lx: { hint: 'Roll: the stick left and right', deadzone: 0.03 },

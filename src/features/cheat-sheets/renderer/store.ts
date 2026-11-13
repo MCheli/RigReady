@@ -159,13 +159,16 @@ export const useCheatSheets = defineStore('cheat-sheets', () => {
   async function acquire(): Promise<void> {
     users++;
     if (users > 1) return;
-    off = api.on('input', ({ devices }) => {
+    off = api.on('input', ({ devices, rest }) => {
       const nextPressed = new Map(pressed.value);
       const nextAxes = new Map(axes.value);
       for (const live of devices) {
         const before = nextPressed.get(live.guid) ?? [];
         nextPressed.set(live.guid, live.pressed);
         nextAxes.set(live.guid, live.axes);
+        // Said again because another window began to listen: where the controls are, and
+        // not a press. It is not the last thing pressed and brings no device forward.
+        if (rest) continue;
         const target = sheet.value?.devices.find((d) => d.guid === live.guid);
         if (!target) continue;
         const fresh = live.pressed.find((id) => !before.includes(id)) ?? live.moved[0];

@@ -192,6 +192,11 @@ test('session: with RigReady in the tray Windows says Welcome back, and Stand do
   await expect
     .poll(() => notifications(app))
     .toEqual([
+      // FLY-030: as the window went away, Windows said that the game is starting.
+      {
+        title: 'Starting DCS World',
+        body: 'It can take a minute to show. RigReady is out of the way while you play.',
+      },
       {
         title: 'Welcome back',
         body: 'DCS F/A-18C: less than a minute. Stand down when you are done.',
@@ -223,7 +228,8 @@ test('session: with RigReady in the tray Windows says Welcome back, and Stand do
       title: 'Welcome back',
       body: 'DCS F/A-18C: less than a minute. Stood down: Closed 1 app.',
     });
-  expect(await notifications(app)).toHaveLength(2);
+  // Two launches, each with its "Starting" and its "Welcome back".
+  expect(await notifications(app)).toHaveLength(4);
   await showWindow(app);
   // Back at the screen: it says what was done, and the checklist shows the rig stood down.
   await expect(page.getByTestId('fly-session-title')).toHaveText('Welcome back');

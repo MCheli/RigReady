@@ -76,6 +76,6 @@ Nothing is stored until **Save layout**, in either editor.
 
 ## Print or PDF
 
-**Print / PDF** makes one page per chosen device, on white, with the aircraft and device name on top, and a summary page of the most important actions when ticked, on A4 or US Letter. **Print…** uses the system print dialog; **Save as PDF…** writes a file and says where.
+**Print / PDF** makes one page per chosen device, on white, with the aircraft and device name on top, and a summary of the most important actions when ticked, on A4 or US Letter. The summary takes a second page when one does not hold every action; nothing is left out to make it fit. **Print…** uses the system print dialog; **Save as PDF…** writes a file and says where.
 
 The **Kneeboard** button is described on [Kneeboard pages](kneeboard.md), and **Learn** on [Learn your controls](trainer.md).

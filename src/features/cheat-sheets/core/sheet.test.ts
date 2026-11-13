@@ -567,8 +567,9 @@ describe('pages', () => {
     const sheet = await (await start()).invoke<Sheet>('cheat-sheets:sheet', HORNET);
     const devices = [byTitle(sheet, 'Stick'), byTitle(sheet, 'Left MFD')];
     const a4 = printDocument(sheet, devices, { paper: 'A4', summary: true, stamp: '2026-10-03' });
-    expect(a4.pages).toBe(3);
-    expect(a4.html.match(/<section class="page"/g)).toHaveLength(3);
+    // Two devices, and the summary: its 71 actions take two pages (see pages.test.ts).
+    expect(a4.pages).toBe(4);
+    expect(a4.html.match(/<section class="page"/g)).toHaveLength(4);
     expect(a4.html).toContain('<div class="ac">F/A-18C</div>');
     expect(a4.html).toContain(
       '<div class="dev">Stick<small>WINWING Orion Joystick Base 2 + JGRIP-F16'
@@ -676,12 +677,12 @@ describe('live input and the pop-out', () => {
     };
     expect(await running.invoke('cheat-sheets:savePdf', input)).toEqual({
       path: path.join(running.home, 'Documents', 'hornet.pdf'),
-      pages: 3,
+      pages: 4,
     });
     const pdf = await fs.readFile(path.join(running.home, 'Documents', 'hornet.pdf'), 'utf8');
     expect(pdf.startsWith('%PDF-')).toBe(true);
     const call = (running.ports.render as FakeRender).calls.find((c) => c.kind === 'pdf')!;
-    expect(call.html.match(/<section class="page"/g)).toHaveLength(3);
+    expect(call.html.match(/<section class="page"/g)).toHaveLength(4);
     expect(await running.invoke('cheat-sheets:savePdf', input)).toEqual({ path: null, pages: 0 });
     await expect(
       running.invoke('cheat-sheets:savePdf', { ...input, devices: [], summary: false })

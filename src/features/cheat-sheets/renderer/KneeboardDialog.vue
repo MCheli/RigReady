@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import type { z } from 'zod';
 import type { ChangePreview } from '../../../shared/changePreview';
 import ConfirmChanges from '../../../renderer/components/ConfirmChanges.vue';
 import { errorText } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
-import type { KneeboardStatusSchema } from '../contract';
+import type { KneeboardKeysView, KneeboardStatusSchema } from '../contract';
 import { useCheatSheets } from './store';
 
 /**
@@ -162,6 +163,44 @@ async function toggleSetup(setup: { id: string; checked: boolean }): Promise<voi
   await loadSetups();
 }
 
+// ---- the keys that open the kneeboard and turn its pages ----
+// Pages are of use only when they can be turned from where the hands are. A game binds the
+// page keys to the keyboard and to nothing on a stick or throttle, so the dialog says where
+// they are now and offers the page where they can be bound.
+const router = useRouter();
+const keys = ref<KneeboardKeysView>();
+const keysError = ref('');
+const KEY_NAMES: Record<KneeboardKeysView['keys'][number]['key'], string> = {
+  show: 'Show or hide the kneeboard',
+  next: 'Next page',
+  previous: 'Previous page',
+};
+
+async function loadKeys(): Promise<void> {
+  const result = await store.api.kneeboardKeys(ref_.value);
+  if (result.ok) keys.value = result.value;
+  else keysError.value = errorText(result.error);
+}
+
+const keysNote = computed(() => {
+  const view = keys.value;
+  if (!view?.pages) return '';
+  const actions = view.keys
+    .filter((k) => k.key !== 'show' && !k.onController && k.action)
+    .map((k) => `"${k.action}"`)
+    .join(' and ');
+  return view.pages === 'unbound'
+    ? `Nothing turns the pages yet, so only the first page can be read in the cockpit. Bind ${actions}.`
+    : `The pages turn only from the keyboard. To turn them from your stick or throttle, bind ${actions} to a button each.`;
+});
+
+function bindKeys(): void {
+  const route = keys.value?.route;
+  if (!route) return;
+  emit('close');
+  void router.push(route);
+}
+
 watch(style, (value) => {
   if (value !== 'both') previewStyle.value = value;
 });
@@ -170,6 +209,7 @@ watch([previewDevice, previewStyle], () => void loadPreview());
 onMounted(async () => {
   await loadStatus();
   await loadSetups();
+  void loadKeys();
   const last = status.value?.options;
   if (last) {
     if (last.devices.length > 0) chosen.value = last.devices;
@@ -263,6 +303,45 @@ onMounted(async () => {
             are never touched, and every change can be undone on the Safety page. DCS loads new
             pages with the next mission.
           </div>
+
+          <template v-if="keys || keysError">
+            <div class="rr-section-title mt-4">Keys in the cockpit</div>
+            <div v-if="keysError" class="rr-row-sub" data-testid="kneeboard-keys-error">
+              RigReady could not read what the kneeboard keys are bound to: {{ keysError }}
+            </div>
+            <div
+              v-if="keys"
+              class="kb-keys"
+              data-testid="kneeboard-keys"
+              :data-pages="keys.pages ?? 'ok'"
+            >
+              <div
+                v-for="k in keys.keys"
+                :key="k.key"
+                class="kb-key"
+                data-testid="kneeboard-key"
+                :data-key="k.key"
+                :data-on-controller="k.onController"
+              >
+                <span class="kb-key-name">{{ KEY_NAMES[k.key] }}</span>
+                <span v-if="k.bound.length" class="kb-key-bound">{{ k.bound.join(', ') }}</span>
+                <span v-else-if="k.action" class="kb-key-bound rr-muted">Not bound</span>
+                <span v-else class="kb-key-bound rr-muted">This aircraft has no such key</span>
+              </div>
+            </div>
+            <div v-if="keysNote" class="kb-keys-note" data-testid="kneeboard-keys-note">
+              <span>{{ keysNote }}</span>
+              <v-btn
+                size="small"
+                variant="tonal"
+                prepend-icon="mdi-gamepad-variant-outline"
+                data-testid="kneeboard-keys-bind"
+                @click="bindKeys"
+              >
+                Bind the page keys
+              </v-btn>
+            </div>
+          </template>
 
           <div class="rr-section-title mt-4">Check before flying</div>
           <div class="rr-row-sub">
@@ -447,6 +526,27 @@ onMounted(async () => {
 .kb-setups {
   max-height: 120px;
   overflow-y: auto;
+}
+.kb-key {
+  display: flex;
+  gap: 12px;
+  padding: 2px 0;
+  font-size: 13px;
+}
+.kb-key-name {
+  width: 190px;
+  flex-shrink: 0;
+  color: var(--rr-muted);
+}
+.kb-keys-note {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 13px;
+}
+.kb-keys-note span {
+  flex: 1;
 }
 .kb-preview {
   width: 384px;

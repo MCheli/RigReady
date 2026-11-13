@@ -20,6 +20,8 @@ import { describeInput } from './names';
 
 /** The page of this feature that shows one device's bindings. */
 export const DEVICES_ROUTE = '/configure/dcs-bindings/devices';
+/** The page that lists every action; `find` in its query fills the search box. */
+export const ACTIONS_ROUTE = '/configure/dcs-bindings/actions';
 
 const KIND: Record<DeviceView['type'], BoundDevice['kind']> = {
   joystick: 'controller',
@@ -111,6 +113,12 @@ export function createBindingReader(bindings: DcsBindings): BindingReader {
       const query = new URLSearchParams();
       if (target.aircraftId) query.set('aircraft', target.aircraftId);
       if (target.guid) query.set('guid', target.guid.replace(/[{}]/g, '').toUpperCase());
+      if (target.find) {
+        // Looking for an action: the Actions tab, with the text in its search box.
+        query.delete('guid');
+        query.set('find', target.find);
+        return `${ACTIONS_ROUTE}?${query.toString()}`;
+      }
       const text = query.toString();
       return text ? `${DEVICES_ROUTE}?${text}` : DEVICES_ROUTE;
     },

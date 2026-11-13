@@ -105,7 +105,59 @@ export interface CheckDefinition<P = unknown> {
    * and is shown to the user.
    */
   adopt?(item: NewCheckItem, ctx: CheckContext): Promise<Result<NewCheckItem>>;
+  /** A param chosen by name from what exists on this PC, in place of a typed id. */
+  picker?: ParamPicker;
 }
+
+/** One thing a picker offers: what is saved, and what the person reads. */
+export interface PickerChoice {
+  /** What goes into the param: the id nobody should have to type. */
+  value: string;
+  /** The name shown. */
+  label: string;
+  /** A second line: what tells two choices of the same name apart, and what kind of thing it is. */
+  detail?: string;
+  /** Other params of the same item that this choice fills in. */
+  fill?: Record<string, unknown>;
+  /** It is the one in use on this PC right now. */
+  current?: boolean;
+}
+
+/**
+ * A param the person chooses by name from what exists on this PC (a saved monitor layout,
+ * a virtual controller, an audio device), where the saved value is an id. The setup
+ * editor shows one list by name and fills in the rest.
+ */
+export interface ParamPicker {
+  /**
+   * Names the list. A check and a fix that pick from the same list are kept in step by
+   * the editor: the fix follows what the check picked.
+   */
+  list: string;
+  /** The param the chosen value goes into. */
+  param: string;
+  /** The field's label: "Layout". */
+  label: string;
+  /** Params the choice fills in; the editor no longer asks for them. */
+  fills?: string[];
+  /**
+   * Other params that mean the same in a check and in its fix (which of Windows' defaults
+   * an audio device is to be): a fix that follows its check takes these from it too.
+   */
+  shares?: string[];
+  /** Said when there is nothing to choose from: what to make first, and where. */
+  empty: string;
+  /**
+   * Said when nothing is chosen although the filled params have values: the item carries
+   * its own copy ("the arrangement this setup was made with").
+   */
+  unpicked?: string;
+  /** What can be chosen right now. Reads only. */
+  choices(ctx: CheckContext): Promise<Result<PickerChoice[]>>;
+}
+
+/** Something a game can need that a launch step provides (see GameModule.playedWith). */
+export type GameNeed = 'gamepad';
 
 /** The exact program a fix would run, shown to the user before it runs. */
 export interface CommandPreview {
@@ -157,6 +209,13 @@ export interface RemediationDefinition<P = unknown> {
    * "Keep a copy of the file as it is now" for a restore. Resolves with what was done.
    */
   prepare?: { label: string; run(params: P, ctx: CheckContext): Promise<Result<string>> };
+  /** A param chosen by name from what exists on this PC, in place of a typed id. */
+  picker?: ParamPicker;
+  /**
+   * What a game can need that this step gives it. A new setup for a game that needs it
+   * offers this step before launch, with the picker's choices.
+   */
+  provides?: GameNeed;
 }
 
 /** A check proposed from the current state of the machine. */

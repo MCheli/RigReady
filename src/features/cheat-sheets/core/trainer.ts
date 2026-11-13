@@ -31,10 +31,83 @@ export const TrainerCardSchema = z.object({
   /** A plainer wording, when one is known ("Sensor select: HUD"). Shown first, the game's name beside it. */
   plain: z.string().optional(),
   kind: z.enum(CATEGORY_IDS),
-  /** Every control that does it. The first is the one shown when the answer is given away. */
+  /** Every control that does it. All of them are named and lit when the answer is given away. */
   answers: z.array(TrainerAnswerSchema).min(1),
 });
 export type TrainerCard = z.infer<typeof TrainerCardSchema>;
+
+/** "A", "A or B", "A, B or C". */
+const listed = (items: string[], word: 'or' | 'and'): string =>
+  items.length <= 1
+    ? (items[0] ?? '')
+    : `${items.slice(0, -1).join(', ')} ${word} ${items[items.length - 1]}`;
+
+interface Place {
+  deviceKey: string;
+  device: string;
+  names: string[];
+}
+
+/** The controls of each device together, devices in the order they come. */
+function byDevice(
+  answers: readonly Pick<TrainerAnswer, 'deviceKey' | 'device' | 'name'>[]
+): Place[] {
+  const devices = new Map<string, Place>();
+  for (const answer of answers) {
+    const at = devices.get(answer.deviceKey) ?? {
+      deviceKey: answer.deviceKey,
+      device: answer.device,
+      names: [],
+    };
+    at.names.push(answer.name);
+    devices.set(answer.deviceKey, at);
+  }
+  return [...devices.values()];
+}
+
+/** The devices one after the other; a comma keeps them apart when one has several controls. */
+function devicesListed(places: Place[], parts: string[], word: 'or' | 'and'): string {
+  return parts.length > 1 && places.some((p) => p.names.length > 1)
+    ? `${parts.slice(0, -1).join(', ')}, ${word} ${parts[parts.length - 1]}`
+    : listed(parts, word);
+}
+
+/**
+ * Every place an action is bound, in words: "Button 20 on Stick", "Button 25 or Button 28
+ * on Throttle" for two controls of one device, "Button 20 on Stick or Button 7 on Throttle"
+ * for one on each of two, and "Button 32 on Stick, or Button 25 or Button 28 on Throttle".
+ */
+export function placesOf(
+  answers: readonly Pick<TrainerAnswer, 'deviceKey' | 'device' | 'name'>[]
+): string {
+  const places = byDevice(answers);
+  return devicesListed(
+    places,
+    places.map((p) => `${listed(p.names, 'or')} on ${p.device}`),
+    'or'
+  );
+}
+
+/**
+ * The other controls that do the same as the one that was pressed, as a sentence: "Button 25
+ * does it too." for one on the same device, "Button 7 on Throttle does it too." for one on
+ * another, "Button 25 and Button 28 on Throttle do it too." for several. Empty when the
+ * action is bound in one place only.
+ */
+export function alsoDoes(
+  answers: readonly TrainerAnswer[],
+  pressed: Pick<TrainerAnswer, 'deviceKey' | 'guid' | 'control'>
+): string {
+  const others = answers.filter((a) => a.guid !== pressed.guid || a.control !== pressed.control);
+  if (others.length === 0) return '';
+  const places = byDevice(others);
+  // All on the device that was pressed: its name was just said.
+  const here = places.every((p) => p.deviceKey === pressed.deviceKey);
+  const parts = places.map((p) =>
+    here ? listed(p.names, 'and') : `${listed(p.names, 'and')} on ${p.device}`
+  );
+  return `${devicesListed(places, parts, 'and')} ${others.length === 1 ? 'does' : 'do'} it too.`;
+}
 
 const pressable = (control: string): boolean =>
   control.startsWith('button:') || control.startsWith('hat:');

@@ -44,6 +44,25 @@ export const KneeboardStatusSchema = z.object({
   blocked: z.string().optional(),
 });
 
+/** The keys a kneeboard needs and where each is bound now (core/kneeboardKeys.ts). */
+export const KneeboardKeysSchema = z.object({
+  keys: z.array(
+    z.object({
+      key: z.enum(['show', 'next', 'previous']),
+      /** The game's own name for the action. Absent when the aircraft has none. */
+      action: z.string().optional(),
+      /** "Button 12 on Throttle", "] on the keyboard"; empty when it is bound to nothing. */
+      bound: z.array(z.string()),
+      onController: z.boolean(),
+    })
+  ),
+  /** Set when the pages cannot be turned from a controller: only from the keyboard, or from nothing. */
+  pages: z.enum(['keyboard', 'unbound']).optional(),
+  /** The in-app page where the keys can be bound, opened on this aircraft's kneeboard actions. */
+  route: z.string(),
+});
+export type KneeboardKeysView = z.infer<typeof KneeboardKeysSchema>;
+
 export const LiveDeviceSchema = z.object({
   guid: z.string(),
   pressed: z.array(z.string()),
@@ -196,6 +215,13 @@ export const cheatSheetsContract = defineContract(
       }
     ),
 
+    /** Whether the kneeboard can be opened and its pages turned, and from where. */
+    kneeboardKeys: channel(sheetRef, KneeboardKeysSchema, {
+      describe:
+        'What show or hide the kneeboard, next page and previous page are bound to for one aircraft, defaults included. pages says when the pages cannot be turned from a controller ("keyboard": only the keyboard turns them; "unbound": nothing does); tell the user then, and offer route, the page where they can be bound. Changes nothing.',
+      tier: 'read',
+    }),
+
     /** The setups the "kneeboard pages are up to date" check can go into, for one aircraft. */
     kneeboardSetups: channel(
       sheetRef,
@@ -252,7 +278,11 @@ export const cheatSheetsContract = defineContract(
     ...trainerChannels,
   },
   {
-    input: z.object({ devices: z.array(LiveDeviceSchema) }),
+    /**
+     * What the controllers say. `rest` marks what is said again for a window that began to
+     * listen after another: where the controls are, not something that was just pressed.
+     */
+    input: z.object({ devices: z.array(LiveDeviceSchema), rest: z.boolean().optional() }),
     /** A game's bindings were changed by the feature that owns them: sheets of it are redrawn. */
     changed: z.object({ game: z.string(), aircraftId: z.string().optional() }),
   }

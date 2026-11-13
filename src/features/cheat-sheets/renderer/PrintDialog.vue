@@ -5,9 +5,10 @@ import { printDocument, type PaperSize } from '../core/pages';
 import { useCheatSheets } from './store';
 
 /**
- * Print or save as PDF: one page per chosen device and a summary page. "Save as PDF"
- * renders the document in main; "Print" hands the same pages to the system's print
- * dialog (the app itself is hidden from the printout by a print style sheet).
+ * Print or save as PDF: one page per chosen device and a summary, which goes on to a
+ * second page when one does not hold it. "Save as PDF" renders the document in main;
+ * "Print" hands the same pages to the system's print dialog (the app itself is hidden
+ * from the printout by a print style sheet).
  */
 const emit = defineEmits<{ close: [] }>();
 const store = useCheatSheets();
@@ -101,7 +102,7 @@ onBeforeUnmount(() => {
         </div>
         <v-checkbox
           v-model="summary"
-          label="Add a summary page of the most important actions"
+          label="Add a summary of the most important actions"
           density="compact"
           hide-details
           data-testid="print-summary"

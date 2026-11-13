@@ -1,0 +1,5 @@
+description: Cheat sheets, the owner's F/A-18C with long device names, as Windows gives them
+rig: mark-full
+extends: flying-all-good.yaml
+data:
+  devices.json: data/cheat-sheets/devices-long-names.json
