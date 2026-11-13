@@ -89,8 +89,6 @@ export const useFlyStore = defineStore('fly', () => {
   const error = ref<string>();
   const activity = ref<Activity>();
   const minimizeOnLaunch = ref(true);
-  /** Stand down by itself when the game closes. */
-  const autoStandDown = ref(false);
   /** Two quiet notes when the rig becomes ready. */
   const readyTone = ref(false);
   /** The session of the moment: none, a game running, or one that just closed. */
@@ -286,7 +284,6 @@ export const useFlyStore = defineStore('fly', () => {
     void api.preferences().then((prefs) => {
       if (!prefs.ok) return;
       minimizeOnLaunch.value = prefs.value.minimizeOnLaunch;
-      autoStandDown.value = prefs.value.autoStandDown;
       readyTone.value = prefs.value.readyTone;
     });
     void api.session().then((current) => {
@@ -647,16 +644,20 @@ export const useFlyStore = defineStore('fly', () => {
     else error.value = errorText(saved.error);
   }
 
-  async function setAutoStandDown(value: boolean): Promise<void> {
-    const saved = await api.setPreferences({ autoStandDown: value });
-    if (saved.ok) autoStandDown.value = saved.value.autoStandDown;
-    else error.value = errorText(saved.error);
-  }
-
   async function setReadyTone(value: boolean): Promise<void> {
     const saved = await api.setPreferences({ readyTone: value });
     if (saved.ok) readyTone.value = saved.value.readyTone;
     else error.value = errorText(saved.error);
+  }
+
+  /**
+   * Ends the countdown to a Stand down that would have run by itself: nothing is closed,
+   * and the Stand down button is still there.
+   */
+  async function cancelStandDown(): Promise<void> {
+    const next = await api.cancelStandDown();
+    if (next.ok) takeSession(next.value);
+    else error.value = errorText(next.error);
   }
 
   /** "Welcome back" was read: back to normal without standing down. */
@@ -700,7 +701,6 @@ export const useFlyStore = defineStore('fly', () => {
     activity,
     steps,
     minimizeOnLaunch,
-    autoStandDown,
     readyTone,
     session,
     rig,
@@ -724,8 +724,8 @@ export const useFlyStore = defineStore('fly', () => {
     launch,
     readyAndLaunch,
     setMinimizeOnLaunch,
-    setAutoStandDown,
     setReadyTone,
+    cancelStandDown,
     dismissSession,
     declineSuggestion,
     takeSuggestion,

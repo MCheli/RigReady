@@ -26,7 +26,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 - One screen for the setup used last: a readiness dial, the rig drawn with its monitors and devices so a problem shows as a place, a grouped checklist, and a fix beside every failing item.
 - One action, Make ready and launch (or Enter): the fixes run in order as visible steps and the game is launched once everything required is met. Make ready, Launch and Stand down are also there on their own.
 - Required items make the rig Not ready; optional items only warn. Launch is never blocked, and nothing is launched past a required problem without asking.
-- The session is followed: in progress, then Welcome back with Stand down as the main action, optionally standing down by itself. A history of sessions says what needed fixing most often.
+- The session is followed: in progress, then Welcome back with Stand down as the main action. Unless the setup switches it off, Stand down then runs by itself after a countdown you can cancel; the countdown length is set for each setup. A history of sessions says what needed fixing most often.
 - A compact view that stays on top, a quiet offer to switch when the gear plugged in fits another setup, an optional ready tone.
 - One double-click: a desktop shortcut per setup, `RigReady.exe --launch "<setup>"` (also `--make-ready` and `--setup`), a taskbar Jump List, a status badge, progress and three buttons on the taskbar button, an optional global hotkey.
 - Tray icon with the same actions; optional start with Windows.

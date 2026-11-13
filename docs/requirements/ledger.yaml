@@ -435,14 +435,28 @@ requirements:
     done_means:
       - "Stand down closes every app the profile marks closeOnStandDown (default true for apps started by RigReady in this session, false otherwise)."
       - "Apps are asked to close gracefully first and are force-terminated only after 10 s and only if the item allows force (default false); unclosed apps are listed."
+      - "An app that is still running after it was asked is named with the reason (it was asked and stayed open; it has no window to ask; Windows did not let RigReady ask it) and with what to do: close it yourself, or switch on 'Force it closed if it does not close' for the check, named as the setup editor names it. Forcing is not suggested for a program Windows does not let RigReady touch. An app of several processes with one name is closed as one: every process is asked before any is waited for, a helper that goes with its parent is no failure, and the app counts as closed when none of them is left."
       - "Stand down never closes the game itself unless the game is still running and the user confirms."
       - "Scenario mark-flight after a Make ready that started TrackIR and SimAppPro: Stand down results in the fake ProcessProvider receiving stop for both and the summary 'Closed 2 apps'."
+    notes:
+      - "2026-11-12: from the sitting, where trophi.ai.exe was still running after Stand down and the screen only said it did not close when asked. Three causes were in RigReady: processes of one name were asked one after another and the rest were not asked once one stayed; a helper that went with its parent was counted as a failure; and the reason the Windows provider knew was not passed on. The fourth criterion covers them. How the Windows provider tells the reasons apart (src/platform/windows/processes.ts) is not covered by a test, because a test never closes a real program; the reasons are tested from the port upwards with fakes."
     status: done
     evidence:
       - 'src/features/fly/core/fly.test.ts#closes only the apps RigReady started this session, politely, and says how many'
       - 'src/features/fly/core/fly.test.ts#never closes the game unless asked, closes what launch actions started, and runs its own actions'
       - 'src/features/processes/core/processCheck.test.ts#stand down closes politely: always, never, or only what RigReady started this session'
       - 'src/features/processes/core/processCheck.test.ts#stand down lists an app that will not close, and forces it only when the item allows'
+      - 'src/features/processes/core/processCheck.test.ts#an app that stays open says why, and what to do: the hint names the switch in the setup'
+      - 'src/features/processes/core/processCheck.test.ts#an app that stays open is ended when the setup lets it be forced, and closes again when it behaves'
+      - 'src/features/processes/core/processCheck.test.ts#an app of several processes is closed as one, whichever of them comes first'
+      - 'src/core/processes.test.ts#a helper with no window comes first in the list: the owner of the window is still asked, and the program counts as closed when all of it is gone'
+      - 'src/core/processes.test.ts#a helper that is already gone when it is asked is no failure'
+      - 'src/core/processes.test.ts#a program that only goes to the tray is still running, and the reason is the one of the process that was asked'
+      - 'src/core/processes.test.ts#says so when Windows did not let it be asked, and when it has no window at all'
+      - 'src/core/processes.test.ts#names the program and says what happened'
+      - 'tests/unit/crossFeature.test.ts#the switch that lets Stand down force a program closed'
+      - 'tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: with RigReady in the tray Windows says when it starts and what it did; a step that did not work is named and nothing says it was done'
+      - 'artifacts/screens/fly-stand-down-step-failed/01-step-failed.png'
       - 'tests/e2e/fly-depth.e2e.ts#fly: steps before and after launch; a step that must not fail pauses with Launch anyway; Stand down closes what they started'
       - 'artifacts/screens/fly-launch-actions/03-game-running.png'
       - 'artifacts/screens/fly-launch-actions/04-stood-down.png'
@@ -568,7 +582,7 @@ requirements:
       - 'src/features/fly/core/fly.test.ts#FLY-030: says the game is starting by its own name, on the screen at once and for Windows when the window hides'
       - "tests/e2e/launch-moment.e2e.ts#play: from the click on Launch the page says \"Starting\" with the game's name, and Windows says it as the window goes away"
       - 'tests/e2e/launch-moment.e2e.ts#play: with "hide after launch" off the window stays and Windows is not asked to say anything'
-      - 'tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to'
+      - 'tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and a game that closed at once starts no Stand down by itself'
       - 'artifacts/screens/launch-starting/01-starting.png'
     notes: "From the sitting of 2026-11-12: the window went away at once and the game took most of a minute to show, which read as a launch that had failed. RigReady still hides when the launch answers, not when the game's own window is there: no port can see another program's window. The notification itself is proven as what the app hands to Windows; how Windows draws it is not pictured."
 
@@ -644,8 +658,8 @@ requirements:
     done_means:
       - "After a launch the Play screen shows the session: which game is running, 'Session in progress since <time>', and a running clock (h:mm:ss, tabular numerals). A game handed to Steam is shown as waited for, and its session begins when the game's own program runs; one that never shows up within fifteen minutes is not a session. While the game runs, Enter starts nothing."
       - "When the game's program is gone (RigReady looks every two seconds), the screen says 'Welcome back' with the setup, how long the session was and when it closed, and Stand down becomes the primary action, on Enter. Dismiss puts the screen back without standing down. Stand down used while the game was still open leaves nothing to offer when it closes."
-      - "A setting in the Play menu, off by default, stands down by itself when the game closes; the screen then says what Stand down did, or that it did not finish."
-      - "When nobody is at a RigReady window the same is said as a Windows notification through the Notifications port: 'Welcome back', the setup, the length, and either 'Stand down when you are done' or what Stand down did. Nobody is at the window when RigReady hid itself after the launch, when the window says it is hidden (tray, minimized), or when nothing was done in it for a minute. While the user is at the window there is no notification."
+      - "Stand down runs by itself when the game closes, after a countdown the user can cancel. It is on by default; every setup has its own switch and its own countdown length, one minute by default (the details are WOW-FLY-008). The screen then says what Stand down did, names each step that did not work, or says that it did not finish. A game that closed within two minutes of starting starts no countdown, and the Welcome back line says so."
+      - "When nobody is at a RigReady window the same is said as a Windows notification through the Notifications port: 'Welcome back', the setup, the length, and one of: 'Stand down when you are done' (no countdown started), 'Stand down starts in <length>. Open RigReady to cancel.' (a countdown started, and the window is brought back on screen), or what Stand down did. Nobody is at the window when RigReady hid itself after the launch, when the window says it is hidden (tray, minimized), or when nothing was done in it for a minute. While the user is at the window there is no notification."
       - "Every session is recorded in {RIGREADY_HOME}/fly/sessions.json: setup, game, start, length, seconds from opening the setup to every required check being met, what had to be fixed (by Make ready or a fix button), the first required item that was not met, and whether it was launched not ready. A game whose programs RigReady does not know is recorded without a length. A session in progress survives a restart of RigReady: it is picked up when the game still runs, and recorded without a length when it closed meanwhile."
       - "A damaged history file is left exactly as it is and named; the history goes on in the next file (sessions.1.json ...). The newest thousand sessions are kept."
       - "Under the setup's name the screen says 'Last session <today | yesterday | weekday | date>, <length>', or 'No session yet': the same words for every game, with no word of flying, so they read naturally to someone who only races. While a setup's first session is under way the line does not say there was none."
@@ -659,8 +673,9 @@ requirements:
       - "src/features/fly/core/sessions.test.ts#with no window on screen, Windows says it; with one on screen, the screen does"
       - "src/features/fly/core/sessions.test.ts#a launch that hides RigReady leaves nobody at its window, whatever was done there a moment before"
       - "src/features/fly/core/sessions.test.ts#a window in the tray is not on screen, and one that stopped saying so for a minute is gone"
-      - "src/features/fly/core/sessions.test.ts#stands down by itself when asked to, says what it did, and leaves the welcome on screen"
-      - "src/features/fly/core/sessions.test.ts#a Stand down that fails by itself says so instead of \"stood down\""
+      - "src/features/fly/core/sessions.test.ts#a setup saved before this existed counts down for one minute, then runs Stand down and says what it did"
+      - "src/features/fly/core/sessions.test.ts#a game that closes within two minutes of starting starts no countdown, and the screen is told why"
+      - "src/features/fly/core/sessions.test.ts#a Stand down that cannot run says why instead of \"stood down\""
       - "src/features/fly/core/sessions.test.ts#stood down while the game was still open: when it closes there is nothing left to offer"
       - "src/features/fly/core/sessions.test.ts#is a session from the moment the game itself runs, not from the hand-off"
       - "src/features/fly/core/sessions.test.ts#that never shows up is not a session: after a quarter of an hour RigReady stops waiting"
@@ -676,17 +691,98 @@ requirements:
       - "src/features/fly/core/sessionText.test.ts#sessions, hours, and what needed fixing most"
       - "tests/e2e/fly-session.e2e.ts#session: the game running with its clock, Welcome back when it closes, and Stand down as the one action"
       - "tests/e2e/fly-session.e2e.ts#session: Dismiss puts the screen back without standing down"
-      - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and Stand down runs by itself when asked to"
+      - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and a game that closed at once starts no Stand down by itself"
       - "tests/e2e/fly-session.e2e.ts#history: \"last session\" on the setup, the totals in one line, and every session with what it took to be ready"
       - "tests/e2e/fly-session.e2e.ts#session: a game started through Steam is waited for, and the session begins when the game itself runs"
       - "artifacts/screens/fly-session/01-no-history-yet.png"
       - "artifacts/screens/fly-session/02-in-session.png"
       - "artifacts/screens/fly-session/03-welcome-back.png"
       - "artifacts/screens/fly-session/04-stood-down.png"
-      - "artifacts/screens/fly-session-away/01-stood-down-by-itself.png"
+      - "artifacts/screens/fly-session-away/01-closed-at-once.png"
       - "artifacts/screens/fly-session-steam/01-waiting-for-steam.png"
       - "artifacts/screens/fly-history/01-last-session.png"
       - "artifacts/screens/fly-history/02-history.png"
+
+  - id: WOW-FLY-008
+    title: Stand down by itself when the game closes - a switch and a countdown for every setup
+    job: fly
+    area: fly
+    priority: p1
+    done_means:
+      - "Every setup has its own switch 'Stand down when the game closes' (on by default) and its own countdown length (one minute by default; the editor offers 10 seconds to 10 minutes, the setup file takes 5 to 3600 seconds). Both are in the setup editor under 'When the game closes' and in the setup file under extensions.fly (standDownOnClose, standDownAfterSeconds). A setup saved before this existed gets the defaults, and so does a value a hand edit got wrong."
+      - "When the game the setup started has closed and the switch is on, a countdown starts. It is visible wherever the user is: a notice at the bottom right of every page of the main window ('Stand down in 42 seconds', one sentence that says what will happen, Cancel, and 'Change this for the setup'), the Welcome back line of the Play screen, and the session line of the compact view with its own Cancel. When nobody is at a RigReady window, Windows says 'Stand down starts in <length>. Open RigReady to cancel.' and the window is brought back on screen."
+      - "The notice lies over the bottom right corner of the page, where a page may have buttons of its own (the setup editor's Save and Cancel). While it counts it can be moved to the top bar: the countdown, as a clock that is never cut short ('Stand down in 4:05'), and its Cancel are then in the bar on every page and cover nothing, and pressing the countdown there brings the notice back. What Stand down did is always said in the notice."
+      - "When the time is up the same Stand down the button runs is run, once. The notice and the Welcome back line then say what it did: 'Stood down' with its summary only when every step worked; 'Stand down ran, but N step(s) need(s) attention' with each step that did not work; 'Stand down did not finish' with the reason when it could not run. The result stays until the user presses OK. With nobody at a window the same is a Windows notification."
+      - "Cancel ends the countdown: nothing is closed, the screen says 'Stand down was cancelled. Nothing was closed.', and Stand down stays the primary action. Cancel pressed after Stand down has started changes nothing, and the answer says so."
+      - "The game running again during the countdown ends the countdown, closes nothing, and is a new session. Every program name known for the game is watched, so a launcher that exits while the real game runs does not end the session."
+      - "A game that closes within two minutes of starting starts no countdown. The screen says why, and Stand down is still there to press."
+      - "The compact view keeps to its small window: 'Welcome back', how long the session was and the Stand down line are three lines that are on screen without scrolling, at the window size a user may have kept from before. A reason too long for one line there has a short form ('It closed too soon: Stand down did not start.') with the full sentence as its tooltip."
+      - "Stand down pressed by hand during the countdown ends the countdown and runs once; a second Stand down while one is running is refused. Dismiss, or a new launch, during the countdown stands nothing down."
+      - "RigReady quit during the countdown stands nothing down, then or at the next start, and nothing says it did. A window that is only hidden in the tray is not a quit: the countdown goes on."
+      - "When the running programs cannot be read at the end of the countdown, Stand down waits for a look that works."
+      - "With the switch off, the game closing is 'Welcome back' and nothing is closed by itself, however long it is left."
+    notes:
+      - "2026-11-12: the owner's decision: on by default, a switch and a countdown length for every setup, a countdown that can be cancelled. It replaces the Play-menu setting of WOW-FLY-003, which was off by default and had no countdown. A fly/preferences.json from before still reads; its autoStandDown is ignored."
+      - "2026-11-12: known limits. With nobody at the PC, a desk layout applied by Stand down still asks 'Keep this monitor layout?'; unanswered, the layout goes back and the step is listed as not done. A launcher under a name RigReady does not know that stays open for more than two minutes cannot be told apart from the game closing."
+    status: done
+    evidence:
+      - "src/core/profile/standDownOnClose.test.ts#a setup saved before this existed gets the defaults: on, one minute"
+      - "src/core/profile/standDownOnClose.test.ts#reads the switch and the length the setup holds"
+      - "src/core/profile/standDownOnClose.test.ts#a value a hand edit got wrong falls back to its default, the other is kept"
+      - "src/core/profile/standDownOnClose.test.ts#writes the answer into the setup and keeps what else is there"
+      - "src/core/profile/standDownOnClose.test.ts#keeps a length inside the limits"
+      - "src/features/fly/core/sessions.test.ts#a setup saved before this existed counts down for one minute, then runs Stand down and says what it did"
+      - "src/features/fly/core/sessions.test.ts#counts down for as long as the setup says"
+      - "src/features/fly/core/sessions.test.ts#a setup that switches it off gets Welcome back and nothing by itself, however long it is left"
+      - "src/features/fly/core/sessions.test.ts#Cancel ends the countdown: nothing is closed, and Stand down is still there to press"
+      - "src/features/fly/core/sessions.test.ts#Cancel after Stand down has started changes nothing: the answer says it is running"
+      - "src/features/fly/core/sessions.test.ts#Play pressed while Stand down runs by itself: the new session keeps the screen, and the old result is not shown over it"
+      - "src/features/fly/core/sessions.test.ts#the game running again during the countdown ends the countdown and is a new session"
+      - "src/features/fly/core/sessions.test.ts#a game that closes within two minutes of starting starts no countdown, and the screen is told why"
+      - "src/features/fly/core/sessions.test.ts#a launcher that exits while the real game runs is one session: it ends when the last known program is gone"
+      - "src/features/fly/core/sessions.test.ts#a launcher that exits a moment before the real game shows up: no countdown, and the game is a session when it runs"
+      - "src/features/fly/core/sessions.test.ts#Stand down pressed by hand during the countdown ends the countdown: one Stand down runs, not two"
+      - "src/features/fly/core/sessions.test.ts#a second Stand down while one is running is refused: it does not run on top of the first"
+      - "src/features/fly/core/sessions.test.ts#Dismiss, or Play again, during the countdown: nothing is stood down"
+      - "src/features/fly/core/sessions.test.ts#RigReady quit during the countdown: nothing is stood down then or at the next start, and nothing says it was"
+      - "src/features/fly/core/sessions.test.ts#when the running programs cannot be read at the end of the countdown, Stand down waits for a look that works"
+      - "src/features/fly/core/sessions.test.ts#a step that did not work is named: it never reads as stood down"
+      - "src/features/fly/core/sessions.test.ts#a Stand down that cannot run says why instead of \"stood down\""
+      - "src/features/fly/core/sessions.test.ts#a Stand down that throws is said the same way, and the next one can still run"
+      - "src/features/fly/core/sessionText.test.ts#counts down in whole seconds and minutes, and never says zero"
+      - "src/features/fly/core/sessionText.test.ts#counts down as a clock where there is little room, in step with the heading"
+      - "src/features/fly/core/sessionText.test.ts#a clock that is a moment behind never shows more than the countdown is long"
+      - "src/features/fly/core/sessionText.test.ts#says \"Stood down\" only when every step worked"
+      - "src/features/fly/core/sessionText.test.ts#a Stand down that could not run says so, with the reason when there is one"
+      - "src/features/fly/core/sessionText.test.ts#says why it is not going to run this time"
+      - "src/features/fly/core/sessionText.test.ts#says it in one short line where there is little room, and never that it ran"
+      - "tests/e2e/fly-compact.e2e.ts#compact: the dial, the setup and the one action in a small window on top; the whole routine is done from there"
+      - "src/features/fly/core/fly.test.ts#a preferences file from before the switch moved into the setup still reads"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: every setup has its own switch and countdown length; the countdown then stands the rig down and says what it did"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: the countdown says what will happen and when, and Cancel ends it with nothing closed"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: the countdown is on every page and in the compact view, and the game starting again ends it"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: Cancel in the compact view ends the countdown everywhere"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: the notice can be moved to the top bar, where it covers no button of the page, and Cancel there ends the countdown with nothing closed"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: with RigReady in the tray Windows says when it starts and what it did; a step that did not work is named and nothing says it was done"
+      - "tests/e2e/fly-session.e2e.ts#session: with RigReady in the tray Windows says Welcome back, and a game that closed at once starts no Stand down by itself"
+      - "artifacts/screens/fly-stand-down-setting/01-on-by-default.png"
+      - "artifacts/screens/fly-stand-down-setting/02-lengths.png"
+      - "artifacts/screens/fly-stand-down-setting/03-stood-down-by-itself.png"
+      - "artifacts/screens/fly-stand-down-setting/04-switched-off.png"
+      - "artifacts/screens/fly-stand-down-setting/05-off-nothing-by-itself.png"
+      - "artifacts/screens/fly-stand-down-countdown/01-countdown.png"
+      - "artifacts/screens/fly-stand-down-countdown/02-cancelled.png"
+      - "artifacts/screens/fly-stand-down-everywhere/01-on-another-page.png"
+      - "artifacts/screens/fly-stand-down-everywhere/02-game-is-back.png"
+      - "artifacts/screens/fly-stand-down-everywhere/03-closed-again-at-once.png"
+      - "artifacts/screens/fly-stand-down-top-bar/01-over-the-setup-editor.png"
+      - "artifacts/screens/fly-stand-down-top-bar/02-in-the-top-bar.png"
+      - "artifacts/screens/fly-stand-down-top-bar/03-cancelled-from-the-top-bar.png"
+      - "artifacts/screens/fly-stand-down-compact/01-compact-countdown.png"
+      - "artifacts/screens/fly-stand-down-compact/02-compact-cancelled.png"
+      - "artifacts/screens/fly-compact/04-welcome-back.png"
+      - "artifacts/screens/fly-stand-down-step-failed/01-step-failed.png"
+      - "artifacts/screens/fly-session-away/01-closed-at-once.png"
 
   - id: WOW-FLY-004
     title: The rig at a glance - monitors to scale and devices as chips

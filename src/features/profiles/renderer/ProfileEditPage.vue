@@ -24,6 +24,7 @@ import ItemEditor from './ItemEditor.vue';
 import ParamsForm from './ParamsForm.vue';
 import { followedBy, mergeFollowed } from './pickerForm';
 import ShortcutPanel from './ShortcutPanel.vue';
+import StandDownOnCloseEditor from './StandDownOnCloseEditor.vue';
 import { defaultsOf, plain } from './schemaForm';
 import { launchKindOf, steamAppShown, steamLaunchFor, type LaunchKind } from './steamLaunch';
 
@@ -717,6 +718,8 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
           <div v-if="actions[phase.key].length === 0" class="rr-row rr-muted">None.</div>
         </div>
       </template>
+
+      <StandDownOnCloseEditor :profile="draft" @update:profile="draft = $event" />
 
       <div class="edit-footer">
         <v-alert

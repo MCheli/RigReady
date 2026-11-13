@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   clockText,
+  countdownLeft,
+  countdownShort,
+  countdownTitle,
   durationText,
   elapsedText,
   fixTotalText,
   lastSessionLine,
+  problemText,
+  standDownHeldText,
+  stoodDownLine,
+  stoodDownText,
   timesText,
   totalsLine,
   totalText,
@@ -143,5 +150,114 @@ describe('the history in one line', () => {
       'Wheel needed fixing 3 times'
     );
     expect([timesText(1), timesText(2), timesText(7)]).toEqual(['once', 'twice', '7 times']);
+  });
+});
+
+describe('Stand down by itself, in words', () => {
+  it('counts down in whole seconds and minutes, and never says zero', () => {
+    expect(countdownTitle(60)).toBe('Stand down in 1 minute');
+    expect(countdownTitle(59.2)).toBe('Stand down in 1 minute');
+    expect(countdownTitle(42)).toBe('Stand down in 42 seconds');
+    expect(countdownTitle(0.4)).toBe('Stand down in 1 second');
+    expect(countdownTitle(0)).toBe('Stand down is about to start');
+    expect(countdownTitle(-3)).toBe('Stand down is about to start');
+  });
+
+  it('counts down as a clock where there is little room, in step with the heading', () => {
+    expect(countdownShort(300)).toBe('Stand down in 5:00');
+    expect(countdownShort(244.2)).toBe('Stand down in 4:05');
+    expect(countdownShort(60)).toBe('Stand down in 1:00');
+    expect(countdownShort(59.2)).toBe('Stand down in 1:00');
+    expect(countdownShort(42)).toBe('Stand down in 0:42');
+    expect(countdownShort(0)).toBe('Stand down in 0:00');
+    expect(countdownShort(-3)).toBe('Stand down in 0:00');
+  });
+
+  it('a clock that is a moment behind never shows more than the countdown is long', () => {
+    const at = '2026-11-12T18:01:00.000Z';
+    const start = Date.parse('2026-11-12T18:00:00.000Z');
+    // Read 0.9 seconds before the countdown started: one minute, not "1 minute 1 second".
+    expect(countdownLeft(at, start - 900, 60)).toBe(60);
+    expect(countdownTitle(countdownLeft(at, start - 900, 60))).toBe('Stand down in 1 minute');
+    expect(countdownLeft(at, start + 18_000, 60)).toBe(42);
+    expect(countdownLeft(at, start + 61_000, 60)).toBe(0);
+    // A session from before the length was sent along is counted as it is.
+    expect(countdownLeft(at, start + 18_000)).toBe(42);
+  });
+
+  it('names a step that did not work, once', () => {
+    expect(
+      problemText({
+        title: 'TrackIR',
+        message: 'TrackIR5.exe is still running: it did not close when asked.',
+      })
+    ).toBe('TrackIR5.exe is still running: it did not close when asked.');
+    expect(problemText({ title: 'Tidy up', message: 'after.cmd ended with code 3' })).toBe(
+      'Tidy up: after.cmd ended with code 3'
+    );
+    expect(problemText({ title: 'Tidy up', message: '  ' })).toBe('Tidy up did not work.');
+  });
+
+  it('says "Stood down" only when every step worked', () => {
+    const done = { finished: true, headline: 'Closed 2 apps', failed: 0, problems: [] };
+    expect(stoodDownText(done)).toEqual({
+      ok: true,
+      title: 'Stood down',
+      lines: ['Closed 2 apps'],
+    });
+    expect(stoodDownLine(done)).toBe('Stood down: Closed 2 apps');
+
+    const one = {
+      finished: true,
+      headline: 'Closed 1 app · 1 step needs attention',
+      failed: 1,
+      problems: ['coach.exe is still running: it did not close when asked.'],
+    };
+    expect(stoodDownText(one)).toEqual({
+      ok: false,
+      title: 'Stand down ran, but 1 step needs attention',
+      lines: ['coach.exe is still running: it did not close when asked.'],
+    });
+    expect(stoodDownLine(one)).toBe(
+      'Stand down ran, but 1 step needs attention: coach.exe is still running: it did not close when asked.'
+    );
+
+    const two = { ...one, failed: 2, problems: ['A stayed open.', 'B stayed open.'] };
+    expect(stoodDownText(two).title).toBe('Stand down ran, but 2 steps need attention');
+    expect(stoodDownLine(two)).toBe(
+      'Stand down ran, but 2 steps need attention: A stayed open. B stayed open.'
+    );
+  });
+
+  it('a Stand down that could not run says so, with the reason when there is one', () => {
+    const failed = {
+      finished: false,
+      headline: '',
+      failed: 0,
+      problems: ['The setup could not be read.'],
+    };
+    expect(stoodDownText(failed)).toEqual({
+      ok: false,
+      title: 'Stand down did not finish',
+      lines: ['The setup could not be read.'],
+    });
+    expect(stoodDownLine(failed)).toBe('Stand down did not finish: The setup could not be read.');
+    expect(stoodDownLine({ ...failed, problems: [] })).toBe('Stand down did not finish');
+  });
+
+  it('says why it is not going to run this time', () => {
+    expect(standDownHeldText('cancelled')).toBe('Stand down was cancelled. Nothing was closed.');
+    expect(standDownHeldText('quickExit')).toBe(
+      'It closed within two minutes of starting, so Stand down did not start by itself.'
+    );
+  });
+
+  it('says it in one short line where there is little room, and never that it ran', () => {
+    expect(standDownHeldText('cancelled', true)).toBe(
+      'Stand down was cancelled. Nothing was closed.'
+    );
+    expect(standDownHeldText('quickExit', true)).toBe(
+      'It closed too soon: Stand down did not start.'
+    );
   });
 });

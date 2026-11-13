@@ -465,7 +465,8 @@ await rig.cleanup();                                 // in afterEach
   - Replacing a whole port after wiring (`rig.ports.http = somethingElse`) is not seen by any feature: they hold the copy made at wiring.
   - Anything that must be true before a feature's `setup` runs (a feature that reads at startup, starts a watcher, or keeps a reference to a port method) goes in `wiredApp(scenario, { beforeWiring })`, which runs on the rig after the scenario is seeded and before any feature is set up.
   - Inside a check run the ports are wrapped once more by the read cache (section 3): assert on what the check returned, not on how often the fake was called, unless the call count is what you are testing.
-- To make a provider fail with an error, hang, or a program fail to start, use the `failProvider`, `hangProvider` and `failProcessStart` mutations (they work in scenario files and live).
+- To make a provider fail with an error, hang, a program fail to start, or a program stay open when it is asked to close, use the `failProvider`, `hangProvider`, `failProcessStart` and `failProcessClose` mutations (they work in scenario files and live).
+- A program that is several processes (every Chromium or Electron app) is closed with `closeTogether` from `src/core/processes.ts`: all are asked at once and the process list afterwards decides. Do not loop over `processes.close` one process at a time. `stillRunningText` words why a program stayed open.
 - Features start watchers in `setup`. In a test that wires the app, call `dispose` on them before cleanup: `for (const f of app.wiring.features) await f.dispose?.()`.
 - A fix that applies a monitor layout waits for the keep-or-revert answer the first time. `wiredApp` answers "keep" by itself; set `app.layoutAnswer` to `'revert'` or to `'wait'` (then answer through `displays:keep` / `displays:revert`). A layout kept once in a test is known to work from then on, so the same Make ready or Stand down in the same data folder applies it without `displays:event:applied` and sends `displays:event:appliedKnown` instead.
 - Do not mock `fs`. Test code may use `node:fs` to arrange and inspect the temp folder.
@@ -535,6 +536,7 @@ A status that is not 2xx is never streamed (its whole body is the result), and a
 | `setKnownFolder` | `folder: documents \| savedGames`, `path` | Moves Documents or Saved Games to another folder below the fake user folder, as a user does in Properties > Location. A file the scenario writes must go to the new place |
 | `slowFiles` | `ms` (0 ends it) | Every read and write of a file's content takes that long (a slow disk, a big backup), so a long operation can be watched |
 | `failProcessStart` | `name` (image name), `mode?: error \| neverRuns \| off` | Starting that program fails ("Access is denied"), or is accepted but the program never shows up |
+| `failProcessClose` | `name` (image name), `why?: ignored \| noWindow \| refused \| off` | That program stays open when asked to close, and the provider says why: it only went to the tray, it has no window, or Windows did not allow it (it runs as administrator; forcing fails too) |
 | `stopProcess` | `name` | Removes every process with that name |
 | `startProcess` | `name`, `path` | Adds a running process |
 | `setDisplay` | `match: { name?, id?, index? }`, `set: { enabled?, primary?, x?, y?, width?, height?, rotation?, refreshHz?, id?, serial?, usbSerial? }` | Changes monitors (`index` picks one of several with the same name). A new `id` is the monitor moved to another connector or USB port |

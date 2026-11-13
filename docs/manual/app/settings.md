@@ -66,4 +66,5 @@ The version, the update channel it follows, and that RigReady is open source und
 
 - **The log level.** The **Detailed log** switch is on the [Diagnostics](diagnostics.md) page. The environment variable `RIGREADY_LOG_LEVEL` (debug, info, warn or error) overrides it for a run.
 - **How many backups are kept.** On the [Backups](../protect/backups.md) page, above the list.
-- **Play screen options** such as standing down when the game closes, hiding RigReady after launch and the ready tone are in the Play screen's own menu; see [The Play menu](../play/the-menu.md).
+- **Play screen options** such as hiding RigReady after launch and the ready tone are in the Play screen's own menu; see [The Play menu](../play/the-menu.md).
+- **Standing down when the game closes.** Each setup has its own switch and countdown length, in [the setup editor](../setups/editor.md#when-the-game-closes).

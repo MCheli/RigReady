@@ -13,6 +13,7 @@ import {
 import type { MainContext } from '../../../core/feature';
 import { JsonStore } from '../../../core/jsonStore';
 import { allPathVariables, expandPath } from '../../../core/pathVariables';
+import { closeTogether, stillRunningText } from '../../../core/processes';
 import { withProfile } from '../../../core/checks/registry';
 import { profileActions, type Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
@@ -70,6 +71,8 @@ export interface SessionHooks {
   ): Promise<void>;
   /** RigReady's main window is being hidden after the launch. */
   hidden(): void;
+  /** Stand down is starting: a countdown to one that would run by itself is over. */
+  standDownStarted(): void;
   stoodDown(): void;
 }
 
@@ -107,6 +110,8 @@ export function isSteamHandoff(profile: Pick<Profile, 'launch' | 'steamAppId'>):
 export class Fly {
   private latestRun: string | undefined;
   private readonly startedByActions = new Set<string>();
+  /** A Stand down is running right now (see standDown). */
+  private standDownRunning = false;
   private readonly prefs: JsonStore<typeof PreferencesSchema>;
   private readonly sleep: Sleep;
   private readonly timer: Sleep;
@@ -607,9 +612,35 @@ export class Fly {
 
   // ---- stand down ----
 
+  /**
+   * One Stand down at a time. The one that runs by itself after the countdown and one
+   * pressed by hand (the screen, the tray, an assistant) would otherwise close the same
+   * apps and move the same monitors on top of each other.
+   */
   async standDown(
     profileId: string,
     options: { closeGame?: boolean } = {}
+  ): Promise<Result<ActionReport & { headline: string }>> {
+    if (this.standDownRunning) {
+      return err(
+        'fly.standDownRunning',
+        'Stand down is already running.',
+        'Wait until it has finished; what it did is shown then.'
+      );
+    }
+    this.standDownRunning = true;
+    // Said before anything is waited for: a countdown must not start a second one now.
+    this.sessions?.standDownStarted();
+    try {
+      return await this.runStandDown(profileId, options);
+    } finally {
+      this.standDownRunning = false;
+    }
+  }
+
+  private async runStandDown(
+    profileId: string,
+    options: { closeGame?: boolean }
   ): Promise<Result<ActionReport & { headline: string }>> {
     const found = await this.profile(profileId);
     if (!found.ok) return found;
@@ -634,21 +665,21 @@ export class Fly {
       if (!list.ok) return { itemId: name, title, ok: false, message: list.error.message };
       const targets = list.value.filter((p) => sameName(p.name, name));
       if (targets.length === 0) return null;
-      for (const target of targets) {
-        const closed = await this.ctx.ports.processes.close(target.pid, {
-          waitMs: 10_000,
-          force: false,
-        });
-        if (!closed.ok) {
-          return {
-            itemId: name,
-            title,
-            ok: false,
-            message: `${name} is still running: it did not close when asked.`,
-          };
-        }
+      // Asked, never forced. All of the program's processes at once: see closeTogether.
+      const closed = await closeTogether(this.ctx.ports.processes, targets, {
+        waitMs: 10_000,
+        force: false,
+      });
+      if (closed.state === 'closed') {
+        return { itemId: name, title, ok: true, message: `Closed ${name}` };
       }
-      return { itemId: name, title, ok: true, message: `Closed ${name}` };
+      const why = closed.state === 'stillRunning' ? closed.why : undefined;
+      return {
+        itemId: name,
+        title,
+        ok: false,
+        message: `${stillRunningText(name, why)} Close it yourself.`,
+      };
     };
 
     const report = await standDown(profile, this.ctx.checks, this.ctx, {
@@ -701,7 +732,7 @@ export class Fly {
     const failed = steps.filter((s) => !s.ok).length;
     const parts = [
       closed > 0 ? `Closed ${closed} ${closed === 1 ? 'app' : 'apps'}` : 'No apps to close',
-      ...(failed > 0 ? [`${failed} ${failed === 1 ? 'step' : 'steps'} need attention`] : []),
+      ...(failed > 0 ? [`${failed} ${failed === 1 ? 'step needs' : 'steps need'} attention`] : []),
     ];
     this.ctx.log.info(`stand down ${profileId}`, steps);
     this.sessions?.stoodDown();
