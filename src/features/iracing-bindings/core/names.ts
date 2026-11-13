@@ -3,10 +3,10 @@
  * itself (367 on the recorded rig); the common ones have a hand-written name and the rest
  * are spelled out from their id ("BrakeBiasInc" -> "Brake bias up").
  *
- * The racing feature names the same actions for cheat sheets with a table this one started
- * from, and a feature may not import another, so the table is here a second time. This copy
- * has later corrections (short forms written out, brake bias under the adjustments); the two
- * belong in one place in core. names.test.ts holds the names users see.
+ * The racing feature names the same actions for its iRacing page and the cheat sheets, and a
+ * feature may not import another, so the table is there a second time.
+ * tests/unit/iracingActionNames.test.ts holds the two together; names.test.ts holds the
+ * names users see.
  */
 
 const LABELS: Record<string, string> = {

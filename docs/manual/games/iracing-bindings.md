@@ -89,7 +89,7 @@ Some things stay with iRacing, and the page says so where they come up:
 
 Close the iRacing simulator before you change a binding: it writes its own bindings when it closes and would undo the change. While it runs, the page says so and **Save** is not offered. Changes go into the file iRacing reads: the control profile for all cars, or a car's own set when you chose that car. The older `controls.cfg` beside a profile is never written.
 
-The other change RigReady makes to these files is the repair of a wheel with a new Windows id, on the [iRacing page](iracing.md). It replaces one id with another of the same length, backs the files up first, and says in its own dialog that it has not yet been verified on real hardware. It changes the older `controls.cfg` files, not a control profile.
+The other change RigReady makes to these files is the repair of a wheel with a new Windows id, on the [iRacing page](iracing.md). It replaces one id with another of the same length, backs the files up first, and says in its own dialog that it has not yet been verified on real hardware. It changes the control profile iRacing uses, the same files this page shows, never the older `controls.cfg`.
 
 ## When there is nothing to show
 

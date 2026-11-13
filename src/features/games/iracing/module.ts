@@ -1,6 +1,7 @@
 import path from 'node:path';
 import type { CheckContext } from '../../../core/checks/registry';
 import type { GameInstall, GameModule, TrackedFileSuggestion } from '../../../core/games';
+import { locateIracingControls } from '../../../core/iracingControls';
 import { ok } from '../../../core/result';
 import { readSteamApp } from '../../../core/steam';
 import {
@@ -100,6 +101,12 @@ const iracing: GameModule = {
 
   async trackedFiles(ctx) {
     const dir = userFolder(ctx);
+    // The bindings iRacing reads: since 2026 Season 3 the control profile app.ini names,
+    // never the older files beside it (src/core/iracingControls.ts).
+    const located = await locateIracingControls(ctx.ports.files, dir);
+    const ofProfile = (profile: string | undefined): string =>
+      profile !== undefined ? `, profile “${profile}”` : '';
+    const general = located.general;
     const suggestions: TrackedFileSuggestion[] = [
       {
         label: 'iRacing settings and bindings',
@@ -107,18 +114,28 @@ const iracing: GameModule = {
         kind: 'folder',
         include: IRACING_INCLUDE,
         description:
-          'Bindings, calibration, options, graphics, HUD profiles, radio scripts and car setups. Replays and telemetry are left out.',
+          'Bindings, calibration, options, graphics, HUD and control profiles, radio scripts and car setups. Replays and telemetry are left out.',
       },
-      { label: 'Bindings (controls.cfg)', path: path.join(dir, 'controls.cfg') },
-      {
-        label: 'Wheel and pedal calibration (joyCalib.yaml)',
-        path: path.join(dir, 'joyCalib.yaml'),
-      },
+      ...(general
+        ? [
+            {
+              label: `Bindings (controls.cfg${ofProfile(general.profile)})`,
+              path: general.controls,
+            },
+            {
+              label: `Wheel and pedal calibration (joyCalib.yaml${ofProfile(general.profile)})`,
+              path: general.calibration,
+            },
+          ]
+        : []),
       { label: 'Audio, force feedback and options (app.ini)', path: path.join(dir, 'app.ini') },
       { label: 'Network and telemetry (core.ini)', path: path.join(dir, 'core.ini') },
       { label: 'Cameras (camera.ini)', path: path.join(dir, 'camera.ini') },
       { label: 'Fuel (fueldata.ini)', path: path.join(dir, 'fueldata.ini') },
-      { label: 'HUD profiles', path: path.join(dir, 'profiles') },
+      {
+        label: located.kind === 'profiles' ? 'HUD and control profiles' : 'HUD profiles',
+        path: path.join(dir, 'profiles'),
+      },
       { label: 'Radio scripts', path: path.join(dir, 'scripts') },
     ];
     const names = await ctx.ports.files.list(dir);
@@ -128,12 +145,12 @@ const iracing: GameModule = {
       }
     }
     // "Use custom controls for this car" keeps a controls.cfg and joyCalib.yaml per car.
-    const cars = await ctx.ports.files.list(path.join(dir, 'setups'));
-    for (const car of cars.ok ? cars.value : []) {
-      for (const file of ['controls.cfg', 'joyCalib.yaml']) {
+    for (const set of located.cars) {
+      for (const file of [set.controls, set.calibration]) {
+        if (suggestions.some((s) => s.path === file)) continue;
         suggestions.push({
-          label: `Custom controls for ${car} (${file})`,
-          path: path.join(dir, 'setups', car, file),
+          label: `Custom controls for ${set.car!} (${path.basename(file)}${ofProfile(set.profile)})`,
+          path: file,
         });
       }
     }

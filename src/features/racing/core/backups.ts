@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { BackupRecordValue, BackupSource } from '../../../core/backupSources';
 import type { CheckContext } from '../../../core/checks/registry';
 import { previewWrites, type PlannedWrite } from '../../../core/files/preview';
+import { locateIracingControls } from '../../../core/iracingControls';
 import { closeTogether, stillRunningText } from '../../../core/processes';
 import { err, ok, type Result } from '../../../core/result';
 import type { RegistryHive } from '../../../shared/models';
@@ -37,29 +38,41 @@ async function sources(ctx: RacingContext, game: BackupGame): Promise<Source[]> 
     case 'iracing': {
       const dir = await locationOf(ctx, 'iracing', 'documents');
       if (!dir) return [];
-      const list: Source[] = [
-        {
-          path: path.join(dir, 'controls.cfg'),
-          label: 'Bindings (controls.cfg)',
+      // The files iRacing reads: with control profiles, the profile app.ini names (and app.ini
+      // itself, which names it), never the older files beside them.
+      const located = await locateIracingControls(ctx.ports.files, dir);
+      const inProfile = (profile: string | undefined): string =>
+        profile !== undefined ? `, profile “${profile}”` : '';
+      const list: Source[] = [];
+      const seen = new Set<string>();
+      const add = (source: Source): void => {
+        const key = path.resolve(source.path).toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        list.push(source);
+      };
+      if (located.general) {
+        add({
+          path: located.general.controls,
+          label: `Bindings (controls.cfg${inProfile(located.general.profile)})`,
           restorable: true,
-        },
-        {
-          path: path.join(dir, 'joyCalib.yaml'),
-          label: 'Calibration (joyCalib.yaml)',
+        });
+        add({
+          path: located.general.calibration,
+          label: `Calibration (joyCalib.yaml${inProfile(located.general.profile)})`,
           restorable: true,
-        },
-        {
-          path: path.join(dir, 'app.ini'),
-          label: 'Options and force feedback (app.ini)',
-          restorable: true,
-        },
-      ];
-      const cars = await ctx.ports.files.list(path.join(dir, 'setups'));
-      for (const car of cars.ok ? cars.value : []) {
-        for (const file of ['controls.cfg', 'joyCalib.yaml']) {
-          list.push({
-            path: path.join(dir, 'setups', car, file),
-            label: `${car}: ${file}`,
+        });
+      }
+      add({
+        path: path.join(dir, 'app.ini'),
+        label: 'Options and force feedback (app.ini)',
+        restorable: true,
+      });
+      for (const set of located.cars) {
+        for (const file of [set.controls, set.calibration]) {
+          add({
+            path: file,
+            label: `${set.car!}: ${path.basename(file)}${set.profile !== undefined ? ` (profile “${set.profile}”)` : ''}`,
             restorable: true,
           });
         }

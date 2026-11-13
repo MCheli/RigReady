@@ -1,0 +1,12 @@
+description: Racing on iRacing 2026.11 (control profiles), the wheel has a new Windows id
+rig: mark-full
+extends: iracing-bindings-profiles.yaml
+# iRacing keeps its bindings in the control profile "Baseline" (app.ini [ControlProfiles]
+# Global=Baseline). The profile and the older Documents\iRacing\controls.cfg both name the id
+# the DD2 had when iRacing was set up (45D4BEA1-...-8001-...); Windows has since given the
+# wheel a new one (made up here, on the same collection 8001). iRacing reads only the profile,
+# so the id repair changes the profile and leaves the older files as they are.
+mutations:
+  - op: setController
+    match: { vendorId: '0EB7', productId: '0007' }
+    set: { guid: 'A1B2C3D4-5E6F-11F1-8001-444553540000' }
