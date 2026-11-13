@@ -355,10 +355,25 @@ export interface ScreenLabel {
   up?: boolean;
 }
 
-/** Short-lived labels drawn on top of everything, one per monitor ("Identify"). */
+/**
+ * What RigReady draws on top of everything else on the desktop: short-lived labels, one per
+ * monitor ("Identify"), and overlay panels, small see-through windows of the app that stay
+ * over a game while it is played.
+ */
 export interface Overlays {
   /** Shows the labels and removes them after durationMs. Showing new labels replaces the old ones. */
   showLabels(labels: ScreenLabel[], durationMs: number): Promise<Result<void>>;
+  /**
+   * Shows an overlay panel, or moves the one with this id when it is already up (its page
+   * is kept; it is loaded again only when the route is another one). It is shown without
+   * taking the keyboard from whatever has it. Answers where it now is: on the screen asked
+   * for, or on the main screen when no connected screen is where that one was.
+   */
+  showPanel(panel: OverlayPanel): Promise<Result<OverlayPanelPlace>>;
+  /** Where the panel is now, which the user may have changed by dragging it; undefined when it is not shown. */
+  panelPlace(id: string): Promise<Result<OverlayPanelPlace | undefined>>;
+  /** Takes the panel away. Hiding one that is not shown is not an error. */
+  hidePanel(id: string): Promise<Result<void>>;
 }
 
 export interface ScreenArea {
@@ -367,6 +382,43 @@ export interface ScreenArea {
   y: number;
   width: number;
   height: number;
+}
+
+/**
+ * A window of RigReady's own drawn over everything else, a game included: no frame, a
+ * see-through background, never in the taskbar, and it never takes the keyboard. It shows
+ * a route of the app and receives the same events as the main window. A topmost window is
+ * drawn over a game that runs in a window or borderless; a game in exclusive full screen,
+ * or one shown in a VR headset, is drawn without it.
+ */
+export interface OverlayPanel {
+  /** One window per id. */
+  id: string;
+  /** In-app route, e.g. "/overlay/recent-presses". */
+  route: string;
+  /** The monitor to show it on, as DisplayProvider reports it. */
+  screen: ScreenArea;
+  /** Its size in the units pages are laid out in (CSS pixels); made smaller to fit a small screen. */
+  width: number;
+  height: number;
+  /**
+   * Where on that monitor, as a share (0..1) of the room the panel leaves free, from the
+   * left and from the top: see `src/core/overlayPlace.ts`.
+   */
+  at: { x: number; y: number };
+  /**
+   * False in normal use: the mouse goes through it to what is underneath. True while the
+   * user places it: it takes the mouse, and can be dragged by any part of its page that
+   * is styled as a drag region (`-webkit-app-region: drag`).
+   */
+  movable: boolean;
+}
+
+/** Where an overlay panel is. */
+export interface OverlayPanelPlace {
+  /** The monitor it is on, in desktop pixels. */
+  screen: ScreenArea;
+  at: { x: number; y: number };
 }
 
 /** RigReady's own window, for the one thing features need of it: being where the user can see it. */

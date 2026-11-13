@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 import { DeviceInfoSchema, InputDeviceSchema, InputStateSchema } from '../../shared/models';
-import { BindingSourceSchema, BoundInputsSchema } from './core/bound';
+import { BindingSourceSchema, BoundInputsSchema } from '../../core/boundInputs';
 import { HealthReportSchema } from './core/health';
 import { DeviceIdentitySchema } from './core/identity';
 import { NotificationModeSchema, OverviewSchema, UsbMapSchema } from './core/model';

@@ -44,6 +44,18 @@ When the control already does something else on that device, the dialog says so:
 
 ![The bind dialog](../../../artifacts/screens/bindings-edit/02-bind-dialog.png)
 
+### Show or hide the kneeboard
+
+**Kneeboard ON/OFF** shows and hides the kneeboard and does nothing else. Its pages turn with two more actions, **Kneeboard Next Page** and **Kneeboard Previous Page**, which DCS puts on the keyboard (`]` and `[`) and on no stick or throttle. Bind only the first to a button and in the cockpit you have the first page and no way to turn it without the keyboard.
+
+So when the action in the dialog is the one that shows or hides the kneeboard, and a page action is on no controller, the dialog says so. It names each such action and where it is now ("] on the keyboard", or "Not bound"). **Add this and bind them next** stages the binding you made and opens the dialog again on the first page action, on the same device, then on the second; **Cancel** stops there and keeps what is already staged.
+
+The note counts what is staged as well as what is saved: a page action you have staged onto a button is not named, and one whose button you are giving to something else is. Once both page actions are on a controller the dialog has nothing to add. If RigReady cannot write a binding for a page action yet, the note says to bind that one in DCS's own controls screen.
+
+![Binding show or hide: the pages turn with two more actions](../../../artifacts/screens/bindings-kneeboard-pages/01-show-or-hide-needs-the-page-actions.png)
+
+For the pages themselves and the three keys, see [Kneeboard pages](kneeboard.md#keys-in-the-cockpit).
+
 ## Staged changes and the review
 
 Changes are staged, not written. The bar at the bottom lists them in plain words, with a way to drop one, **Discard** for all, and **Review and save**.

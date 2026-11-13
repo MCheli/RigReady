@@ -2410,8 +2410,8 @@ requirements:
       - "An input bound to multiple actions shows all of them with a duplicate warning (BIND-DCS-011)."
     status: done
     evidence:
-      - "src/features/devices/core/bound.test.ts#an input bound to several actions shows all of them with a duplicate warning; a modifier makes it a different press"
-      - "src/features/devices/core/bound.test.ts#names the control that was used the way the game does: button, hat direction, axis"
+      - "src/core/boundInputs.test.ts#an input bound to several actions shows all of them with a duplicate warning; a modifier makes it a different press"
+      - "src/features/devices/core/controlNames.test.ts#names the control that was used the way the game does: button, hat direction, axis"
       - "src/features/dcs-bindings/core/reader.test.ts#gives the effective bindings of an aircraft per device: input, label, action, category, source, modifiers"
       - "tests/unit/bindingsAcrossFeatures.test.ts#the input tester can ask what a control does in an aircraft, duplicates flagged (DEV-010)"
       - "tests/e2e/devices-bindings.e2e.ts#tester: pressing a control shows what it is bound to in the chosen aircraft, and a device opens its DCS bindings"
@@ -3626,6 +3626,37 @@ requirements:
       - "artifacts/screens/bindings-overview/04-overview-huey.png"
       - "artifacts/screens/bindings-problems/04-huey-problems.png"
 
+  - id: BIND-DCS-025
+    title: Binding show or hide the kneeboard says its pages turn with two more actions
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "When the action in the bind dialog is the one that shows or hides the kneeboard (DCS: 'Kneeboard ON/OFF') and a page action ('Kneeboard Next Page', 'Kneeboard Previous Page') is on no controller, the dialog says that this action shows and hides the kneeboard, that its pages turn with the other actions, names each one that is on no controller and where it is now ('] on the keyboard', or 'Not bound'), and says to bind it to a button too."
+      - "It is said only when true: not for any other action (the glance view, the mark point, the shortcuts and the page actions included), not for an aircraft with no action that turns a page, and not once every page action is on a controller. A binding on a control the device does not have does not count."
+      - "Changes that wait to be saved count: a page action staged onto a button is not named, and one whose button is cleared, or given to another action in this very dialog, is."
+      - "'Add this and bind them next' stages the binding made and opens the dialog on the first page action, on the same device, then on the second ('After this one: Kneeboard Previous Page.'). Cancel ends it and keeps what is staged. A page action RigReady cannot write a binding for is not offered, and the note says to bind it in DCS's own controls screen."
+      - "Scenario mark-flight (dcs-bindings-hornet): binding 'Kneeboard ON/OFF' to Button 14 of the stick shows the note with both page actions on the keyboard; the offer leads through Button 33 and Button 35; three changes are saved to the stick's file; binding show or hide again shows no note (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 20: the owner bound show or hide to a stick button and found in the cockpit that nothing on his controllers turned the pages. KNEE-003 says it where the pages are exported; this says it where the button is bound."
+      - "The three actions are found by DCS's names for them, the way KNEE-003 does (cheat-sheets core/kneeboardKeys.ts). A feature does not import another, so the rule is written in both; change them together."
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#reads the three from DCS's names, and takes the glance view, the mark point and the shortcuts for none"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#on the recorded Hornet, says the two page actions are on the keyboard and on no controller"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#says the same for the UH-1H, whose page actions are its own"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#says nothing for any other action, the glance view and the page actions included"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#counts a page action that waits to be saved as bound, and has nothing to say once both wait"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#is gone once both page actions are written to the stick, and back when the button of one is given to show or hide"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#does not count a binding on a control the device does not have"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#says a page action is bound to nothing when it is on no keyboard key either"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#offers only what RigReady can bind, and says where to bind the rest"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#has nothing to say for an aircraft with no action that turns a page"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: binding show or hide the kneeboard says its pages turn with two more actions, and goes on to bind them"
+      - "artifacts/screens/bindings-kneeboard-pages/01-show-or-hide-needs-the-page-actions.png"
+      - "artifacts/screens/bindings-kneeboard-pages/02-next-page-then-previous-page.png"
+      - "artifacts/screens/bindings-kneeboard-pages/03-nothing-to-add-once-the-pages-turn.png"
+
   # ---------------------------------------------------------------------------
   # CHEAT SHEETS
   # ---------------------------------------------------------------------------
@@ -3826,7 +3857,7 @@ requirements:
       - "src/features/cheat-sheets/core/labels.test.ts#saves the printout of a racing sheet under the game’s name"
       - "src/features/cheat-sheets/core/labels.test.ts#is the game of the setup in use, not the first game in the alphabet"
       - "src/features/cheat-sheets/core/labels.test.ts#is, without a setup, the game most of the connected controllers are bound in"
-      - "src/features/devices/core/bound.test.ts#finds a binding by the control it is on, whatever the game calls its input (the racing games)"
+      - "src/core/boundInputs.test.ts#finds a binding by the control it is on, whatever the game calls its input (the racing games)"
       - "tests/unit/bindingsAcrossFeatures.test.ts#on the racing rig the tester knows what a paddle does in iRacing, and a device links only to a bindings page that opens on it"
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: the racing rig - iRacing and Le Mans Ultimate on the shipped Fanatec wheel"
       - "artifacts/screens/cheat-sheets-racing/01-iracing-wheel.png"
@@ -3985,7 +4016,7 @@ requirements:
       - "The offer opens the game's bindings page on that aircraft with the kneeboard's actions found. Once both are bound to a controller the note is gone and the dialog shows the buttons."
       - "Scenario mark-flight (cheat-sheets-hornet): the note shows; from the offer both page keys are bound to stick buttons by pressing them; back in the dialog it reads 'Button 33 on Stick' and 'Button 35 on Stick' and the note is gone (E2E)."
     notes:
-      - "2026-11-12 sitting, finding 20: the owner bound show or hide in DCS and found in the cockpit that nothing on his controllers turned the pages. The dialog is where pages are exported; the bindings page itself gives no such hint when show or hide is bound there, which is the bindings feature's to add."
+      - "2026-11-12 sitting, finding 20: the owner bound show or hide in DCS and found in the cockpit that nothing on his controllers turned the pages. The dialog is where pages are exported; the bind dialog of the bindings page says it where show or hide is bound (BIND-DCS-025)."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#reads it from the game's name for the action"
@@ -4224,6 +4255,258 @@ requirements:
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a press never lights nothing - a button no control is known to press still shows, and lights up"
       - "artifacts/screens/cheat-sheets-free-buttons/01-throttle-more-controls.png"
       - "artifacts/screens/cheat-sheets-free-buttons/02-throttle-button-45-pressed.png"
+
+  # ---------------------------------------------------------------------------
+  # OVERLAY — what you press, shown over the game (2D first; asked for on 2026-11-12)
+  # ---------------------------------------------------------------------------
+
+  - id: OVERLAY-001
+    title: An overlay over the game, off until it is turned on
+    job: fly
+    area: overlay
+    priority: p2
+    done_means:
+      - "Configure has an 'Overlay' page of its own in the left menu, under Controls. The overlay is off until the user turns on 'Show the overlay': while it is off no window is put over anything and the controllers are not read for it (E2E, scenario cheat-sheets-hornet; and on generic-fresh, where the page names no game and no hardware that is not on that PC)."
+      - "Turned on, it stays on: it is up again when RigReady starts, without the page being opened, and gone when it is turned off or RigReady quits. The page says in words whether it is on and over which screen, and when it is on but not showing, why (no screen is on, Windows refused the window, the controllers cannot be read)."
+      - "The command palette has 'Turn the overlay on' and 'Turn the overlay off'. Each answers with what happened: a window that could not be shown is not reported as showing."
+      - "Its settings are in RigReady's own folder (overlay/settings.json). A damaged settings file is said to be damaged and is not replaced. Nothing in any game is changed."
+    notes:
+      - "2026-11-12: done. Built and unit-tested on the fake machine, then run in the app with the isolated launch once the sitting was over: tests/e2e/overlay.e2e.ts, its four tests, and only that file, because others were testing on the same PC. What the runs found, fixed in the same commit: after a change that was refused (a damaged settings file) the switch stayed on while the overlay was off, so the page now draws its controls again from what is in effect; with the overlay on and no screen on, the Place row said to turn the overlay on first. So that the page's words for controllers that cannot be read could be seen, the recorded rig's input reader can now be made not to start (the failProvider and hangProvider mutations take the port 'input'; tests/unit/providerFailure.test.ts). A window that Windows refuses is the same line of the page as 'no screen is on' and its words are from the unit tests; a refusal by Windows itself has not been seen. Not run with this feature in at the time (run since, see the note of the same day below): tests/e2e/generic-rig.e2e.ts (it has the 'overlay' page in its list), tests/e2e/tour.e2e.ts, tests/e2e/look.e2e.ts and tests/e2e/a11y.e2e.ts. The tour visits one page more with this one: its pictures after Cheat sheets are renumbered by its first run, so site/screens.json has to follow in the same commit. The navigation had no room for a twentieth entry at the default window size, so its rows went from 30 to 28 px high in src/renderer/layouts/ConfigureLayout.vue: the overlay's first test checks that the navigation does not scroll, and every older picture that shows the navigation is 2 px a row out of date until the whole suite is run. The rule for status colours in tests/e2e/a11y.ts now takes the name of the button an icon is in (the Close of an alert), which the alert about a damaged settings file needed."
+      - "2026-11-12, later, two wordings on the page. With the overlay on and the controllers not read, the page now says first what the palette says, 'The overlay is on, but the controllers are not being read', and under it the reader's own message; both take the sentence from one place (NOT_READ in src/features/overlay/core/model.ts). The alert about a damaged settings file now ends with what to do about it, as the manual does: repair the file or delete it, and once it is deleted the overlay starts again from its first settings, turned off. Seen in the app: tests/e2e/overlay.e2e.ts, its third and fourth test, with the pictures overlay-no-game/04-damaged-settings.png and overlay-not-read/01-controllers-not-read.png taken again."
+      - "2026-11-12: the four scenario files the shared changes can reach were run one at a time with the feature in, after the merges of main up to a6767a8, and all pass: tests/e2e/a11y.e2e.ts (3 tests), tests/e2e/generic-rig.e2e.ts (3 tests, with one more picture at the end of its flow, artifacts/screens/generic-configure/36-overlay.png), tests/e2e/tour.e2e.ts (4 tests) and tests/e2e/look.e2e.ts (5 tests). The tour walks the navigation in order, so the Overlay page is picture 11 on each of its four rigs (artifacts/screens/tour-flying/11-overlay.png) and the pictures after it carry new numbers; the tour had not been run since the virtual controller joined the navigation, so its two pages are new there too (18 and 36). All four tour folders were taken again and site/screens.json follows the new numbers of the wheel and the monitors. After the merge of the wheel fix the scenario files that read src/features/devices were run as well: tests/e2e/devices.e2e.ts (10 tests), tests/e2e/devices-bindings.e2e.ts (7 tests) and tests/e2e/devices-wheel.e2e.ts (2 tests), all passing. Pictures of other features that differ only by the new navigation entry were left as they are on main."
+    status: done
+    evidence:
+      - "src/features/overlay/core/service.test.ts#is off until the user turns it on: no window, and nothing is listened to"
+      - "src/features/overlay/core/service.test.ts#left on, it comes up when RigReady starts; left off, it does not"
+      - "src/features/overlay/core/service.test.ts#turned off, the window goes and what was shown is forgotten"
+      - "src/features/overlay/core/service.test.ts#on quit the window goes and nothing is listened to any more"
+      - "src/features/overlay/core/service.test.ts#says why when the window cannot be shown, and shows it once it can"
+      - "src/features/overlay/core/service.test.ts#with no screen on there is nothing to show it on"
+      - "src/features/overlay/core/service.test.ts#says why when the controllers cannot be read"
+      - "src/features/overlay/core/service.test.ts#a damaged settings file is said to be damaged and is not replaced"
+      - "src/features/overlay/main.test.ts#state, set, recent and the two events: off, on over the main screen, a press, off again"
+      - "src/features/overlay/main.test.ts#nothing is put on the screen by starting RigReady until the overlay was turned on once"
+      - "src/features/overlay/main.test.ts#left on, it is over the screen again after a start without the page being opened, and gone on quit"
+      - "tests/unit/paletteCommands.test.ts#\"Turn the overlay on\" puts it over the main screen and says so; \"off\" takes it away"
+      - "tests/unit/paletteCommands.test.ts#a window that Windows refuses is not reported as showing"
+      - "tests/unit/paletteCommands.test.ts#on a PC without a game it comes on, and says that presses are shown without what they do"
+      - "tests/e2e/overlay.e2e.ts#the overlay lists each press with what the game does on it, and lets it go again"
+      - "tests/e2e/overlay.e2e.ts#the overlay goes where it is put, stays there, and comes up again with RigReady"
+      - "tests/e2e/overlay.e2e.ts#on a PC with no game the overlay lists presses without what they do, and a damaged settings file is said to be damaged"
+      - "tests/e2e/overlay.e2e.ts#when the controllers cannot be read the overlay says so, on the page and from the palette"
+      - "artifacts/screens/overlay/01-off.png"
+      - "artifacts/screens/overlay/06-on.png"
+      - "artifacts/screens/overlay-placing/04-not-showing.png"
+      - "artifacts/screens/overlay-no-game/01-no-game.png"
+      - "artifacts/screens/overlay-no-game/02-on-from-the-palette.png"
+      - "artifacts/screens/overlay-no-game/04-damaged-settings.png"
+      - "artifacts/screens/overlay-not-read/01-controllers-not-read.png"
+      - "artifacts/screens/overlay-not-read/02-said-from-the-palette.png"
+
+  - id: OVERLAY-002
+    title: The overlay window is over the game and out of its way
+    job: fly
+    area: overlay
+    priority: p2
+    done_means:
+      - "Each part of the overlay is a window of its own with no frame and nothing painted behind what it shows, kept above other windows, not in the taskbar, that cannot be given the keyboard and lets the mouse through to what is under it. While nothing is pressed nothing is drawn (E2E for on top, never focused and nothing painted behind; Electron cannot be asked whether clicks go through, so that part is the rig check below)."
+      - "The page and the manual say where it cannot show: over a game in exclusive full screen it may not (set the game to borderless), and it does not show inside a VR headset (OVERLAY-007)."
+      - "Checked once on the owner's rig with a game running borderless on the main screen, recorded with a picture under artifacts/rig/OVERLAY-002/: the list shows over the cockpit; a click on it lands in the game; the game keeps the keyboard; presses made while the game is the window in use are listed; the game runs as smoothly as without it. The same is tried once with the game in exclusive full screen, and the page and the manual are changed if what happens is not what they say."
+    notes:
+      - "2026-11-12: built, and the window's facts read from Electron in the app (tests/e2e/overlay.e2e.ts, first test): one window, above the other windows, that cannot be given the keyboard and does not have it, with nothing painted behind the list and nothing in it while nothing is pressed; framed for placing it can take the mouse and the keyboard, and locked it cannot again (second test). Not done: the third criterion, the check on the owner's rig with a game running, has not been made, and nothing is under artifacts/rig/OVERLAY-002/. Not seen at all, and what that check is for: that a click on the overlay lands in what is under it (Electron cannot be asked); that it shows over a game in a window or borderless, and what happens in exclusive full screen (so far from Electron's documentation of window levels and from how topmost windows behave on Windows); that the controllers are read while a game is the window in use (so far from the input reader's code: DirectInput, background and non-exclusive); what it costs the game; and how the lines read over a cockpit. The window is ElectronOverlays.showPanel in src/platform/electron/index.ts: no frame, transparent, not focusable, not in the taskbar, setIgnoreMouseEvents except while it is being placed, always on top at Electron's 'screen-saver' level."
+    status: in_progress
+    evidence:
+      - "tests/unit/overlayPanels.test.ts#shows a panel on the screen asked for, at the place asked for, and answers where it is"
+      - "tests/unit/overlayPanels.test.ts#only a panel that is being placed can be dragged; its place is read back from where it was dropped"
+      - "tests/unit/overlayPanels.test.ts#hiding takes it away, and a panel that is not shown has no place"
+      - "tests/unit/overlayPanels.test.ts#a window Windows refuses is an error, and with no monitor on there is nowhere to show it"
+      - "src/features/overlay/core/service.test.ts#turned on, the recent presses are low in the middle of the main screen and let the mouse through"
+      - "src/features/overlay/core/service.test.ts#a window that is there is left alone, and one closed from outside is put back"
+      - "src/renderer/shell/routes.test.ts#sorts the routes into Play, Configure and windows of their own"
+      - "src/renderer/shell/routes.test.ts#is so for the address of a bare page, with or without the leading #"
+      - "docs/manual/play/overlay.md"
+      - "tests/e2e/overlay.e2e.ts#the overlay lists each press with what the game does on it, and lets it go again"
+      - "tests/e2e/overlay.e2e.ts#the overlay goes where it is put, stays there, and comes up again with RigReady"
+      - "artifacts/screens/overlay/04-presses-over-the-game.png"
+      - "artifacts/screens/overlay-placing/01-framed.png"
+
+  - id: OVERLAY-003
+    title: "Recent presses: each press with what the game does on it"
+    job: fly
+    area: overlay
+    priority: p2
+    done_means:
+      - "Each button or hat pressed on any game controller is listed at once: the action as the game names it for the aircraft or car in use, the control ('Button 5', 'Hat 1 up') and the controller, by the name the user gave it or a short form of the name it reports. The newest press is always shown, in the same spot. It works without a drawing of the device (E2E, scenario cheat-sheets-hornet: the stick's trigger, the throttle's speed brake switch, a button of the ICP)."
+      - "What is held when the overlay starts is how the rig rests, not a press. A switch or lever that goes through its positions is one line that changes, not a line for each position. The same control pressed again counts up ('×2') instead of adding a line. An axis is never a press. The virtual controller RigReady itself plugged in is not listed."
+      - "A control with more than one action shows the one that works on its own first and how many more there are. A press the game has nothing on is listed dimmed as 'Not bound', or left out when the user says so; when the bindings could not be read the line shows the control and the controller and does not claim that nothing is bound."
+      - "The page says which setup, game and aircraft or car the names are from, and how the aircraft was picked: the one the user chose for that setup, then one the setup names, then the only one the game has bindings for, otherwise a guess that is said to be a guess. The user can choose another. With no game whose bindings can be read, presses are shown without what they do and the page says why. It reads any game with a binding reader, a racing game too."
+    notes:
+      - "2026-11-12: done. Built and unit-tested, then seen in the overlay's own window in the app (tests/e2e/overlay.e2e.ts): on the recorded rig the stick's trigger, the throttle's speed brake switch, a button of the ICP and a switch of the R-VPC Panel, by the names the game has for the F/A-18C and, with another aircraft chosen on the page, for the UH-1H; on a PC with no game the control and the controller, with no claim that nothing is bound. The run led to one change: with 'presses the game has nothing on' turned off, a 'Not bound' line that is on the list goes at once instead of staying out its time. A racing game is proved by the unit test only: the list is drawn the same way, and the words are from that game's bindings. Known limits, in the manual where they matter to the user: the first press on a controller that has not reported anything since the overlay started is taken as rest; the same control pressed again after another one is a new line (the list is what happened, in order); bindings changed in the game are read again within about two minutes of a press, or when the page is opened; with no setup and the bindings of several games on the PC no game is guessed, so presses are shown without what they do."
+    status: done
+    evidence:
+      - "src/features/overlay/core/presses.test.ts#the first state of a controller is how it rests: a switch that is on is not a press"
+      - "src/features/overlay/core/presses.test.ts#a hat is a press of the direction it went to and a release of the one it left"
+      - "src/features/overlay/core/presses.test.ts#an axis is never a press, however far it travels"
+      - "src/features/overlay/core/feed.test.ts#the newest press is first"
+      - "src/features/overlay/core/feed.test.ts#pressing the same control again counts up and starts its time again, without a new line"
+      - "src/features/overlay/core/feed.test.ts#a lever passing five positions leaves one line, the position it stopped at"
+      - "src/features/overlay/core/feed.test.ts#two buttons pressed one after the other stay two lines"
+      - "src/features/overlay/core/service.test.ts#what is held when the overlay starts is how the controllers rest, not a press"
+      - "src/features/overlay/core/service.test.ts#shows what the press does in the game, the control and the controller"
+      - "src/features/overlay/core/service.test.ts#uses the name the user gave a controller"
+      - "src/features/overlay/core/service.test.ts#on the rig with named controllers: the setup, its aircraft, and what three controls show"
+      - "src/features/overlay/core/service.test.ts#what needs something held with it comes after what works on its own"
+      - "src/features/overlay/core/service.test.ts#a press the game has nothing on is shown as that, or left out when the user says so"
+      - "src/features/overlay/core/service.test.ts#the same control pressed again counts up instead of adding a line"
+      - "src/features/overlay/core/service.test.ts#a switch or lever going through its positions is one line that changes"
+      - "src/features/overlay/core/service.test.ts#the aircraft the setup in use names, until the user chooses another"
+      - "src/features/overlay/core/service.test.ts#another setup played while flying is picked up on a press: the words are never those of another game"
+      - "src/features/overlay/core/service.test.ts#a setup for a game whose bindings are not on this PC gives presses without words, and says why"
+      - "src/features/overlay/core/service.test.ts#a racing game: the one set of bindings it has, by the control a press is on"
+      - "src/features/overlay/core/service.test.ts#without a setup, and with the bindings of several games here, none is guessed"
+      - "src/features/overlay/core/service.test.ts#a binding changed in the game is read again after two minutes, on a press"
+      - "src/features/overlay/core/service.test.ts#the virtual controller RigReady itself plugged in is not shown: it repeats the real ones"
+      - "src/features/overlay/core/aircraft.test.ts#the one the user chose for this setup comes before everything else"
+      - "src/features/overlay/core/aircraft.test.ts#otherwise the first with bindings of the user’s own, and it says that this is a guess"
+      - "src/features/overlay/core/deviceName.test.ts#keeps what the controller is built on and drops what is mounted on it"
+      - "src/features/overlay/core/shown.test.ts#the action large, the control and the controller small"
+      - "src/features/overlay/core/shown.test.ts#with more than one action on the control: the first, what it needs held, and how many more"
+      - "src/features/overlay/core/shown.test.ts#when the bindings could not be read it does not claim that nothing is bound"
+      - "src/core/boundInputs.test.ts#finds a binding by the control it is on, whatever the game calls its input (the racing games)"
+      - "src/features/overlay/core/feed.test.ts#lines the caller wants gone go at once, and the others keep their order"
+      - "tests/e2e/overlay.e2e.ts#the overlay lists each press with what the game does on it, and lets it go again"
+      - "tests/e2e/overlay.e2e.ts#on a PC with no game the overlay lists presses without what they do, and a damaged settings file is said to be damaged"
+      - "artifacts/screens/overlay/03-another-aircraft.png"
+      - "artifacts/screens/overlay/04-presses-over-the-game.png"
+      - "artifacts/screens/overlay/05-preview.png"
+      - "artifacts/screens/overlay/08-options.png"
+      - "artifacts/screens/overlay-no-game/03-without-what-they-do.png"
+
+  - id: OVERLAY-004
+    title: Presses fade away, and the user sets how long they stay
+    job: fly
+    area: overlay
+    priority: p2
+    done_means:
+      - "A line is clear for the first part of its time and fades out over the rest; when its time is over it is gone, whether or not the control is still held. Each line goes at its own time. To begin with a press is shown for 5 seconds (E2E: the fading as the browser runs it, and the time a line really lived)."
+      - "'Shown for' sets the time from 1 to 30 seconds, 'Lines' the most presses shown at once from 1 to 10 (the oldest makes room, the newest is always there), 'Size' small, medium or large. Each applies at once to the overlay that is up, and the window is exactly as large as the most lines it may show. A longer time does not bring back a line that was gone."
+      - "Where Windows is set to show no animations a line does not fade: it stays clear and goes when its time is over."
+      - "The preview on the page is the same list at the size it has over the game, on a bright background, and shows what is pressed while the overlay is on."
+      - "While the overlay is off the preview shows two example lines, each marked 'Example' in the line itself, so that size and lines can be judged before it is turned on. They follow Size and Lines as they are set, are never among the presses and never in the window over the game, and are gone the moment the overlay is on (E2E, scenario cheat-sheets-hornet; and on generic-fresh, where they are two plain lines that name no hardware)."
+    notes:
+      - "2026-11-12: done. Built and unit-tested (when a line is over, how old it is, the limits, the size of the window), then measured in the app (tests/e2e/overlay.e2e.ts, first test): the fade as the browser runs it, a line that lived its five seconds and was gone, no fade where less motion is asked for, the time, the lines and the size applied to the window that was up, and the preview with the same lines. A still picture cannot show a fade: the test reads the animation. How readable the lines are over a bright cockpit has been worked out (the dark plates give the words at least 4.5 to 1 over white) and looked at over the preview's bright background, not over a game: that belongs to the rig check of OVERLAY-002."
+      - "2026-11-12, later, asked for by the owner: example lines in the preview while the overlay is off. What they are: buttons and hats (never an axis) that do something for the aircraft or car chosen, on a controller the bindings know; a controller that is attached before one that is not, what the user bound before what the game binds by itself, the controller with the most of the user's own bindings first, buttons before hats, then the game's order and the number of the button; the first two. On the recorded rig that is 'UFC I/P Pushbutton' and 'UFC Keyboard Pushbutton - 1' on the panel under the HUD; the first rule tried took the first controller of the game's list and gave the hat of a wheel base with 'View Down slow', which says little about an aircraft. With no bindings to go by they are 'Button 1' and 'Hat 1 up' on 'Your controller'. They are worded by the code that words a press (rowWords, pressActions), so an example reads as that press will. They are in overlay:state only while the overlay is off, the feed of presses never holds them, and the window over the game does not exist then and is never handed any. The mark is a light chip at the start of the small line, so the large words keep the room they have over the game. Examples do not fade. Seen in the app: tests/e2e/overlay.e2e.ts, first and third test."
+    status: done
+    evidence:
+      - "src/features/overlay/core/feed.test.ts#a press stays for its time and is gone after it, whether or not it is still held"
+      - "src/features/overlay/core/feed.test.ts#each line goes at its own time"
+      - "src/features/overlay/core/feed.test.ts#shows at most so many: the oldest makes room, the newest is always there"
+      - "src/features/overlay/core/feed.test.ts#new limits apply to what is shown already"
+      - "src/features/overlay/core/feed.test.ts#a longer time does not bring back a line whose time was over"
+      - "src/features/overlay/core/service.test.ts#each line goes when its time is up, and says how old it is until then"
+      - "src/features/overlay/core/service.test.ts#apply at once: fewer lines, a shorter time, another size of window"
+      - "src/features/overlay/core/service.test.ts#a longer time does not bring back a press whose time was over"
+      - "src/features/overlay/core/service.test.ts#options that do not fit are refused, and so is a part the overlay does not have"
+      - "src/features/overlay/core/shown.test.ts#sent again with the next press, a line keeps its moment: it does not fade twice as fast"
+      - "src/features/overlay/core/shown.test.ts#a line is over when its time is up, to the millisecond"
+      - "src/features/overlay/core/shown.test.ts#says how long until the first line is over, and nothing when there is none"
+      - "src/features/overlay/core/widgets.test.ts#are five seconds, five rows, medium, and unbound presses shown, until the user says otherwise"
+      - "src/features/overlay/core/widgets.test.ts#the window is exactly as big as the most rows it may show"
+      - "src/features/overlay/core/examples.test.ts#with no bindings to go by: a button and a hat as a press shows them there, and no hardware by name"
+      - "src/features/overlay/core/examples.test.ts#from the bindings: two buttons that do something, in the order of the buttons, as a press shows them"
+      - "src/features/overlay/core/examples.test.ts#what the user bound, on the controller with the most of it, before what the game binds by itself"
+      - "src/features/overlay/core/examples.test.ts#a controller that is attached before one that is not, and a hat when its buttons run out"
+      - "src/features/overlay/core/service.test.ts#two lines from the bindings in use, as a press of those buttons shows; they are no presses"
+      - "src/features/overlay/core/service.test.ts#a press of the first of them shows the same words once the overlay is on"
+      - "src/features/overlay/core/service.test.ts#turned on there are none, in what the page is told and in what a window is; turned off they are back"
+      - "src/features/overlay/core/service.test.ts#they name a controller as the user named it, and are those of the aircraft chosen"
+      - "src/features/overlay/core/service.test.ts#on a PC with no game: a button and a hat as a press shows them there, and no hardware by name"
+      - "tests/e2e/overlay.e2e.ts#the overlay lists each press with what the game does on it, and lets it go again"
+      - "tests/e2e/overlay.e2e.ts#on a PC with no game the overlay lists presses without what they do, and a damaged settings file is said to be damaged"
+      - "artifacts/screens/overlay/02-preview-off.png"
+      - "artifacts/screens/overlay/09-examples-follow-the-options.png"
+      - "artifacts/screens/overlay-no-game/05-plain-examples.png"
+      - "artifacts/screens/overlay/05-preview.png"
+      - "artifacts/screens/overlay/06-on.png"
+      - "artifacts/screens/overlay/07-large.png"
+
+  - id: OVERLAY-005
+    title: "Placing the overlay: which screen, and where on it"
+    job: configure
+    area: overlay
+    priority: p2
+    done_means:
+      - "'Screen' offers the monitors that are on, the main one first, and the overlay goes to the one chosen. 'Place' has nine spots (the corners, the edges, the middle) and the overlay goes to the one clicked (E2E)."
+      - "'Move it on screen' frames the overlay where it is; framed, it takes the mouse and can be dragged anywhere on any monitor. 'Lock here' in the frame or 'Lock it here' on the page keeps it where it was let go, read back from the window, and clicks go through it again. When the new place cannot be read the overlay is back where it was and the page says so."
+      - "The place belongs to the monitor by what it is, not by where it is on the desktop: after another monitor layout the overlay is on the same monitor at the same place. While that monitor is off the main screen stands in, the page says which one is away, and the overlay goes back when it is on again. The place is a share of the free room, so it is the same corner on a screen of another size and never off the screen."
+      - "The list hangs from the edge it is nearer to, so the newest press is always in the same spot: from the top in the upper half of the screen, from the bottom in the lower half, and set to the side it is on."
+      - "Checked once on the owner's rig: the frame dragged with the mouse to another monitor and locked with a click on 'Lock here'; after a switch of monitor layout and back the overlay is where it was put."
+    notes:
+      - "2026-11-12: built and unit-tested, and the first four criteria run in the app (tests/e2e/overlay.e2e.ts, second test): one of the nine places, the frame, the window moved and locked from the frame, the place kept across a restart of RigReady, another screen, that screen off with the main one standing in, no screen on at all, and the screen back. Not done: the last criterion. The test moves the window by a call and clicks 'Lock here' through the debugger, which is not a drag with a mouse over the drag region of a window that was just made to take the mouse, and its monitors are recorded ones; the check on the owner's rig (dragged to another monitor, locked there, a switch of monitor layout and back) has not been made. A change of monitor layout made while the Overlay page is closed is noticed on the first press that comes at least ten seconds after the last look, not at once."
+    status: in_progress
+    evidence:
+      - "src/core/overlayPlace.test.ts#a place is a share of the free room: corners, the middle, and a screen that does not start at zero"
+      - "src/core/overlayPlace.test.ts#never leaves the screen: a place outside 0..1 is the edge, and a panel too large is made to fit"
+      - "src/core/overlayPlace.test.ts#a box read and put back is on the same pixel, on a very wide screen too"
+      - "src/core/overlayPlace.test.ts#the same place lands in the same corner of a screen of another size"
+      - "src/features/overlay/core/place.test.ts#the page is offered the screens that are on: the main one first, then left to right"
+      - "src/features/overlay/core/place.test.ts#never placed: its own default place on the main screen"
+      - "src/features/overlay/core/place.test.ts#the screen is found again after the layout changed: by what it is, not where it is"
+      - "src/features/overlay/core/place.test.ts#its screen is off: the main screen stands in at the same place, and it says which is away"
+      - "src/features/overlay/core/place.test.ts#a screen that is off is not taken for its twin that is on"
+      - "src/features/overlay/core/service.test.ts#goes on the screen and to the place the user picks"
+      - "src/features/overlay/core/service.test.ts#a screen that is not on is refused"
+      - "src/features/overlay/core/service.test.ts#while its screen is off the main screen stands in, and it goes back when the screen is on again"
+      - "src/features/overlay/core/service.test.ts#screens rearranged while flying are noticed on a press, but not more often than every ten seconds"
+      - "src/features/overlay/core/service.test.ts#\"move it\": the window takes the mouse, is dragged, and locking keeps the place and the screen"
+      - "src/features/overlay/core/service.test.ts#placing by hand needs the overlay on, and ending what never started changes nothing"
+      - "src/features/overlay/core/service.test.ts#when the new place cannot be read the overlay is back where it was, and says so"
+      - "src/features/overlay/core/shown.test.ts#from the top in the upper half of the screen, from the bottom in the lower"
+      - "src/features/overlay/core/shown.test.ts#set to the side of the screen it is on"
+      - "src/features/overlay/core/shown.test.ts#nine places have a name; one that was dragged to has none"
+      - "tests/e2e/overlay.e2e.ts#the overlay goes where it is put, stays there, and comes up again with RigReady"
+      - "artifacts/screens/overlay-placing/01-framed.png"
+      - "artifacts/screens/overlay-placing/02-placing.png"
+      - "artifacts/screens/overlay-placing/03-screen-off.png"
+      - "artifacts/screens/overlay-placing/04-not-showing.png"
+
+  - id: OVERLAY-006
+    title: The overlay takes more widgets, each with its own place and options
+    job: platform
+    area: overlay
+    priority: p2
+    done_means:
+      - "A widget of the overlay is a kind in src/features/overlay/core/widgets.ts (its id, its words, where it sits until it is placed, its options with a default for each, the size of its window) and two components registered under the same id in renderer/widgets/index.ts: what is drawn over the game, and the controls for its options. With that it has a window of its own, a place per monitor, 'Move it on screen', stored options and its section on the page, without a change to the code that places windows or keeps settings."
+      - "Options that do not fit a widget are refused with what is wrong; stored options that do not fit (a file edited by hand) fall back to that widget's defaults; a widget id cannot be anything that would not do as part of an address or a key in the settings file."
+      - "docs/CONTRIBUTING-FEATURES.md says how a widget is added, and a second widget has been added that way and shown (the stick position or an axis readout, when the owner asks for one)."
+    notes:
+      - "2026-11-12: the seam is built and the first widget, the recent presses, goes through it, in the app as well (tests/e2e/overlay.e2e.ts: its window, its place, 'Move it on screen', its options and its section of the page). Proved by the tests below: what a kind is, its options and their defaults, what is refused. Not done: a second widget has never been run through the service or the page, which are tested with the one kind there is; the last criterion stays open until a second widget exists. The stick position and axis readouts the owner mentioned are not built, on his word that they are not needed yet, and are not requirements in this ledger yet."
+    status: in_progress
+    evidence:
+      - "src/features/overlay/core/widgets.test.ts#are found by id, and an id that is none is not"
+      - "src/features/overlay/core/widgets.test.ts#a new kind takes an id, words, a default place, options with defaults and a size"
+      - "src/features/overlay/core/widgets.test.ts#refuses an id that could not be part of an address or a file key"
+      - "src/features/overlay/core/widgets.test.ts#keeps what the user set and fills in what is missing"
+      - "src/features/overlay/core/widgets.test.ts#stored options that do not fit (a file edited by hand) are replaced by the defaults, whole"
+      - "src/features/overlay/core/widgets.test.ts#options the user is setting are checked, and what is wrong is said"
+      - "src/features/overlay/main.test.ts#options, place, move and aircraft do what the page asks, and refuse what does not fit"
+      - "docs/CONTRIBUTING-FEATURES.md"
+      - "tests/e2e/overlay.e2e.ts#the overlay lists each press with what the game does on it, and lets it go again"
+      - "tests/e2e/overlay.e2e.ts#the overlay goes where it is put, stays there, and comes up again with RigReady"
+
+  - id: OVERLAY-007
+    title: The overlay inside a VR headset
+    job: fly
+    area: overlay
+    priority: p3
+    done_means:
+      - "With a game running in a VR headset, the recent presses are shown inside the headset, where the user put them, readable without covering the instruments, and placing them is done from the Overlay page."
+      - "It works with the VR runtimes the supported sims are flown in (OpenXR and SteamVR at least), and what it costs in frame time on the owner's rig is measured and written down."
+      - "Until then the Overlay page and the manual say that the overlay does not show inside a VR headset."
+    notes:
+      - "2026-11-12: not built, by the owner's decision: 'We're going to ignore the VR part of that for now. We can leave that as an unsatisfied requirement.' The overlay of OVERLAY-001 to OVERLAY-006 is a window on a monitor, and a headset is not a monitor: a game in VR draws straight to the headset, so nothing of this overlay is seen in it. Showing something there takes an overlay layer of the VR runtime (an OpenXR API layer, or a SteamVR overlay), which is research first. The third criterion is met by the page ('It does not show inside a VR headset.') and by docs/manual/play/overlay.md; the first two are open."
+    status: todo
+    evidence: []
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
@@ -5973,7 +6256,8 @@ requirements:
     done_means:
       - "A profile maps any connected controller's axes, buttons and hat directions onto the left and right sticks, the triggers, the buttons and the d-pad of a virtual Xbox 360 controller or DualShock 4; each part is chosen by pressing or moving the control."
       - "Each axis has invert, deadzone, a response curve and a range (full output reached early, for a wheel's steering lock, with a helper from the wheel's rotation); a pedal or throttle onto a trigger has the same; one throttle axis can be split over LT and RT at a chosen point with its own deadzone; an axis can act as a button past half its travel."
-      - "The editor shows live what a game would get. Profiles belong to no game and are kept in RigReady's data folder; three starting points (flight stick for ACE COMBAT 8, HOTAS, wheel and pedals for driving games and console emulators) say what each part is for, map nothing, and are copied, never changed."
+      - "The editor shows live what a game would get. Profiles are kept in RigReady's data folder and work with any program that reads a gamepad; three starting points (a flight stick for Ace Combat 8, HOTAS, wheel and pedals for driving games and console emulators) say what each part is for, map nothing, and are copied, never changed."
+      - "While a part waits for its control, the page says to press or move it now and counts down the seconds that are left."
     status: done
     evidence:
       - "src/features/virtual-controller/core/mapping.test.ts#a deadzone gives nothing inside it and starts from zero at its edge, not with a jump"
@@ -5984,9 +6268,12 @@ requirements:
       - "src/features/virtual-controller/core/profile.test.ts#the starting points are valid, map nothing yet and say what each part is for"
       - "src/features/virtual-controller/core/profile.test.ts#stores the user own profiles, copies starting points, never changes or deletes one"
       - "src/features/virtual-controller/main.test.ts#detects the control the user moves, and sends the live view for an edited profile"
-      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat starting point, mapped by moving the stick, with live bars"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
       - "artifacts/screens/virtual-controller-editor/01-page.png"
-      - "artifacts/screens/virtual-controller-editor/02-editor.png"
+      - "artifacts/screens/virtual-controller-editor/02-listening.png"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+    notes:
+      - "2026-11-12: the owner's sitting found the copy's wording leaning to one game, no countdown while a part listens, and Save out of view. See VPAD-006 to VPAD-010 for what was added."
 
   - id: VPAD-003
     title: A setup starts the virtual controller and Stand down stops it
@@ -5996,13 +6283,13 @@ requirements:
     done_means:
       - "A step before launch 'Start a virtual controller' names a profile and may hide the real controllers from games with HidHide; the launch says which profile runs and what was hidden."
       - "Stand down stops a virtual controller a setup started and shows hidden controllers to games again; one started by hand (the page, the tray, the command palette) keeps running until stopped or RigReady quits. A step 'Stop the virtual controller' exists for Stand down lists too."
-      - "While one runs, every screen (the Play screen included) and the tray say so and offer Stop; the tray also starts a profile."
+      - "While one runs, every screen (the Play screen included) and the tray say so and offer Stop; the tray also starts a profile. The row of the running profile says it is running, and its Start is off."
     status: done
     evidence:
       - "src/features/virtual-controller/main.test.ts#a setup starts it before launch with the real controllers hidden, and Stand down stops it and shows them again"
       - "src/features/virtual-controller/main.test.ts#one started by hand stays at Stand down, and stops when RigReady quits"
       - "tests/unit/tray.test.ts#shows the virtual controller that runs, with Stop, and a Start for each profile"
-      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a setup starts it before launch with the controllers hidden, and Stand down stops it"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a setup starts it before launch with the controllers hidden, the running panel shows it live, and Stand down stops it"
       - "artifacts/screens/virtual-controller-launch/01-launched.png"
       - "artifacts/screens/virtual-controller-launch/02-running.png"
       - "artifacts/screens/virtual-controller-launch/03-stood-down.png"
@@ -6032,12 +6319,139 @@ requirements:
     priority: p2
     done_means:
       - "On the owner's rig, with ViGEmBus installed by the owner, the manual rig test plugs in an Xbox 360 controller that DirectInput lists, feeds it reports and unplugs it."
-      - "ACE COMBAT 8 (or an emulator) is played with a profile made in the editor: the stick, rudder and throttle drive the aircraft as mapped; with hiding on, the game does not also see the real stick; after Stand down HidHide's lists are as they were."
+      - "Ace Combat 8 (or an emulator) is played with a profile made in the editor: the stick, rudder and throttle drive the aircraft as mapped; with hiding on, the game does not also see the real stick; after Stand down HidHide's lists are as they were."
       - "A DualShock 4 profile is tried once in a program that reads one (DuckStation or PCSX2), the Y axes the right way up."
+      - "The Ace Combat 8 starting point as it is since 12 Nov 2026 (VPAD-010) is flown in the game: the throttle on RT, a button on LT, both held together for the high-G turn. Its notes for the game are checked against the game's own controls screen."
     status: in_progress
     evidence: []
     notes:
+      - "2026-11-12: at the owner's sitting the virtual Xbox 360 controller ran on the real driver, Windows listed it, and the owner flew Ace Combat 8 with a profile of eight parts made in the editor from the starting point as it was then. That is the owner's word in the sitting notes, with no rig test and no screenshot, so this stays in progress. Not tried: hiding the real controllers while a game runs, a DualShock 4 profile, and the starting point as it is now. Nobody has read the game's controls screen for the notes yet."
       - "2026-11-11: unverified on hardware. Everything above runs against the fake machine; the helper (python/pad_server.py) and ViGEmClient.dll have never driven the real driver. For the owner, with every game closed: (1) npm run setup:python (fetches ViGEmClient.dll, hash-checked); (2) cross-env RIGREADY_RIG_PAD=1 npx vitest run --config vitest.rig.config.ts tests/rig/virtualController.rig.test.ts, and open joy.cpl meanwhile to see 'Controller (XBOX 360 For Windows)' come and go; (3) in the app, copy the Ace Combat starting point, map the stick, rudder and throttle, Start, and check the axes in joy.cpl, then in the game offline; (4) the same with 'Hide the real controllers' on, then Stop, and check HidHide's window shows the lists as before. Add the rig test id and screenshots to evidence and set done."
+
+  - id: VPAD-006
+    title: Virtual controller profiles are told apart, and a delete that breaks a setup warns first
+    job: configure
+    area: virtual-controller
+    priority: p1
+    done_means:
+      - "A new or copied profile never gets a name another profile has, capitals and spacing aside: a copy is numbered ('My HOTAS 2'), two copies asked for at once get two names, Make a copy pressed twice makes one copy, and a rename to a taken name is refused with the reason, in the editor and again where the file is written."
+      - "Profiles that already share a name still load and can be edited. Each row shows the profile's id and says that another profile has the name; the tray menu and the command palette add the id to such a name."
+      - "Each row of the user's profiles names the setups that start the profile (a step before or after launch or at Stand down, or the fix of a check), or says that no setup uses it. The feature reads the setups from the setup store on its own context, not from the setups feature. When a setup file cannot be read, the page says so."
+      - "The delete question shows the profile's name and id, names every setup that uses it and says what breaks. Delete stays off until the user ticks that they know, and the delete is refused where it happens without that yes."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/names.test.ts#two names are one name when only capitals or spacing differ"
+      - "src/features/virtual-controller/core/names.test.ts#keeps a free name and numbers a taken one"
+      - "src/features/virtual-controller/core/names.test.ts#adds the id only to profiles that share a name"
+      - "src/features/virtual-controller/core/profile.test.ts#never gives a new or renamed profile a name another profile has"
+      - "src/features/virtual-controller/core/profile.test.ts#two copies asked for at once get two names and two ids"
+      - "src/features/virtual-controller/core/profile.test.ts#profiles that already share a name still load, in a steady order, and can be edited"
+      - "src/features/virtual-controller/core/usedBy.test.ts#finds a start step before launch, after launch, at Stand down and as the fix of a check"
+      - "src/features/virtual-controller/core/usedBy.test.ts#names a setup once however many of its steps start the profile"
+      - "src/features/virtual-controller/main.test.ts#says which setups start each profile, and which profiles share a name"
+      - "src/features/virtual-controller/main.test.ts#does not delete a profile a setup starts until it is told to all the same"
+      - "src/features/virtual-controller/main.test.ts#when a setup file cannot be read it says so, and a delete then needs the same yes"
+      - "src/features/virtual-controller/main.test.ts#names a copy for what it was copied from, and never as another profile is named"
+      - "src/features/profiles/core/profiles.test.ts#a copy asked for under a name in use gets its own name, and the list needs no id"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: two profiles of one name are told apart, and deleting the one a setup uses warns first"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-same-names/01-rows.png"
+      - "artifacts/screens/virtual-controller-same-names/02-editor-same-name.png"
+      - "artifacts/screens/virtual-controller-same-names/03-delete-used.png"
+      - "artifacts/screens/virtual-controller-same-names/04-delete-unused.png"
+      - "artifacts/screens/virtual-controller-same-names/05-delete-ticked.png"
+      - "artifacts/screens/virtual-controller-editor/04-name-taken.png"
+      - "artifacts/screens/virtual-controller-editor/09-copies.png"
+    notes:
+      - "2026-11-12: at the owner's sitting two profiles had one name, the rows looked the same, the question only gave the name, and the profile a setup depends on was deleted. A deleted profile still cannot be brought back from inside the app; the warning is what stands in the way."
+
+  - id: VPAD-007
+    title: Save stays in view in the virtual controller editor, and unsaved changes are said
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "In the profile editor, Save and Back are in a bar on the bottom edge of the window that stays in view however far the page is scrolled, at the usual window size and in a window wider than the page. The bar does not lie over the menu beside the page."
+      - "The bar says 'Unsaved changes' when what is on screen differs from what was saved and 'No unsaved changes' when not, what the last save did, and why Save is off when it is. Leaving the editor with unsaved changes, by Back or by the menu, asks first."
+      - "The bar is a shared component (src/renderer/components/SaveBar.vue, listed in docs/CONTRIBUTING-FEATURES.md) that any page with a Save button can use."
+    status: done
+    evidence:
+      - test: "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+      - "artifacts/screens/virtual-controller-editor/04-name-taken.png"
+      - "artifacts/screens/virtual-controller-editor/05-leave-question.png"
+      - "artifacts/screens/virtual-controller-editor/06-scrolled-save-in-view.png"
+      - "artifacts/screens/virtual-controller-editor/07-saved.png"
+      - "artifacts/screens/virtual-controller-editor/10-wide-window.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. Only the virtual controller's editor uses the bar so far. The other pages with a Save button are not changed here; the setup editor has a footer of its own that can move to this bar."
+
+  - id: VPAD-008
+    title: A live picture of the virtual controller, in the running panel and in the editor
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "The running panel on the Virtual controller page draws the virtual controller as the game is being sent it: two sticks that move, two triggers that fill and the buttons, lit while they are down, with the same in words beside it."
+      - "The editor shows the same picture for the profile as it is on screen, before it is saved."
+      - "The picture is drawn from plain shapes and is the picture of no real product. Nothing is said by a lit colour alone, and a screen reader gets the words."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/padView.test.ts#no report yet reads as a controller at rest"
+      - "src/features/virtual-controller/core/padView.test.ts#says where the sticks stand, how far the triggers are pressed and what is down"
+      - "src/features/virtual-controller/core/padView.test.ts#uses the names of a DualShock 4 when the game sees one"
+      - "src/features/virtual-controller/main.test.ts#sends the live view of the running virtual controller: what the game is being sent"
+      - "src/features/virtual-controller/main.test.ts#detects the control the user moves, and sends the live view for an edited profile"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a setup starts it before launch with the controllers hidden, the running panel shows it live, and Stand down stops it"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-launch/02-running.png"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+    notes:
+      - "2026-11-12: the owner's finding 39. The picture has been seen on the fake machine only; on the real driver it shows what RigReady sends, which VPAD-005 is to compare with what a game receives."
+
+  - id: VPAD-009
+    title: What a part does in one game is kept apart from its plain description
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "A part's plain description fits any game. What the part does in one game is a note of its own, shown as 'In <game>: ...', and only a starting point named for that game carries such notes: HOTAS to gamepad and the wheel starting point name no game."
+      - "A copy of a starting point for one game keeps the game in its name and on its row. The editor removes all the notes in one press and leaves the mapping as it is."
+      - "A copy made from the earlier Ace Combat 8 starting point shows its old descriptions as notes for that game, so they can be removed too."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/gameNotes.test.ts#says which game a note is about"
+      - "src/features/virtual-controller/core/gameNotes.test.ts#removes the game and its notes and keeps everything else"
+      - "src/features/virtual-controller/core/gameNotes.test.ts#turns the earlier Ace Combat 8 hints of a copy into notes for that game"
+      - "src/features/virtual-controller/core/gameNotes.test.ts#leaves any other profile as it is"
+      - "src/features/virtual-controller/core/profile.test.ts#only the starting point named for a game carries notes for a game"
+      - "src/features/virtual-controller/core/profile.test.ts#names a copy for what it was copied from"
+      - "src/features/virtual-controller/core/profile.test.ts#a copy of the earlier Ace Combat 8 starting point shows its notes as notes for that game"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-editor/01-page.png"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+      - "artifacts/screens/virtual-controller-editor/08-notes-removed.png"
+    notes:
+      - "2026-11-12: the owner's finding 37."
+
+  - id: VPAD-010
+    title: The Ace Combat 8 starting point can hold both triggers at once
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "The Ace Combat 8 starting point has 'One throttle axis on both triggers' off: the throttle drives RT alone and a button (the speed brake switch, say) drives LT, so both can be held together for the game's high-G turn. The editor says when to turn the switch off."
+      - "Its notes for the game say only what players' guides agree on, and claim nothing for A, B, X and Y; its description says that the guides do not agree there and sends the user to the game's controls screen."
+      - "The manual page for the game says which flight control setting is meant (Expert for a stick) and how the high-G turn is flown."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/profile.test.ts#the starting points are valid, map nothing yet and say what each part is for"
+      - "src/features/virtual-controller/core/profile.test.ts#only the starting point named for a game carries notes for a game"
+      - "src/features/virtual-controller/core/mapping.test.ts#triggers from their own pedals, or from a button, when the throttle is not split"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+    notes:
+      - "2026-11-12: the owner's findings 36 and 40. Done here is what the app offers. Whether the game takes it that way is not known: nobody has flown this layout or read the game's controls screen, and that is kept open in VPAD-005."
 
   # ---------------------------------------------------------------------------
   # STREAM DECK

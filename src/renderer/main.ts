@@ -6,7 +6,9 @@ import { createApp } from 'vue';
 import { createVuetify } from 'vuetify';
 import { keepNaming } from './a11y';
 import App from './App.vue';
+import BareWindow from './layouts/BareWindow.vue';
 import { router } from './router';
+import { opensBare } from './shell/routes';
 
 /** Restrained dark theme. Status colours are reserved for status. */
 const vuetify = createVuetify({
@@ -47,5 +49,17 @@ const vuetify = createVuetify({
   },
 });
 
-createApp(App).use(createPinia()).use(router).use(vuetify).mount('#app');
-keepNaming(document);
+/**
+ * A window opened on a bare page (an overlay over a game) gets the page alone: no header, no
+ * navigation, and nothing painted behind it (html.rr-bare in styles.css). Which it is never
+ * changes while the window lives, so it is decided once, here.
+ */
+const bare = opensBare(window.location.hash, (path) => router.resolve(path));
+if (bare) document.documentElement.classList.add('rr-bare');
+
+createApp(bare ? BareWindow : App)
+  .use(createPinia())
+  .use(router)
+  .use(vuetify)
+  .mount('#app');
+if (!bare) keepNaming(document);

@@ -62,8 +62,10 @@ const current = computed(() => currentEntry(entries, route.path));
   min-height: calc(100vh - 56px);
 }
 /*
- * Five groups, about eighteen entries: sized so all of it is visible at the default window
- * height (tests/e2e/tour.e2e.ts checks that). A smaller window scrolls, with a thin bar.
+ * Five groups, twenty entries: sized so all of it is visible at the default window height
+ * (tests/e2e/tour.e2e.ts checks that). The page is 821 high there, which leaves 765 for
+ * this; twenty rows of 28 with five headings and what is between them take 739, so it is
+ * full: one more entry does not fit. A smaller window scrolls, with a thin bar.
  */
 .configure-nav {
   width: 208px;
@@ -94,7 +96,7 @@ const current = computed(() => currentEntry(entries, route.path));
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 10px;
+  padding: 4px 10px;
   border-radius: 7px;
   color: var(--rr-muted);
   text-decoration: none;
@@ -117,8 +119,8 @@ const current = computed(() => currentEntry(entries, route.path));
   content: '';
   position: absolute;
   left: -10px;
-  top: 7px;
-  bottom: 7px;
+  top: 6px;
+  bottom: 6px;
   width: 2px;
   border-radius: 0 2px 2px 0;
   background: var(--rr-kind, var(--rr-accent));

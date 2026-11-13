@@ -11,7 +11,7 @@ import {
   DeviceParamsSchema,
   matchesDevice,
 } from './core/deviceCheck';
-import { boundInputsOf, type BindingSource } from './core/bound';
+import { boundInputsOf, type BindingSource } from '../../core/boundInputs';
 import { controllersSignature } from './core/controllers';
 import { analyzeHealth, healthText, type HealthReport, type Sample } from './core/health';
 import { hidHideCached } from '../../core/hidhide';
