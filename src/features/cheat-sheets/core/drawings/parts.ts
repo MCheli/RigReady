@@ -62,6 +62,9 @@ export const btn = (button: number, tag?: string): DrawnInput => ({
   ...(tag ? { tag } : {}),
 });
 
+/** An input marked as where its control rests: held with no hand on it (`rest` in silhouette.ts). */
+export const resting = (input: DrawnInput): DrawnInput => ({ ...input, rest: true });
+
 /** One axis of a control. */
 export const axis = (name: string, tag?: string): DrawnInput => ({
   id: `axis:${name}`,
