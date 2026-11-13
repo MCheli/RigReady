@@ -54,6 +54,12 @@ The key is encrypted with Windows' own data protection (DPAPI, through Electron'
 
 While RigReady is in the tray, which plug and unplug events it tells you about: **Game controllers** (sticks, throttles, pedals, panels, wheels, and anything a setup needs), **Only what the current setup needs**, **Every USB device**, or **Off**. The same choice is on the Devices page; see [devices](../hardware/devices.md).
 
+## Apps offered in new setups
+
+The programs you asked RigReady to offer in every new setup, with **Always offer this app** on [New setup from this rig](../setups/capture.md#apps-rigready-does-not-know). Each shows the path it ran from when you added it. **Shown as** is the name a new setup gives it; **Close at Stand down** (off at first) makes [Stand down](../play/stand-down.md) close it again; **Stop offering** takes it off the list. Setups you made already keep their checks.
+
+The list is the file `processes/known.json` in the [data folder](index.md), and it can be edited by hand. RigReady reads it again every time and leaves out, under **Not used** with the reason, any entry that names RigReady itself, a program of Windows (Explorer, the Command Prompt, PowerShell and the like) or one in the Windows folder, a path that is not on a drive of this PC, or a program it offers already. **Remove from the list** takes such an entry out. A list that is not valid JSON is never overwritten: the page says so, and adding to it is refused until the file is fixed or removed.
+
 ## Updates
 
 **Check for updates automatically** (on by default) and the **Channel**, Stable or Beta, with a status line and **Check now** or **Restart to install**. All of it is explained on [updates](updates.md).

@@ -118,4 +118,19 @@ A field that fails the type's own rules (a `vendorId` that is not four hex digit
 
 ## Files from RigReady 1
 
-RigReady 1 kept its setups in the same folder in another format (a `checklistItems` list and no `schemaVersion`). This version does not read them and does not count them as broken: the Setups page lists them apart under **From RigReady 1** with their name, with **Show in Explorer** and **Delete**. Create the setup again with **New setup from this rig** ([Creating a setup from the rig](capture.md)); the old file stays where it is until you delete it.
+RigReady 1 kept its setups in the same folder in another format (a `checklistItems` list and no `schemaVersion`). This version does not read them as they are and does not count them as broken: the Setups page lists them apart under **From RigReady 1**, each with its name and file, and says what RigReady can make of it.
+
+**Bring it over…** is offered when every part RigReady brings has an exact match in this version. It shows the new setup first: its name and game, each check and what it becomes, what Launch starts, and what is not brought over and why. **Bring it over** then makes a new setup file, the way **New setup from this rig** does; the old file is not changed, and the line says "Brought over as the setup …" with a link to it.
+
+| RigReady 1 | Becomes |
+|---|---|
+| An app is running, with "start the program" or "tell me" as its fix | "App running", with "Start the app" (the same program and arguments) or "Show instructions" |
+| A device by vendor and product number | "Device connected", by the same numbers |
+| A device known only by its name | "Device connected", by the numbers of the one connected device of that name. With none or several connected, RigReady does not guess: it says so, and you connect it and look again |
+| A config file, with or without a pattern | "File exists", or "File content" with the same regular expression |
+| A monitor layout, a script check, or "restore a file" as a fix | Not brought over: RigReady 1 kept its monitor layouts in a form this version cannot match to your monitors, it never ran script checks, and this version puts back only copies it kept itself |
+| A launch program | The same program and arguments. Without one, the game as RigReady finds it on this PC. Scripts around the launch and files kept for backup are named, not brought over |
+
+When nothing in the file has a match, or something must change first, the line says plainly that RigReady cannot bring the setup over and why; create it again with **New setup from this rig** ([Creating a setup from the rig](capture.md)). **Open the folder** shows the file in Explorer either way. The old file stays where it is until you delete it.
+
+![A setup from RigReady 1, before it is brought over](../../../artifacts/screens/profiles-version-one/02-bring-over.png)

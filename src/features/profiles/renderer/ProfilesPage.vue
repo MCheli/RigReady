@@ -6,6 +6,7 @@ import ManualLink from '../../../renderer/components/ManualLink.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { profilesContract, type ProfileOverview } from '../contract';
+import EarlierSetups from './EarlierSetups.vue';
 
 const api = useClient(profilesContract);
 const router = useRouter();
@@ -33,8 +34,6 @@ function describe(entry: ProfileOverview['profiles'][number]): string {
   const checks = `${p.checks.length} ${p.checks.length === 1 ? 'check' : 'checks'}`;
   return [entry.gameName, checks, launch].filter(Boolean).join(' · ');
 }
-
-const fileName = (file: string): string => file.split(/[\\/]/).pop() ?? file;
 
 function used(iso: string | undefined): string {
   if (!iso) return 'Not used yet';
@@ -247,41 +246,13 @@ onBeforeUnmount(() => off?.());
     </div>
 
     <!-- What RigReady 1 left in the folder: not read, not broken, and not in anybody's way. -->
-    <section
-      v-if="overview && overview.earlier.length > 0"
-      class="profiles-earlier"
-      data-testid="profiles-earlier"
-      aria-labelledby="profiles-earlier-title"
-    >
-      <h2 id="profiles-earlier-title" class="rr-section-title">From RigReady 1</h2>
-      <p class="profiles-earlier-note" data-testid="profiles-earlier-note">
-        This version starts from scratch and does not read setups made by RigReady 1. Create them
-        again with New setup from this rig. The old files stay where they are until you delete them.
-      </p>
-      <div class="rr-panel">
-        <div
-          v-for="old in overview.earlier"
-          :key="old.id"
-          class="rr-row"
-          data-testid="profile-earlier"
-          :data-id="old.id"
-        >
-          <v-icon icon="mdi-history" class="rr-muted" />
-          <div class="rr-row-main">
-            <div class="rr-row-title">{{ old.name ?? fileName(old.file) }}</div>
-            <div class="rr-row-sub">{{ fileName(old.file) }} · made by RigReady 1</div>
-          </div>
-          <v-btn variant="text" @click="openFile(old.id, 'showFile')">Show in Explorer</v-btn>
-          <v-btn
-            variant="text"
-            color="error"
-            data-testid="profile-earlier-delete"
-            @click="deleting = { id: old.id, name: old.name ?? old.id }"
-            >Delete</v-btn
-          >
-        </div>
-      </div>
-    </section>
+    <EarlierSetups
+      v-if="overview"
+      :earlier="overview.earlier"
+      @delete="deleting = $event"
+      @done="(text) => ((message = text), load())"
+      @failed="(text) => (error = text)"
+    />
 
     <v-dialog
       :model-value="deleting !== undefined"
@@ -323,15 +294,6 @@ onBeforeUnmount(() => off?.());
 .profiles-detail {
   margin: 6px 0 0;
   white-space: pre-wrap;
-  color: var(--rr-muted);
-}
-.profiles-earlier {
-  margin-top: 28px;
-}
-.profiles-earlier-note {
-  max-width: 72ch;
-  margin: 0 0 12px;
-  font-size: 13px;
   color: var(--rr-muted);
 }
 </style>
