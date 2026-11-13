@@ -26,7 +26,7 @@ A small Python program that ships inside RigReady reads live controller input th
 
 ## What it closes
 
-**Stand down** asks each helper app to close the way its window's close button would, and waits up to ten seconds. It does not force a program to quit unless the setup says it may; a program that is still running is reported, not killed. Closing TrackIR at stand down, when you switch that on, stops it after the wait if it has not closed by then. A restore that would write files a running game or tool owns stops and says so, and closes the program only when you let it.
+**Stand down** asks each helper app to close the way its window's close button would, and waits up to ten seconds. It does not force a program to quit unless the setup says it may; a program that is still running is reported, not killed. When the game closes, Stand down starts by itself after a countdown you can cancel, unless the setup switches that off. Closing TrackIR at stand down, when you switch that on, stops it after the wait if it has not closed by then. A restore that would write files a running game or tool owns stops and says so, and closes the program only when you let it.
 
 ## What it reads from Windows
 

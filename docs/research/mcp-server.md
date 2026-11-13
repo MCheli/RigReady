@@ -84,8 +84,8 @@ Task-level tools (registered by the mcp feature on `ctx.mcp`; another feature ca
 | `setup_create_from_rig` | change | Captures the rig as it is and saves a setup |
 | `device_find_by_press` | read | Waits for a button press and names the device |
 | `manual_search` | read | Finds manual pages by words, each with its rigready.io address |
-| `manual_read` | read | One manual page in full, the same text as its rigready://docs resource (for the built-in assistant, which has tools but no resources) |
-| `rigready_channels` | read | The reference of every channel, by feature, with JSON Schemas |
+| `manual_read` | read | One manual page in full, the same text as its rigready://docs resource (for the built-in assistant, which has tools but no resources), or one section of it by heading |
+| `rigready_channels` | read | The reference of every channel, shortest first: the features, one feature in a line per channel, one channel with its JSON Schemas |
 | `rigready_call` | the channel's tier | Calls one channel by name through the same gate |
 
 Bindings, monitor layouts, backups, diagnostics, Stream Deck, TrackIR and the racing games are reached through their channels (for example `dcs-bindings:plan` then `dcs-bindings:apply`, `displays:apply`, `backup:create`, `diagnostics:log`), each with the tier and description its contract gives. `npm test -- catalogue` holds every channel to: exactly one entry, a sound input schema, a description, a tier. At the time of writing there are 273 channels: 120 read, 100 change, 2 launch (fly:launch and games:launch), 51 off.
@@ -113,7 +113,7 @@ Every refusal is a tool result with `isError: true` and text `code: message deta
 
 ## The built-in assistant (ASSIST-001 to ASSIST-004)
 
-The assistant inside the app uses the same catalogue and the same gate. `McpService.toolHost()` is handed to `ctx.mcp.provideHost()` at setup; the ai-assist feature calls `ctx.mcp.host()` for the guided surface's tools and calls each through `planToolCall` (`core/dispatch.ts`, shared with `server/build.ts`) and `Gate.call`, with the caller "Built-in assistant". It works whether or not the server listens. The gate runs every call's work under `runAsAssistant` (`src/core/assistantScripts.ts`), so a script an assistant wrote is refused while any assistant's call is being carried out; only the window runs one, after asking. `programs_find`, `setup_propose` and `script_draft` are task-level tools of the ai-assist feature, so MCP clients have them too; the last two only make drafts, which the panel shows and only the user's Save turns into files.
+The assistant inside the app uses the same catalogue and the same gate. `McpService.toolHost()` is handed to `ctx.mcp.provideHost()` at setup; the ai-assist feature calls `ctx.mcp.host()` for the guided surface's tools and calls each through `planToolCall` (`core/dispatch.ts`, shared with `server/build.ts`) and `Gate.call`, with the caller "Built-in assistant". It works whether or not the server listens. The gate runs every call's work under `runAsAssistant` (`src/core/assistantScripts.ts`), so a script an assistant wrote is refused while any assistant's call is being carried out; only the window runs one, after asking. `programs_find`, `setup_read`, `setup_types`, `setup_propose` and `script_draft` are task-level tools of the ai-assist feature, so MCP clients have them too; `setup_read` and `setup_types` only read (one setup in a line per item; the check and fix types, with one type's schema on request), and the last two only make drafts, which the panel shows and only the user's Save turns into files.
 
 ## Not built yet
 

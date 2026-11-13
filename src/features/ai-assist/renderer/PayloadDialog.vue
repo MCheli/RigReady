@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { estimated, monthWarning, NOT_A_BILL } from './estimateText';
 import { useAiStore } from './store';
 
 /**
@@ -19,6 +20,11 @@ const KIND: Record<string, string> = {
   draft: 'Draft a guide',
 };
 const n = (v: number): string => v.toLocaleString('en-US');
+/** RigReady's estimate of reading the request, with the prices behind it; empty without prices. */
+const reading = computed(() =>
+  request.value ? estimated(request.value.approxCost, request.value.prices, 'to read') : ''
+);
+const monthNote = computed(() => monthWarning(request.value?.month ?? null));
 
 /** What the entries of each streamed answer are called. */
 const ITEMS: Record<string, [string, string]> = {
@@ -90,10 +96,13 @@ function close(): void {
           using {{ request.model }}. About {{ n(request.approxTokens) }} tokens ({{
             n(request.chars)
           }}
-          characters)<template v-if="request.approxCost !== null"
-            >, roughly ${{ request.approxCost.toFixed(request.approxCost < 0.01 ? 4 : 2) }} to read
-            before any answer</template
-          >.
+          characters)<template v-if="reading"
+            >, {{ reading }}, before any answer.
+            <span data-testid="ai-payload-estimate">{{ NOT_A_BILL }}</span></template
+          ><template v-else>.</template>
+        </p>
+        <p v-if="monthNote" class="pl-lead rr-warn" data-testid="ai-payload-month">
+          {{ monthNote }}
         </p>
         <p v-if="request.retriesOnce" class="pl-lead" data-testid="ai-payload-retry">
           This service is asked for JSON in the text rather than held to a schema. If the answer

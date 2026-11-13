@@ -25,7 +25,10 @@ export interface ModelInfo {
   cacheRead: number;
 }
 
-/** The models offered in the settings; the first is the default. Prices as published in 2026. */
+/**
+ * The models offered in the settings; the first is the default. Prices as published in
+ * November 2026: when one changes, change PRICES_RECORDED in model.ts with it.
+ */
 export const MODELS: ModelInfo[] = [
   { id: 'claude-opus-5-5', name: 'Claude Opus 5.5', input: 4, output: 20, cacheRead: 0.2 },
   { id: 'claude-sonnet-5-5', name: 'Claude Sonnet 5.5', input: 2, output: 10, cacheRead: 0.2 },
@@ -137,6 +140,11 @@ const ErrorSchema = z.object({
   error: z.object({ type: z.string().optional(), message: z.string().optional() }),
 });
 
+/**
+ * `cost` is worked out at the built-in prices of this module alone. What the app shows and
+ * counts comes from the provider object (`ChatProvider.cost`), which uses the user's own
+ * prices when there are any: read that, not this.
+ */
 export interface MessageAnswer {
   text: string;
   model: string;
@@ -235,6 +243,7 @@ async function sendRaw(
     headers: headers(key, 'fallbacks' in body),
     body: JSON.stringify(body),
     timeoutMs,
+    noRedirects: true,
   });
   if (!response.ok) {
     return err(
@@ -544,6 +553,7 @@ async function streamRaw(
       body: JSON.stringify(body),
       idleTimeoutMs: idleMs,
       timeoutMs: options.timeoutMs ?? STREAM_TOTAL_MS,
+      noRedirects: true,
       signal: controller.signal,
     },
     (chunk) => {
@@ -622,6 +632,7 @@ export async function testKey(http: Http, key: string, model: string): Promise<R
     url: `${API_ROOT}/models/${encodeURIComponent(model)}`,
     headers: headers(key, false),
     timeoutMs: 20_000,
+    noRedirects: true,
   });
   if (!response.ok) {
     return err('ai.network', 'Could not reach the Anthropic API. Check the internet connection.');

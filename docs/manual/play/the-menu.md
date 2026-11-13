@@ -1,10 +1,10 @@
 ---
 title: The Play menu
-description: "The menu at the top right of the Play screen: hide after Launch, stand down when the game closes, the ready tone, the editor, History and Compact view."
+description: "The menu at the top right of the Play screen: hide after Launch, the ready tone, the editor, History and Compact view."
 order: 60
 ---
 
-The ⋮ button at the top right of the Play screen's panel holds the few settings that belong to the Play screen, and two more views. The three settings are ticks: choosing one changes it and leaves the menu open, so you see the tick change.
+The ⋮ button at the top right of the Play screen's panel holds the few settings that belong to the Play screen, and two more views. The two settings are ticks: choosing one changes it and leaves the menu open, so you see the tick change.
 
 ![The ready tone in the menu](../../../artifacts/screens/fly-tone/01-the-setting.png)
 
@@ -15,10 +15,6 @@ Opens the setup in use in the setup editor ([The setup editor](../setups/editor.
 ## Hide RigReady after Launch
 
 On by default. After a successful launch the window goes to the [tray](../one-click/tray.md), out of the way of the game. Off: the window stays where it is. Without a tray icon the window is minimised instead.
-
-## Stand down when the game closes
-
-Off by default. On: when the game closes, Stand down runs by itself, without asking. See [Stand down](stand-down.md).
 
 ## Ready tone
 
@@ -31,3 +27,7 @@ Every session RigReady recorded, with totals. See [Sessions and history](session
 ## Compact view
 
 Opens the small window that stays on top. See [Compact view](compact-view.md).
+
+## Not in this menu
+
+Standing down when the game closes is set for each setup, in the setup editor under **When the game closes**. It is on unless the setup switches it off. See [Stand down](stand-down.md#stand-down-when-the-game-closes).

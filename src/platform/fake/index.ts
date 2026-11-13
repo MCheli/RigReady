@@ -196,11 +196,19 @@ export class FakeProcessProvider implements ProcessProvider {
     if (index < 0) return err('process.stop', `Could not open process ${pid} to close it.`);
     const name = this.state.processes[index]!.name;
     this.closed.push({ pid, name, options });
-    if (this.stubborn.has(name.toLowerCase())) {
+    // The failProcessClose mutation: it stays open, and says why the way Windows would.
+    const why = this.state.faults?.closeFails?.[name.toLowerCase()];
+    if (why === 'refused' && options.force) {
+      return err('process.stop', `Could not open process ${pid} to close it.`);
+    }
+    if (why !== undefined || this.stubborn.has(name.toLowerCase())) {
       if (!options.force) {
         return err(
           'process.stillRunning',
-          `Process ${pid} did not close within ${Math.round((options.waitMs ?? 10_000) / 1000)} s.`
+          why === 'noWindow'
+            ? `Process ${pid} has no window to close and is still running.`
+            : `Process ${pid} did not close within ${Math.round((options.waitMs ?? 10_000) / 1000)} s.`,
+          why
         );
       }
       this.state.processes.splice(index, 1);
