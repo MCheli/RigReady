@@ -485,6 +485,56 @@ test('stand down on close: the notice can be moved to the top bar, where it cove
   await shot('cancelled-from-the-top-bar');
 });
 
+test('stand down on close: on a page with the Save bar along the bottom, the notice stands above the bar and Save and Back can be pressed', async ({
+  rig,
+}) => {
+  test.setTimeout(120_000);
+  let run = await rig.launch('fly-game-running', 'fly-stand-down-save-bar');
+  await expect(run.page.getByTestId('fly-status-title')).toHaveText('Ready');
+  await countdownByHand(run, 300);
+  run = await inSession(run);
+  const { page, shot } = run;
+  await closeGame(run);
+  const notice = page.getByTestId('stand-down-notice');
+  await expect(notice).toHaveAttribute('data-state', 'counting');
+  const bottomOfNotice = async (): Promise<number> => {
+    const box = (await notice.boundingBox())!;
+    return Math.round(box.y + box.height);
+  };
+  const height = await page.evaluate(
+    () => (globalThis as unknown as { innerHeight: number }).innerHeight
+  );
+  // On a page without the bar it is 20 px above the bottom edge of the window.
+  await expect.poll(bottomOfNotice).toBe(height - 20);
+
+  // The editor of a virtual controller has the shared Save bar, with Back and Save at the
+  // corner where the notice is. The notice is not put away here: it moves up by itself.
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-virtual-controller').click();
+  await page
+    .locator('[data-testid="vc-builtin"][data-id="starting-hotas"]')
+    .getByTestId('vc-copy')
+    .click();
+  await expect(page.getByTestId('vc-editor')).toBeVisible();
+  const bar = page.getByTestId('save-bar');
+  await expect(bar).toBeInViewport({ ratio: 1 });
+  await expect(notice).toHaveAttribute('data-state', 'counting');
+  const topOfBar = async (): Promise<number> => Math.round((await bar.boundingBox())!.y);
+  await expect.poll(async () => (await topOfBar()) - (await bottomOfNotice())).toBe(20);
+  // Both buttons of the bar can be pressed: a click on a covered button fails.
+  await page.getByTestId('save-bar-save').click({ trial: true });
+  await focusNothing(page);
+  await shot('above-the-save-bar');
+  await page.getByTestId('save-bar-back').click();
+  await expect(page.getByTestId('vc-editor')).toHaveCount(0);
+
+  // Without the bar it is back at the bottom of the window.
+  await expect(notice).toHaveAttribute('data-state', 'counting');
+  await expect.poll(bottomOfNotice).toBe(height - 20);
+  await page.getByTestId('stand-down-notice-cancel').click();
+  await expect(notice).toHaveCount(0);
+});
+
 test('stand down on close: with RigReady in the tray Windows says when it starts and what it did; a step that did not work is named and nothing says it was done', async ({
   rig,
 }) => {

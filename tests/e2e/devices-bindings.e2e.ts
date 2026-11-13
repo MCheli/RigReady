@@ -481,12 +481,10 @@ test('capture: every game found on this PC is a choice that brings its own launc
     'starts iRacing, with iRacingUI.exe'
   );
   await page.getByTestId('capture-game-dcs').click();
-  await expect(page.getByTestId('capture-launch-exe').locator('input')).toHaveValue(
-    path.join(home, 'Program Files (x86)', 'Steam', 'steam.exe')
-  );
-  await expect(page.getByTestId('capture-launch-args').locator('input')).toHaveValue(
-    '-applaunch 223750'
-  );
+  // Steam starts this one: the section says so with the game's number, not with a program.
+  await expect(page.getByTestId('capture-launch-steam')).toHaveClass(/v-btn--active/);
+  await expect(page.getByTestId('capture-launch-steam-app').locator('input')).toHaveValue('223750');
+  await expect(page.getByTestId('capture-launch-exe')).toHaveCount(0);
   await expect(page.getByTestId('capture-launch-text')).toContainText(
     'starts DCS World, through Steam'
   );

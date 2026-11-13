@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { CloseOptions, ProcessProvider } from './ports';
 import {
+  closeAtStandDown,
   closeTogether,
+  FORCE_CLOSE_LABEL,
+  forceCanHelp,
   stillRunningText,
   stillRunningWhy,
   type StillRunningWhy,
@@ -211,6 +214,92 @@ describe('why a program is still running, in plain words', () => {
     );
     expect(stillRunningText('coach.exe', undefined)).toBe(
       'coach.exe is still running: it did not close when asked.'
+    );
+  });
+
+  it('offers force only where it can still help', () => {
+    expect(forceCanHelp('ignored', false)).toBe(true);
+    expect(forceCanHelp('noWindow', false)).toBe(true);
+    expect(forceCanHelp(undefined, false)).toBe(true);
+    // Windows did not let RigReady near it: ending it fails the same way.
+    expect(forceCanHelp('refused', false)).toBe(false);
+    // Already forced.
+    expect(forceCanHelp('ignored', true)).toBe(false);
+    expect(forceCanHelp(undefined, true)).toBe(false);
+  });
+});
+
+describe('closeAtStandDown: one wording for every check that closes an app', () => {
+  const OFFER = `Close it yourself, or switch on "${FORCE_CLOSE_LABEL}" for this check in the setup.`;
+
+  it('has nothing to say when nothing of the app is running, and asks nobody', async () => {
+    const app = program([10], () => ok({ outcome: 'closed' }));
+    expect(await closeAtStandDown(app.provider, [], 'Coach', POLITE)).toEqual(ok(null));
+    expect(app.asked).toEqual([]);
+  });
+
+  it('closes an app of several processes as one, helper without a window first', async () => {
+    const app = program([11, 10], (pid, running) => {
+      if (pid === 10) {
+        remove(running, 10, 11);
+        return ok({ outcome: 'closed' });
+      }
+      return stays(pid, 'noWindow');
+    });
+    expect(await closeAtStandDown(app.provider, targets(11, 10), 'Coach', POLITE)).toEqual(
+      ok('Closed Coach')
+    );
+    expect(app.asked).toEqual([11, 10]);
+  });
+
+  it('says when the app had to be forced', async () => {
+    const app = program([10], (pid, running) => {
+      remove(running, pid);
+      return ok({ outcome: 'terminated' });
+    });
+    expect(
+      await closeAtStandDown(app.provider, targets(10), 'Coach', { waitMs: 10, force: true })
+    ).toEqual(ok('Closed Coach (it had to be forced)'));
+  });
+
+  it('names the app, says why it is still running, and names the Force switch', async () => {
+    const tray = program([11, 10], (pid) => stays(pid, pid === 10 ? 'ignored' : 'noWindow'));
+    expect(await closeAtStandDown(tray.provider, targets(11, 10), 'Coach', POLITE)).toEqual(
+      err(
+        'process.stillRunning',
+        'Coach is still running: it was asked to close and stayed open. Some apps only go to the tray when asked.',
+        OFFER
+      )
+    );
+    const windowless = program([10], (pid) => stays(pid, 'noWindow'));
+    expect(await closeAtStandDown(windowless.provider, targets(10), 'Coach', POLITE)).toEqual(
+      err(
+        'process.stillRunning',
+        'Coach is still running: it has no window, so it could not be asked to close.',
+        OFFER
+      )
+    );
+  });
+
+  it('does not name the switch where it cannot help: already on, or Windows refused', async () => {
+    const elevated = program([10], (pid) => stays(pid, 'refused'));
+    expect(await closeAtStandDown(elevated.provider, targets(10), 'Coach', POLITE)).toEqual(
+      err(
+        'process.stillRunning',
+        'Coach is still running: Windows did not let RigReady close it. It may be running as administrator.',
+        'Close it yourself.'
+      )
+    );
+    const forced = program([10], (pid) => stays(pid, 'ignored'));
+    expect(
+      await closeAtStandDown(forced.provider, targets(10), 'Coach', { waitMs: 10, force: true })
+    ).toMatchObject({ ok: false, error: { detail: 'Close it yourself.' } });
+  });
+
+  it('passes on another failure as it is', async () => {
+    const app = program([10], () => err('process.hung', 'Windows did not answer.'));
+    expect(await closeAtStandDown(app.provider, targets(10), 'Coach', POLITE)).toEqual(
+      err('process.hung', 'Windows did not answer.')
     );
   });
 });

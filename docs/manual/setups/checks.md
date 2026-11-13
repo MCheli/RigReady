@@ -42,11 +42,11 @@ A Windows service is running, by its short name ("HidHide", "Audiosrv"). Field: 
 
 ### TrackIR running (`trackir.running`)
 
-The TrackIR software is running, wherever it is installed. It also notes when TrackIR runs but games cannot see it. Field: `closeOnStandDown`. Fix: **Start TrackIR** (`trackir.start`).
+The TrackIR software is running, wherever it is installed. It also notes when TrackIR runs but games cannot see it. Field: `closeOnStandDown`. Fix: **Start TrackIR** (`trackir.start`). On Stand down TrackIR is asked to close and ended if it has not closed after ten seconds; when it is still running after that, the line says why.
 
 ### Stream Deck app running (`stream-deck.running`)
 
-The Stream Deck app is running. Field: `closeOnStandDown`. Fix: **Start Stream Deck** (`stream-deck.start`). When the app is not installed the row says so.
+The Stream Deck app is running. Fields: `closeOnStandDown`, `forceClose` (**Force it closed if it does not close**, off by default: the Stream Deck window only goes to the tray when asked, and [Stand down](../play/stand-down.md#an-app-that-is-still-running) then names it as still running). Fix: **Start Stream Deck** (`stream-deck.start`). When the app is not installed the row says so.
 
 ### SimAppPro running (`dcs.simAppProRunning`)
 

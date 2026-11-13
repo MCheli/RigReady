@@ -138,7 +138,10 @@ export interface ParamPicker {
   param: string;
   /** The field's label: "Layout". */
   label: string;
-  /** Params the choice fills in; the editor no longer asks for them. */
+  /**
+   * Params the choice fills in; the editor no longer asks for them. Where the choice's
+   * name is stored, it is the first: the Play page names a step's choice by it.
+   */
   fills?: string[];
   /**
    * Other params that mean the same in a check and in its fix (which of Windows' defaults
@@ -216,6 +219,11 @@ export interface RemediationDefinition<P = unknown> {
    * offers this step before launch, with the picker's choices.
    */
   provides?: GameNeed;
+  /**
+   * Check types this step cannot work without (the driver a virtual controller needs). A
+   * new setup that keeps the step is offered those checks with it.
+   */
+  requires?: string[];
 }
 
 /** A check proposed from the current state of the machine. */
@@ -233,6 +241,18 @@ export interface CaptureCandidate {
    * candidate by default only when the setup is for that game.
    */
   game?: string;
+  /**
+   * Game module ids, for a helper made for those games and no other (DCS-SRS is a radio
+   * for DCS, not for every flight sim). Unlike `game` it stays listed for any game. It is
+   * kept by default only in a setup for one of these games, or when no game was chosen.
+   */
+  forGames?: string[];
+  /**
+   * True for a check about the microphone. It is kept by default only in a setup for a game
+   * played with one (see GameModule.playedWith), or when nothing says the game has none.
+   * The feature that owns the check says so here: core does not know check types.
+   */
+  microphone?: boolean;
   /**
    * One question the capture screen asks when this candidate is kept; the answer is
    * stored in the item's params under `param` (and handled by the check's `adopt`).

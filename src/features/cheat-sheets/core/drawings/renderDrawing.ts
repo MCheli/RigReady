@@ -20,6 +20,7 @@ import {
   type Cell,
   type Row,
 } from './callouts';
+import { viewsAreNamed } from './photo';
 import type { DeviceDrawing, PhysicalControl } from './silhouette';
 
 /**
@@ -70,6 +71,8 @@ function extraCss(t: Theme): string {
 .cs-svg .cs-lead2{stroke:${t.line};stroke-width:1.4;fill:none;stroke-linejoin:round}
 .cs-svg .cs-anchor{stroke:${t.bg};stroke-width:1.5}
 .cs-svg text.cs-print{fill:${t.muted};font-weight:700;letter-spacing:.06em}
+.cs-svg .cs-photo-spot{fill:${t.bg};fill-opacity:.82;stroke:none}
+.cs-svg .cs-lead-halo{stroke:${t.bg};stroke-opacity:.85;stroke-width:4.5;fill:none;stroke-linejoin:round;stroke-linecap:round}
 `;
 }
 
@@ -218,7 +221,8 @@ function calloutSvg(
   callout: Callout,
   byId: Map<string, SheetControl>,
   theme: ThemeName,
-  edit: boolean
+  edit: boolean,
+  onPhoto: boolean
 ): string {
   const out: string[] = [];
   const first = callout.rows.find((r) => r.kind);
@@ -226,6 +230,8 @@ function calloutSvg(
   const pointed = callout.leader.length > 0;
   if (pointed) {
     const points = callout.leader.map((p) => `${n(p.x)},${n(p.y)}`).join(' ');
+    // Over a photo a thin line gets lost: a pale edge keeps it readable.
+    if (onPhoto) out.push(`<polyline class="cs-lead-halo" points="${points}"/>`);
     out.push(`<polyline class="cs-lead2" points="${points}"/>`);
   }
   out.push(
@@ -328,12 +334,36 @@ function drawingSvg(
   background: RenderDrawingOptions['background']
 ): string {
   const out: string[] = [];
-  const picture = background ?? (drawing.image ? { image: drawing.image, opacity: 1 } : undefined);
+  const views = background ? [] : (drawing.views ?? []);
+  const picture =
+    background ??
+    (views.length === 0 && drawing.image ? { image: drawing.image, opacity: 1 } : undefined);
   if (picture) {
     // A photo is the device: the silhouette would only be in its way.
     out.push(
       `<image href="${escapeHtml(picture.image)}" x="0" y="0" width="${n(drawing.size.width)}" height="${n(drawing.size.height)}" opacity="${n(picture.opacity)}" preserveAspectRatio="xMidYMid meet"/>`
     );
+  }
+  // The user's own photos, each in its box; the names of several go over them.
+  for (const view of views) {
+    if (viewsAreNamed(views)) {
+      out.push(
+        `<text class="cs-print cs-view-name" x="${n(view.x + 2)}" y="${n(view.y - 9)}" font-size="16" font-weight="600">${escapeHtml(view.name)}</text>`
+      );
+    }
+    out.push(
+      `<image class="cs-view" href="${escapeHtml(view.image)}" x="${n(view.x)}" y="${n(view.y)}" width="${n(view.w)}" height="${n(view.h)}" preserveAspectRatio="xMidYMid meet"/>`
+    );
+  }
+  if (views.length > 0) {
+    // A light spot under each marker, so it shows on a dark photo and on a bright one.
+    for (const control of drawing.controls) {
+      out.push(
+        `<circle class="cs-photo-spot" cx="${n(control.at.x)}" cy="${n(control.at.y)}" r="15"/>`
+      );
+      out.push(glyphSvg(control));
+    }
+    return out.join('');
   }
   for (const item of picture ? [] : drawing.paths) {
     const cls = `cs-s-${item.role}${item.dashed ? ' cs-s-dashed' : ''}`;
@@ -352,7 +382,8 @@ function extrasSvg(
   plan: CalloutPlan,
   byId: Map<string, SheetControl>,
   theme: ThemeName,
-  size: number
+  size: number,
+  onPhoto: boolean
 ): string {
   const box = plan.extrasBox;
   if (!box) return '';
@@ -361,7 +392,7 @@ function extrasSvg(
     `<rect class="cs-group" x="${n(box.x)}" y="${n(box.y)}" width="${n(box.w)}" height="${n(box.h)}" rx="9"/>`
   );
   out.push(
-    `<text class="cs-bhead" x="${n(box.x + PAD)}" y="${n(box.y + PAD + HEAD_SIZE)}">MORE CONTROLS · not on the drawing</text>`
+    `<text class="cs-bhead" x="${n(box.x + PAD)}" y="${n(box.y + PAD + HEAD_SIZE)}">MORE CONTROLS · ${onPhoto ? 'not placed on a photo yet' : 'not on the drawing'}</text>`
   );
   const colW = (box.w - (box.columns - 1) * LAYOUT_METRICS.GAP) / box.columns;
   const perColumn = Math.ceil(plan.extras.length / box.columns);
@@ -396,9 +427,12 @@ export function renderPlanSvg(
       `<g class="cs-drawing" data-drawing="${escapeHtml(placed.drawing.name)}" data-x="${n(placed.x)}" data-y="${n(placed.y)}" data-scale="${n(placed.scale)}" transform="translate(${n(placed.x)} ${n(placed.y)}) scale(${n(placed.scale)})">${drawingSvg(placed.drawing, options.background)}</g>`
     );
   }
-  for (const callout of plan.callouts) out.push(calloutSvg(callout, byId, options.theme, edit));
+  const onPhoto = placed ? (placed.drawing.views ?? []).length > 0 : false;
+  for (const callout of plan.callouts) {
+    out.push(calloutSvg(callout, byId, options.theme, edit, onPhoto));
+  }
   const size = plan.callouts[0]?.size ?? LAYOUT_METRICS.ROW_SIZE;
-  out.push(extrasSvg(plan, byId, options.theme, size));
+  out.push(extrasSvg(plan, byId, options.theme, size, onPhoto));
   out.push('</svg>');
   return out.join('');
 }

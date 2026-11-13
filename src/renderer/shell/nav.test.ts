@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ariaCurrent, currentEntry } from './nav';
+import { ariaCurrent, currentEntry, scrollOnMove } from './nav';
 
 const ENTRIES = [
   '/configure/profiles',
@@ -93,5 +93,29 @@ describe('where you are in the side navigation', () => {
         '/configure/racing'
       )
     ).toBe('page');
+  });
+});
+
+describe('WOW-UI-013: where a page starts after a move', () => {
+  it('a new page starts at its top, wherever the last one was scrolled to', () => {
+    expect(scrollOnMove('/', '/configure/profiles/capture', null)).toEqual({ top: 0 });
+    expect(scrollOnMove('/configure/devices', '/configure/profiles/ace-nights', null)).toEqual({
+      top: 0,
+    });
+  });
+
+  it('going back or forward returns to where that page was', () => {
+    const was = { left: 0, top: 640 };
+    expect(scrollOnMove('/configure/devices', '/', was)).toBe(was);
+  });
+
+  it("a change that keeps the page's address, a chosen device or a tab in the query, leaves the scroll alone", () => {
+    expect(scrollOnMove('/configure/devices', '/configure/devices', null)).toBe(false);
+  });
+
+  it('a tab with an address of its own starts at its top', () => {
+    expect(
+      scrollOnMove('/configure/dcs-bindings/devices', '/configure/dcs-bindings', null)
+    ).toEqual({ top: 0 });
   });
 });

@@ -1483,6 +1483,58 @@ async function walkFiles(dir: string, visit: (file: string) => Promise<void>): P
   }
 }
 
+/** How many of a rig's recorded files are copied at the same time. */
+const COPIED_AT_ONCE = 8;
+
+/**
+ * Copies a rig's recorded files into the fake home: every recorded folder, and every file
+ * that is wanted and not there yet (a file the home already has is never replaced). Each
+ * folder is listed once and the files go a few at a time: every test and every scenario
+ * start pays for this copy, and one file after the other with a look at each first took
+ * twice as long. False when the rig recorded no files.
+ */
+async function copyRecorded(
+  from: string,
+  to: string,
+  wanted?: (relative: string) => boolean
+): Promise<boolean> {
+  const files: string[] = [];
+  const walk = async (relative: string): Promise<void> => {
+    const entries = await fs.readdir(path.join(from, relative), { withFileTypes: true });
+    await fs.mkdir(path.join(to, relative), { recursive: true });
+    for (const entry of entries) {
+      const below = path.join(relative, entry.name);
+      if (entry.isDirectory()) await walk(below);
+      else if (!wanted || wanted(below)) files.push(below);
+    }
+  };
+  try {
+    await fs.access(from);
+  } catch {
+    // This rig recorded no such folder: there is nothing to copy.
+    return false;
+  }
+  await walk('');
+  let next = 0;
+  const copyNext = async (): Promise<void> => {
+    while (next < files.length) {
+      const relative = files[next++]!;
+      try {
+        await fs.copyFile(
+          path.join(from, relative),
+          path.join(to, relative),
+          fs.constants.COPYFILE_EXCL
+        );
+      } catch (e) {
+        // Already in the home: left as it is.
+        if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: COPIED_AT_ONCE }, copyNext));
+  return true;
+}
+
 /** Applies writeFile, removeFile and setSteamBuild to the fake user folder. */
 export async function applyFileMutations(
   mutations: FileMutation[],
@@ -1563,28 +1615,7 @@ export async function seedScenario(
   // recording to copy none of it is most of what a test that wants no files pays for.
   const none = options.files !== undefined && options.files.length === 0;
   if (!(await ports.files.exists(marker))) {
-    let recorded = false;
-    if (!none) {
-      try {
-        await fs.cp(loaded.filesDir, home, {
-          recursive: true,
-          force: false,
-          errorOnExist: false,
-          ...(wanted
-            ? {
-                filter: async (source: string) => {
-                  if ((await fs.stat(source)).isDirectory()) return true;
-                  return wanted(path.relative(loaded.filesDir, source));
-                },
-              }
-            : {}),
-        });
-        recorded = true;
-      } catch (e) {
-        // The rig recorded no files.
-        if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
-      }
-    }
+    const recorded = !none && (await copyRecorded(loaded.filesDir, home, wanted));
     if (recorded) {
       let list: string[] | undefined;
       try {

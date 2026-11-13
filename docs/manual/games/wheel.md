@@ -102,6 +102,8 @@ Where a brand keeps its profiles in plain files, the page lists them and whether
 - **Logitech**: G HUB's `settings.db` in `%LOCALAPPDATA%\LGHUB`. G HUB keeps it open, so a restore closes G HUB first (when you agree) and starts it again.
 - **Simucube**: Tuner's profiles in `Documents\Simucube 2\cachedprofiles`.
 
+When the maker's program is open, the restore names it and offers **Close the app and restore**. RigReady asks it to close and never ends it by force. If it is still running afterwards, the dialog says why (for example, it only went to the tray) and nothing is restored: close it yourself, then press **Restore again**.
+
 Moza Pit House, SimPro Manager, RaceHub and the Cammus software keep their presets in places nobody has documented yet, so nothing is offered for them rather than a backup that might miss them. The same items are offered for a full backup on the Backups page: see [backups](../protect/backups.md). [Restoring](../protect/restore.md) asks for the maker's program to be closed first.
 
 ![G HUB's settings file on the Wheel page (tested on recorded data)](../../../artifacts/screens/wheel-logitech/02-profiles.png)

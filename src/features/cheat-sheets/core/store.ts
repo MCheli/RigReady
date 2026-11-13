@@ -13,6 +13,7 @@ import {
   serializeLayout,
   type DeviceLayout,
 } from './layout';
+import { hasLeftOut, withSavedPictures } from './photoFile';
 import type { DeviceNotes, LayoutChoice } from './sheet';
 
 /**
@@ -123,7 +124,21 @@ export class CheatSheetStore {
     const made = await this.files.mkdir(this.layoutDir);
     if (!made.ok) return made;
     const file = this.fileFor(device.vendorId, device.productId);
-    const written = await this.files.write(file, serializeLayout(layout), {
+    let toSave = layout;
+    if (hasLeftOut(layout)) {
+      // Read without its photos and saved again: the photos already saved stay.
+      const text = await this.files.readText(file);
+      const saved = text.ok ? parseLayout(text.value) : undefined;
+      const restored = withSavedPictures(layout, saved?.ok ? saved.layout : undefined);
+      if (!restored) {
+        return err(
+          'sheet.layout',
+          'This layout has a grey box where a photo was left out, and there is no saved photo to put back. Add the photo in RigReady, on the cheat sheet.'
+        );
+      }
+      toSave = restored;
+    }
+    const written = await this.files.write(file, serializeLayout(toSave), {
       reason: `Save the layout of ${layout.name}`,
     });
     if (!written.ok) return written;

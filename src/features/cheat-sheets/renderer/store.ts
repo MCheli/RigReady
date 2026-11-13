@@ -98,7 +98,7 @@ export const useCheatSheets = defineStore('cheat-sheets', () => {
     if (!choice.value) return;
     const asked = choice.value;
     loading.value = true;
-    const result = await api.sheet({ game: game.value, aircraftId: aircraftId.value });
+    const result = await api.windowSheet({ game: game.value, aircraftId: aircraftId.value });
     if (asked !== choice.value) return;
     loading.value = false;
     if (!result.ok) {

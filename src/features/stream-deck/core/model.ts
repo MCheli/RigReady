@@ -175,3 +175,14 @@ export const RestoreOutcomeSchema = z.object({
   expected: z.array(z.string()),
 });
 export type RestoreOutcome = z.infer<typeof RestoreOutcomeSchema>;
+
+/** Error code: Stream Deck stayed open when asked to quit, and ending it by force can help. */
+export const STILL_RUNNING = 'streamDeck.stillRunning';
+/** Error code: it stayed open, and force was already used or cannot work. */
+export const CANNOT_CLOSE = 'streamDeck.cannotClose';
+
+/**
+ * The button of the restore dialog that ends a Stream Deck that would not quit. The message
+ * about the app that stayed open names it, so the two are one text.
+ */
+export const END_AND_RESTORE_LABEL = 'End Stream Deck and restore';

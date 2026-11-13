@@ -114,6 +114,8 @@ const savedOn = (backup: Pick<BindingBackup, 'createdAt'>): string =>
  * The saved bindings of every racing game, by name, for the setup editor: a setup stores
  * the id of a backup (a timestamp), which nobody can type. Choosing one fills in the id,
  * its name and the game it belongs to. Only backups that hold binding files are listed.
+ * The id is the moment of the backup, so two games can have a backup with the same id:
+ * both are listed, and the game each one fills in is what tells them apart.
  */
 export function bindingSetPicker(games: GameRegistry): ParamPicker {
   return {
@@ -129,7 +131,6 @@ export function bindingSetPicker(games: GameRegistry): ParamPicker {
       for (const game of RACING_GAMES) {
         for (const backup of await listBackups(rctx, game.id)) {
           if (!backup.files.some((f) => isBindingFile(game.id, f))) continue;
-          if (out.some((c) => c.value === backup.id)) continue;
           const label = setLabel(backup);
           out.push({
             value: backup.id,

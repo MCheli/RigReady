@@ -4,6 +4,7 @@ import { bindingsPages, featureCommands, featureRoutes, firstConfigurePath } fro
 import ConfigureLayout from './layouts/ConfigureLayout.vue';
 import NotFound from './layouts/NotFound.vue';
 import { bindingsPageAt, bindingsTarget, setupGameOf, windowMemory } from './shell/bindings';
+import { scrollOnMove } from './shell/nav';
 import { routeKinds } from './shell/routes';
 import { createCommandShell } from './shell/shell';
 
@@ -62,7 +63,11 @@ const routes: RouteRecordRaw[] = [
   { path: '/:rest(.*)*', component: NotFound },
 ];
 
-export const router = createRouter({ history: createWebHashHistory(), routes });
+export const router = createRouter({
+  history: createWebHashHistory(),
+  routes,
+  scrollBehavior: (to, from, saved) => scrollOnMove(to.path, from.path, saved),
+});
 
 // The game whose bindings were on screen last, whether chosen in the picker or opened by a
 // link: Bindings opens it next time.

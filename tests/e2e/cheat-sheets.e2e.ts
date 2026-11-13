@@ -723,25 +723,26 @@ test('cheat sheets: drawing editor - move a control, its side and name, a photo,
   expect(saved.drawing.sides).toEqual({ trim: 'left' });
   await shot('own-drawing');
 
-  // The pedals have no drawing: make one from a photo, with a dot per control to place.
+  // The pedals have no drawing: make one from a photo. The rudder is picked from the list
+  // of what is not placed yet, and its place is clicked on the photo.
+  // (tests/e2e/cheat-sheets-photo.e2e.ts plays the whole photo route.)
   await device(page, 'Pedals').click();
   await page.getByTestId('sheet-edit-layout').click();
   await expect(page.getByTestId('editor-mode')).toHaveAttribute('data-mode', 'cards');
   await page.getByTestId('editor-photo-drawing').click();
-  await expect(page.getByTestId('editor-mode')).toHaveAttribute('data-mode', 'drawing');
-  await expect(page.getByTestId('editor-message')).toContainText('Drag each onto its control');
-  await expect(canvas.locator('svg image')).toHaveCount(1);
-  const rudder = canvas.locator('[data-anchor-handle="axis-Z"]');
-  const at = (await rudder.boundingBox())!;
-  await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(at.x + 30, at.y + 40, { steps: 4 });
-  await page.mouse.up();
+  await expect(page.getByTestId('editor-mode')).toHaveAttribute('data-mode', 'photos');
+  const photo = page.getByTestId('photo-canvas');
+  await expect(photo.locator('image')).toHaveCount(1);
+  await expect(page.getByTestId('editor-save')).toBeDisabled();
+  await page.locator('[data-testid="photo-chip"][data-control="axis:Z"]').click();
+  await expect(page.getByTestId('photo-ask')).toHaveText('Z axis: click where it is on the photo.');
+  await photo.click({ position: { x: 120, y: 160 } });
+  await expect(page.locator('[data-testid="photo-dot"][data-dot="axis-Z"]')).toBeVisible();
   await shot('photo-drawing');
   await page.getByTestId('editor-save').click();
-  await expect(source).toHaveText('Your drawing');
+  await expect(source).toHaveText('Your photos, 1 of 3 controls placed');
   await expect(sheet.locator('svg image')).toHaveCount(1);
-  await expect(control(page, 'axis:Z')).toBeVisible();
+  await expect(control(page, 'axis:Z').first()).toBeVisible();
 
   // Discard on the stick: RigReady's drawing as it ships.
   await device(page, 'Stick').click();

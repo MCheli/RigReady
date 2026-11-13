@@ -97,8 +97,22 @@ A drawing is a silhouette of one controller model with its physical controls mar
 | `size` | The drawing's own units; `at` and `paths` are in them. |
 | `paths` | SVG path data (absolute `M L H V C Q A Z`) with a colour `role`: `body`, `panel`, `screen`, `line`, `accent`, `shade`, `key`; `dashed` for a face the view does not show. |
 | `image` | Optional photo or traced picture (`data:image/png`, `jpeg`, `webp` or `svg+xml`, about 6 MB at most), stretched over `size`. With one, `paths` may be empty. |
+| `views` | Optional, up to 6. Several photos of the device, each a named view: `name` ("Top", "Back", up to 40 characters), `image` (as above), and its box on the drawing `x`, `y`, `w`, `h`. A control is on the view its `at` lies in. With more than one view the names are printed over the photos. With `views`, `image` is left out and `paths` may be empty. |
 | `texts` | Text printed on the device: `x`, `y`, `text`, `size`. |
 | `controls` | The physical controls: `id`, `name`, `glyph` (`hat`, `switch`, `button`, `stick`, `lever`, `rocker`, `knob`, `key`, `axis`, `slide`, `axes`, `none`), `at`, optional `side`, `inputs` (control ids as above, each with an optional `tag`, the word its row starts with: "↑", "IDLE", "2nd"), `hidden` (drawn dashed), `assumed` (which number or direction is which is not confirmed from a real source; the label shows "?". Keep it for exactly those controls). An input may be on one control only. |
 | `columnWidth` | Room for the label columns, 120 to 400 canvas units (default 300). |
 
-In a layout, `drawing` holds the user's changes to a drawing: `anchors` (where a control really is, by control `id`), `sides`, `names`, and `custom`, a whole drawing of their own. The editor writes it: "Make a drawing from a photo" makes a `custom` drawing from a photo with a dot for every control to drag into place, and "Import" accepts a drawing file as well as a layout file.
+In a layout, `drawing` holds the user's changes to a drawing: `anchors` (where a control really is, by control `id`), `sides`, `names`, and `custom`, a whole drawing of their own. The editor writes it, and "Import" accepts a drawing file as well as a layout file.
+
+### A drawing made from the user's photos
+
+"Use my photo" makes a `custom` drawing whose picture is one or more `views`. The user presses a control on the device and clicks its place on the photo; that adds one entry to `controls`:
+
+- A button or an axis is one control with one input, called "Button 5" or "Slider 1" until it is given a name.
+- A hat Windows reports is one control with its four ways (`hat:1:U`, `R`, `D`, `L`).
+- A hat that reports buttons is one control too: "Place a hat" asks for each way and for its press in turn, and they become the `inputs` of one control (tags "↑", "→", "↓", "←", "press").
+- On a model RigReady knows the controls of by name, a press gives the whole control with its maker's name and all its ways.
+
+Every photo is 500 units wide, the photos are one under the other, and `size` follows them. A photo is redrawn as a JPEG no larger than it needs to be before it is stored, so the file a phone made is not kept. The layout file with the photos in it is in RigReady's data folder; nothing is sent anywhere. "Share as file" writes the same drawing, photos included, to a file the user chooses.
+
+A photo drawing is useful half-done. What the device reports, or what is bound on it, and has no place on a photo yet is listed under the photos ("More controls · not placed on a photo yet"), so nothing is left off the sheet and a press always lights something. A drawing must have at least one control, so photos with nothing placed yet cannot be saved.
