@@ -5598,6 +5598,7 @@ requirements:
       - "src/features/virtual-controller/main.test.ts#does not delete a profile a setup starts until it is told to all the same"
       - "src/features/virtual-controller/main.test.ts#when a setup file cannot be read it says so, and a delete then needs the same yes"
       - "src/features/virtual-controller/main.test.ts#names a copy for what it was copied from, and never as another profile is named"
+      - "src/features/profiles/core/profiles.test.ts#a copy asked for under a name in use gets its own name, and the list needs no id"
       - "tests/e2e/virtual-controller.e2e.ts#virtual controller: two profiles of one name are told apart, and deleting the one a setup uses warns first"
       - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
       - "artifacts/screens/virtual-controller-same-names/01-rows.png"

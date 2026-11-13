@@ -538,6 +538,43 @@ describe('CFG-PROFILE-019: the lists the editor picks from', () => {
   });
 
   it('two virtual controllers of one name are told apart, and the one in use is marked', async () => {
+    // A new or copied controller is given a name of its own (the test after this one), so two
+    // of one name come only from a file written before that rule. Here the file holds the
+    // first one a second time under another id: nothing but the id tells the two apart.
+    const second = 'my-ace-combat-stick-2';
+    app = await wiredApp('virtual-controller-ready', {
+      files: ['Program Files (x86)/Steam/**'],
+      beforeWiring: async (rig) => {
+        const file = path.join(rig.ports.folders.dataRoot(), 'virtual-controller', 'profiles.json');
+        const saved = JSON.parse(await fs.readFile(file, 'utf8')) as { profiles: { id: string }[] };
+        expect(saved.profiles.map((p) => p.id)).toEqual(['my-ace-combat-stick']);
+        saved.profiles.push({ ...saved.profiles[0]!, id: second });
+        await fs.writeFile(file, JSON.stringify(saved, null, 2));
+      },
+    });
+    await app.invoke('virtual-controller:start', { id: second, hide: false });
+    const types = await app.invoke<Types>('profiles:types');
+    const start = types.remediations.find((t) => t.type === 'virtual-controller.start')!;
+    const list = start.pickers!.find((p) => p.param === 'profile')!;
+    expect(list).toMatchObject({ label: 'Virtual controller', fills: ['profileName'] });
+    // The starting points are not offered: only the person's own.
+    expect(list.choices.map((c) => c.value).sort()).toEqual([second, 'my-ace-combat-stick'].sort());
+    expect(new Set(list.choices.map((c) => c.label))).toEqual(new Set(['My Ace Combat stick']));
+    const details = list.choices.map((c) => c.detail!);
+    expect(new Set(details).size).toBe(2);
+    for (const choice of list.choices) expect(choice.detail).toContain(`id ${choice.value}`);
+    expect(list.choices.find((c) => c.current)?.value).toBe(second);
+    // As the editor shows them: the same name twice, the line under it different.
+    const shown = pickerItems(list, {});
+    expect(shown.find((i) => i.value === second)!.title).toBe('My Ace Combat stick (in use now)');
+    expect(shown.find((i) => i.value === 'my-ace-combat-stick')!.title).toBe('My Ace Combat stick');
+    // The form asks for the controller by name and never for the id or the name it fills.
+    const keys = formRows(start.schema, {}, start.pickers).map((row) => row.field.key);
+    expect(keys).toContain('profile');
+    expect(keys).not.toContain('profileName');
+  });
+
+  it('a copy asked for under a name in use gets its own name, and the list needs no id', async () => {
     app = await wiredApp('virtual-controller-ready', {
       files: ['Program Files (x86)/Steam/**'],
     });
@@ -548,26 +585,23 @@ describe('CFG-PROFILE-019: the lists the editor picks from', () => {
     expect(copy.id).not.toBe('my-ace-combat-stick');
     await app.invoke('virtual-controller:start', { id: copy.id, hide: false });
     const types = await app.invoke<Types>('profiles:types');
-    const start = types.remediations.find((t) => t.type === 'virtual-controller.start')!;
-    const list = start.pickers!.find((p) => p.param === 'profile')!;
-    expect(list).toMatchObject({ label: 'Virtual controller', fills: ['profileName'] });
-    // The starting points are not offered: only the person's own.
-    expect(list.choices.map((c) => c.value).sort()).toEqual(
-      [copy.id, 'my-ace-combat-stick'].sort()
-    );
-    expect(new Set(list.choices.map((c) => c.label))).toEqual(new Set(['My Ace Combat stick']));
-    const details = list.choices.map((c) => c.detail!);
-    expect(new Set(details).size).toBe(2);
-    for (const choice of list.choices) expect(choice.detail).toContain(`id ${choice.value}`);
-    expect(list.choices.find((c) => c.current)?.value).toBe(copy.id);
-    // As the editor shows them: the same name twice, the line under it different.
+    const list = types.remediations
+      .find((t) => t.type === 'virtual-controller.start')!
+      .pickers!.find((p) => p.param === 'profile')!;
+    expect(Object.fromEntries(list.choices.map((c) => [c.value, c.label]))).toEqual({
+      'my-ace-combat-stick': 'My Ace Combat stick',
+      [copy.id]: 'My Ace Combat stick 2',
+    });
+    // Two names tell the two apart, and the step keeps the copy's own name.
+    for (const choice of list.choices) expect(choice.detail).not.toContain('id ');
+    expect(list.choices.find((c) => c.value === copy.id)).toMatchObject({
+      current: true,
+      fill: { profileName: 'My Ace Combat stick 2' },
+    });
     const shown = pickerItems(list, {});
-    expect(shown.find((i) => i.value === copy.id)!.title).toBe('My Ace Combat stick (in use now)');
-    expect(shown.find((i) => i.value === 'my-ace-combat-stick')!.title).toBe('My Ace Combat stick');
-    // The form asks for the controller by name and never for the id or the name it fills.
-    const keys = formRows(start.schema, {}, start.pickers).map((row) => row.field.key);
-    expect(keys).toContain('profile');
-    expect(keys).not.toContain('profileName');
+    expect(shown.find((i) => i.value === copy.id)!.title).toBe(
+      'My Ace Combat stick 2 (in use now)'
+    );
   });
 
   it('with one name in the list, nothing is added to tell it apart', async () => {
