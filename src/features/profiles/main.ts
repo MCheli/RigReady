@@ -63,7 +63,7 @@ export default defineFeatureMain({
         clone: ({ id }) => cloneProfile(ctx, id),
         capture: async () => ok(await captureRig(ctx)),
         create: (input) => createProfile(ctx, input),
-        types: async () => ok(describeTypes(ctx)),
+        types: async () => ok(await describeTypes(ctx)),
         pickers: () => pickers(ctx),
         games: async () => ok(await detectedGames(ctx)),
         waitForPress: ({ timeoutSeconds }) => waitForPress(ctx.ports, timeoutSeconds * 1000),

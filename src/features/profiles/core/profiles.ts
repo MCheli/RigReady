@@ -9,11 +9,14 @@ import {
 } from '../../../core/pathVariables';
 import type { CheckItem, Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
+import type { ParamPicker } from '../../../core/checks/registry';
 import { storedPathKey, trackedExtension, trackedSuggestions } from './capture';
+import { GAME_LABEL, GAME_PARAM, gamesPicker, resolvePicker, usesGamesList } from './paramPickers';
 import type {
   CheckTypeInfo,
   DetectedGame,
   NewProfile,
+  PickerInfo,
   Pickers,
   ProfileOverview,
   RemediationTypeInfo,
@@ -48,24 +51,52 @@ export async function unknownVariables(ctx: Ctx, profile: Profile): Promise<stri
   return [...unknown].sort();
 }
 
-/** Field problems of every item and action whose type is registered, one line each. */
+const toSchema = (schema: z.ZodType): Record<string, unknown> =>
+  z.toJSONSchema(schema, { io: 'input', unrepresentable: 'any' }) as Record<string, unknown>;
+
+/** What the editor asks for with a list: field name -> the label of its list. */
+function listedFields(type: { params: z.ZodType; picker?: ParamPicker }): Map<string, string> {
+  const fields = new Map<string, string>();
+  const own = type.picker;
+  if (own) for (const key of [own.param, ...(own.fills ?? [])]) fields.set(key, own.label);
+  if (usesGamesList(toSchema(type.params), own)) fields.set(GAME_PARAM, GAME_LABEL);
+  return fields;
+}
+
+/**
+ * Field problems of every item and action whose type is registered, one line each. A field
+ * the editor fills in from a list (a layout's monitors) is not one the person ever sees:
+ * its problem names the list to choose from.
+ */
 export function paramProblems(ctx: Pick<Ctx, 'checks'>, profile: Profile): string[] {
   const lines: string[] = [];
-  const report = (where: string, schema: z.ZodType | undefined, params: unknown): void => {
-    if (!schema) return;
-    const parsed = schema.safeParse(params);
+  const report = (
+    where: string,
+    type: { params: z.ZodType; picker?: ParamPicker } | undefined,
+    params: unknown
+  ): void => {
+    if (!type) return;
+    const parsed = type.params.safeParse(params);
     if (parsed.success) return;
+    const listed = listedFields(type);
+    const asked = new Set<string>();
     for (const issue of parsed.error.issues) {
+      const list = listed.get(String(issue.path[0] ?? ''));
+      if (list !== undefined) {
+        if (!asked.has(list)) lines.push(`${where}: ${list}: choose one from the list.`);
+        asked.add(list);
+        continue;
+      }
       const field = issue.path.join('.') || 'params';
       lines.push(`${where}: ${field}: ${issue.message}`);
     }
   };
   for (const item of profile.checks) {
-    report(`${item.id} "${item.title}"`, ctx.checks.check(item.type)?.params, item.params);
+    report(`${item.id} "${item.title}"`, ctx.checks.check(item.type), item.params);
     if (item.remediation) {
       report(
         `${item.id} "${item.title}" fix`,
-        ctx.checks.remediation(item.remediation.type)?.params,
+        ctx.checks.remediation(item.remediation.type),
         item.remediation.params
       );
     }
@@ -75,11 +106,7 @@ export function paramProblems(ctx: Pick<Ctx, 'checks'>, profile: Profile): strin
     ...(profile.actions?.postLaunch ?? []),
     ...(profile.actions?.standDown ?? []),
   ]) {
-    report(
-      `${action.id} "${action.title}"`,
-      ctx.checks.remediation(action.type)?.params,
-      action.params
-    );
+    report(`${action.id} "${action.title}"`, ctx.checks.remediation(action.type), action.params);
   }
   return lines;
 }
@@ -214,38 +241,60 @@ export async function overview(ctx: Ctx): Promise<Result<ProfileOverview>> {
   });
 }
 
-const toSchema = (schema: z.ZodType): Record<string, unknown> =>
-  z.toJSONSchema(schema, { io: 'input', unrepresentable: 'any' }) as Record<string, unknown>;
-
-/** Every registered type with the JSON Schema of its params, for the generic editor form. */
-export function describeTypes(ctx: Ctx): {
+/**
+ * Every registered type with the JSON Schema of its params, for the generic editor form,
+ * and with what its pickers offer right now: a param that holds an id is chosen by name.
+ */
+export async function describeTypes(ctx: Ctx): Promise<{
   checks: CheckTypeInfo[];
   remediations: RemediationTypeInfo[];
-} {
-  const checks = ctx.checks.checkTypes().map((type) => {
+}> {
+  // One read per list, however many types pick from it.
+  const lists = new Map<string, Promise<PickerInfo>>();
+  const resolved = (picker: ParamPicker): Promise<PickerInfo> => {
+    const key = `${picker.list}|${picker.param}`;
+    if (!lists.has(key)) lists.set(key, resolvePicker(picker, ctx));
+    return lists.get(key)!;
+  };
+  const games = gamesPicker(ctx.games);
+  const pickersOf = async (
+    schema: Record<string, unknown>,
+    own: ParamPicker | undefined
+  ): Promise<{ pickers?: PickerInfo[] }> => {
+    const declared = [...(own ? [own] : []), ...(usesGamesList(schema, own) ? [games] : [])];
+    if (declared.length === 0) return {};
+    return { pickers: await Promise.all(declared.map(resolved)) };
+  };
+  const checks: CheckTypeInfo[] = [];
+  for (const type of ctx.checks.checkTypes()) {
     const definition = ctx.checks.check(type)!;
-    return {
+    const schema = toSchema(definition.params);
+    checks.push({
       type,
       label: definition.label,
       group: definition.group,
-      schema: toSchema(definition.params),
+      schema,
+      ...(await pickersOf(schema, definition.picker)),
       ...(definition.fixes ? { fixes: definition.fixes } : {}),
       ...(definition.acknowledge ? { acknowledge: definition.acknowledge.label } : {}),
       advisory: definition.advisory === true,
-    };
-  });
-  const remediations = ctx.checks.remediationTypes().map((type) => {
+    });
+  }
+  const remediations: RemediationTypeInfo[] = [];
+  for (const type of ctx.checks.remediationTypes()) {
     const definition = ctx.checks.remediation(type)!;
-    return {
+    const schema = toSchema(definition.params);
+    remediations.push({
       type,
       label: definition.label,
       kind: definition.kind ?? ('action' as const),
       order: definition.order,
-      schema: toSchema(definition.params),
+      schema,
+      ...(await pickersOf(schema, definition.picker)),
       ...(definition.prepare ? { prepare: definition.prepare.label } : {}),
       confirms: definition.confirm !== undefined,
-    };
-  });
+    });
+  }
   return { checks, remediations };
 }
 

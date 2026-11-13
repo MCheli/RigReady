@@ -3,6 +3,7 @@ import type {
   CaptureDefinition,
   CheckContext,
   CheckDefinition,
+  ParamPicker,
   RemediationDefinition,
 } from '../../../core/checks/registry';
 import { ok } from '../../../core/result';
@@ -28,6 +29,37 @@ export const BindingsCheckParamsSchema = z.object({
 });
 export type BindingsCheckParams = z.infer<typeof BindingsCheckParamsSchema>;
 
+/**
+ * The aircraft DCS has on this PC, by name, for the setup editor: a setup stores the name
+ * of the aircraft's input folder (FA-18C_hornet), which nobody should have to type.
+ */
+export function aircraftPicker(bindings: (ctx?: CheckContext) => DcsBindings): ParamPicker {
+  return {
+    list: 'dcs-bindings.aircraft',
+    param: 'aircraft',
+    label: 'Aircraft',
+    fills: ['aircraftName'],
+    empty: 'No DCS aircraft were found on this PC.',
+    async choices(ctx) {
+      const overview = await bindings(ctx).overview();
+      if (!overview.ok) return overview;
+      return ok(
+        overview.value.aircraft.map((a) => ({
+          value: a.id,
+          label: a.name,
+          detail:
+            a.userFiles === 0
+              ? 'No bindings of your own yet'
+              : a.userFiles === 1
+                ? '1 binding file of your own'
+                : a.userFiles + ' binding files of your own',
+          fill: { aircraftName: a.name },
+        }))
+      );
+    },
+  };
+}
+
 export function createBindingsCheck(
   bindings: (ctx?: CheckContext) => DcsBindings
 ): CheckDefinition<BindingsCheckParams> {
@@ -36,6 +68,7 @@ export function createBindingsCheck(
     group: 'files',
     label: 'DCS bindings match the connected devices',
     params: BindingsCheckParamsSchema,
+    picker: aircraftPicker(bindings),
     async run(params, ctx) {
       // A setup that names its DCS install has its bindings checked in that install's folder.
       const service = bindings(ctx);

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
-import { profilesContract, type PathVariableChoice } from '../contract';
+import { profilesContract, type PathVariableChoice, type PickerInfo } from '../contract';
 import { variableSubtitle, withVariable } from './insertVariable';
-import { fieldsOf, type Field } from './schemaForm';
+import { applyChoice, formRows, requiredKeys, type Followed } from './pickerForm';
+import { optionTitle, type Field } from './schemaForm';
 
 const props = defineProps<{
   schema: Record<string, unknown> | undefined;
@@ -12,11 +13,22 @@ const props = defineProps<{
   testid: string;
   /** The path variables a path field may start with (from the pickers); without them no Variables menu. */
   variables?: PathVariableChoice[] | undefined;
+  /** Fields chosen by name from a list; what such a choice fills in is not asked for. */
+  pickers?: PickerInfo[] | undefined;
+  /** The fields a fix takes from its check: said in one line, not asked for again. */
+  follows?: Followed | undefined;
 }>();
 const emit = defineEmits<{ 'update:modelValue': [Record<string, unknown>] }>();
 
 const api = useClient(profilesContract);
-const fields = computed(() => fieldsOf(props.schema));
+const required = computed(() => requiredKeys(props.schema));
+/**
+ * What is asked for, each field with its list when it is chosen from one. Not asked for:
+ * what a list fills in by itself, and what a fix takes from its check.
+ */
+const rows = computed(() => formRows(props.schema, props.modelValue, props.pickers, props.follows));
+const fields = computed(() => rows.value.map((row) => row.field));
+const NOTE_TONE = { muted: '', warn: 'rr-warn', bad: 'rr-bad' } as const;
 const browseError = ref<string>();
 /** JSON fields are edited as text and applied when they parse. */
 const jsonText = ref<Record<string, string>>({});
@@ -39,6 +51,31 @@ function set(key: string, value: unknown): void {
   if (value === undefined || value === '') delete next[key];
   else next[key] = value;
   emit('update:modelValue', next);
+}
+
+/** A choice from a list: the field, and everything the choice fills in. */
+function choose(info: PickerInfo, value: string | null): void {
+  emit('update:modelValue', applyChoice(props.modelValue, info, value, required.value));
+}
+
+/** Tick boxes keep the order the type lists its options in. */
+function toggleOption(field: Field, option: string, on: boolean): void {
+  const ticked = new Set(list(field.key));
+  if (on) ticked.add(option);
+  else ticked.delete(option);
+  const next = (field.options ?? []).filter((o) => ticked.has(o));
+  set(field.key, next.length > 0 ? next : undefined);
+}
+
+function group(key: string): Record<string, unknown> {
+  const value = props.modelValue[key];
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function setGroup(key: string, value: Record<string, unknown>): void {
+  set(key, Object.keys(value).length > 0 ? value : undefined);
 }
 
 function setNumber(field: Field, raw: string): void {
@@ -107,9 +144,34 @@ function insertVariable(field: Field, variable: PathVariableChoice): void {
     <v-alert v-if="browseError" type="error" variant="tonal" density="compact">{{
       browseError
     }}</v-alert>
-    <div v-if="fields.length === 0" class="rr-row-sub">Nothing to set.</div>
-    <template v-for="field in fields" :key="field.key">
-      <div v-if="field.kind === 'boolean'" class="params-switch">
+    <div v-if="follows" class="rr-row-sub" :data-testid="`${testid}-follows`">
+      Uses the {{ follows.label }} chosen above.
+    </div>
+    <div v-else-if="fields.length === 0" class="rr-row-sub">Nothing to set.</div>
+    <template v-for="{ field, pick } in rows" :key="field.key">
+      <div v-if="pick" class="params-picker">
+        <v-select
+          :model-value="asText(modelValue[field.key] ?? field.default) || null"
+          :items="pick.items"
+          item-props
+          :label="pick.info.label + (pick.required ? ' *' : '')"
+          :clearable="!pick.required && modelValue[field.key] !== undefined"
+          :no-data-text="pick.info.empty"
+          density="compact"
+          hide-details
+          :data-testid="`${testid}-${field.key}`"
+          @update:model-value="choose(pick.info, $event)"
+        />
+        <div
+          v-if="pick.note"
+          class="rr-row-sub params-hint params-note"
+          :class="NOTE_TONE[pick.note.tone]"
+          :data-testid="`${testid}-${field.key}-note`"
+        >
+          {{ pick.note.text }}
+        </div>
+      </div>
+      <div v-else-if="field.kind === 'boolean'" class="params-switch">
         <v-switch
           :model-value="modelValue[field.key] ?? field.default ?? false"
           :label="field.label"
@@ -124,7 +186,7 @@ function insertVariable(field: Field, variable: PathVariableChoice): void {
       <v-select
         v-else-if="field.kind === 'choice'"
         :model-value="asText(modelValue[field.key] ?? field.default) || undefined"
-        :items="field.options"
+        :items="(field.options ?? []).map((o) => ({ title: optionTitle(field, o), value: o }))"
         :label="field.label + (field.required ? ' *' : '')"
         :clearable="!field.required"
         density="compact"
@@ -200,6 +262,33 @@ function insertVariable(field: Field, variable: PathVariableChoice): void {
         :data-testid="`${testid}-${field.key}`"
         @update:model-value="setNumber(field, $event)"
       />
+      <div
+        v-else-if="field.kind === 'multiChoice'"
+        class="params-list"
+        :data-testid="`${testid}-${field.key}`"
+      >
+        <div class="rr-row-sub">{{ field.label }}{{ field.required ? ' *' : '' }}</div>
+        <v-checkbox
+          v-for="option in field.options"
+          :key="option"
+          :model-value="list(field.key).includes(option)"
+          :label="optionTitle(field, option)"
+          color="primary"
+          density="compact"
+          hide-details
+          :data-testid="`${testid}-${field.key}-${option}`"
+          @update:model-value="toggleOption(field, option, $event === true)"
+        />
+      </div>
+      <div v-else-if="field.kind === 'group'" class="params-group">
+        <div class="rr-row-sub">{{ field.label }}{{ field.required ? ' *' : '' }}</div>
+        <ParamsForm
+          :schema="field.schema"
+          :model-value="group(field.key)"
+          :testid="`${testid}-${field.key}`"
+          @update:model-value="setGroup(field.key, $event)"
+        />
+      </div>
       <div
         v-else-if="field.kind === 'list'"
         class="params-list"
@@ -288,6 +377,13 @@ function insertVariable(field: Field, variable: PathVariableChoice): void {
 }
 .params-hint {
   margin-left: 2px;
+}
+.params-note {
+  margin-top: 4px;
+}
+.params-group :deep(.params) {
+  grid-template-columns: 1fr 1fr;
+  margin: 6px 0 0;
 }
 .params-list {
   margin-bottom: 10px;
