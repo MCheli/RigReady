@@ -45,10 +45,23 @@ export const ROLE_TITLES: Record<PackRole, string> = {
 
 const text = (max: number) => z.string().trim().min(1).max(max);
 
+/**
+ * What a pattern in a guide may be, whoever wrote the guide: shipped, drafted by AI, imported
+ * or written by hand. A pattern is run as it is against every action name of an aircraft, so
+ * it is kept quick to run: short, no group that repeats ("(a+)+"), "*", "+" or "{…}" at most
+ * twice, and a guide holds a limited number of them. The shipped guides use far less.
+ */
+export const MAX_PATTERN = 100;
+export const MAX_REPEATS = 2;
+export const MAX_PATTERNS = 40;
+const REPEATED_GROUP = /\)[*+{]/;
+/** A pattern without its escaped characters, so "\+" is not counted as a repeat. */
+const bare = (pattern: string): string => pattern.replace(/\\./g, '');
+
 /** One action of an item: an exact DCS action name with a plain label, or a pattern. */
 const ActionSpecSchema = z.union([
   z.strictObject({ name: text(200), label: text(120) }),
-  z.strictObject({ re: text(200) }),
+  z.strictObject({ re: text(MAX_PATTERN) }),
 ]);
 export type ActionSpec = z.infer<typeof ActionSpecSchema>;
 
@@ -93,12 +106,30 @@ export const PackSchema = z
   })
   .superRefine((pack, ctx) => {
     const ids = new Set<string>();
+    const patterns = pack.items.flatMap((i) => i.actions).filter((spec) => 're' in spec).length;
+    if (patterns > MAX_PATTERNS) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `a guide may hold at most ${MAX_PATTERNS} patterns (this one has ${patterns})`,
+      });
+    }
     for (const item of pack.items) {
       if (ids.has(item.id)) ctx.addIssue({ code: 'custom', message: `item ${item.id} twice` });
       ids.add(item.id);
       for (const spec of item.actions) {
-        if ('re' in spec && !safeRegExp(spec.re)) {
+        if (!('re' in spec)) continue;
+        if (!safeRegExp(spec.re)) {
           ctx.addIssue({ code: 'custom', message: `item ${item.id}: bad pattern ${spec.re}` });
+        } else if (REPEATED_GROUP.test(bare(spec.re))) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `item ${item.id}: a pattern may not repeat a group (${spec.re})`,
+          });
+        } else if ((bare(spec.re).match(/[*+{]/g) ?? []).length > MAX_REPEATS) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `item ${item.id}: a pattern may use *, + or {…} at most ${MAX_REPEATS} times (${spec.re})`,
+          });
         }
       }
     }
@@ -235,10 +266,11 @@ export function matchActions(
   const found: { action: BoundAction; label: string }[] = [];
   const seen = new Set<string>();
   for (const spec of item.actions) {
+    const pattern = 're' in spec ? safeRegExp(spec.re) : undefined;
     const hits =
       'name' in spec
         ? actions.filter((a) => a.name === spec.name)
-        : actions.filter((a) => safeRegExp(spec.re)?.test(a.name));
+        : actions.filter((a) => pattern?.test(a.name));
     for (const action of hits) {
       if (seen.has(action.id)) continue;
       seen.add(action.id);

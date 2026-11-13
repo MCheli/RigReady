@@ -6,6 +6,9 @@ import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import {
   itemStatus,
   matchActions,
+  MAX_PATTERN,
+  MAX_PATTERNS,
+  MAX_REPEATS,
   parsePack,
   resolvePack,
   shippedPacks,
@@ -245,5 +248,63 @@ describe('binding guides (knowledge packs)', () => {
       MINIMAL.replace('when: Always.', 'when: Always.\n    run: rm -rf')
     );
     expect(extraField.ok).toBe(false);
+  });
+
+  it('AI-009 keeps every pattern quick to run: short, no group that repeats, few repeats, few patterns', () => {
+    const withPatterns = (...patterns: string[]) =>
+      parsePack(
+        MINIMAL.replace(
+          '[{ name: Pitch, label: Pitch }]',
+          `[${patterns.map((re) => `{ re: ${JSON.stringify(re)} }`).join(', ')}]`
+        )
+      );
+    const said = (result: ReturnType<typeof parsePack>): string =>
+      result.ok ? 'taken' : (result.error.detail ?? '');
+
+    expect(MAX_PATTERN).toBe(100);
+    expect(said(withPatterns(`^P${'.'.repeat(MAX_PATTERN - 2)}`))).toBe('taken');
+    expect(said(withPatterns(`^P${'.'.repeat(MAX_PATTERN - 1)}`))).toMatch(/100/);
+    // A group that repeats, in each way it can be written.
+    for (const re of ['(a+)+$', '(a|aa)*b', '(?:Pitch ?){1,9}']) {
+      expect(said(withPatterns(re))).toContain('item pitch: a pattern may not repeat a group');
+    }
+    // An escaped bracket or sign is a character like any other.
+    expect(said(withPatterns('^Trim \\(Up\\)\\+$'))).toBe('taken');
+    // A group that is optional, or followed by something else that repeats, does not repeat.
+    expect(said(withPatterns('^(Pitch)? +Up$'))).toBe('taken');
+    expect(said(withPatterns('^Pitch .*$', '^P.+ch$'))).toBe('taken');
+    expect(said(withPatterns('^.*P.*i.*tch$'))).toContain(
+      `item pitch: a pattern may use *, + or {…} at most ${MAX_REPEATS} times`
+    );
+    const many = Array.from({ length: MAX_PATTERNS }, (_, n) => `^Pitch ${n}$`);
+    expect(said(withPatterns(...many))).toBe('taken');
+    // The count is of the whole guide, across its items.
+    const second = `
+  - id: roll
+    title: Roll
+    tier: must
+    place: hotas
+    role: stick
+    what: Roll.
+    when: Always.
+    actions: [{ re: '^Roll$' }]
+`;
+    const overTheCount = parsePack(
+      MINIMAL.replace(
+        '[{ name: Pitch, label: Pitch }]',
+        `[${many.map((re) => `{ re: ${JSON.stringify(re)} }`).join(', ')}]`
+      ) + second.trimStart().replace(/^/, '  ')
+    );
+    expect(said(overTheCount)).toContain(
+      `a guide may hold at most ${MAX_PATTERNS} patterns (this one has ${MAX_PATTERNS + 1})`
+    );
+    // The guides RigReady ships stay well inside all of it.
+    for (const pack of new Set(shipped().values())) {
+      const patterns = pack.items
+        .flatMap((i) => i.actions)
+        .flatMap((s) => ('re' in s ? [s.re] : []));
+      expect(patterns.length, pack.aircraft.id).toBeLessThanOrEqual(10);
+      for (const re of patterns) expect(re.length, re).toBeLessThanOrEqual(70);
+    }
   });
 });

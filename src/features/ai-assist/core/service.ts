@@ -18,6 +18,7 @@ import {
 import { budgetStopMessage, MonthSpend } from './budget';
 import { draftSchema, draftTask, validateDraft } from './draft';
 import { describeInput, fits, hasInput } from './inputs';
+import { guideProblem, MAX_GUIDE_BYTES, starterGuide } from './ownGuide';
 import {
   matchActions,
   parsePack,
@@ -57,7 +58,7 @@ import {
   type UsageView,
 } from './model';
 import { shippedPack } from './shipped';
-import { contextText, takeSnapshot, type Snapshot } from './snapshot';
+import { contextText, takeSnapshot, type GuideKind, type Snapshot } from './snapshot';
 import { jsonText } from './openai';
 import {
   checkBaseUrl,
@@ -147,35 +148,40 @@ const ProgressFileSchema = z.object({ aircraft: z.record(z.string(), ProgressSch
 
 /**
  * What is and is not sent, shown in Settings: by use, because the two uses send different
- * things. The binding guide sends a fixed, narrow description of one aircraft's bindings; the
- * assistant sends the conversation and whatever the tools it used answered.
+ * things. The assistant, which is the same for every game, sends the conversation and
+ * whatever the tools it used answered. AI help in the binding guide, which is for DCS
+ * aircraft only, sends a fixed, narrow description of one aircraft's bindings. The assistant
+ * comes first: it is the part that everyone who sets up AI uses, whatever they play.
  */
 export function whatIsSent(provider: ChatProvider | undefined): WhatIsSent {
   const guide = {
-    title: 'The binding guide (DCS)',
+    title: 'AI help in the binding guide (DCS aircraft only)',
     lines: [
+      'Only when you ask for AI help on the Binding guide page, which covers DCS aircraft. If you do not fly DCS, nothing in this list is ever sent.',
       "Sent: the aircraft's name, and DCS's list of its actions (ids, names, categories) with what each is bound to now.",
       'Sent: for each controller used in DCS, its DirectInput product name (such as "Joystick - HOTAS Warthog"), what it is used as, how many buttons and hats it has, and the names of its axes.',
-      "Sent: RigReady's guide for the aircraft when there is one, and your question.",
-      'Never sent: file paths, device ids (GUIDs), serial numbers, the names you gave your devices, your Windows user or PC name, or the contents of your files.',
+      "Sent: the guide for the aircraft when there is one (RigReady's, one drafted by AI, or your own): its summary and each item with its title, tier, place and what it does. And your question.",
+      'Never sent: file paths, device ids (GUIDs), serial numbers, the names you gave your devices, your Windows user or PC name, or any other content of your files.',
       'Every request is shown to you in full before it is sent.',
     ],
   };
   const assistant = {
     title: 'The assistant (any game)',
     lines: [
+      'Used for questions about your rig and about RigReady, for proposing a setup and for drafting a script. It works the same whatever you play: a racing sim such as iRacing, a flight sim such as DCS, or anything else.',
       "Sent with every request: your messages and the assistant's answers in the conversation so far, RigReady's instructions for the assistant, and the list of tools it may use (their names, descriptions and arguments).",
-      "Sent: what each tool answered when the assistant used it. A tool can answer what RigReady itself can show you: your setups and their checks and steps, whether the rig is ready, what is connected and running, where programs are installed, the names of your devices, bindings and settings, and pages of RigReady's manual.",
+      "Sent: what each tool answered when the assistant used it. A tool can answer what RigReady itself can show you: your setups and their checks and steps, whether the rig is ready, what is connected and running, where programs are installed, the names of your devices, the bindings and settings RigReady reads from your games, and pages of RigReady's manual.",
       'Every tool the assistant used is listed in the conversation. Open its row to read exactly what it answered, which is exactly what is sent.',
       "Before a tool's answer is sent, the path of your Windows user folder is replaced by {USER}, and the PC's name by {PC} when it has five or more characters. Nothing else is taken out: other names and paths go as they are.",
       'Not sent: anything no tool was used for. The assistant cannot read the PC in any other way.',
       'Each request is shown before it is sent, with its exact text one click away, unless you ticked "Don\'t show this again for this conversation".',
+      'A setup it proposes or a script it drafts comes back in its answer and waits in RigReady until you save it or throw it away. Saving it sends nothing.',
     ],
   };
   if (!provider) {
     return [
-      guide,
       assistant,
+      guide,
       {
         title: 'Where it goes',
         lines: ['Nothing is sent until a provider is set up and you press Send.'],
@@ -196,7 +202,7 @@ export function whatIsSent(provider: ChatProvider | undefined): WhatIsSent {
         : `${provider.label}'s API terms and privacy policy apply to what is sent.`
     );
   }
-  return [guide, assistant, { title: 'Where it goes', lines: where }];
+  return [assistant, guide, { title: 'Where it goes', lines: where }];
 }
 
 const MAX_TOKENS: Record<RequestKind, number> = {
@@ -234,6 +240,14 @@ const modelOf = (s: ProviderSettings): string =>
       : s.compatible.model;
 
 const safeName = (id: string): string => id.replace(/[^A-Za-z0-9_.-]/g, '_');
+
+/** The guide's line in the preview of a request: whose guide it is, and what of it is sent. */
+const GUIDE_IN_A_REQUEST: Record<GuideKind, string> = {
+  shipped: "RigReady's binding guide for this aircraft",
+  drafted:
+    'The guide drafted by AI for this aircraft: its summary and each item with its title, tier, place and what it does',
+  own: 'Your own guide for this aircraft: its summary and each item with its title, tier, place and what it does',
+};
 
 export class AiAssist {
   private readonly settings: JsonStore<typeof SettingsSchema>;
@@ -285,22 +299,136 @@ export class AiAssist {
     );
   }
 
-  /** The shipped guide, or one drafted earlier, for an aircraft. */
-  async guideFor(
-    aircraftId: string
-  ): Promise<{ pack: Pack; kind: 'shipped' | 'drafted' } | undefined> {
-    const pack = shippedPack(aircraftId);
-    if (pack) return { pack, kind: 'shipped' };
+  /**
+   * The guide file kept for an aircraft in the data folder, as it reads now: a draft by AI
+   * or the user's own. Undefined when there is none; a problem when it cannot be used.
+   */
+  private async stored(aircraftId: string): Promise<{ pack?: Pack; problem?: string } | undefined> {
     const file = this.draftPath(aircraftId);
     if (!(await this.ctx.ports.files.exists(file))) return undefined;
     const text = await this.ctx.ports.files.readText(file);
-    if (!text.ok) return undefined;
+    if (!text.ok) return { problem: text.error.message };
     const parsed = parsePack(text.value, path.basename(file));
-    if (!parsed.ok) {
-      this.ctx.log.warn(`ai-assist: ${parsed.error.message}`);
+    return parsed.ok ? { pack: parsed.value } : { problem: guideProblem(parsed.error) };
+  }
+
+  /** The shipped guide, or the one kept for an aircraft: drafted by AI, or the user's own. */
+  async guideFor(
+    aircraftId: string
+  ): Promise<{ pack: Pack; kind: 'shipped' | 'drafted' | 'own' } | undefined> {
+    const pack = shippedPack(aircraftId);
+    if (pack) return { pack, kind: 'shipped' };
+    const stored = await this.stored(aircraftId);
+    if (!stored?.pack) {
+      if (stored) this.ctx.log.warn(`ai-assist: the guide file for ${aircraftId} cannot be used`);
       return undefined;
     }
-    return { pack: parsed.value, kind: 'drafted' };
+    return { pack: stored.pack, kind: stored.pack.drafted ? 'drafted' : 'own' };
+  }
+
+  /** True when a draft by AI would replace a guide file the user wrote or imported. */
+  private async ownGuideKept(aircraftId: string): Promise<boolean> {
+    if (shippedPack(aircraftId)) return false;
+    const stored = await this.stored(aircraftId);
+    return stored !== undefined && !stored.pack?.drafted;
+  }
+
+  // -------------------------------------------------------------------------
+  // A guide of the user's own: imported from a file, or written by hand (no key needed)
+  // -------------------------------------------------------------------------
+
+  /** Why a guide file cannot be added for this aircraft, or the aircraft's name when it can. */
+  private async roomForGuide(aircraftId: string): Promise<Result<Snapshot>> {
+    if (shippedPack(aircraftId)) {
+      return err(
+        'ai.guideShipped',
+        'RigReady includes a guide for this aircraft and uses that one.'
+      );
+    }
+    if (await this.ctx.ports.files.exists(this.draftPath(aircraftId))) {
+      return err(
+        'ai.guideExists',
+        'There is a guide file for this aircraft already. Open it, or delete it first.'
+      );
+    }
+    return this.snapshot(aircraftId);
+  }
+
+  /**
+   * Takes a guide file the user picks in the Windows file dialog. It is read, checked by the
+   * same parser as every guide, and only then copied into RigReady's data folder. The file
+   * the user picked is never changed.
+   */
+  async importGuide(aircraftId: string): Promise<Result<{ imported: boolean; items: number }>> {
+    const room = await this.roomForGuide(aircraftId);
+    if (!room.ok) return room;
+    const { files, dialogs } = this.ctx.ports;
+    const picked = await dialogs.open({
+      title: `Import a binding guide for the ${room.value.aircraftName}`,
+      filters: [{ name: 'Binding guide', extensions: ['yaml', 'yml'] }],
+    });
+    if (!picked.ok) return picked;
+    const file = picked.value[0];
+    if (!file) return ok({ imported: false, items: 0 });
+    const entry = await files.stat(file);
+    if (!entry.ok) return entry;
+    if (!entry.value || entry.value.isDirectory) {
+      return err('ai.guideFile', 'That file could not be found.');
+    }
+    if (entry.value.size > MAX_GUIDE_BYTES) {
+      return err(
+        'ai.guideSize',
+        `That file is larger than a binding guide can be (${MAX_GUIDE_BYTES / 1024} KB).`
+      );
+    }
+    const text = await files.readText(file);
+    if (!text.ok) return text;
+    const parsed = parsePack(text.value, path.basename(file));
+    if (!parsed.ok) return err(parsed.error.code, guideProblem(parsed.error));
+    const pack = parsed.value;
+    const wanted = aircraftId.toLowerCase();
+    const forThis = [pack.aircraft.id, ...(pack.aircraft.also ?? [])].some(
+      (id) => id.toLowerCase() === wanted
+    );
+    if (!forThis) {
+      return err(
+        'ai.guideAircraft',
+        `That guide is for the ${pack.aircraft.name} (${pack.aircraft.id}). The aircraft shown here is the ${room.value.aircraftName} (${aircraftId}).`
+      );
+    }
+    const written = await files.write(this.draftPath(aircraftId), text.value, {
+      reason: 'Binding guide imported from a file',
+    });
+    if (!written.ok) return written;
+    return ok({ imported: true, items: pack.items.length });
+  }
+
+  /** Writes a short, valid guide on real actions of the aircraft for the user to edit. */
+  async startOwnGuide(aircraftId: string): Promise<Result<{ started: boolean }>> {
+    const room = await this.roomForGuide(aircraftId);
+    if (!room.ok) return room;
+    const s = room.value;
+    if (s.actions.length === 0) {
+      return err('ai.guideActions', `DCS lists no actions for the ${s.aircraftName} yet.`);
+    }
+    const text = starterGuide({ id: aircraftId, name: s.aircraftName }, s.actions);
+    const checked = parsePack(text, 'The starter guide');
+    if (!checked.ok) return err(checked.error.code, guideProblem(checked.error));
+    const written = await this.ctx.ports.files.write(this.draftPath(aircraftId), text, {
+      reason: 'Binding guide started by hand',
+    });
+    return written.ok ? ok({ started: true }) : written;
+  }
+
+  /** Opens the guide file kept for an aircraft in Notepad. No other file can be named. */
+  async openGuideFile(aircraftId: string): Promise<Result<{ opened: boolean }>> {
+    const file = this.draftPath(aircraftId);
+    if (!(await this.ctx.ports.files.exists(file))) {
+      return err('ai.guideFile', 'There is no guide file for this aircraft.');
+    }
+    const notepad = path.join(this.ctx.ports.folders.windows(), 'notepad.exe');
+    const started = await this.ctx.ports.shell.launch(notepad, [file]);
+    return started.ok ? ok({ opened: true }) : started;
   }
 
   async aircraft(): Promise<Result<AircraftList>> {
@@ -325,7 +453,9 @@ export class AiAssist {
   private async snapshot(aircraftId: string): Promise<Result<Snapshot>> {
     const reader = this.reader();
     if (!reader.ok) return reader;
-    return takeSnapshot(reader.value, aircraftId, (await this.guideFor(aircraftId))?.pack);
+    const found = await this.guideFor(aircraftId);
+    const taken = await takeSnapshot(reader.value, aircraftId, found?.pack);
+    return taken.ok && found ? ok({ ...taken.value, guideKind: found.kind }) : taken;
   }
 
   // -------------------------------------------------------------------------
@@ -366,6 +496,7 @@ export class AiAssist {
     const snapshot = await this.snapshot(aircraftId);
     if (!snapshot.ok) return snapshot;
     const found = await this.guideFor(aircraftId);
+    const kept = found?.kind === 'shipped' ? undefined : await this.stored(aircraftId);
     const progress = await this.progressOf(aircraftId);
     if (!progress.ok) return progress;
     const s = snapshot.value;
@@ -388,6 +519,7 @@ export class AiAssist {
             }),
           }
         : null,
+      stored: kept ? (kept.problem ? { problem: kept.problem } : {}) : null,
       tiers: TIERS.map((tier) => ({
         tier,
         title: TIER_TITLES[tier],
@@ -982,6 +1114,12 @@ export class AiAssist {
       task = suggestionTask(s);
       schema = suggestionSchema(s.controllers.map((c) => c.ref));
     } else if (input.kind === 'draft') {
+      if (await this.ownGuideKept(input.aircraftId)) {
+        return err(
+          'ai.guideExists',
+          'This aircraft has a guide file of your own, and a draft would replace it. Delete it on the Binding guide page first.'
+        );
+      }
       task = draftTask(s);
       schema = draftSchema();
     } else if (input.kind === 'explain') {
@@ -1043,7 +1181,7 @@ export class AiAssist {
         `${s.actions.length} actions of the ${s.aircraftName}, with what each is bound to now`,
         `${s.controllers.length} ${s.controllers.length === 1 ? 'controller' : 'controllers'}: ${s.controllers.map((c) => c.name).join(', ') || 'none'}`,
         s.pack
-          ? "RigReady's binding guide for this aircraft"
+          ? GUIDE_IN_A_REQUEST[s.guideKind ?? 'shipped']
           : 'No guide (there is none for this aircraft)',
         question ? `Your question: "${question}"` : 'The task: what RigReady asks the model to do',
       ],
@@ -1179,12 +1317,25 @@ export class AiAssist {
       });
     }
     if (request.kind === 'draft') {
+      // A guide file of the user's own may have been added since the request was shown.
+      if (await this.ownGuideKept(request.aircraftId)) {
+        return err(
+          'ai.guideExists',
+          'A guide file of your own was added for this aircraft meanwhile. Nothing was sent.'
+        );
+      }
       const at = new Date(this.ctx.ports.clock.now()).toISOString();
       const draft = await this.checked(requestId, request, key.value, controller, (text, model) =>
         validateDraft(text, request.snapshot, model, at)
       );
       if (!draft.ok) return draft;
       const { value, usage } = draft.value;
+      if (await this.ownGuideKept(request.aircraftId)) {
+        return err(
+          'ai.guideExists',
+          'A guide file of your own was added for this aircraft meanwhile. The draft was not saved.'
+        );
+      }
       const written = await this.ctx.ports.files.write(
         this.draftPath(request.aircraftId),
         `# Drafted by ${usage.model} for RigReady. Format: see packs/README.md in RigReady's source.\n${yaml.dump(value.pack, { lineWidth: 100 })}`,
@@ -1295,7 +1446,7 @@ export class AiAssist {
     const file = this.draftPath(aircraftId);
     if (!(await this.ctx.ports.files.exists(file))) return ok({ deleted: false });
     const removed = await this.ctx.ports.files.remove(file, {
-      reason: 'Delete the binding guide drafted by AI',
+      reason: 'Delete the binding guide kept for an aircraft',
     });
     return removed.ok ? ok({ deleted: true }) : removed;
   }

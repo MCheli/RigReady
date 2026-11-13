@@ -4354,6 +4354,41 @@ requirements:
       - "artifacts/screens/ai-assist-compatible-suggest/01-payload.png"
       - "artifacts/screens/ai-assist-compatible-suggest/02-suggestions.png"
 
+  - id: AI-009
+    title: A binding guide can be imported from a file or written by hand, with no AI key
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "For an aircraft RigReady ships no guide for, the Binding guide page offers 'Import a guide file' and 'Write your own' with no AI key. The import takes the file picked in the Windows dialog, reads it with the parser every guide goes through and keeps a copy in the data folder; the starter is a short guide, valid as it stands, on real actions of the aircraft, with the format explained in its first lines."
+      - "'Open the file' starts Notepad with the kept file as its one argument (Shell.launch with an argument array); 'Read it again' reads the file after an edit, and an edit that does not fit is shown with what is wrong; 'Delete this guide' asks first."
+      - "A file that is not a guide, that is for another aircraft or that is larger than 512 KB is refused with the reason. A kept guide file is never replaced by an import, a starter or a draft by AI. Nothing is written outside the data folder."
+      - "A pattern in a guide is at most 100 characters, repeats no group, and uses *, + or {…} at most twice; a guide holds at most 40 patterns. The same holds for the shipped guides, a guide drafted by AI, an imported guide and a guide written by hand, each time the file is read."
+      - "A request for AI help says whose guide it carries, in the preview and in the request itself, and 'Exactly what is sent' in Settings says that a guide of the user's own is part of such a request."
+    notes:
+      - "2026-11-12: a guide of the user's own is kept where a draft by AI is kept, <data folder>/ai-assist/guides/<aircraft>.yaml, and read by the same parser; a kept file without the 'drafted' stamp is the user's own. The aircraft list says 'Your own guide'."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/ownGuide.test.ts#takes the file picked in the Windows dialog, checks it, keeps a copy in the data folder and shows it as your own"
+      - "src/features/ai-assist/core/ownGuide.test.ts#changes nothing when the dialog is closed without a file"
+      - "src/features/ai-assist/core/ownGuide.test.ts#refuses a file that is not a guide, a guide for another aircraft and a file that is too large, and says why"
+      - "src/features/ai-assist/core/ownGuide.test.ts#refuses where RigReady includes a guide, and never replaces a guide file that is kept"
+      - "src/features/ai-assist/core/ownGuide.test.ts#refuses an imported guide whose pattern is too long, repeats a group or repeats too often"
+      - "src/features/ai-assist/core/ownGuide.test.ts#holds a guide drafted by AI and a guide edited by hand to them each time the file is read"
+      - "src/features/ai-assist/core/ownGuide.test.ts#starts a short guide that is valid as it stands, on real actions of the aircraft, with the format explained"
+      - "src/features/ai-assist/core/ownGuide.test.ts#reads the file again after an edit, and says what is wrong with an edit that does not fit"
+      - "src/features/ai-assist/core/ownGuide.test.ts#\"Open the file\" starts Notepad with the kept guide file as its one argument, and with no other file"
+      - "src/features/ai-assist/core/ownGuide.test.ts#is refused while a guide file of your own is kept, and nothing is sent"
+      - "src/features/ai-assist/core/ownGuide.test.ts#a request shown before the guide was imported sends nothing afterwards and leaves the file alone"
+      - "src/features/ai-assist/core/ownGuide.test.ts#names a guide of your own as yours, in the preview and in the request itself"
+      - "src/features/ai-assist/core/pack.test.ts#AI-009 keeps every pattern quick to run: short, no group that repeats, few repeats, few patterns"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: with no AI key, a binding guide is imported from a file or written by hand, opened, read again and deleted"
+      - "artifacts/screens/ai-assist-own-guide/01-two-ways-in.png"
+      - "artifacts/screens/ai-assist-own-guide/02-imported.png"
+      - "artifacts/screens/ai-assist-own-guide/03-delete-asks-first.png"
+      - "artifacts/screens/ai-assist-own-guide/04-started.png"
+      - "artifacts/screens/ai-assist-own-guide/05-needs-a-fix.png"
+
   # ---------------------------------------------------------------------------
   # THE BUILT-IN ASSISTANT: app-wide, on the MCP catalogue and gate
   # ---------------------------------------------------------------------------
@@ -4371,6 +4406,7 @@ requirements:
       - "2026-11-12: the panel was reworked after the owner's first use on the rig. A request that failed stays ready and one press sends it again, with the message back in the box; the conversation is the one scrolling region, with proposals where they were made; replies are shown formatted; every request says what reading it costs, and a ceiling per question stops and asks (ASSIST-005). The unit tests below prove this on the real code paths: the panel's store against the wired app, the log through the real logger. Open: tests/e2e/assistant.e2e.ts was extended and has a second test ('assistant: a request the provider refuses can be sent again with one press', scenario assistant-refused). Neither has been run since the rework, because no window may be opened while the rig sitting runs. The two screenshots below show the panel as it was before; they, the other six of artifacts/screens/assistant and the two new ones of artifacts/screens/assistant-refused (refused, answered-after-retry) wait to be taken by that run. Back to done once the run has passed and the screenshots are committed."
       - "2026-11-12, after the sitting: windows were allowed again. Both tests of tests/e2e/assistant.e2e.ts passed against the build of this commit, with the isolated launch, and the eight screenshots of artifacts/screens/assistant and the two of artifacts/screens/assistant-refused were taken by that run and are committed with it. Back to done. The dollar figures in them are worded as estimates (ASSIST-008)."
       - "2026-11-12, later: the renderer of replies now counts its own work, and reads ahead of its place for the end of a link only up to a fixed number of characters for each character of the reply. A reply that spends that keeps all of its text and gets no more links; a long reply written to be read keeps every one. Its test holds it to counted steps, for each hard text and for one twice as long, so the result is the same on every machine; the 1500 ms on the clock stay as a loose backstop. Compared once with the renderer as it was on one million random texts (a run that is not kept in the repository): none was parsed differently."
+      - "2026-11-12, later still: 'Exactly what is sent' in Settings goes use by use. The assistant comes first and says it works the same whatever is played (a racing sim such as iRacing, a flight sim such as DCS, or anything else), with what a proposed setup or a drafted script sends; AI help in the binding guide follows, marked as for DCS aircraft only, with the line that nothing in its list is sent by someone who does not fly DCS."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
@@ -4390,6 +4426,8 @@ requirements:
       - "src/features/ai-assist/core/markdown.test.ts#a link leads to a plain web address or it is no link"
       - "src/features/ai-assist/renderer/markdownView.test.ts#makes a link of an https address only, opened in the system browser and never in the window"
       - "src/features/ai-assist/core/service.test.ts#says apart what the binding guide sends and what the assistant sends, and where it goes"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: the key is entered in Settings, tested, never shown again, and what is sent is stated"
+      - "artifacts/screens/ai-assist-key/03-what-is-sent.png"
       - "tests/e2e/assistant.e2e.ts#assistant: sets up a DCS session and writes a script that asks before it runs"
       - "tests/e2e/assistant.e2e.ts#assistant: a request the provider refuses can be sent again with one press"
       - "artifacts/screens/assistant/01-panel-open.png"
@@ -4812,6 +4850,51 @@ requirements:
       - test: "tests/e2e/mcp-connect.e2e.ts#mcp-connect: the welcome screen offers an assistant as an optional step, and Not now puts it away"
       - "artifacts/screens/mcp-welcome/01-welcome-step.png"
       - "artifacts/screens/mcp-welcome/02-welcome-to-settings.png"
+
+  - id: MCP-013
+    title: What an assistant's call says on screen is plain, counted right and marked where it is cut
+    job: configure
+    area: ai
+    priority: p3
+    done_means:
+      - "How a call ended reads the same in the list of what assistants did and in the short notice after a change, in the words of the person at the PC: 'You said no.' for a refusal, and for every outcome that did not run a line that says so."
+      - "A count names one thing in the singular: '1 setup', '2 setups'."
+      - "A call under a question, a line in the list or a reason that is too long to show is cut at a fixed length with a mark, '… (N more characters not shown)'; a text that fits is shown to its last character."
+    status: done
+    evidence:
+      - "src/features/mcp/renderer/outcomeWords.test.ts#a refusal reads \"You said no.\" in the list and in the short line alike"
+      - "src/features/mcp/renderer/outcomeWords.test.ts#every outcome that did not run says so in the words of the person, never \"The user\""
+      - "src/features/mcp/core/gate.test.ts#counts one thing in the singular: \"1 setup\", never \"1 setups\""
+      - "src/features/mcp/core/clip.test.ts#marks the cut and counts what is not shown"
+      - "src/features/mcp/core/clip.test.ts#leaves a text that fits alone, to the last character"
+      - "src/features/mcp/core/gate.test.ts#MCP-013 says so when a line was cut, and never shows a token"
+      - "tests/e2e/mcp.e2e.ts#mcp: a channel called directly is asked about in words with the call under them, and a no is counted"
+      - "artifacts/screens/mcp-question-plain/03-said-no-and-counted.png"
+      - "artifacts/screens/mcp-question-plain/04-question-cut-says-so.png"
+
+  - id: MCP-014
+    title: A pairing token is shown only on request and is never written to the log, a diagnostics export or a notice
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Settings > AI assistants offers first the ways to connect that carry no token the user sees, types or pastes (Connect, and the texts that start RigReady.exe --mcp); the forms that connect by address come last and are named 'by address (needs a token)', each with a line on where that token then sits."
+      - "After Pair the text to paste shows '<token hidden>' in place of the token. 'Show the token' draws it and 'Hide the token' hides it again; 'Copy with the token' copies the whole text and says it stays on the clipboard until something else is copied; 'Done, take it off this page' removes it from the page. RigReady keeps only the SHA-256 of a token."
+      - "No token is written to the log, whole or cut short: a value of the form rr_ followed by sixteen or more hex characters is written as rr_***, bare, in a header or in JSON. A diagnostics export holds none, and neither does the notice about an unexpected error."
+      - "A token an assistant puts into a call, or a program into its answer, is masked before the question, the list and the log show the line; masking comes before cutting."
+      - "A request with a token that is not known leaves one line in the log without the token, then a count."
+    status: done
+    evidence:
+      - "src/features/mcp/core/tokenCare.test.ts#pairing, the text to paste, Copy, a new bridge token and a refused request leave no token behind"
+      - "src/features/mcp/core/tokenCare.test.ts#a caller that keeps trying a wrong token fills no log: one line, then a count"
+      - "src/features/mcp/core/tokenCare.test.ts#a token in what an assistant sends or is answered is not in the question, the list or the log"
+      - "src/features/mcp/core/tokenCare.test.ts#every form that starts RigReady carries no token, and only the forms by address do"
+      - "src/features/mcp/core/tokenCare.test.ts#masks a token wherever it stands: bare, in a header, in JSON, or cut short"
+      - "src/features/mcp/core/tokenCare.test.ts#a notice about an unexpected error shows no token"
+      - "src/features/mcp/renderer/outcomeWords.test.ts#shows a placeholder where the token is until the user asks to see it"
+      - "tests/unit/logging.test.ts#never writes a pairing token of the MCP server, whole or cut short"
+      - "tests/e2e/mcp.e2e.ts#mcp: turned on in Settings, an assistant paired, its change asked in the window and listed"
+      - "artifacts/screens/mcp-settings/03-paired.png"
 
   # ---------------------------------------------------------------------------
   # BACKUP AND RESTORE
@@ -6678,6 +6761,28 @@ requirements:
       - "tests/unit/releaseProcess.test.ts#the Release workflow hands the four variables and three secrets to the build step only, and verifies a signed build before the draft is made"
       - "scripts/verify-signed-installer.ps1"
       - ".github/workflows/release.yml"
+
+  - id: PLAT-018
+    title: A failure can be explained from the log and from a diagnostics export
+    job: platform
+    area: platform
+    priority: p2
+    done_means:
+      - "Every channel of every feature that answers with an error leaves one line in the log at the normal level: the channel, the error's code and the message the user was shown. Never the input, and never the error's detail. The same error of the same channel is written once a minute, with a count of the ones in between; the user's own Stop writes nothing."
+      - "Every request to an AI provider that fails leaves one line: the host, the path, the model, the HTTP status, the provider's own error type, error code and message, and the id the provider gave the request. Never the key, the request text or an address's query. A send the panel refused is in the log the same way, and so is the case of a question that has used the requests it may make."
+      - "The MCP server leaves a line for every change, every launch and every call that did not go through: who, which tool and how it ended, never the input or the answer."
+      - "A diagnostics export of such a failure holds those lines, and holds no API key and no pairing token."
+    status: done
+    evidence:
+      - "tests/unit/failureLog.test.ts#writes the channel, the code and the message, and passes the answer on unchanged"
+      - "tests/unit/failureLog.test.ts#never writes what the channel was given, nor the detail of the error"
+      - "tests/unit/failureLog.test.ts#writes nothing for an answer that worked, nor for a Stop the user pressed"
+      - "tests/unit/failureLog.test.ts#a page that keeps asking fills no log: the same error once a minute, with a count"
+      - "tests/unit/failureLog.test.ts#a failing path of each of these features leaves a line with its channel and code"
+      - "src/features/ai-assist/core/providerLog.test.ts#names the provider, the model, the status, what the provider said and its request id"
+      - "src/features/ai-assist/core/providerLog.test.ts#holds the status, the reason, the error type and the request id, and what the panel told the user"
+      - "src/features/mcp/core/tokenCare.test.ts#a port another program holds: the export says which channel failed and why"
+      - "src/features/mcp/core/tokenCare.test.ts#a change an assistant made, and a call that failed, each leave a line with who and what"
 
   # ---------------------------------------------------------------------------
   # WINDOWS INTEGRATION — flying in one double-click (the final pass, 2026-10-04)

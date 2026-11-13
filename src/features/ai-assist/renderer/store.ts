@@ -57,6 +57,8 @@ export const useAiStore = defineStore('ai-assist', () => {
   const answers = ref<Answer[]>([]);
   const lastUsage = ref<Sent['usage']>();
   const drafted = ref<string>();
+  /** What was just done with the guide file of the aircraft shown: imported, started, opened. */
+  const guideNote = ref<string>();
   /** Answers to "explain this action", by action id, shown beside the action. */
   const explanations = ref<Record<string, Answer>>({});
   let explaining: string | undefined;
@@ -111,6 +113,7 @@ export const useAiStore = defineStore('ai-assist', () => {
     answers.value = [];
     explanations.value = {};
     drafted.value = undefined;
+    guideNote.value = undefined;
     await loadGuide(id);
   }
 
@@ -375,6 +378,52 @@ export const useAiStore = defineStore('ai-assist', () => {
     const result = await api.deleteDraft({ aircraftId: aircraftId.value });
     if (!result.ok) error.value = errorText(result.error);
     drafted.value = undefined;
+    guideNote.value = undefined;
+    await load();
+  }
+
+  /** A guide file the user picks in the Windows dialog, for the aircraft shown. */
+  async function importGuide(): Promise<void> {
+    if (!aircraftId.value) return;
+    guideNote.value = undefined;
+    const result = await api.importGuide({ aircraftId: aircraftId.value });
+    if (!result.ok) {
+      error.value = errorText(result.error);
+      return;
+    }
+    if (!result.value.imported) return;
+    const items = result.value.items;
+    await load();
+    guideNote.value = `Imported a guide with ${items} ${items === 1 ? 'item' : 'items'}. It is kept as a file of your own in RigReady's data folder.`;
+  }
+
+  /** A short starter guide for the aircraft shown, for the user to edit. */
+  async function startOwnGuide(): Promise<void> {
+    if (!aircraftId.value) return;
+    guideNote.value = undefined;
+    const result = await api.startOwnGuide({ aircraftId: aircraftId.value });
+    if (!result.ok) {
+      error.value = errorText(result.error);
+      return;
+    }
+    await load();
+    guideNote.value =
+      'A short starter guide was written, with an example on real actions of this aircraft. Open the file, change it to what matters to you, save, then read it again.';
+  }
+
+  async function openGuideFile(): Promise<void> {
+    if (!aircraftId.value) return;
+    const result = await api.openGuideFile({ aircraftId: aircraftId.value });
+    if (!result.ok) {
+      error.value = errorText(result.error);
+      return;
+    }
+    guideNote.value = 'The file is open in Notepad. Save it there, then read it again here.';
+  }
+
+  /** Reads the guide file again, after the user changed it in an editor. */
+  async function reloadGuide(): Promise<void> {
+    guideNote.value = undefined;
     await load();
   }
 
@@ -406,6 +455,7 @@ export const useAiStore = defineStore('ai-assist', () => {
     answers,
     lastUsage,
     drafted,
+    guideNote,
     explanations,
     load,
     loadGuide,
@@ -428,5 +478,9 @@ export const useAiStore = defineStore('ai-assist', () => {
     cancelSend,
     toggle,
     deleteDraft,
+    importGuide,
+    startOwnGuide,
+    openGuideFile,
+    reloadGuide,
   };
 });

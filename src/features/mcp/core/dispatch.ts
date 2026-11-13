@@ -1,3 +1,4 @@
+import { maskSecrets } from '../../../core/logger';
 import type { McpCallContext } from '../../../core/mcp';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChannelDef, ChannelTier } from '../../../shared/ipc';
@@ -13,6 +14,7 @@ import {
   type Catalogue,
   type ToolSpec,
 } from './catalogue';
+import { clip } from './clip';
 import type { ToolCall } from './gate';
 import { channelInputFrom } from './jsonSchema';
 
@@ -41,6 +43,9 @@ export function plainLine(describe: string | undefined): string | undefined {
   return first ? first : undefined;
 }
 
+/** How much of a call's input is shown under the question and in the record. */
+export const CALL_LENGTH = 120;
+
 function channelCall(
   deps: DispatchDeps,
   channel: string,
@@ -51,7 +56,11 @@ function channelCall(
   const def = deps.channelDef(channel);
   const input = def ? channelInputFrom(def.input, args) : args;
   // The call as it was made. It used to be the whole question ('safety:undo {"groupId":...}').
-  const made = `${channel}${input === undefined ? '' : ` ${JSON.stringify(input).slice(0, 120)}`}`;
+  // A secret in the input is masked before anything is cut, so half of one can never show;
+  // a long input is cut with a mark that says how much more there is.
+  const made = `${channel}${
+    input === undefined ? '' : ` ${clip(maskSecrets(JSON.stringify(input)), CALL_LENGTH)}`
+  }`;
   const plain = plainLine(def?.meta?.describe);
   return {
     tool,

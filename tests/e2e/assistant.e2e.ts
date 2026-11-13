@@ -20,6 +20,9 @@ async function storeKey(page: Page): Promise<void> {
   await page.getByTestId('ai-key-input').locator('input').fill(KEY);
   await page.getByTestId('ai-key-save').click();
   await expect(page.getByTestId('ai-key-state')).toHaveText('An Anthropic API key is stored');
+  // The panel is pictured over the Setups page: no picture shows the line about the key.
+  await page.getByTestId('nav-profiles').click();
+  await expect(page.getByTestId('ai-key-state')).toHaveCount(0);
 }
 
 const box = (page: Page) => page.getByTestId('assistant-input').locator('textarea').first();

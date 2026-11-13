@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { ItemView } from '../core/model';
+import GuideFile from './GuideFile.vue';
 import { useAiStore } from './store';
 
 /** The whole guide at a glance: tiers with status, and the plan per kind of device. */
@@ -24,7 +25,11 @@ const dot = (i: ItemView): string =>
 
 <template>
   <div v-if="!guide.guide" class="rr-panel rr-empty" data-testid="ai-no-guide">
-    There is no guide for the {{ guide.aircraftName }} yet.
+    <template v-if="guide.stored">
+      The guide file for the {{ guide.aircraftName }} needs a fix.
+    </template>
+    <template v-else>There is no guide for the {{ guide.aircraftName }} yet.</template>
+    <GuideFile centered />
   </div>
   <div v-else class="prio" data-testid="ai-priorities">
     <p class="prio-summary">{{ guide.guide.summary }}</p>

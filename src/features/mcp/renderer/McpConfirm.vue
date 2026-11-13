@@ -4,6 +4,7 @@ import { useClient } from '../../../renderer/ipc';
 import { mcpContract } from '../contract';
 import type { ActivityEntry } from '../core/activity';
 import type { ConfirmRequest } from '../core/confirm';
+import { outcomeLine } from './outcomeWords';
 
 /**
  * On every screen: the question an assistant's call raised ("Claude Code wants to make
@@ -106,7 +107,7 @@ onBeforeUnmount(() => {
     </v-card>
   </v-dialog>
   <v-snackbar v-model="showDone" timeout="6000" location="bottom right" data-testid="mcp-done">
-    <template v-if="done">{{ done.client }}: {{ done.summary }}. {{ done.message }}</template>
+    <template v-if="done">{{ done.client }}: {{ done.summary }}. {{ outcomeLine(done) }}</template>
   </v-snackbar>
 </template>
 
