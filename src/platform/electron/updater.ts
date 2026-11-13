@@ -62,8 +62,10 @@ export class ElectronUpdateFeed implements UpdateFeed {
     const log = this.log;
     updater.logger = {
       info: (message?: unknown) => log.debug(String(message)),
-      warn: (message?: unknown) => log.warn(String(message)),
-      error: (message?: unknown) => log.warn(String(message)),
+      // The first line only: a server that answers with an error page (GitHub's HTTP 500)
+      // would otherwise put that whole page into the log.
+      warn: (message?: unknown) => log.warn(firstLine(message)),
+      error: (message?: unknown) => log.warn(firstLine(message)),
       debug: (message: string) => log.debug(message),
     };
     // Every step is asked for explicitly by the updates feature.
