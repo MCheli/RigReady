@@ -41,6 +41,19 @@ describe('names of iRacing actions', () => {
     expect(iracingActionLabel('TractionControl2Inc')).toBe('Traction control 2 up');
   });
 
+  it('names the black box actions as iRacing does: the arrows work inside the box shown', () => {
+    // iRacing's "Next Black Box" and "Previous Black Box" are not assigned by default; the
+    // recorded file has Down on BlackBoxNext ("select next control") and nothing on these.
+    expect(iracingActionLabel('BlackBoxShowNext')).toBe('Next black box');
+    expect(iracingActionLabel('BlackBoxShowPrev')).toBe('Previous black box');
+    expect(iracingActionLabel('BlackBoxNext')).toBe('Black box next control');
+    expect(iracingActionLabel('BlackBoxPrev')).toBe('Black box previous control');
+    expect(iracingActionLabel('BlackBoxToggle')).toBe('Black box toggle control');
+    // The two actions iRacing 2026.11 added.
+    expect(iracingActionLabel('PitSummaryToggle')).toBe('Pit summary on/off');
+    expect(iracingActionLabel('ToggleUIVisibleDrive')).toBe('Hide or show the driving UI');
+  });
+
   it('puts every action in one of four groups', () => {
     expect(iracingActionGroup('Throttle')).toBe('Driving');
     expect(iracingActionGroup('ToggleWindshieldWipers')).toBe('Driving');

@@ -226,9 +226,9 @@ test('iRacing bindings, switched on: bind by pressing a button or a key, clear, 
 
   // 2. A key that already does something: the page says what, before anything is saved.
   await listenFor(page, 'BlackBoxShowNext');
-  await expect(page.getByTestId('iracing-edit-action')).toHaveText('Black box show next');
+  await expect(page.getByTestId('iracing-edit-action')).toHaveText('Next black box');
   await page.keyboard.press('s');
-  await expect(confirm).toContainText('Bind Black box show next to S on the keyboard?');
+  await expect(confirm).toContainText('Bind Next black box to S on the keyboard?');
   await expect(page.getByTestId('iracing-save-conflict')).toContainText(
     'S on the keyboard already does Starter. After saving, one press does both. RigReady leaves the other binding as it is.'
   );
@@ -246,12 +246,12 @@ test('iRacing bindings, switched on: bind by pressing a button or a key, clear, 
   // A key with Shift that nothing uses.
   await listenFor(page, 'BlackBoxShowNext');
   await page.keyboard.press('Shift+J');
-  await expect(confirm).toContainText('Bind Black box show next to Shift+J on the keyboard?');
+  await expect(confirm).toContainText('Bind Next black box to Shift+J on the keyboard?');
   await expect(page.getByTestId('iracing-save-conflict')).toHaveCount(0);
   await expect(page.getByTestId('iracing-save-camera')).toHaveCount(0);
   await save.click();
   await expect(saved).toHaveText(
-    'Saved in iRacing’s file for all cars: Black box show next is now bound to Shift+J on the keyboard. Undo is on the Safety page.'
+    'Saved in iRacing’s file for all cars: Next black box is now bound to Shift+J on the keyboard. Undo is on the Safety page.'
   );
   await expect(row(page, 'BlackBoxShowNext')).toContainText('Shift+J');
   await expect(row(page, 'BlackBoxShowNext')).toContainText('Keyboard');
@@ -288,7 +288,7 @@ test('iRacing bindings, switched on: bind by pressing a button or a key, clear, 
     group('iRacing bindings for all cars: Flash headlights bound to Button 7 on Button Box')
   ).toHaveCount(1);
   await expect(
-    group('iRacing bindings for all cars: Black box show next bound to Shift+J on the keyboard')
+    group('iRacing bindings for all cars: Next black box bound to Shift+J on the keyboard')
   ).toHaveCount(1);
   const cleared = group('iRacing bindings for all cars: Gear 1 cleared');
   await cleared.getByTestId('change-toggle').click();
@@ -399,4 +399,52 @@ test('iRacing bindings, switched on: one car’s own bindings, and no saving whi
   await expect(confirm).toHaveCount(0);
   expect((await fs.readFile(carFile(run))).equals(carAfter)).toBe(true);
   expect((await fs.readFile(generalFile(run))).equals(general)).toBe(true);
+});
+
+test('iRacing bindings, switched on: a change goes into the control profile iRacing uses', async ({
+  rig,
+}) => {
+  const run = await rig.launch(
+    'iracing-bindings-profiles',
+    'iracing-bindings-edit-profile',
+    SWITCH_ON
+  );
+  const { page, shot } = run;
+  const profile = path.join(
+    run.home,
+    'Documents',
+    'iRacing',
+    'profiles',
+    'controls',
+    'Baseline',
+    'controls.cfg'
+  );
+  const older = await fs.readFile(generalFile(run));
+  const before = await fs.readFile(profile);
+  await page.getByTestId('mode-configure').click();
+  await go(page, ROUTE);
+  await expect(counts(page)).toHaveText('369 actions · 183 bound · 186 not bound');
+
+  // The Change box as it is: a button or a key, and what stays with iRacing.
+  await listenFor(page, 'BlackBoxShowNext');
+  await expect(page.getByTestId('iracing-edit-action')).toHaveText('Next black box');
+  await page.getByTestId('iracing-edit-listen-stop').click();
+  await expect(page.getByTestId('iracing-edit')).toContainText(
+    'A button on a controller, or a key on the keyboard.'
+  );
+  await shot('change-box');
+  await page.getByTestId('iracing-edit-listen').click();
+  await expect(page.getByTestId('iracing-edit-listening')).toBeVisible();
+  await page.keyboard.press('Shift+J');
+  const confirm = page.getByTestId('iracing-save-confirm');
+  await expect(confirm).toContainText('Bind Next black box to Shift+J on the keyboard?');
+  // What would change names the profile's file, not the older one.
+  await expect(confirm).toContainText('profiles\\controls\\Baseline\\controls.cfg');
+  await shot('confirm');
+  await page.getByTestId('iracing-save-go').click();
+  await expect(page.getByTestId('iracing-bindings-saved')).toContainText(
+    'Next black box is now bound to Shift+J on the keyboard.'
+  );
+  expectOnlyRecordChanged(before, await fs.readFile(profile), 'BlackBoxShowNext');
+  expect((await fs.readFile(generalFile(run))).equals(older)).toBe(true);
 });

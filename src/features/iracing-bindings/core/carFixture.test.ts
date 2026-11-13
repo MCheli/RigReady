@@ -84,3 +84,49 @@ describe('the made-up car file of the scenario tests', () => {
     }
   });
 });
+
+/**
+ * The control profile of the scenario tests (profile-controls.cfg) is the owner's real
+ * Documents\iRacing\profiles\controls\Baseline\controls.cfg of 13 Nov 2026, written by
+ * iRacing 2026.11 on its first run, with the made-up wheel id of the recorded rig in place
+ * of the real one. This holds it to what iRacing did to the older file when it made it.
+ */
+describe('the control profile of the scenario tests', () => {
+  it('is the recorded file with two new actions, no bytes after them, and a new size', async () => {
+    const older = parseControlsFile(
+      await read('rigs', 'mark-full', 'files', 'Documents', 'iRacing', 'controls.cfg')
+    );
+    const bytes = await read('scenarios', 'data', 'iracing-bindings', 'profile-controls.cfg');
+    const profile = parseControlsFile(bytes);
+    if (!older.ok || !profile.ok) throw new Error('a fixture cannot be read');
+    expect(profile.value.records).toHaveLength(369);
+    const before = new Map(older.value.records.map((r) => [r.action, r]));
+    const added = profile.value.records.filter((r) => !before.has(r.action));
+    expect(added.map((r) => r.action)).toEqual(['PitSummaryToggle', 'ToggleUIVisibleDrive']);
+    for (const record of added) {
+      expect(record).toMatchObject({ flag: 1, mask: 0x06, binding: { kind: 'none' } });
+    }
+    // Every older action is there, in the same order, with the same 68 bytes.
+    const kept = profile.value.records.filter((r) => before.has(r.action));
+    expect(kept.map((r) => r.action)).toEqual(older.value.records.map((r) => r.action));
+    for (const record of kept) {
+      expect(Buffer.from(record.data).equals(Buffer.from(before.get(record.action)!.data))).toBe(
+        true
+      );
+    }
+    expect(profile.value.records.every((r) => r.understood)).toBe(true);
+    // The older file ends in two bytes after its last record; the profile ends with it.
+    expect(Array.from(older.value.tail)).toEqual([0x20, 0x20]);
+    expect(profile.value.tail).toHaveLength(0);
+    // The header is the same but for the size at 8 (the file's size less 12).
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    expect(view.getUint32(8, true)).toBe(bytes.length - 12);
+    const head = Array.from(profile.value.head);
+    const olderHead = Array.from(older.value.head);
+    expect(head.length).toBe(olderHead.length);
+    const differ = head.map((b, i) => (b === olderHead[i] ? -1 : i)).filter((i) => i >= 0);
+    expect(differ.every((i) => (i >= 8 && i < 12) || i >= head.length - 4)).toBe(true);
+    // Read and written again, it is the same file.
+    expect(Buffer.from(encodeControlsFile(profile.value)).equals(Buffer.from(bytes))).toBe(true);
+  });
+});

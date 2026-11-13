@@ -2,7 +2,11 @@ import { z } from 'zod';
 import { ChangePreviewSchema } from '../../shared/changePreview';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 
-/** The id of the set every car uses (Documents\iRacing\controls.cfg). */
+/**
+ * The id of the set every car uses: the control profile app.ini names for all cars
+ * (Documents\iRacing\profiles\controls\<name>\controls.cfg), or on an iRacing from
+ * before control profiles, Documents\iRacing\controls.cfg.
+ */
 export const ALL_CARS = 'all';
 
 /** One set of bindings iRacing keeps: the one for all cars, or one car's custom controls. */
@@ -14,8 +18,27 @@ export const BindingSetSchema = z.object({
   general: z.boolean(),
   /** The controls.cfg this set is read from. */
   file: z.string(),
+  /** The iRacing control profile the file belongs to; absent on an iRacing without them. */
+  profile: z.string().optional(),
 });
 export type BindingSet = z.infer<typeof BindingSetSchema>;
+
+/**
+ * Where this iRacing keeps the bindings it uses. Since 2026 Season 3 iRacing keeps control
+ * profiles (Documents\iRacing\profiles\controls\<name>) and app.ini [ControlProfiles]
+ * says which one it loads; the older files beside them are no longer read.
+ */
+export const BindingSourceSchema = z.object({
+  /** "profiles": control profiles. "files": an iRacing from before them. */
+  kind: z.enum(['profiles', 'files']),
+  /** The profile for all cars, as app.ini names it. */
+  profile: z.string().optional(),
+  /** Why no set for all cars could be found among the profiles, when none could. */
+  problem: z.string().optional(),
+  /** Bindings files from before control profiles that iRacing no longer reads. */
+  oldFiles: z.array(z.string()),
+});
+export type BindingSource = z.infer<typeof BindingSourceSchema>;
 
 export const OverviewSchema = z.object({
   /** iRacing's program was found on this PC. */
@@ -26,6 +49,8 @@ export const OverviewSchema = z.object({
   simRunning: z.boolean(),
   /** The sets found, "All cars" first. Empty when iRacing has no controls.cfg yet. */
   sets: z.array(BindingSetSchema),
+  /** Control profiles or the older files, and the profile iRacing loads for all cars. */
+  source: BindingSourceSchema,
   /** How many car folders iRacing has under setups (cars driven at least once). */
   carFolders: z.number().int(),
   /** The page of the app that repairs a controller's id in iRacing's files, when there is one. */

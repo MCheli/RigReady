@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
+import { fixturesDir, mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import { err } from '../../../core/result';
 import { iracingBindingsContract, type Action, type Overview, type SetView } from '../contract';
 import {
@@ -10,7 +10,7 @@ import {
   parseControlsFile,
   type Binding,
 } from './controlsFile';
-import { setView, type BindingsContext } from './view';
+import { controlProfileLines, setView, type BindingsContext } from './view';
 
 const WHEEL = '45D4BEA1-60A1-17D8-8001-444553540000';
 const WHEEL_PRODUCT = '00070EB7-0000-0000-0000-504944564944';
@@ -18,6 +18,9 @@ const BOX = '5EED0001-7A11-11EF-8004-444553540000';
 const HANDBRAKE = '5EED0002-7A11-11EF-8005-444553540000';
 const CAR = 'car:mx5 mx52016';
 const NO_NAMES = { nameOf: () => undefined };
+/** A file of this feature's scenario data, for a mutation made while a test runs. */
+const DATA = (name: string): string =>
+  path.join(fixturesDir, 'scenarios', 'data', 'iracing-bindings', name);
 
 let app: WiredApp | undefined;
 afterEach(async () => {
@@ -73,6 +76,8 @@ describe('iRacing bindings: where they are', () => {
       },
     ]);
     expect(view.carFolders).toBe(0);
+    // The recorded iRacing is the build of April 2026, from before control profiles.
+    expect(view.source).toEqual({ kind: 'files', oldFiles: [] });
     // The page that repairs a controller id is the one the app's iRacing reader names.
     expect(view.repairRoute).toBe(a.wiring.context.bindings.get('iracing')?.route());
     expect(view.repairRoute).toMatch(/^\/configure\//);
@@ -130,6 +135,188 @@ describe('iRacing bindings: where they are', () => {
       },
     ]);
     expect((await overviewOf(a)).simRunning).toBe(true);
+  });
+});
+
+describe('iRacing bindings: control profiles (iRacing 2026 Season 3 and later)', () => {
+  const PROFILE = 'iracing-bindings-profiles';
+  const profileFile = (a: WiredApp, name = 'Baseline'): string =>
+    path.join(iracingDir(a), 'profiles', 'controls', name, 'controls.cfg');
+  const setIni = (lines: string): ReturnType<typeof mutate> =>
+    mutate(app!, [
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/app.ini',
+        content: `[Audio]\r\nvolume=1\r\n\r\n${lines}\r\n[Drive Screen]\r\nblackBox=2\r\n`,
+      },
+    ]);
+
+  it('reads the profile app.ini names for all cars, not the older controls.cfg', async () => {
+    const a = await start(PROFILE);
+    const view = await overviewOf(a);
+    expect(view.sets).toEqual([
+      {
+        id: 'all',
+        name: 'All cars',
+        general: true,
+        file: profileFile(a),
+        profile: 'Baseline',
+      },
+    ]);
+    expect(view.source).toEqual({
+      kind: 'profiles',
+      profile: 'Baseline',
+      oldFiles: [path.join(iracingDir(a), 'controls.cfg')],
+    });
+    const set = await setOf(a, 'all');
+    expect(set.set.file).toBe(profileFile(a));
+    // The two actions the profile has and the older file does not, unbound as iRacing made them.
+    expect(set.counts).toEqual({ actions: 369, bound: 183, unbound: 186, unread: 0, differs: 0 });
+    expect(action(set, 'PitSummaryToggle')).toMatchObject({ accepts: ['button', 'key'] });
+    expect(action(set, 'PitSummaryToggle').binding).toBeUndefined();
+    expect(action(set, 'ToggleUIVisibleDrive').binding).toBeUndefined();
+    expect(action(set, 'Throttle').binding?.input).toBe('Accelerator');
+    expect(set.notes).toEqual([]);
+  });
+
+  it('shows what the profile has when the older file says something else', async () => {
+    const a = await start(PROFILE);
+    // A binding only in the older file is not one iRacing uses, so it is not shown.
+    await rewrite(a, path.join(iracingDir(a), 'controls.cfg'), (id, flag, mask) =>
+      id === 'HeadlightFlash'
+        ? encodeRecordData(flag, mask, { kind: 'key', keyCode: 72, modifiers: 0 })
+        : undefined
+    );
+    expect(action(await setOf(a, 'all'), 'HeadlightFlash').binding).toBeUndefined();
+    // A binding made in iRacing lands in the profile, and shows.
+    await rewrite(a, profileFile(a), (id, flag, mask) =>
+      id === 'PitSummaryToggle'
+        ? encodeRecordData(flag, mask, { kind: 'key', keyCode: 75, modifiers: 0x03 })
+        : undefined
+    );
+    expect(action(await setOf(a, 'all'), 'PitSummaryToggle').binding?.input).toBe('Shift+K');
+  });
+
+  it('names the wheel and its axes from the calibration file of the profile', async () => {
+    const a = await start(PROFILE);
+    await mutate(a, [{ op: 'removeFile', path: 'Documents/iRacing/joyCalib.yaml' }]);
+    const set = await setOf(a, 'all');
+    expect(action(set, 'Throttle').binding?.input).toBe('Accelerator');
+    expect(set.notes).toEqual([]);
+  });
+
+  it('reads the profile app.ini names, whatever its name', async () => {
+    const a = await start(PROFILE);
+    await mutate(a, [
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/profiles/controls/Wheel only/controls.cfg',
+        from: DATA('profile-controls.cfg'),
+      },
+    ]);
+    await setIni('[ControlProfiles]\r\nglobal=Wheel only\r\n');
+    const view = await overviewOf(a);
+    expect(view.sets.map((s) => [s.id, s.profile, s.file])).toEqual([
+      ['all', 'Wheel only', profileFile(a, 'Wheel only')],
+    ]);
+    expect(view.source.profile).toBe('Wheel only');
+  });
+
+  it('says it cannot tell which bindings iRacing uses when app.ini names no profile', async () => {
+    const a = await start(PROFILE);
+    await setIni('');
+    const view = await overviewOf(a);
+    expect(view.sets).toEqual([]);
+    const problem =
+      'iRacing keeps control profiles, but app.ini names none for all cars, so RigReady cannot tell which bindings iRacing uses.';
+    expect(view.source).toEqual({
+      kind: 'profiles',
+      problem,
+      oldFiles: [path.join(iracingDir(a), 'controls.cfg')],
+    });
+    // Never the older file in its place: iRacing does not read it.
+    const result = await setView(bctx(a), 'all', NO_NAMES);
+    expect(!result.ok && result.error).toMatchObject({
+      code: 'iracing-bindings.noSet',
+      message: problem,
+    });
+  });
+
+  it('says so when the profile app.ini names has no controls.cfg', async () => {
+    const a = await start(PROFILE);
+    await setIni('[ControlProfiles]\r\nGlobal=Gone\r\n');
+    const view = await overviewOf(a);
+    expect(view.sets).toEqual([]);
+    expect(view.source.problem).toBe(
+      'iRacing uses the control profile “Gone” for all cars, but RigReady found no controls.cfg in it.'
+    );
+  });
+
+  it('never turns a profile name into a path outside the profiles folder', async () => {
+    const a = await start(PROFILE);
+    for (const name of ['..\\..', '../Baseline', 'C:\\Windows', '..', 'Base\\line', 'Baseline.']) {
+      await setIni(`[ControlProfiles]\r\nGlobal=${name}\r\n`);
+      const view = await overviewOf(a);
+      expect(view.sets, name).toEqual([]);
+      expect(view.source.problem, name).toMatch(/found no controls\.cfg in it\.$/);
+    }
+  });
+
+  it('reads a car’s own profile when app.ini names one for its folder', async () => {
+    const a = await start(PROFILE);
+    await mutate(a, [
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/profiles/controls/mx5 mx52016/controls.cfg',
+        from: DATA('controls-car.cfg'),
+      },
+      // The car's file from before control profiles: iRacing no longer reads it.
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/setups/mx5 mx52016/controls.cfg',
+        from: DATA('controls-car.cfg'),
+      },
+      // A line for a car that was never driven here is not a set.
+      { op: 'writeFile', path: 'Documents/iRacing/setups/ferrari296gt3/x.sto', content: 'x' },
+    ]);
+    await setIni(
+      '[ControlProfiles]\r\nGlobal=Baseline\r\nmx5 mx52016=mx5 mx52016\r\nporsche992rgt3=Baseline\r\n'
+    );
+    const view = await overviewOf(a);
+    expect(view.sets.map((s) => [s.id, s.profile])).toEqual([
+      ['all', 'Baseline'],
+      [CAR, 'mx5 mx52016'],
+    ]);
+    expect(view.sets[1]!.file).toBe(profileFile(a, 'mx5 mx52016'));
+    expect(view.source.oldFiles).toEqual([
+      path.join(iracingDir(a), 'controls.cfg'),
+      path.join(iracingDir(a), 'setups', 'mx5 mx52016', 'controls.cfg'),
+    ]);
+    // Compared with the profile for all cars: the eight records the car file changes.
+    const car = await setOf(a, CAR);
+    expect(car.counts.differs).toBe(8);
+  });
+
+  it('reads app.ini’s section whatever its case, and skips comments and padding', () => {
+    expect(
+      controlProfileLines(
+        '[Audio]\nGlobal=Wrong\n[controlprofiles]\n; a comment\nGlobal = Baseline    \t; for all cars\nmx5 mx52016=Mine\n[Next]\nGlobal=Other\n'
+      )
+    ).toEqual([
+      { key: 'Global', value: 'Baseline' },
+      { key: 'mx5 mx52016', value: 'Mine' },
+    ]);
+  });
+
+  it('leaves every file of the iRacing folder as it was', async () => {
+    const a = await start(PROFILE);
+    const before = await filesOf(iracingDir(a));
+    expect(Object.keys(before)).toContain(
+      path.join('profiles', 'controls', 'Baseline', 'controls.cfg')
+    );
+    await overviewOf(a);
+    await setOf(a, 'all');
+    expect(await filesOf(iracingDir(a))).toEqual(before);
   });
 });
 
@@ -223,7 +410,7 @@ describe('iRacing bindings: the set for all cars', () => {
       deviceName: 'Keyboard',
       input: 'Space',
       actions: [
-        { id: 'BlackBoxToggle', name: 'Black box on/off', group: 'Interface and chat' },
+        { id: 'BlackBoxToggle', name: 'Black box toggle control', group: 'Interface and chat' },
         { id: 'ToggleUIVisible', name: 'Hide or show the UI', group: 'Interface and chat' },
       ],
       cameraEditor: false,

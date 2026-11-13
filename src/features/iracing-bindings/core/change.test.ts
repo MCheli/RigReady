@@ -411,6 +411,50 @@ describe('changing an iRacing binding: the write', () => {
       general: 'FANATEC Podium Wheel Base DD2: Button 4',
     });
   });
+
+  it('writes the control profile iRacing uses, never the older controls.cfg beside it', async () => {
+    process.env[EDIT_SWITCH] = '1';
+    const a = (app = await wiredApp('iracing-bindings-profiles', {
+      files: ['Documents/iRacing/**'],
+    }));
+    const profile = path.join(iracingDir(a), 'profiles', 'controls', 'Baseline', 'controls.cfg');
+    const older = await bytesOf(allCars(a));
+    const before = await bytesOf(profile);
+
+    // The same two changes as the rig test of 13 Nov 2026: a wheel button and Shift+J.
+    const button = await change(a, {
+      set: 'all',
+      action: 'HeadlightFlash',
+      binding: { kind: 'button', device: WHEEL, button: 8 },
+    });
+    expect(button).toMatchObject({ changed: true, file: profile });
+    const afterButton = await bytesOf(profile);
+    expectOnlyThatRecord(before, afterButton, 'HeadlightFlash');
+    const keyed = await change(a, { set: 'all', action: 'BlackBoxShowNext', binding: key(74, 3) });
+    expect(keyed).toMatchObject({ changed: true, file: profile });
+    expectOnlyThatRecord(afterButton, await bytesOf(profile), 'BlackBoxShowNext');
+
+    // The records as iRacing has them for the same button and the same key elsewhere.
+    const parsed = parseControlsFile(await bytesOf(profile));
+    if (!parsed.ok) throw new Error(parsed.error.message);
+    const hex = (action: string): string =>
+      Buffer.from(parsed.value.records.find((r) => r.action === action)!.data).toString('hex');
+    expect(hex('HeadlightFlash')).toBe(
+      '000000000600000002000000800000000000000000000000000000000000000000000000' +
+        'a1bed445a160d8178001444553540000b70e0700000000000000504944564944'
+    );
+    expect(hex('BlackBoxShowNext')).toBe(
+      '0100000006000000040000004a00000000000300' + '00'.repeat(48)
+    );
+    // The size of the file and its header stay as iRacing wrote them.
+    expect(afterButton.length).toBe(before.length);
+    expect(equal((await bytesOf(profile)).subarray(0, 0xab), before.subarray(0, 0xab))).toBe(true);
+
+    // The older file is not touched, and both entries on the Safety page name the profile.
+    expect(equal(await bytesOf(allCars(a)), older)).toBe(true);
+    expect((await journal(a)).map((e) => e.path)).toEqual([profile, profile]);
+    expect(await bindingOf(a, 'all', 'BlackBoxShowNext')).toMatchObject({ input: 'Shift+J' });
+  });
 });
 
 describe('changing an iRacing binding: when it is refused', () => {

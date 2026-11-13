@@ -322,3 +322,34 @@ test('iRacing bindings: a PC without iRacing gets a plain "not found", and no li
   await shot('not-on-this-pc');
   expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
 });
+
+test('iRacing bindings: an iRacing with control profiles shows the profile it uses', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('iracing-bindings-profiles', 'iracing-bindings-profiles');
+  await page.getByTestId('mode-configure').click();
+  await go(page, ROUTE);
+  // iRacing 2026.11 reads the profile app.ini names; the older controls.cfg is left as it was.
+  await expect(page.getByTestId('iracing-bindings-source')).toHaveText(
+    'iRacing keeps bindings in control profiles. It uses the profile “Baseline” for all cars. The older controls.cfg from before control profiles is not read by iRacing any more, so this page does not show it.'
+  );
+  await expect(page.getByTestId('iracing-bindings-counts')).toHaveText(
+    '369 actions · 183 bound · 186 not bound'
+  );
+  await expect(page.getByTestId('iracing-bindings-file')).toContainText(
+    'Documents\\iRacing\\profiles\\controls\\Baseline\\controls.cfg'
+  );
+  await expect(device(page, WHEEL)).toHaveAttribute('data-state', 'connected');
+  await shot('profile');
+  // The two actions the profile added, and the black box actions by iRacing's own names.
+  const filter = page.getByTestId('iracing-bindings-filter').locator('input');
+  await filter.fill('black box');
+  await expect(row(page, 'BlackBoxShowNext')).toContainText('Next black box');
+  await expect(row(page, 'BlackBoxNext')).toContainText('Black box next control');
+  await filter.fill('pit summary');
+  await expect(rows(page)).toHaveCount(1);
+  await expect(row(page, 'PitSummaryToggle')).toContainText('Not bound');
+  await filter.fill('');
+  await page.getByTestId('iracing-bindings-source').scrollIntoViewIfNeeded();
+  expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+});

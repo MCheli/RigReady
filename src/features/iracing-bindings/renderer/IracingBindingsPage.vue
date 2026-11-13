@@ -121,6 +121,16 @@ const carsLine = computed(() => {
   return `${folders} ${custom} ${custom === 1 ? 'has' : 'have'} custom controls; the others use the bindings for all cars.`;
 });
 
+/** Which control profile iRacing uses, and that the older file beside it is not read. */
+const sourceLine = computed(() => {
+  const s = overview.value?.source;
+  if (!s || s.kind !== 'profiles' || !s.profile) return '';
+  const older = s.oldFiles.length
+    ? ' The older controls.cfg from before control profiles is not read by iRacing any more, so this page does not show it.'
+    : '';
+  return `iRacing keeps bindings in control profiles. It uses the profile “${s.profile}” for all cars.${older}`;
+});
+
 const GROUPS = ['Driving', 'In-car adjustments', 'Cameras and replay', 'Interface and chat'];
 
 const haystack = (a: Action): string =>
@@ -236,6 +246,15 @@ const cheatSheet = computed(() => ({
         :looked="['every Steam library', 'the usual install folders', 'Documents\\iRacing']"
         game-page="/configure/games/iracing"
       />
+      <v-alert
+        v-else-if="overview.sets.length === 0 && overview.source.problem"
+        type="warning"
+        variant="tonal"
+        class="mb-4"
+        data-testid="iracing-bindings-source-problem"
+        >{{ overview.source.problem }} iRacing shows its bindings in Options, then
+        Controls.</v-alert
+      >
       <EmptyState
         v-else-if="overview.sets.length === 0"
         art="file"
@@ -332,7 +351,11 @@ const cheatSheet = computed(() => ({
             />
             <div class="ib-pick-text">
               <div v-if="carsLine" data-testid="iracing-bindings-cars-line">{{ carsLine }}</div>
-              <div class="ib-hint">
+              <div v-if="sourceLine" data-testid="iracing-bindings-source">{{ sourceLine }}</div>
+              <div v-if="overview.source.kind === 'profiles'" class="ib-hint">
+                In iRacing’s Options a car can have a control profile of its own.
+              </div>
+              <div v-else class="ib-hint">
                 A car gets its own set when you tick “Use custom controls for this car” in iRacing’s
                 Options.
               </div>

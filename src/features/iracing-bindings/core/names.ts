@@ -59,11 +59,18 @@ const LABELS: Record<string, string> = {
   SplitsDeltaNext: 'Next delta mode',
   SplitsDeltaPrev: 'Previous delta mode',
   DashBoxToggle: 'Dash box',
-  BlackBoxToggle: 'Black box on/off',
-  BlackBoxNext: 'Next black box',
-  BlackBoxPrev: 'Previous black box',
+  // iRacing's "Next Black Box" and "Previous Black Box", unassigned by default, are
+  // BlackBoxShowNext and BlackBoxShowPrev. The arrows and Space work inside the box shown:
+  // BlackBoxNext is Down, "select next control" (docs/research/iracing-bindings.md).
+  BlackBoxShowNext: 'Next black box',
+  BlackBoxShowPrev: 'Previous black box',
+  BlackBoxToggle: 'Black box toggle control',
+  BlackBoxNext: 'Black box next control',
+  BlackBoxPrev: 'Black box previous control',
   BlackBoxInc: 'Black box value up',
   BlackBoxDec: 'Black box value down',
+  PitSummaryToggle: 'Pit summary on/off',
+  ToggleUIVisibleDrive: 'Hide or show the driving UI',
   TriggerScreenshotCapture: 'Screenshot',
   TriggerGiantScreenshotCapture: 'High-resolution screenshot',
   ToggleVideoCapture: 'Record video',

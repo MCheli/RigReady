@@ -10,17 +10,19 @@
  *
  *   cross-env RIGREADY_RIG_IRACING=before npx vitest run --config vitest.rig.config.ts tests/rig/iracingBindingsEdit.rig.test.ts
  *
- *   Copies the bindings files to a temp profile and lets RigReady bind one button and one
- *   key there, with the real Windows ports. The copy must differ in those two records
- *   only, the backup must be the file as it was, Undo must put it back, and the real
- *   files must be as they were. It also keeps a copy of the real controls.cfg as it is
- *   now, for the step below.
+ *   Copies the bindings files (with app.ini and the control profiles, which say which file
+ *   iRacing reads) to a temp profile and lets RigReady bind one button and one key there,
+ *   with the real Windows ports, in the set for all cars as the page finds it: the control
+ *   profile app.ini names, or on an iRacing without profiles, controls.cfg. The copy must
+ *   differ in those two records only, the backup must be the file as it was, Undo must put
+ *   it back, and the real files must be as they were. It also keeps a copy of that real
+ *   file as it is now, and which file it was, for the step below.
  *
  * After the owner changed bindings with RigReady, looked at them in iRacing and closed it:
  *
  *   cross-env RIGREADY_RIG_IRACING=after RIGREADY_RIG_IRACING_ACTIONS=HeadlightFlash,BlackBoxShowNext npx vitest run --config vitest.rig.config.ts tests/rig/iracingBindingsEdit.rig.test.ts
  *
- *   Reads the file iRacing saved when it closed and the copy kept before. The two must
+ *   Reads the same real file as iRacing left it and the copy kept before. The two must
  *   differ in the named actions only, and each of those records must be byte for byte
  *   what RigReady writes for that binding.
  */
@@ -55,8 +57,10 @@ import type { InputDevice } from '../../src/shared/models';
 const step = process.env['RIGREADY_RIG_IRACING'];
 const projectRoot = path.resolve(__dirname, '../..');
 const CONTROLS = 'controls.cfg';
-/** The real controls.cfg as it was at the "before" step, for the "after" step to read. */
+/** The real file for all cars as it was at the "before" step, for the "after" step to read. */
 const KEPT = path.join(os.tmpdir(), 'rigready-rig-iracing-second-look', 'controls-before.cfg');
+/** Which file that was, relative to Documents\iRacing. */
+const KEPT_FROM = path.join(os.tmpdir(), 'rigready-rig-iracing-second-look', 'kept-from.txt');
 
 /** The actions the second look changes; any other free one is taken when these are in use. */
 const FOR_A_BUTTON = ['HeadlightFlash', 'PushToPass', 'DRS'];
@@ -93,10 +97,14 @@ function differing(a: Uint8Array, b: Uint8Array): number[] {
   return at;
 }
 
-/** The real folder's bindings files, as paths under it: never app.ini or anything else. */
+/**
+ * The real folder's bindings files, as paths under it: the older controls.cfg and
+ * joyCalib.yaml, each car's controls.cfg, each control profile's two files, and app.ini,
+ * which names the profile iRacing uses. Nothing else.
+ */
 async function bindingFiles(folder: string): Promise<string[]> {
   const found: string[] = [];
-  for (const name of [CONTROLS, 'joyCalib.yaml']) {
+  for (const name of [CONTROLS, 'joyCalib.yaml', 'app.ini']) {
     if (await exists(path.join(folder, name))) found.push(name);
   }
   const setups = path.join(folder, 'setups');
@@ -104,6 +112,15 @@ async function bindingFiles(folder: string): Promise<string[]> {
   for (const car of cars) {
     const file = path.join('setups', car.name, CONTROLS);
     if (car.isDirectory() && (await exists(path.join(folder, file)))) found.push(file);
+  }
+  const profiles = path.join(folder, 'profiles', 'controls');
+  const named = (await exists(profiles)) ? await fs.readdir(profiles, { withFileTypes: true }) : [];
+  for (const profile of named) {
+    if (!profile.isDirectory()) continue;
+    for (const name of [CONTROLS, 'joyCalib.yaml']) {
+      const file = path.join('profiles', 'controls', profile.name, name);
+      if (await exists(path.join(folder, file))) found.push(file);
+    }
   }
   return found;
 }
@@ -153,7 +170,6 @@ describe.skipIf(step !== 'before')(
       );
       home = await fs.mkdtemp(path.join(os.tmpdir(), 'rigready-test-rig-iracing-'));
       copyFolder = path.join(home, 'Documents', 'iRacing');
-      copy = path.join(copyFolder, CONTROLS);
       for (const file of await bindingFiles(realFolder)) {
         untouched.set(file, await fingerprint(path.join(realFolder, file)));
         await fs.mkdir(path.dirname(path.join(copyFolder, file)), { recursive: true });
@@ -174,10 +190,14 @@ describe.skipIf(step !== 'before')(
       if (path.resolve(ports.folders.documents()) !== path.resolve(home, 'Documents')) {
         throw new Error('RigReady did not take the temp profile. Nothing was changed.');
       }
-      original = await fs.readFile(copy);
       wiring = wireFeatures({ features: discoverFeatures(), ports, log: nullLogger, send() {} });
       switchBefore = process.env[EDIT_SWITCH];
       process.env[EDIT_SWITCH] = '1';
+      // The file for all cars as the page finds it: the control profile iRacing uses.
+      const general = (await call<Overview>('overview')).sets.find((s) => s.general);
+      if (!general) throw new Error('RigReady found no bindings for all cars in the copies.');
+      copy = general.file;
+      original = await fs.readFile(copy);
     });
 
     afterAll(async () => {
@@ -237,14 +257,21 @@ describe.skipIf(step !== 'before')(
     }
 
     it('works on copies: RigReady sees the temp profile, and iRacing is closed', async () => {
-      expect(untouched.has(CONTROLS), `no ${CONTROLS} in ${realFolder}`).toBe(true);
       expect(path.resolve(ports.folders.dataRoot())).toBe(path.resolve(home, 'rigready'));
       const overview = await call<Overview>('overview');
       expect(path.resolve(overview.folder ?? '')).toBe(path.resolve(copyFolder));
       expect(overview.editing).toBe(true);
       expect(overview.simRunning, 'iRacing is open. Close it and run this again.').toBe(false);
       for (const set of overview.sets) expect(inside(copyFolder, set.file)).toBe(true);
-      console.log(`  ${overview.sets.length} sets, read from copies of ${realFolder}`);
+      expect(inside(copyFolder, copy)).toBe(true);
+      console.log(
+        `  ${overview.sets.length} sets, read from copies of ${realFolder}\n` +
+          `  For all cars: ${path.relative(copyFolder, copy)}` +
+          (overview.source.profile ? ` (control profile "${overview.source.profile}")` : '') +
+          (overview.source.oldFiles.length
+            ? `\n  Not read by iRacing: ${overview.source.oldFiles.map((f) => path.relative(copyFolder, f)).join(', ')}`
+            : '')
+      );
     });
 
     it('takes the real file apart and puts it together again, byte for byte', () => {
@@ -324,9 +351,11 @@ describe.skipIf(step !== 'before')(
       for (const [file, was] of untouched) {
         expect(await fingerprint(path.join(realFolder, file)), file).toBe(was);
       }
+      const from = path.relative(copyFolder, copy);
       await fs.mkdir(path.dirname(KEPT), { recursive: true });
-      await fs.copyFile(path.join(realFolder, CONTROLS), KEPT);
-      console.log(`  The file as it is now is kept at ${KEPT}`);
+      await fs.copyFile(path.join(realFolder, from), KEPT);
+      await fs.writeFile(KEPT_FROM, from, 'utf8');
+      console.log(`  ${from} as it is now is kept at ${KEPT}`);
     });
   }
 );
@@ -344,11 +373,16 @@ describe.skipIf(step !== 'after')(
         'Set RIGREADY_RIG_IRACING_ACTIONS to the ids of the actions that were changed.'
       ).toBeGreaterThan(0);
       expect(await exists(KEPT), `Run the "before" step first: ${KEPT} is not there.`).toBe(true);
+      // The same real file the "before" step kept: the control profile for all cars.
+      const from = (await exists(KEPT_FROM))
+        ? (await fs.readFile(KEPT_FROM, 'utf8')).trim()
+        : CONTROLS;
       const realFile = path.join(
         createWindowsPorts({ log: nullLogger, projectRoot }).folders.documents(),
         'iRacing',
-        CONTROLS
+        from
       );
+      console.log(`  Compares ${realFile} with ${KEPT}`);
       const before = parsed(await fs.readFile(KEPT), 'the copy kept before');
       const now = parsed(await fs.readFile(realFile), realFile);
 
