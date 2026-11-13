@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type {
   CaptureCandidate,
   CaptureDefinition,
+  CheckContext,
   CheckDefinition,
   RemediationDefinition,
 } from '../../../core/checks/registry';
@@ -18,6 +19,14 @@ import {
   type OptionKey,
 } from './options';
 import { boundingBox, MONITOR_SETUP_NAME, MONITOR_SETUP_OPTION } from './screens';
+import {
+  FOLLOWED_KEYS,
+  followFix,
+  sameValue,
+  valuesPhrase,
+  type Followed,
+  type FollowedKey,
+} from './setupFollow';
 import { findSimAppPro, SIMAPPPRO_EXE } from './simAppPro';
 import {
   RUNTIME_FEATURE_LABELS,
@@ -99,11 +108,79 @@ export function optionDifferences(expected: DcsOptions, actual: DcsOptions): str
   return out;
 }
 
+/** The action on a check whose difference comes from "Use in DCS": the setup takes the new values. */
+export const UPDATE_SETUP = 'Update the setup';
+const NOT_FROM_SCREENS =
+  'Nothing was changed: options.lua no longer holds what "Use in DCS" set, so there is nothing to take over. Check again.';
+
+const pick = (values: Followed, keys: readonly FollowedKey[]): Followed =>
+  Object.fromEntries(keys.map((key) => [key, values[key]])) as Followed;
+
+/** What the Play screen says when a check differs only because "Use in DCS" set something new. */
+export function setByScreensLine(set: Followed, keys: readonly FollowedKey[]): string {
+  const one = keys.length === 1;
+  return `"Use in DCS" set ${valuesPhrase(pick(set, keys))} for the RigReady screen setup, and this setup still expects the older ${one ? 'value' : 'values'}. Update the setup to keep the new ${one ? 'one' : 'ones'}.`;
+}
+
+/** The keys an options check expects otherwise only because "Use in DCS" set them since. */
+function optionsByScreens(params: DcsOptions, now: DcsOptions, set: Followed): FollowedKey[] {
+  return FOLLOWED_KEYS.filter(
+    (key) =>
+      params[key] !== undefined && !sameValue(params[key], now[key]) && set[key] !== undefined
+  );
+}
+
 /** Injected so tests do not wait in real time. */
 export type Sleep = (ms: number) => Promise<void>;
 const realSleep: Sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSleep) {
+  /** An options check's expectations that differ because "Use in DCS" set them; undefined when none. */
+  async function optionsFollow(
+    params: DcsOptions,
+    ctx: CheckContext
+  ): Promise<{ set: Followed; keys: FollowedKey[] } | undefined> {
+    const scoped = service.for(ctx);
+    const paths = await scoped.paths();
+    if (!paths.ok) return undefined;
+    const read = await scoped.options(paths.value);
+    if (!read.options) return undefined;
+    const set = await scoped.setByScreens(paths.value, read.options);
+    const keys = optionsByScreens(params, read.options, set);
+    return keys.length ? { set, keys } : undefined;
+  }
+
+  /** The same for a monitor setup check: its `setup` and `window`, as the option keys they follow. */
+  async function monitorFollow(
+    params: z.infer<typeof MonitorParams>,
+    ctx: CheckContext
+  ): Promise<{ set: Followed; keys: FollowedKey[] } | undefined> {
+    const scoped = service.for(ctx);
+    const paths = await scoped.paths();
+    if (!paths.ok) return undefined;
+    const read = await scoped.options(paths.value);
+    if (!read.options) return undefined;
+    const now = read.options;
+    const set = await scoped.setByScreens(paths.value, now);
+    const keys: FollowedKey[] = [];
+    if (
+      params.setup !== undefined &&
+      !sameValue(params.setup, now.multiMonitorSetup) &&
+      set.multiMonitorSetup !== undefined
+    ) {
+      keys.push('multiMonitorSetup');
+    }
+    if (
+      params.window &&
+      (params.window.width !== now.width || params.window.height !== now.height) &&
+      set.width !== undefined &&
+      set.height !== undefined
+    ) {
+      keys.push('width', 'height');
+    }
+    return keys.length ? { set, keys } : undefined;
+  }
+
   const install: CheckDefinition<z.infer<typeof InstallParams>> = {
     type: DCS_INSTALL,
     group: 'other',
@@ -168,11 +245,29 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
           ? `"${option}"`
           : "DCS's default single screen";
       if (details.length === 0) return { pass: true, summary: `${label} fits the monitors` };
+      const followed = await monitorFollow(params, ctx);
       return {
         pass: false,
         summary: details.length === 1 ? details[0]! : `${label} does not fit the monitors`,
-        details: details.length === 1 ? [] : details,
+        details: [
+          ...(details.length === 1 ? [] : details),
+          ...(followed ? [setByScreensLine(followed.set, followed.keys)] : []),
+        ],
       };
+    },
+    acknowledge: {
+      label: UPDATE_SETUP,
+      offered: async (params, ctx) => (await monitorFollow(params, ctx)) !== undefined,
+      async run(params, ctx) {
+        const followed = await monitorFollow(params, ctx);
+        if (!followed) return err('dcs.follow.none', NOT_FROM_SCREENS);
+        const { set, keys } = followed;
+        return ok({
+          ...params,
+          ...(keys.includes('multiMonitorSetup') ? { setup: set.multiMonitorSetup! } : {}),
+          ...(keys.includes('width') ? { window: { width: set.width!, height: set.height! } } : {}),
+        });
+      },
     },
   };
 
@@ -247,12 +342,29 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
         }
         return { pass: true, summary: describeOptions(checked) };
       }
+      const set = await service.for(ctx).setByScreens(paths.value, read.options);
+      const keys = optionsByScreens(params, read.options, set);
       return {
         pass: false,
         summary:
           differences.length === 1 ? differences[0]! : `${differences.length} options differ`,
-        details: differences.length === 1 ? [] : differences,
+        details: [
+          ...(differences.length === 1 ? [] : differences),
+          ...(keys.length ? [setByScreensLine(set, keys)] : []),
+        ],
       };
+    },
+    acknowledge: {
+      label: UPDATE_SETUP,
+      offered: async (params, ctx) => (await optionsFollow(params, ctx)) !== undefined,
+      async run(params, ctx) {
+        const followed = await optionsFollow(params, ctx);
+        if (!followed) return err('dcs.follow.none', NOT_FROM_SCREENS);
+        return ok({ ...params, ...pick(followed.set, followed.keys) });
+      },
+      // The fix sets what the check expects: left as it was, it would put the old values back.
+      fixParams: (fix, before, after) =>
+        fix.type === DCS_SET_OPTIONS ? followFix(fix.params, before, after) : undefined,
     },
   };
 
@@ -266,6 +378,8 @@ export function createDcsChecks(service: DcsSetupService, sleep: Sleep = realSle
         .filter((k) => (params as DcsOptions)[k] !== undefined)
         .map((k) => OPTION_LABELS[k])
         .join(', ')} in options.lua`,
+    // Asked before Make ready runs it when it would undo the RigReady screen setup in use.
+    warning: (params, ctx) => service.for(ctx).screenSetupConflict(params),
     async run(params, ctx) {
       if (await service.dcsRunning(ctx))
         return err(

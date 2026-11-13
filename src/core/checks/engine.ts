@@ -47,6 +47,11 @@ export const CheckResultSchema = z.object({
   instructions: z.string().optional(),
   /** Set when the fix runs a program the user must confirm first. */
   confirm: CommandPreviewSchema.optional(),
+  /**
+   * Set when the fix would undo something the user set elsewhere: why, in words. Asked
+   * about before the fix runs, like a program to confirm.
+   */
+  fixWarning: z.string().optional(),
   /** Label of the check's own acknowledge action ("Mark verified"), when it has one. */
   acknowledge: z.string().optional(),
   /** Captured program output, for an expandable panel. */
@@ -155,6 +160,42 @@ async function attachFix(
   }
   const confirm = definition.confirm?.(params.data);
   if (confirm) result.confirm = confirm;
+  const warning = await fixWarning(definition, params.data, ctx);
+  if (warning) result.fixWarning = warning;
+}
+
+/** The fix's own warning (RemediationDefinition.warning), or undefined. Never throws. */
+async function fixWarning(
+  definition: RemediationDefinition,
+  params: unknown,
+  ctx: CheckContext
+): Promise<string | undefined> {
+  if (!definition.warning) return undefined;
+  try {
+    return await definition.warning(params, ctx);
+  } catch (e) {
+    ctx.log.error(`remediation ${definition.type} warning threw`, e);
+    return undefined;
+  }
+}
+
+/** Whether the check's own action is offered on this item now (CheckAcknowledge.offered). */
+export async function acknowledgeOffered(
+  item: CheckItem,
+  registry: CheckRegistry,
+  ctx: CheckContext
+): Promise<boolean> {
+  const acknowledge = registry.check(item.type)?.acknowledge;
+  if (!acknowledge) return false;
+  if (!acknowledge.offered) return true;
+  const params = registry.check(item.type)!.params.safeParse(item.params);
+  if (!params.success) return false;
+  try {
+    return await acknowledge.offered(params.data, ctx);
+  } catch (e) {
+    ctx.log.error(`check ${item.type} acknowledge offered threw`, e);
+    return false;
+  }
 }
 
 /** Runs one checklist item. Never throws: every failure becomes a result. */
@@ -171,7 +212,9 @@ export async function runCheckItem(
   if (isNotMet(result.status)) {
     await attachFix(result, item, registry, ctx);
     const acknowledge = registry.check(item.type)?.acknowledge;
-    if (acknowledge) result.acknowledge = acknowledge.label;
+    if (acknowledge && (await acknowledgeOffered(item, registry, ctx))) {
+      result.acknowledge = acknowledge.label;
+    }
   }
   return result;
 }
@@ -365,10 +408,10 @@ export function planFixes(
 
 export interface FixOptions {
   /**
-   * Asked before a fix that runs a program the user must confirm. Without it such fixes
-   * are skipped (the tray cannot ask).
+   * Asked before a fix that runs a program the user must confirm (`command`), and before a
+   * fix with a warning (`warning`). Without it such fixes are skipped (the tray cannot ask).
    */
-  confirm?(item: CheckItem, command: CommandPreview): Promise<boolean>;
+  confirm?(item: CheckItem, ask: CommandPreview | { warning: string }): Promise<boolean>;
 }
 
 /** Runs one item's fix. Does not re-check; see fixItem for the verified version. */
@@ -399,6 +442,21 @@ async function runRemediation(
       };
     }
     if (!(await options.confirm(item, command))) {
+      return { ...base, ok: false, skipped: true, message: 'Skipped by you' };
+    }
+  }
+  // Asked when the fix is about to run, so it is about the machine as it is then.
+  const warning = await fixWarning(definition, params.data, ctx);
+  if (warning) {
+    if (!options.confirm) {
+      return {
+        ...base,
+        ok: false,
+        skipped: true,
+        message: `Not run: ${warning} It needs your OK in the RigReady window.`,
+      };
+    }
+    if (!(await options.confirm(item, { warning }))) {
       return { ...base, ok: false, skipped: true, message: 'Skipped by you' };
     }
   }
