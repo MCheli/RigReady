@@ -4,9 +4,9 @@ import { expect, test } from './harness';
 
 /**
  * NAV-GAMES-006: an entry or a page about a game is offered where the game is found. A user
- * without DCS does not meet the binding guide in the menu, nor the DCS World and DCS bindings
- * pages in the command palette; the guide's page still opens from a link and says DCS World
- * was not found. When DCS arrives while RigReady runs, they arrive with it.
+ * without DCS does not meet the DCS World and DCS bindings pages in the command palette; the
+ * binding guide, which is about DCS and iRacing (AI-IRACING-002), is offered where either is found.
+ * When DCS arrives while RigReady runs, its pages arrive with it.
  */
 
 const entries = (page: Page, section: string) =>
@@ -14,9 +14,7 @@ const entries = (page: Page, section: string) =>
 const rows = (page: Page) => page.getByTestId('palette-row');
 /** Rows of the palette that open a page about DCS. */
 const dcsRows = (page: Page) =>
-  page.locator(
-    '[data-testid="palette-row"][data-to^="/configure/dcs"], [data-testid="palette-row"][data-to^="/configure/ai-assist"]'
-  );
+  page.locator('[data-testid="palette-row"][data-to^="/configure/dcs"]');
 
 const go = (page: Page, route: string): Promise<void> =>
   page.evaluate((hash) => {
@@ -54,37 +52,40 @@ const installDcs = (home: string) => [
   },
 ];
 
-test('a PC whose only game is iRacing: no binding guide in the menu, no DCS page in the palette, and a link still opens the guide', async ({
+test('a PC whose only game is iRacing: the binding guide in the menu for iRacing, no DCS page in the palette, and DCS by a link says it is not here', async ({
   rig,
 }) => {
   const { page, shot } = await rig.launch('shell-racing-pc', 'offered-racing-pc');
   await page.getByTestId('mode-configure').click();
 
-  // The menu: the binding guide works on DCS's files, so it is not offered here.
-  await expect(entries(page, 'Controls')).toHaveText(['Bindings', 'Cheat sheets', 'Overlay']);
-  await expect(page.getByTestId('nav-ai-assist')).toHaveCount(0);
-  await expect(page.getByTestId('configure-nav')).not.toContainText('Binding guide');
-  await expect(page.getByTestId('configure-nav').locator('a')).toHaveCount(17);
+  // The menu: the binding guide has guides for iRacing, so it is offered here.
+  await expect(entries(page, 'Controls')).toHaveText([
+    'Bindings',
+    'Binding guide',
+    'Cheat sheets',
+    'Overlay',
+  ]);
+  await expect(page.getByTestId('configure-nav').locator('a')).toHaveCount(18);
   await shot('menu');
 
-  // The palette with nothing typed: no DCS World, no DCS bindings and their tabs, no guide.
+  // The palette with nothing typed: no DCS World, no DCS bindings and their tabs.
   await openPalette(page);
   await expect(rows(page).first()).toBeVisible();
   await expect(
     page.locator('[data-testid="palette-row"][data-to="/configure/bindings"]')
   ).toHaveCount(1);
   await expect(dcsRows(page)).toHaveCount(0);
-  await expect(rows(page).filter({ hasText: /\bDCS\b|Binding guide/ })).toHaveCount(0);
+  await expect(rows(page).filter({ hasText: /\bDCS\b/ })).toHaveCount(0);
   await expect(page.getByTestId('palette-problem')).toHaveCount(0);
   await shot('palette');
 
-  // Typed: "bind" finds Bindings and iRacing's bindings, nothing of DCS.
+  // Typed: "bind" finds Bindings, iRacing's bindings and the guide, nothing of DCS.
   await page.keyboard.type('bind');
   await expect(
     page.locator('[data-testid="palette-row"][data-to="/configure/iracing-bindings"]')
   ).toHaveCount(1);
   await expect(dcsRows(page)).toHaveCount(0);
-  await expect(rows(page).filter({ hasText: /\bDCS\b|Binding guide/ })).toHaveCount(0);
+  await expect(rows(page).filter({ hasText: /\bDCS\b/ })).toHaveCount(0);
   await shot('palette-bind');
   // "dcs" finds no page about DCS: the tabs of DCS World and DCS bindings are not listed.
   await page.getByTestId('palette-input').fill('dcs');
@@ -93,13 +94,20 @@ test('a PC whose only game is iRacing: no binding guide in the menu, no DCS page
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('palette')).toBeHidden();
 
-  // A link to the guide still opens it, and the page says plainly that DCS was not found.
-  await go(page, '/configure/ai-assist');
-  const guide = page.getByTestId('ai-guide-page');
-  await expect(guide).toBeVisible();
+  // The guide opens on iRacing, the one game here; a link that asks for DCS says it is not here.
+  await page.getByTestId('nav-ai-assist').click();
+  await expect(page.getByTestId('ai-guide-page')).toBeVisible();
+  await expect(page.getByTestId('ai-game')).toContainText('iRacing');
+  await expect(page.getByTestId('ai-game')).not.toContainText('DCS');
+  // iRacing's controls were never set up on this PC: said plainly, not as an error.
+  await expect(page.getByTestId('ai-iracing-unread')).toContainText(
+    'iRacing has no bindings file yet. Set up your controls in iRacing once, and the guide fills in.'
+  );
+  await expect(page.locator('.v-alert.text-error, .v-alert.bg-error')).toHaveCount(0);
+  // The page is open: the address alone switches it.
+  await go(page, '/configure/ai-assist?game=dcs');
   await expect(page.getByTestId('ai-no-dcs')).toContainText('DCS World was not found on this PC');
   await expect(page.locator('.v-alert.text-error, .v-alert.bg-error')).toHaveCount(0);
-  await expect(page.getByTestId('nav-ai-assist')).toHaveCount(0);
   await shot('guide-by-link');
 });
 

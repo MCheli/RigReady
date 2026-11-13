@@ -3,7 +3,7 @@ import { listenForPresses } from '../../core/inputPresses';
 import { ok } from '../../core/result';
 import { iracingBindingsContract } from './contract';
 import { applyChange, pressedOf, reviewChange } from './core/change';
-import { overview, setView, type BindingsContext } from './core/view';
+import { overview, setView, withPlainNames, type BindingsContext } from './core/view';
 
 /**
  * iRacing bindings, read from iRacing's own files, and one binding changed at a time: the
@@ -27,7 +27,12 @@ export default defineFeatureMain({
         // The page that repairs a controller's id belongs to whichever feature reads
         // iRacing bindings for the rest of the app; it is asked for, not named here.
         overview: async () => ok(await overview(bctx, ctx.bindings.get('iracing')?.route())),
-        set: async ({ id }) => setView(bctx, id, await ctx.names.devices()),
+        set: async ({ id }) =>
+          withPlainNames(
+            await setView(bctx, id, await ctx.names.devices()),
+            // The binding guide's plain names, where it has one; iRacing's id stays beside it.
+            await ctx.bindings.labels('iracing', id)
+          ),
 
         changePreview: async (request) => reviewChange(bctx, request, await ctx.names.devices()),
         change: async (request) => applyChange(bctx, request, await ctx.names.devices()),

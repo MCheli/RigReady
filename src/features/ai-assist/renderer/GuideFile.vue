@@ -12,6 +12,10 @@ defineProps<{ centered?: boolean }>();
 const store = useAiStore();
 const guide = computed(() => store.guide);
 const kept = computed(() => guide.value?.stored ?? null);
+/** "the F/A-18C" for an aircraft, "mx5 mx52016 (own controls)" for an iRacing car. */
+const forWhat = computed(() =>
+  guide.value?.game === 'iracing' ? guide.value.aircraftName : `the ${guide.value?.aircraftName}`
+);
 
 /** Deleting asks first. A copy is kept, and the Safety page can put the file back. */
 const deleting = ref(false);
@@ -28,7 +32,7 @@ async function remove(): Promise<void> {
 
 <template>
   <div
-    v-if="guide && guide.guide?.kind !== 'shipped'"
+    v-if="guide && (guide.guide?.kind !== 'shipped' || guide.guide.suggested)"
     class="guide-file"
     :class="{ centered }"
     data-testid="ai-guide-file"
@@ -41,7 +45,7 @@ async function remove(): Promise<void> {
       class="guide-file-line"
       data-testid="ai-guide-problem"
     >
-      The guide file kept for the {{ guide.aircraftName }} cannot be used as it is.
+      The guide file kept for {{ forWhat }} cannot be used as it is.
       {{ kept.problem }}
     </v-alert>
     <p v-else-if="guide.guide?.kind === 'own'" class="guide-file-line" data-testid="ai-guide-own">
@@ -108,9 +112,9 @@ async function remove(): Promise<void> {
       <v-card data-testid="ai-guide-delete-dialog">
         <v-card-title>Delete this guide?</v-card-title>
         <v-card-text>
-          The guide file for the {{ guide.aircraftName }} is removed from RigReady's data folder. A
-          file you imported it from stays where it is, and your bindings are not touched. A copy is
-          kept: the Safety page can put it back.
+          The guide file for {{ forWhat }} is removed from RigReady's data folder. A file you
+          imported it from stays where it is, and your bindings are not touched. A copy is kept: the
+          Safety page can put it back.
         </v-card-text>
         <v-card-actions>
           <v-spacer />

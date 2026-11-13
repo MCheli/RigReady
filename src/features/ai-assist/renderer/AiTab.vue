@@ -12,12 +12,31 @@ const store = useAiStore();
 const question = ref('');
 const guide = computed(() => store.guide!);
 const round = computed(() => store.round);
+const iracing = computed(() => guide.value.game === 'iracing');
 
-const EXAMPLES = [
-  'What am I missing for carrier landings?',
-  'Why is the pitch axis bound on more than one device?',
-  'Which of my panels should take the start-up switches?',
-];
+const EXAMPLES = computed(() =>
+  iracing.value
+    ? [
+        'What should I bind first for my first race?',
+        'Which of these belong on my button box?',
+        'Why does one button do two things?',
+      ]
+    : [
+        'What am I missing for carrier landings?',
+        'Why is the pitch axis bound on more than one device?',
+        'Which of my panels should take the start-up switches?',
+      ]
+);
+/**
+ * A draft is offered where no checked guide is used: a DCS aircraft or an iRacing car without
+ * one, a car that uses a class guide only because of its folder name, or a draft to redo.
+ */
+const draftOffered = computed(
+  () =>
+    (!guide.value.guide && !guide.value.stored) ||
+    guide.value.guide?.drafted !== undefined ||
+    (guide.value.guide?.suggested !== undefined && !guide.value.stored)
+);
 
 const PRIORITY: Record<string, string> = {
   must: 'Must have',
@@ -55,7 +74,7 @@ const selectedCount = computed(() => store.selected.size);
       {{ store.aiNote }}
     </v-alert>
 
-    <div class="rr-panel ai-block">
+    <div v-if="!iracing" class="rr-panel ai-block">
       <div class="ai-block-head">
         <div>
           <div class="rr-row-title">
@@ -183,16 +202,21 @@ const selectedCount = computed(() => store.selected.size);
       </div>
     </div>
 
-    <template v-if="(!guide.guide && !guide.stored) || guide.guide?.drafted">
-      <div class="rr-section-title">A guide for this aircraft</div>
+    <template v-if="draftOffered">
+      <div class="rr-section-title">A guide for this {{ iracing ? 'car' : 'aircraft' }}</div>
       <div class="rr-panel ai-block">
         <div class="ai-block-head">
           <div>
             <div class="rr-row-title">
-              {{ guide.guide ? 'Draft the guide again' : 'Draft a guide' }} for the
-              {{ guide.aircraftName }}
+              {{ guide.guide?.drafted ? 'Draft the guide again' : 'Draft a guide' }} for
+              {{ iracing ? '' : 'the ' }}{{ guide.aircraftName }}
             </div>
-            <div class="rr-row-sub">
+            <div v-if="iracing" class="rr-row-sub">
+              RigReady has no guide of this car's own. The model can draft one in the same format,
+              from iRacing's list of actions: priority tiers, what each control does and where it
+              belongs. It is marked as drafted by AI wherever it is shown.
+            </div>
+            <div v-else class="rr-row-sub">
               RigReady has no checked guide for this aircraft. The model can draft one in the same
               format, from this aircraft's own action list: priority tiers, what each control does
               and where it belongs. It is marked as drafted by AI wherever it is shown.

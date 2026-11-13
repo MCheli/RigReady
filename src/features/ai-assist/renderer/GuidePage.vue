@@ -3,7 +3,9 @@ import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { onMachineChanged } from '../../../renderer/machine';
+import { GUIDE_GAMES, type GuideGame } from '../core/pack';
 import AiTab from './AiTab.vue';
+import IracingBindDialog from './IracingBindDialog.vue';
 import PayloadDialog from './PayloadDialog.vue';
 import PrioritiesTab from './PrioritiesTab.vue';
 import ReviewDialog from './ReviewDialog.vue';
@@ -15,6 +17,26 @@ const store = useAiStore();
 const assistant = useAssistantStore();
 const route = useRoute();
 const router = useRouter();
+
+/** The game the address asks for (?game=iracing), when it names one. */
+const asked = (): GuideGame | undefined => {
+  const wanted = String(route.query['game'] ?? '');
+  return (GUIDE_GAMES as readonly string[]).includes(wanted) ? (wanted as GuideGame) : undefined;
+};
+
+/** The games found on this PC, for the picker; the one shown even when it is not here. */
+const gameItems = computed(() =>
+  store.games
+    .filter((g) => g.available || g.id === store.game)
+    .map((g) => ({ title: g.name, value: g.id }))
+);
+const iracing = computed(() => store.game === 'iracing');
+
+/** The address keeps the game; the watch below follows it, so a link and the picker agree. */
+function chooseGame(id: GuideGame): void {
+  if (asked() === id) void store.selectGame(id);
+  else void router.replace({ path: route.path, query: { ...route.query, game: id } });
+}
 
 const tabs = computed(() => [
   { id: 'walkthrough', title: 'Walkthrough' },
@@ -32,13 +54,22 @@ function go(id: string): void {
 }
 
 watch([tab, () => store.aircraftId], () => window.scrollTo({ top: 0 }));
+// A link that names another game (?game=dcs) while the page is open switches to it.
+watch(
+  () => route.query['game'],
+  () => {
+    const wanted = asked();
+    if (wanted && wanted !== store.game) void store.selectGame(wanted);
+  }
+);
 
 const aircraftItems = computed(() =>
   (store.list?.aircraft ?? []).map((a) => ({
     title: a.name,
     value: a.id,
-    subtitle:
-      a.guide === 'shipped'
+    subtitle: a.uses
+      ? `Uses the ${a.uses} guide`
+      : a.guide === 'shipped'
         ? 'Guide included'
         : a.guide === 'drafted'
           ? 'Guide drafted by AI'
@@ -49,12 +80,23 @@ const aircraftItems = computed(() =>
 );
 
 const staged = computed(() => store.guide?.staged ?? []);
-
+/** iRacing lists cars with controls of their own after the classes. */
+const hasCars = computed(() =>
+  (store.list?.aircraft ?? []).some((a) => a.id.startsWith('iracing:car:'))
+);
+/** Where the iRacing bindings shown are kept, in words. */
+const iracingWhere = computed(() => {
+  const i = store.guide?.iracing;
+  if (!i) return '';
+  const set =
+    i.setName === 'All cars' ? 'the bindings for all cars' : `the bindings of ${i.setName}`;
+  return i.profile ? `${set}, in iRacing’s control profile “${i.profile}”` : set;
+});
 let off: (() => void) | undefined;
 let offPress: (() => void) | undefined;
 let offProgress: (() => void) | undefined;
 onMounted(() => {
-  void store.load();
+  void store.load(asked());
   off = onMachineChanged(() => void store.load());
   offPress = store.api.on('pressed', (press) => void store.pressed(press));
   offProgress = store.api.on('sendProgress', (update) => store.progressed(update));
@@ -72,9 +114,17 @@ onBeforeUnmount(() => {
     <div class="guide-head">
       <div>
         <h1 class="rr-page-title">Binding guide</h1>
-        <p class="rr-page-sub">
+        <p v-if="iracing" class="rr-page-sub">
+          For iRacing: what matters in each class of car, in plain language and in priority order,
+          and a walkthrough that binds it with you.
+        </p>
+        <p v-else-if="store.game === 'dcs'" class="rr-page-sub">
           For DCS World: what matters in each aircraft, in plain language and in priority order, and
           a walkthrough that binds it with you.
+        </p>
+        <p v-else class="rr-page-sub">
+          For DCS World and iRacing: what matters in each aircraft or class of car, in plain
+          language and in priority order, and a walkthrough that binds it with you.
         </p>
         <v-btn
           v-if="store.aiReady"
@@ -86,26 +136,46 @@ onBeforeUnmount(() => {
           >Ask the assistant about anything else</v-btn
         >
       </div>
-      <v-select
-        v-if="aircraftItems.length > 0"
-        class="guide-aircraft"
-        label="Aircraft"
-        :items="aircraftItems"
-        item-props
-        :model-value="store.aircraftId"
-        data-testid="ai-aircraft"
-        @update:model-value="store.selectAircraft(String($event))"
-      />
+      <div class="guide-pickers">
+        <v-select
+          v-if="gameItems.length > 0"
+          class="guide-game"
+          label="Game"
+          :items="gameItems"
+          :model-value="store.game"
+          data-testid="ai-game"
+          @update:model-value="chooseGame($event as GuideGame)"
+        />
+        <v-select
+          v-if="aircraftItems.length > 0"
+          class="guide-aircraft"
+          :label="iracing ? (hasCars ? 'Class or car' : 'Car class') : 'Aircraft'"
+          :items="aircraftItems"
+          item-props
+          :model-value="store.aircraftId"
+          data-testid="ai-aircraft"
+          @update:model-value="store.selectAircraft(String($event))"
+        />
+      </div>
     </div>
 
     <v-alert v-if="store.error" type="error" variant="tonal" class="mb-4" data-testid="ai-error">
       {{ store.error }}
     </v-alert>
 
-    <PageSkeleton v-if="store.loading" label="Reading DCS's input files…" />
+    <PageSkeleton v-if="store.loading" label="Reading the games’ bindings…" />
+
+    <div v-else-if="!store.game" class="rr-panel rr-empty" data-testid="ai-no-game">
+      <v-icon icon="mdi-controller-off" size="36" class="mb-3" />
+      <div class="rr-row-title">Neither DCS World nor iRacing was found on this PC</div>
+      <div class="rr-row-sub">
+        The binding guide works on the games’ own lists of actions. Install one of them and start it
+        once.
+      </div>
+    </div>
 
     <div
-      v-else-if="store.list && !store.list.available"
+      v-else-if="store.list && !store.list.available && !iracing"
       class="rr-panel rr-empty"
       data-testid="ai-no-dcs"
     >
@@ -117,6 +187,29 @@ onBeforeUnmount(() => {
     </div>
 
     <div
+      v-else-if="store.list && !store.list.available && iracing"
+      class="rr-panel rr-empty"
+      data-testid="ai-no-iracing"
+    >
+      <v-icon icon="mdi-steering-off" size="36" class="mb-3" />
+      <div class="rr-row-title">iRacing was not found on this PC</div>
+      <div class="rr-row-sub">
+        The binding guide works on iRacing's own list of actions. Install iRacing and set up your
+        controls in it once.
+      </div>
+    </div>
+
+    <div
+      v-else-if="store.list && iracing && store.list.problem"
+      class="rr-panel rr-empty"
+      data-testid="ai-iracing-unread"
+    >
+      <v-icon icon="mdi-steering" size="36" class="mb-3" />
+      <div class="rr-row-title">iRacing's bindings cannot be read yet</div>
+      <div class="rr-row-sub">{{ store.list.problem }}</div>
+    </div>
+
+    <div
       v-else-if="store.list && store.list.aircraft.length === 0"
       class="rr-panel rr-empty"
       data-testid="ai-no-aircraft"
@@ -125,6 +218,47 @@ onBeforeUnmount(() => {
     </div>
 
     <template v-else-if="store.guide">
+      <div v-if="store.guide.iracing" class="guide-iracing" data-testid="ai-iracing-where">
+        <p class="guide-iracing-line">
+          <v-icon icon="mdi-steering" size="16" class="rr-muted" />
+          This guide works on {{ iracingWhere }}.
+          <router-link
+            :to="{ path: '/configure/iracing-bindings', query: { set: store.guide.iracing.set } }"
+            data-testid="ai-iracing-page"
+          >
+            See them all
+          </router-link>
+        </p>
+        <p
+          v-if="store.guide.guide?.suggested"
+          class="guide-iracing-line"
+          data-testid="ai-iracing-suggested"
+        >
+          <v-icon icon="mdi-lightbulb-on-outline" size="16" class="rr-muted" />
+          RigReady uses the {{ store.guide.guide.suggested.className }} guide here, because the
+          car's folder name has “{{ store.guide.guide.suggested.token }}” in it. A guide of your own
+          for this car takes its place.
+        </p>
+        <v-alert
+          v-if="store.guide.iracing.simRunning"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="mb-3"
+          data-testid="ai-iracing-running"
+        >
+          iRacing is running. It writes its bindings when it closes, so RigReady saves nothing until
+          then, and a binding changed in iRacing shows here once it has closed.
+        </v-alert>
+        <p
+          v-for="(note, n) in store.guide.iracing.notes"
+          :key="n"
+          class="guide-iracing-line rr-muted"
+        >
+          {{ note }}
+        </p>
+      </div>
+
       <div class="guide-tabbar">
         <v-tabs
           :model-value="tab"
@@ -225,8 +359,30 @@ onBeforeUnmount(() => {
       />
     </div>
 
+    <div v-if="store.iracingSaved" class="guide-saved rr-panel" data-testid="ai-iracing-saved">
+      <v-icon icon="mdi-check" size="18" class="rr-ok" />
+      <span class="guide-saved-text">{{ store.iracingSaved }}</span>
+      <v-btn
+        size="small"
+        variant="tonal"
+        prepend-icon="mdi-shield-check-outline"
+        to="/configure/safety"
+        data-testid="ai-iracing-safety"
+      >
+        Open the Safety page
+      </v-btn>
+      <v-btn
+        icon="mdi-close"
+        size="x-small"
+        variant="text"
+        aria-label="Dismiss"
+        @click="store.iracingSaved = undefined"
+      />
+    </div>
+
     <ReviewDialog />
     <PayloadDialog />
+    <IracingBindDialog />
   </div>
 </template>
 
@@ -241,8 +397,27 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   gap: 24px;
 }
+.guide-pickers {
+  display: flex;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+.guide-game {
+  flex: 0 0 160px;
+}
 .guide-aircraft {
   flex: 0 0 280px;
+}
+.guide-iracing {
+  margin: -4px 0 12px;
+}
+.guide-iracing-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 13.5px;
 }
 .guide-tabbar {
   display: flex;

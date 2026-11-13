@@ -66,6 +66,10 @@ If a file holds a kind of binding RigReady has not seen before, the row says "A 
 
 **Cheat sheet** opens the [cheat sheets](../controls/cheat-sheets.md) for iRacing with the set you were looking at.
 
+## Plain names from the binding guide
+
+Where one of the [iRacing binding guides](iracing-binding-guide.md) names an action, the list shows the guide's plain name, with iRacing's own id beside it as always: "Next dash page" for `DashPageInc`. A car with a guide of its own uses that guide's names for its own bindings. Everything else keeps the names this page gives it. The [binding guide](iracing-binding-guide.md) also binds buttons and keys with you, item by item, through the same review and Save as **Change** here.
+
 ## Changing a binding
 
 Every action that takes a button or a key has **Change** in the last column. A button and a key bound this way were used by iRacing 2026.11.02.01 in a test drive on 13 November 2026, and the notice at the top of the page says so.

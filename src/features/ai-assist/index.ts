@@ -11,9 +11,9 @@ export default defineFeature({
       to: '/configure/ai-assist',
       order: 310,
       section: 'Controls',
-      // It works on DCS's own files: offered only where DCS is found. A link still opens
-      // the page, which says that DCS World was not found.
-      games: ['dcs'],
+      // It works on DCS's and iRacing's own bindings: offered where either is found. A link
+      // still opens the page, which says what was not found.
+      games: ['dcs', 'iracing'],
     },
   ],
   routes: [

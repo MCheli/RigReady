@@ -9,6 +9,7 @@ const store = useAiStore();
 const guide = computed(() => store.guide!);
 const titles = computed(() => new Map(store.items.map((i) => [i.id, i.title])));
 
+const iracing = computed(() => guide.value.game === 'iracing');
 const counts = (items: ItemView[]) => ({
   bound: items.filter((i) => i.status === 'bound').length,
   total: items.filter((i) => i.status !== 'missing').length,
@@ -18,17 +19,27 @@ const dot = (i: ItemView): string =>
     ? 'rr-ok'
     : i.status === 'partial'
       ? 'rr-warn'
-      : i.status === 'unbound' && i.tier === 'must'
+      : (i.status === 'unbound' || i.status === 'inGame') && i.tier === 'must'
         ? 'rr-bad'
         : 'rr-muted';
+/** iRacing says each item's state in words: bound, not bound, or bound in iRacing itself. */
+const STATE: Record<ItemView['status'], string> = {
+  bound: 'Bound',
+  partial: 'Partly bound',
+  unbound: 'Not bound',
+  inGame: 'Bind in iRacing',
+  missing: 'Not in this version of iRacing',
+};
 </script>
 
 <template>
   <div v-if="!guide.guide" class="rr-panel rr-empty" data-testid="ai-no-guide">
     <template v-if="guide.stored">
-      The guide file for the {{ guide.aircraftName }} needs a fix.
+      The guide file for {{ iracing ? '' : 'the ' }}{{ guide.aircraftName }} needs a fix.
     </template>
-    <template v-else>There is no guide for the {{ guide.aircraftName }} yet.</template>
+    <template v-else>
+      There is no guide for {{ iracing ? '' : 'the ' }}{{ guide.aircraftName }} yet.
+    </template>
     <GuideFile centered />
   </div>
   <div v-else class="prio" data-testid="ai-priorities">
@@ -74,6 +85,13 @@ const dot = (i: ItemView): string =>
             </div>
           </div>
           <div class="prio-place">
+            <div v-if="iracing" class="prio-state" :class="dot(i)" data-testid="ai-priority-state">
+              {{
+                i.status === 'unbound' && i.place !== 'keyboard'
+                  ? 'Not bound on a controller'
+                  : STATE[i.status]
+              }}
+            </div>
             {{ i.place === 'keyboard' ? 'Keyboard is fine' : i.roleTitle }}
           </div>
         </div>
@@ -134,6 +152,10 @@ const dot = (i: ItemView): string =>
   font-size: 12.5px;
   color: var(--rr-muted);
   white-space: nowrap;
+  text-align: right;
+}
+.prio-state {
+  font-weight: 600;
 }
 .prio-roles {
   display: grid;

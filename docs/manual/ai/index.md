@@ -9,7 +9,7 @@ RigReady works with AI in two ways. Both are off until you turn them on, and not
 - **The built-in assistant.** A panel you open from the **Assistant** button at the top of the window or from the command palette, on any screen and for any game. It uses your own key from Anthropic (the default), OpenAI, Google Gemini, OpenRouter or Mistral, or a model on your own PC through Ollama or LM Studio, and shows you each request before it is sent. It finds where your helper programs are installed, proposes the checks and launch steps of a ready check, explains why the rig is not ready, and writes scripts for what no check covers. Nothing it proposes is saved until you press **Save**. See [The built-in assistant](built-in-assistant.md) and [Choose who answers](providers.md).
 - **An assistant of your own, through MCP.** An AI assistant you already use on this PC (Claude Desktop, Claude Code, Cursor, VS Code and others that speak the Model Context Protocol) can use RigReady the same way. RigReady does not pay for it and never hands it your API key. See [Connect an assistant](mcp-server.md).
 
-The [binding guide](../dcs/binding-guide-and-ai.md) keeps its own focused AI help for DCS bindings, with the same provider, and can open the assistant for anything else.
+The [binding guide](../dcs/binding-guide-and-ai.md) keeps its own focused AI help for DCS and iRacing bindings, with the same provider, and can open the assistant for anything else.
 
 ## Pages in this section
 

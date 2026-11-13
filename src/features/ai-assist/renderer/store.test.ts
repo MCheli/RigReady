@@ -16,6 +16,10 @@ vi.mock('../../../renderer/ipc', () => ({
   errorText: (e: { message?: string }) => e?.message ?? 'error',
   useClient: () => ({
     on: () => () => undefined,
+    games: async () => ({
+      ok: true,
+      value: { games: [{ id: 'dcs', name: 'DCS World', available: true }] },
+    }),
     aircraft: async () => ({ ok: true, value: { aircraft: [{ id: 'fa18', name: 'F/A-18C' }] } }),
     status: async () => ({ ok: true, value: { ready: false } }),
     guide: () =>
