@@ -136,6 +136,26 @@ export function isUserGame(id: string | undefined): boolean {
   return id !== undefined && id.startsWith(USER_GAME_PREFIX);
 }
 
+/** What a setup for a game the user added is called for when this PC does not have that game. */
+export const ANOTHER_GAME = 'Another game';
+
+/**
+ * The name a setup's game goes by, for showing: the game module's name, the name typed for
+ * "Another game", and for a game the user added that this PC does not have (its entry was
+ * taken out of games/custom.json by hand), "Another game" rather than its id. Undefined for
+ * a setup without a game. An id of a game this version does not know is shown as it is.
+ */
+export function setupGameName(
+  setup: { game?: string; gameName?: string },
+  games: Pick<GameRegistry, 'get'>
+): string | undefined {
+  if (!setup.game) return undefined;
+  if (setup.game === 'other') return setup.gameName;
+  const module = games.get(setup.game);
+  if (module) return module.name;
+  return isUserGame(setup.game) ? (setup.gameName ?? ANOTHER_GAME) : setup.game;
+}
+
 /**
  * A setup for a game the user added, on a PC that does not have that game (it was removed
  * here, or the setup was shared from another PC): it becomes a setup for "Another game"

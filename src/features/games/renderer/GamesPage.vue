@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
@@ -33,9 +34,21 @@ function added(game: GameSummary): void {
   notifyMachineChanged();
 }
 
+// "Add a game" in the command palette opens this page with ?add=1: the dialog opens, and the
+// address loses the query, so going back or reloading does not open it again.
+const route = useRoute();
+const router = useRouter();
+function addFromLink(): void {
+  if (route.query['add'] !== '1') return;
+  adding.value = true;
+  void router.replace({ path: route.path });
+}
+watch(() => route.query['add'], addFromLink);
+
 let off: (() => void) | undefined;
 onMounted(() => {
   void load();
+  addFromLink();
   off = onMachineChanged(() => void load());
 });
 onBeforeUnmount(() => off?.());

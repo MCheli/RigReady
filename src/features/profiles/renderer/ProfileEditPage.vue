@@ -130,6 +130,12 @@ const gameItems = computed(() => [
       (g.installs.length > 0 ? '' : ' (not found on this PC)'),
     value: g.id,
   })),
+  // A game the user added that is no longer on the Games page: shown as such, never as its id.
+  ...(draft.value?.game &&
+  ownGame(draft.value.game) &&
+  !games.value.some((g) => g.id === draft.value?.game)
+    ? [{ title: 'Another game (not on the Games page)', value: draft.value.game }]
+    : []),
   { title: 'Other game…', value: 'other' },
 ]);
 const detectedLaunch = computed(() => {

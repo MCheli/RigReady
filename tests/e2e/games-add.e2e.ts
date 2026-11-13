@@ -204,6 +204,23 @@ test('games: a game the user added is changed and removed, and its setup keeps w
     'Star Hauler Deluxe'
   );
   await shot('editor');
+  await page.getByTestId('edit-cancel').click();
+
+  // "Add a game" in the command palette opens the dialog on the Games page.
+  await page.getByTestId('mode-fly').click();
+  await page.keyboard.press('Control+k');
+  await expect(page.getByTestId('palette-input')).toBeFocused();
+  await page.keyboard.type('Add a game');
+  await expect(
+    page.locator('[data-testid="palette-row"][aria-selected="true"] .rr-palette-title')
+  ).toHaveText('Add a game');
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('add-game-dialog')).toBeVisible();
+  await expect(page.getByTestId('games-page')).toBeVisible();
+  await expect(page.getByTestId('add-game-why')).toHaveText('Give the game a name.');
+  await shot('palette-add');
+  await page.getByTestId('add-game-cancel').click();
+  await expect(page.getByTestId('add-game-dialog')).toBeHidden();
 });
 
 test('games: a shared setup for a game added by hand arrives on a PC without it as Another game, and the import says so', async ({

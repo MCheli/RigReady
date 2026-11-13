@@ -6,6 +6,8 @@ import { CheckItemSchema, ProfileSchema, type Profile } from '../../../core/prof
 import { ok } from '../../../core/result';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import { sabotage } from '../../../../tests/sabotage';
+import type { CommandShell } from '../../../shared/feature';
+import gameCommands, { ADD_GAME_ROUTE } from '../commands';
 import type { GameSummary, UserGameView } from '../contract';
 import { nameFromProgram } from './userGamePicks';
 
@@ -286,6 +288,48 @@ describe('adding a game', () => {
     expect(nameFromProgram('D:\\Win64\\Racer.exe')).toBe('Racer');
     expect(nameFromProgram('D:\\Racer.exe')).toBe('Racer');
   });
+
+  it('the palette command “Add a game” opens the Games page with the dialog, and adds nothing itself', async () => {
+    const went: string[] = [];
+    const shell: CommandShell = {
+      client: () => {
+        throw new Error('the command calls no channel');
+      },
+      go: async (to) => {
+        went.push(to);
+      },
+      route: () => '/fly',
+      machineChanged: () => {},
+      progress: () => {},
+    };
+    const add = gameCommands.commands?.find((c) => c.id === 'games.add');
+    expect(add).toMatchObject({ title: 'Add a game', icon: 'mdi-plus' });
+    expect(add?.to).toBeUndefined();
+    expect(await add!.run!(shell)).toBeUndefined();
+    expect(went).toEqual([ADD_GAME_ROUTE]);
+    expect(ADD_GAME_ROUTE).toBe('/configure/games?add=1');
+  });
+
+  it('a setup for a game taken out of custom.json by hand is shown as “Another game”, never by its id', async () => {
+    app = await wiredApp('generic-custom-game', { beforeWiring: (rig) => writeCustom(rig, []) });
+    await app.invoke('games:list');
+    expect(app.wiring.context.games.get('user-star-hauler')).toBeUndefined();
+    await app.wiring.context.profiles.save(setupFor('user-star-hauler'));
+    const state = await app.invoke<{ profiles: { id: string; gameName?: string }[] }>('fly:state');
+    expect(state.profiles.find((p) => p.id === 'star-hauler')?.gameName).toBe('Another game');
+    const overview = await app.invoke<{
+      profiles: { profile: { id: string }; gameName?: string }[];
+    }>('profiles:overview');
+    expect(overview.profiles.find((p) => p.profile.id === 'star-hauler')?.gameName).toBe(
+      'Another game'
+    );
+    // The setup itself is left as it is: adding the game again under its name brings it back.
+    const setup = await app.wiring.context.profiles.get('star-hauler');
+    expect(setup.ok && setup.value.game).toBe('user-star-hauler');
+    await addStarHauler(app);
+    const back = await app.invoke<{ profiles: { id: string; gameName?: string }[] }>('fly:state');
+    expect(back.profiles.find((p) => p.id === 'star-hauler')?.gameName).toBe('Star Hauler');
+  });
 });
 
 describe('the program and the program names (GAME-ADD-004)', () => {
@@ -329,6 +373,11 @@ describe('the program and the program names (GAME-ADD-004)', () => {
     for (const [name, why] of [
       ['explorer.exe', 'RigReady will not treat explorer.exe as the game: it is part of Windows.'],
       ['RigReady.exe', 'RigReady will not treat RigReady.exe as the game: it is RigReady itself.'],
+      // Steam runs every Steam game: a Steam game is named by its app id instead.
+      [
+        'steam.exe',
+        'RigReady will not treat steam.exe as the game: it is Steam, which runs every Steam game. For a Steam game, give its Steam app id.',
+      ],
       ['C:\\Games\\x.exe', 'is not the name of a program file'],
       ['notes.txt', 'is not the name of a program file'],
     ] as const) {

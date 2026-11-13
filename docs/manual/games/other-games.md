@@ -11,13 +11,13 @@ RigReady does not need to know a game to make a rig ready for it. There are two 
 
 ## Add it to the Games page
 
-On **Configure > Games**, **Add a game** opens a dialog:
+On **Configure > Games**, **Add a game** opens a dialog (it is also in the command palette, Ctrl+K):
 
 - **Program**: **Choose program…** opens Windows' own file picker. RigReady names the game after the program's folder (you can change the name) and takes the program's file name as the program that means the game is running. **Launch** starts this program exactly as it is, with nothing added to it. A program inside Windows or RigReady's own folder, or RigReady itself, is refused.
 - **Kind of game**: Flight, Racing or Neither. A new setup for a flight game keeps your flight gear ticked, one for a racing game your wheel and pedals; Neither keeps what the connected gear suggests.
 - **Settings folders**: **Add folder…** opens Windows' folder picker. Pick the folder the game keeps its own settings in, such as `Documents\Star Hauler`. A folder that holds far more than one game is refused, with the reason: a whole drive, the Windows folder, Program Files, your whole user folder, the whole Documents, Saved Games or AppData folder, RigReady's own folder, or a whole Steam library.
 - **Steam app id** (optional): for a game in your Steam library. RigReady then finds it through Steam and starts it through Steam. The number is in the address of the game's Steam store page.
-- **Programs that mean it is running**: the program's own name to start with. Add a launcher or a second program by typing its file name and pressing Enter. Windows' own programs (such as `explorer.exe`) and RigReady are refused.
+- **Programs that mean it is running**: the program's own name to start with. Add a launcher or a second program by typing its file name and pressing Enter. Windows' own programs (such as `explorer.exe`), Steam (`steam.exe`: give a Steam game's app id instead) and RigReady are refused.
 
 ![Adding a game](../../../artifacts/screens/games-add-a-game/03-filled.png)
 
@@ -31,7 +31,7 @@ What the game then gets:
 - Its settings folders listed on its page and suggested on the Backups page ([Tracked files](../protect/tracked-files.md)), and a restore of them asks the game to close first, by the program names you gave.
 - A path variable for its first settings folder, named after the game: `{USER_STAR_HAULER}` for Star Hauler. Checks and tracked files that use it keep working on another PC that has the game added under the same name ([Path variables](../setups/path-variables.md)).
 
-The games you add are kept in `games\custom.json` in RigReady's data folder. If that file is edited by hand, RigReady checks it again when it reads it: a folder or program name it would refuse in the dialog is left out, and the Games page says what was left out and why.
+The games you add are kept in `games\custom.json` in RigReady's data folder. If that file is edited by hand, RigReady checks it again when it reads it: a folder or program name it would refuse in the dialog is left out, and the Games page says what was left out and why. A setup for a game whose entry was taken out of the file is shown as "Another game" until the game is added again under the same name.
 
 ### Change or remove it
 

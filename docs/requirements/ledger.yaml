@@ -6574,8 +6574,11 @@ requirements:
       - "The game is kept in <data folder>/games/custom.json with its paths in the standard variables ({DOCUMENTS}/...), read at start and turned into a game module through simpleGame. It is listed with the built-in games, marked Added by you; found where its program is, or in Steam by its app id; launched; its settings folders listed and suggested on the Backups page; its program names used for Running and to close it before a restore."
       - "Its first settings folder is a path variable of its own ({USER_<NAME>}, labelled), so its setups and backups stay portable."
       - "Its id is user- and its name, never the id of a game RigReady ships, and a name another game already has is refused."
+      - "\"Add a game\" in the command palette (Ctrl+K) opens the Games page with the dialog; it adds nothing by itself."
     status: done
     evidence:
+      - "src/features/games/core/customGames.test.ts#the palette command “Add a game” opens the Games page with the dialog, and adds nothing itself"
+      - "artifacts/screens/games-own-change-remove/08-palette-add.png"
       - "src/features/games/core/customGames.test.ts#a game added from the native pickers is found, launched, backed up and offered for a setup like a built-in one"
       - "src/features/games/core/customGames.test.ts#reads the games in custom.json at start and turns each into a game module"
       - "src/features/games/core/customGames.test.ts#a game sold on Steam is found and started through Steam by its app id alone"
@@ -6596,8 +6599,11 @@ requirements:
       - "A game the user added has Change and Remove on its page. Change opens the same dialog with what the game has and keeps the game's id."
       - "Remove first says which setups are for the game. Those setups then become setups for “Another game” with the game's name; every path in them that starts with the game's folder variable is written out in full; they check and launch as before."
       - "A change or a removal is reported only after custom.json, and each setup it changed, are read back holding it."
+      - "A setup for a game whose entry was taken out of custom.json by hand is shown on Play, in the setups list and in the setup editor as “Another game”, never by its id; adding the game again under its name brings it back."
     status: done
     evidence:
+      - "src/features/games/core/customGames.test.ts#a setup for a game taken out of custom.json by hand is shown as “Another game”, never by its id"
+      - "src/core/games.test.ts#names a setup’s game by its module, its typed name, or “Another game” for a game the user added that is gone; never by a user- id"
       - "src/features/games/core/customGames.test.ts#a removed game’s setups keep working as “Another game”, and the page said which they were"
       - "src/features/games/core/customGames.test.ts#says it did not save or remove when the file does not hold the change afterwards"
       - "tests/e2e/games-add.e2e.ts#games: a game the user added is changed and removed, and its setup keeps working as Another game"
@@ -6614,9 +6620,10 @@ requirements:
     done_means:
       - "Settings folders come only from the native folder picker: the window sends back a ref main handed out, never a path."
       - "A drive root, the Windows folder, Program Files, ProgramData, the user folder and any folder above it, RigReady's own folder, the whole Documents, Saved Games, Desktop and AppData folders, and a whole Steam library are refused with the reason: in the picker, and when custom.json is read back (the folder is left out and the game's row and page say so)."
-      - "Whether a path may be tracked for backup no longer lets a game's folder or suggestion that is too broad vouch for it, whatever a game module names."
+      - "Whether a path may be tracked for backup no longer lets a game's folder or suggestion that is too broad vouch for it, whatever a game module names; the folders a shared setup's import may write to apply the same test."
     status: done
     evidence:
+      - "src/features/sharing/core/importRoots.test.ts#takes a game’s own settings folder, never one a game names that is too broad"
       - "src/core/guards.test.ts#refuses a drive root, Windows, Program Files, the user folder, RigReady’s folder and a whole Steam library; takes a game’s own folder"
       - "src/features/games/core/customGames.test.ts#refuses a drive, Windows, Program Files, the user folder and RigReady’s own folder in the picker"
       - "src/features/games/core/customGames.test.ts#a hand-edited file cannot open a whole drive or the user folder to backups and restores"
@@ -6632,7 +6639,7 @@ requirements:
     priority: p1
     done_means:
       - "The program comes only from the native file picker. It must be a .exe outside Windows and RigReady's own folder and not RigReady itself, and it is started with an argument list (processes.start), never a command line; nothing typed in the dialog reaches it."
-      - "Program names that are Windows' own (explorer.exe, svchost.exe, cmd.exe and the like) or RigReady's are refused when the game is saved and left out when custom.json is read back. A restore never asks such a program to close, whatever a game module names."
+      - "Program names that are Windows' own (explorer.exe, svchost.exe, cmd.exe and the like), Steam's (steam.exe: a Steam game is named by its app id) or RigReady's are refused when the game is saved and left out when custom.json is read back. A restore never asks such a program to close, whatever a game module names."
     status: done
     evidence:
       - "src/core/guards.test.ts#refuses Windows’ own programs and RigReady itself, by name and by file, in any case"
