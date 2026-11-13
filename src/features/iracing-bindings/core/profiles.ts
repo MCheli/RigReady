@@ -36,9 +36,10 @@ export function assignments(text: string): {
   const cars: { car: string; profile: string }[] = [];
   const seen = new Set<string>(['global']);
   for (const { key, value } of lines) {
-    if (seen.has(key.toLowerCase()) || !value) continue;
+    // The first line of a car counts, even an empty one, as in src/core/iracingControls.ts.
+    if (seen.has(key.toLowerCase())) continue;
     seen.add(key.toLowerCase());
-    cars.push({ car: key, profile: value });
+    if (value) cars.push({ car: key, profile: value });
   }
   return { ...(global ? { global } : {}), cars };
 }

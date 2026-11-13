@@ -144,9 +144,16 @@ export async function switchProfile(
     return err('iracing-bindings.read', `RigReady could not read ${appIni}.`, bytes.error.message);
   }
   const now = globalProfileOf(bytes.value);
-  if (now !== undefined && now === name) return ok(`${forAllCars(name)} already (app.ini)`);
-  // What is there now must be something Stand down can write back.
-  if (now !== undefined && !writableProfileName(now)) {
+  if (now === name) return ok(`${forAllCars(name)} already (app.ini)`);
+  // What is there now must be something Stand down can write back: a profile, by a name
+  // RigReady writes exactly. With none ("Global=" empty or missing) there is nothing to put back.
+  if (now === undefined) {
+    return err(
+      'iracing-bindings.profile.noGlobal',
+      'app.ini names no control profile for all cars, so Stand down would have nothing to put back, and RigReady does not switch. Choose a profile in iRacing once: Options, then Controls.'
+    );
+  }
+  if (!writableProfileName(now)) {
     return err(
       'iracing-bindings.profile.name',
       `app.ini names “${now}” for all cars, which RigReady could not put back at Stand down, so it does not switch. Choose the profile in iRacing: Options, then Controls.`
@@ -160,7 +167,7 @@ export async function switchProfile(
   const next: SwitchMemory =
     earlier && sameProfile(earlier.previous, name)
       ? {}
-      : { switched: { previous: earlier?.previous ?? now ?? '', set: name, at } };
+      : { switched: { previous: earlier?.previous ?? now, set: name, at } };
   const noted = await memory.write(next);
   if (!noted.ok) return noted;
   const done = await writeGlobal(
@@ -170,7 +177,14 @@ export async function switchProfile(
     `iRacing control profile for all cars: “${name}”`
   );
   if (!done.ok) {
-    await memory.write(remembered.value);
+    // The note is taken back only when app.ini surely does not name the new profile. When
+    // the write may have happened (it could not be read back), Stand down keeps the note
+    // and checks app.ini itself before it puts anything back.
+    const after = await ctx.ports.files.readBytes(appIni);
+    if (after.ok && globalProfileOf(after.value) !== name) {
+      const undone = await memory.write(remembered.value);
+      if (!undone.ok) return undone;
+    }
     return done;
   }
   const back = next.switched?.previous;
@@ -206,6 +220,12 @@ export async function putBackProfile(
     return err('iracing-bindings.read', `RigReady could not read ${appIni}.`, bytes.error.message);
   }
   const now = globalProfileOf(bytes.value);
+  // Put back already (a Stand down whose read-back failed after it wrote): nothing to do.
+  if (now !== undefined && sameProfile(now, entry.previous)) {
+    const forgot = await memory.write({});
+    if (!forgot.ok) return forgot;
+    return ok(`“${now}” is iRacing’s control profile for all cars again (app.ini).`);
+  }
   if (now === undefined || !sameProfile(now, entry.set)) {
     const forgot = await memory.write({});
     if (!forgot.ok) return forgot;
@@ -293,7 +313,14 @@ export function profileSwitch(games: GameRegistry, memory: Memory) {
         return { pass: false, summary: located.problem ?? 'app.ini names no control profile' };
       }
       if (sameProfile(located.profile, params.profile)) {
-        return { pass: true, summary: forAllCars(located.profile) };
+        // Named, but iRacing has no bindings file to load from it: not met.
+        return located.general
+          ? { pass: true, summary: forAllCars(located.profile) }
+          : {
+              pass: false,
+              summary: forAllCars(located.profile),
+              details: [located.problem ?? 'RigReady found no controls.cfg in that profile.'],
+            };
       }
       // When the profile is not on this PC, the fix is not offered and says why beside it.
       return {

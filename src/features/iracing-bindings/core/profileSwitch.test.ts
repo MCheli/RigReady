@@ -3,6 +3,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { ActionReport, ChecklistReport } from '../../../core/checks/engine';
+import { err } from '../../../core/result';
 import { PROFILE_CHECK, PROFILE_FIX } from './profileSwitch';
 
 /**
@@ -242,5 +243,94 @@ describe('a setup switches iRacing’s control profile for all cars', () => {
     });
     await makeReady(a);
     expect(await journal(a)).toEqual([]);
+  });
+
+  it('an empty Global= has nothing to put back: no switch, nothing noted, nothing written', async () => {
+    const a = await start();
+    await fs.writeFile(
+      appIni(a),
+      (await iniText(a)).replace('Global=Baseline\r\n', 'Global=\r\n'),
+      'latin1'
+    );
+    const before = await fs.readFile(appIni(a));
+    const ready = await makeReady(a);
+    expect(ready.steps[0]).toMatchObject({
+      ok: false,
+      message: expect.stringContaining(
+        'app.ini names no control profile for all cars, so Stand down would have nothing to put back'
+      ),
+    });
+    expect((await fs.readFile(appIni(a))).equals(before)).toBe(true);
+    expect(stepOf(await standDown(a), 'iRacing control profile')).toBeUndefined();
+    expect(await journal(a)).toEqual([]);
+  });
+
+  it('when app.ini cannot be read back after the switch, Stand down still knows what to put back', async () => {
+    const a = await start();
+    const original = await fs.readFile(appIni(a));
+    const files = a.ports.files as unknown as {
+      write: (...args: unknown[]) => Promise<unknown>;
+      readBytes: (file: string) => Promise<unknown>;
+    };
+    const write = files.write.bind(files);
+    const readBytes = files.readBytes.bind(files);
+    let written = false;
+    files.write = async (...args: unknown[]) => {
+      const done = await write(...args);
+      if (args[0] === appIni(a)) written = true;
+      return done;
+    };
+    files.readBytes = async (file: string) =>
+      written && file === appIni(a)
+        ? err('test.disk', 'The disk did not answer.')
+        : readBytes(file);
+    const ready = await makeReady(a);
+    expect(ready.steps[0]).toMatchObject({ ok: false });
+    // The switch did happen.
+    expect(await iniText(a)).toContain(`\r\nGlobal=${TEST}\r\n`);
+
+    files.write = write;
+    files.readBytes = readBytes;
+    const down = await standDown(a);
+    expect(stepOf(down, 'iRacing control profile')).toMatchObject({
+      ok: true,
+      message: 'Put back “Baseline” as iRacing’s control profile for all cars in app.ini.',
+    });
+    expect((await fs.readFile(appIni(a))).equals(original)).toBe(true);
+  });
+
+  it('a Stand down that wrote the old profile but could not read it back is finished by the next one', async () => {
+    const a = await start();
+    const original = await fs.readFile(appIni(a));
+    await makeReady(a);
+    // As if the last Stand down had written "Baseline" and then failed to read it back.
+    await fs.writeFile(appIni(a), original);
+    const down = await standDown(a);
+    expect(stepOf(down, 'iRacing control profile')).toMatchObject({
+      ok: true,
+      message: '“Baseline” is iRacing’s control profile for all cars again (app.ini).',
+    });
+    expect(stepOf(await standDown(a), 'iRacing control profile')).toBeUndefined();
+  });
+
+  it('is not met when app.ini names the profile but iRacing has no bindings file in it', async () => {
+    const a = await start('Baseline');
+    await fs.rm(
+      path.join(
+        a.ports.folders.documents(),
+        'iRacing',
+        'profiles',
+        'controls',
+        'Baseline',
+        'controls.cfg'
+      )
+    );
+    expect((await check(a)).results[0]).toMatchObject({
+      status: 'fail',
+      summary: 'iRacing uses “Baseline” for all cars',
+      details: expect.arrayContaining([
+        'iRacing uses the control profile “Baseline” for all cars, but RigReady found no controls.cfg in it.',
+      ]),
+    });
   });
 });

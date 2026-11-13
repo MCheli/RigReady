@@ -136,6 +136,20 @@ describe('iRacing control profiles: which there are, and which cars use which', 
     expect(profiles!.missing).toEqual([{ car: 'porsche911gt3r', profile: 'Gone Profile' }]);
   });
 
+  it('an empty first line of a car counts, as in the shared lookup: a later line does not', async () => {
+    const a = await start();
+    await makeProfile(a, 'Night', BASELINE);
+    const ini = path.join(a.ports.folders.documents(), 'iRacing', 'app.ini');
+    const text = await fs.readFile(ini, 'latin1');
+    await fs.writeFile(
+      ini,
+      text.replace('[ControlProfiles]\r\n', '[ControlProfiles]\r\nmx5=\r\nMX5=Night\r\n'),
+      'latin1'
+    );
+    const { profiles } = await a.invoke<Overview>('iracing-bindings:overview');
+    expect(profiles!.profiles.find((p) => p.name === 'Night')?.cars).toEqual([]);
+  });
+
   it('says nothing about profiles on an iRacing from before them', async () => {
     const a = (app = await wiredApp('iracing-bindings-car', { files: ['Documents/iRacing/**'] }));
     expect((await a.invoke<Overview>('iracing-bindings:overview')).profiles).toBeUndefined();
@@ -351,6 +365,30 @@ describe('copying bindings from one control profile into another', () => {
     const answer = await call(a, 'copy', { ...request, seen: review.seen });
     expect(answer).toMatchObject({ ok: false, error: { code: 'iracing-bindings.copy.changed' } });
     expect((await bytesOf(file)).equals(changed)).toBe(true);
+  });
+
+  it('writes nothing when the profile copied from, or the actions chosen, changed after the review', async () => {
+    const a = await start();
+    const request = { fromProfile: TEST, toProfile: BASELINE, actions: ['LookUp'] };
+    const review = await a.invoke<CopyReview>('iracing-bindings:copyPreview', request);
+    const target = await bytesOf(fileOf(a, BASELINE));
+    // More actions than the review showed.
+    const more = await call(a, 'copy', {
+      ...request,
+      actions: ['LookUp', 'ToggleUIVisibleDrive'],
+      seen: review.seen,
+    });
+    expect(more).toMatchObject({ ok: false, error: { code: 'iracing-bindings.copy.changed' } });
+    // The source's Look up moved to another button since the review.
+    const source = Buffer.from(await bytesOf(fileOf(a, TEST)));
+    const at = recordAt(source, 'LookUp');
+    source[at + 12] = 0;
+    source[at + 13] = 1;
+    await fs.writeFile(fileOf(a, TEST), source);
+    const moved = await call(a, 'copy', { ...request, seen: review.seen });
+    expect(moved).toMatchObject({ ok: false, error: { code: 'iracing-bindings.copy.changed' } });
+    expect((await bytesOf(fileOf(a, BASELINE))).equals(target)).toBe(true);
+    expect(await journal(a)).toEqual([]);
   });
 
   it('finds a profile by its name among the folders there, never as a path', async () => {

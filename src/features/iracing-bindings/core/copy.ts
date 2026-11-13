@@ -237,6 +237,8 @@ interface Plan {
   from: Loaded;
   to: Loaded;
   bytes: Uint8Array;
+  /** The actions asked for, each once. */
+  chosen: string[];
   copied: string[];
   clears: number;
 }
@@ -327,10 +329,28 @@ async function plan(ctx: BindingsContext, request: CopyRequest): Promise<Result<
       );
     }
   }
-  return ok({ from: from.value, to: to.value, bytes, copied, clears });
+  return ok({ from: from.value, to: to.value, bytes, chosen, copied, clears });
 }
 
 const bindings = (n: number): string => `${n} ${n === 1 ? 'binding' : 'bindings'}`;
+
+/**
+ * One SHA-256 for everything the user approves: both files and their bytes (a binding
+ * changed in the profile copied from changes what would be copied), the actions chosen, the
+ * file that would be written, and which cars use the profile copied into. Copy writes
+ * nothing when any of them is no longer what the review showed.
+ */
+function seenOf(planned: Plan): string {
+  const { from, to, bytes } = planned;
+  return sha256(
+    JSON.stringify({
+      from: { file: from.file.toLowerCase(), content: sha256(from.bytes) },
+      to: { file: to.file.toLowerCase(), content: sha256(to.bytes), usedBy: to.usedBy },
+      actions: [...planned.chosen].sort(),
+      result: sha256(bytes),
+    })
+  );
+}
 
 /** The copy as it would be written, for the user to look at first. Writes nothing. */
 export async function reviewCopy(
@@ -350,7 +370,7 @@ export async function reviewCopy(
     clears,
     usedBy: to.usedBy,
     preview: preview.value,
-    seen: sha256(to.bytes),
+    seen: seenOf(planned.value),
     ...(blocked ? { blocked } : {}),
   });
 }
@@ -368,10 +388,11 @@ export async function applyCopy(
   const planned = await plan(ctx, request);
   if (!planned.ok) return planned;
   const { from, to, bytes, copied } = planned.value;
-  if (request.seen !== undefined && request.seen !== sha256(to.bytes)) {
+  // Worked out again from the files as they are now: what the user approved must still hold.
+  if (request.seen !== undefined && request.seen !== seenOf(planned.value)) {
     return err(
       'iracing-bindings.copy.changed',
-      `The bindings of “${to.name}” changed after the copy was shown, so nothing was written. Look at it again.`
+      `The bindings of “${from.name}” or “${to.name}”, the actions chosen, or the cars that use “${to.name}” changed after the copy was shown, so nothing was written. Look at it again.`
     );
   }
   if (copied.length === 0) {
