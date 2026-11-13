@@ -6983,6 +6983,107 @@ requirements:
       - "artifacts/screens/iracing-bindings-profiles/01-profile.png"
       - "docs/research/iracing-bindings.md"
 
+  - id: BIND-IRACING-PROFILE-001
+    title: See iRacing's control profiles, the one for all cars, and which cars use which
+    job: configure
+    area: iracing-bindings
+    priority: p1
+    done_means:
+      - "On an iRacing with control profiles, the iRacing bindings page lists every folder under Documents/iRacing/profiles/controls, marks the one app.ini [ControlProfiles] Global names as for all cars, and gives each profile the cars whose own line names it (the first line of a car counts, case ignored). A profile without controls.cfg says so; a line naming a profile with no folder is listed as not on this PC."
+      - "The lines are read with the shared lookup in src/core/iracingControls.ts. Reading changes nothing. Without a profiles folder (an iRacing from before them) the list is not shown. When app.ini names a profile for all cars that is not there, the page shows no bindings but still lists the profiles, beside the name that is not there."
+    notes:
+      - "2026-11-13: built on the 12:27 shape from the owner's rig (cadillacctsvr=Test Profile CTSV before Global=Baseline), in the scenario iracing-bindings-profile-car. The list comes with the overview channel, which is read only; no new channel."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/copy.test.ts#lists every profile, the one for all cars, and the car that has its own"
+      - "src/features/iracing-bindings/core/copy.test.ts#a profile no car uses, a car on the profile for all cars, and a line naming no folder"
+      - "src/features/iracing-bindings/core/copy.test.ts#says nothing about profiles on an iRacing from before them"
+      - "src/features/iracing-bindings/core/copy.test.ts#an empty first line of a car counts, as in the shared lookup: a later line does not"
+      - "tests/e2e/iracing-bindings-profile-manager.e2e.ts#iRacing bindings: the control profiles, and copying bindings from one into another"
+      - "artifacts/screens/iracing-profiles-copy/01-profiles.png"
+      - "artifacts/screens/iracing-profiles-copy/06-profile-not-there.png"
+
+  - id: BIND-IRACING-PROFILE-002
+    title: Copy bindings from one iRacing control profile into another
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "Choosing two profiles lists every action whose button or key differs, with what each profile has; a button or a key to copy is ticked, a copy that would clear a binding is listed and ticked only by hand, and Tick all and Tick none are there. Nothing is written by looking."
+      - "Copying writes only the ticked actions: each ends with the bytes +8 to +67 of the same action in the profile copied from, through the writer of BIND-IRACING-007, and keeps its own first two fields; every other byte of the file stays. The profile copied from is never written."
+      - "The file is shown before it is written; the write goes through FileStore with a backup, is one entry on the Safety page with Undo, and is read back before the page says what was copied. It is refused while iRacingSim64DX11.exe runs or cannot be ruled out, and when either profile's file, the actions chosen or the cars that use the profile copied into changed after it was shown."
+      - "An axis in either profile and the calibration in joyCalib.yaml are left as they are, with the reason on the row; so are an action the other profile lacks and a binding RigReady cannot read exactly. A profile is found by its name among the folders there, never as a path."
+    notes:
+      - "2026-11-13: axes and calibration decided out. An axis record goes with its range in joyCalib.yaml and iRacing calibrates an axis as it binds it; copying the record alone pairs it with the other profile's calibration, RigReady has no joyCalib.yaml writer, and no file with an axis record placed by RigReady has been loaded by iRacing. BIND-IRACING-008 holds that work."
+      - "2026-11-13: copying the two bindings of the 12:27 car profile into Baseline gives that car profile byte for byte, the file iRacing itself wrote. Not yet seen in iRacing: a profile RigReady copied into, driven. The buttons and keys copied are the kinds BIND-IRACING-007 proved on the rig."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/copy.test.ts#lists what differs and what copying does, and writes nothing"
+      - "src/features/iracing-bindings/core/copy.test.ts#copies the two bindings and gives byte for byte the profile iRacing wrote with them"
+      - "src/features/iracing-bindings/core/copy.test.ts#copies only the ticked actions, and clears where the profile copied from has nothing"
+      - "src/features/iracing-bindings/core/copy.test.ts#leaves an axis, its calibration and what it cannot read, and says why"
+      - "src/features/iracing-bindings/core/copy.test.ts#an action the other profile does not have yet is left, with the reason"
+      - "src/features/iracing-bindings/core/copy.test.ts#while iRacing runs: says so first and writes nothing"
+      - "src/features/iracing-bindings/core/copy.test.ts#writes nothing when the file changed after the copy was shown"
+      - "src/features/iracing-bindings/core/copy.test.ts#writes nothing when the profile copied from, or the actions chosen, changed after the review"
+      - "src/features/iracing-bindings/core/copy.test.ts#finds a profile by its name among the folders there, never as a path"
+      - "tests/e2e/iracing-bindings-profile-manager.e2e.ts#iRacing bindings: the control profiles, and copying bindings from one into another"
+      - "artifacts/screens/iracing-profiles-copy/02-copy-choose.png"
+      - "artifacts/screens/iracing-profiles-copy/03-copy-review.png"
+      - "artifacts/screens/iracing-profiles-copy/04-copied.png"
+      - "artifacts/screens/iracing-profiles-copy/05-iracing-running.png"
+
+  - id: BIND-IRACING-PROFILE-003
+    title: A setup switches iRacing's control profile for all cars, and Stand down puts it back
+    job: fly
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "A setup item 'iRacing control profile' (check iracing-bindings.controlProfile, profile chosen by name in the setup editor) passes when app.ini [ControlProfiles] Global names that profile and it holds a controls.cfg, read with src/core/iracingControls.ts."
+      - "Its fix, run by Make ready, sets the value of Global= and nothing else in app.ini: every other line and byte, the line endings and the cars' own lines stay as they were. It writes through FileStore with a backup, names app.ini before and after, and notes the profile that was there."
+      - "Stand down puts that profile back, after the game is closed, unless app.ini names another profile by then; the file is then as it was before Make ready, byte for byte."
+      - "While iRacingSim64DX11.exe runs, the fix and the Stand down step fail with the reason and write nothing; Stand down keeps what to put back for the next time. A profile not on this PC gets no fix and the row says why. No profile folder is made or removed, and an app.ini without a profile in Global= is not changed. When app.ini cannot be read back after a switch, what to put back is kept, and Stand down checks app.ini before it writes."
+    notes:
+      - "2026-11-13: built and tested on copies of the owner's 12:27 files. iRacing starting on a Global= that RigReady wrote has not been seen on the rig yet; it is the five-minute rig check of this round."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/appIni.test.ts#sets Global= and keeps every other byte of the real file, CRLF and the car line included"
+      - "src/features/iracing-bindings/core/appIni.test.ts#putting the profile back gives the file again byte for byte"
+      - "src/features/iracing-bindings/core/appIni.test.ts#keeps padding, a comment after a tab and bytes that are not text"
+      - "src/features/iracing-bindings/core/appIni.test.ts#refuses a file without the line, and a name it cannot write exactly"
+      - "src/features/iracing-bindings/core/appIni.test.ts#never changes a byte outside the value, for 200 made-up files"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#Make ready sets it in app.ini, only that line changes, and Stand down puts the old one back"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#while iRacing runs, the step fails with the reason and app.ini is not written"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#a Stand down while iRacing still runs says so, keeps what to put back, and a later one does it"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#leaves a profile chosen in iRacing after Make ready as it is"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#a profile that is not on this PC: the check says so and no fix is offered"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#offers the profiles on this PC by name in the setup editor, the one in use marked"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#an empty Global= has nothing to put back: no switch, nothing noted, nothing written"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#when app.ini cannot be read back after the switch, Stand down still knows what to put back"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#a Stand down that wrote the old profile but could not read it back is finished by the next one"
+      - "src/features/iracing-bindings/core/profileSwitch.test.ts#is not met when app.ini names the profile but iRacing has no bindings file in it"
+      - "tests/e2e/iracing-bindings-profile-manager.e2e.ts#setups: a setup switches iRacing’s control profile at Make ready and back at Stand down"
+      - "artifacts/screens/iracing-profiles-switch/01-not-ready.png"
+      - "artifacts/screens/iracing-profiles-switch/02-iracing-running.png"
+      - "artifacts/screens/iracing-profiles-switch/03-made-ready.png"
+      - "artifacts/screens/iracing-profiles-switch/05-stood-down.png"
+      - "artifacts/screens/iracing-profiles-switch/06-setup-editor.png"
+
+  - id: BIND-IRACING-PROFILE-004
+    title: A binding just saved stays in sight under the page's filters
+    job: configure
+    area: iracing-bindings
+    priority: p3
+    done_means:
+      - "With 'Not bound', a search or a device filter on, the action whose binding was just saved stays listed with its new binding and the Saved mark, until the search, a filter or the set changes."
+    notes:
+      - "2026-11-13: seen on the owner's rig (12:1x): with 'Not bound' on, a row vanished the moment its binding was saved."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/renderer/rows.test.ts#keeps a row just saved in sight under \"Not bound\", with its new binding"
+      - "tests/e2e/iracing-bindings-profile-manager.e2e.ts#iRacing bindings: a row just saved stays in sight under “Not bound”"
+      - "artifacts/screens/iracing-profiles-kept-row/01-kept-under-not-bound.png"
+
   # ---------------------------------------------------------------------------
   # RACING — Le Mans Ultimate
   # ---------------------------------------------------------------------------
