@@ -141,7 +141,7 @@ export const audioDefaultCheck: CheckDefinition<AudioParams> = {
     }
     if (comms) {
       const now = defaultOf(state.value, params.flow, true);
-      if (now?.id !== wanted.id) problems.push(`Default for calls is ${now?.name ?? 'nothing'}`);
+      if (now?.id !== wanted.id) problems.push(`Default for comms is ${now?.name ?? 'nothing'}`);
     }
     const notes = found.byName
       ? [`Found by name: Windows now lists ${wanted.name} under a different id.`]
@@ -149,9 +149,9 @@ export const audioDefaultCheck: CheckDefinition<AudioParams> = {
     if (problems.length === 0) {
       const summary =
         params.role === 'both'
-          ? `Default ${flowWord(params.flow)}, also for calls`
+          ? `Default ${flowWord(params.flow)}, also for comms`
           : params.role === 'communications'
-            ? `Default ${flowWord(params.flow)} for calls`
+            ? `Default ${flowWord(params.flow)} for comms`
             : `Default ${flowWord(params.flow)}`;
       return notes.length ? { pass: true, summary, details: notes } : { pass: true, summary };
     }
@@ -218,7 +218,7 @@ export function createSetDefaultRemediation(
     picker: audioDevicePicker,
     describe: (p) =>
       p.role === 'communications'
-        ? `Make ${p.name} the default for calls`
+        ? `Make ${p.name} the default for comms`
         : `Make ${p.name} the default ${flowWord(p.flow)}`,
     async run(params, ctx) {
       const state = await ctx.ports.audio.read();
@@ -243,7 +243,7 @@ export function createSetDefaultRemediation(
       if (comms) previous.remember(params.flow, true, device.id, before.comms);
       return ok(
         params.role === 'communications'
-          ? `Made ${device.name} the default for calls`
+          ? `Made ${device.name} the default for comms`
           : `Made ${device.name} the default ${flowWord(params.flow)}`
       );
     },
@@ -274,7 +274,7 @@ export function createAudioStandDown(previous: PreviousDefaults) {
       const done = await makeDefault(ctx.ports.audio, back, which ? 'communications' : 'default');
       if (!done.ok) return done;
       lines.push(
-        which ? `${back.name} is the default for calls again` : `${back.name} is the default again`
+        which ? `${back.name} is the default for comms again` : `${back.name} is the default again`
       );
     }
     return ok(lines.length ? lines.join('; ') : null);
@@ -303,7 +303,7 @@ export const audioCapture: CaptureDefinition = {
           title,
           description:
             role === 'both'
-              ? `The default ${flowWord(flow)} device, also for calls`
+              ? `The default ${flowWord(flow)} device, also for comms`
               : `The default ${flowWord(flow)} device`,
           selectedByDefault: true,
           check: {
@@ -322,7 +322,7 @@ export const audioCapture: CaptureDefinition = {
           name: comms.name,
           role: 'communications',
         };
-        const title = `${what} for calls: ${comms.name}`;
+        const title = `${what} for comms: ${comms.name}`;
         candidates.push({
           key: `audio:${flow}:comms`,
           group: 'audio',

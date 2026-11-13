@@ -7,6 +7,14 @@ import { axisName, neutralAxisName } from '../devices';
 import { findProgram } from '../software';
 import { brandOf, WHEEL_BRAND_LIST, type BrandSoftware, type WheelBrand } from './brands';
 import { COMPATIBILITY_PID, FANATEC_VENDOR, productOf, type WheelProduct } from './products';
+import {
+  readMyWheels,
+  storedWheelOf,
+  UNLISTED_NOT_AVAILABLE,
+  UNLISTED_WORKS,
+  unlistedControllers,
+  type StoredWheel,
+} from './unlisted';
 
 /**
  * The wheel base of any brand as Windows and games see it: which base, in which mode, the
@@ -17,28 +25,62 @@ import { COMPATIBILITY_PID, FANATEC_VENDOR, productOf, type WheelProduct } from 
 export interface WheelPartFound extends WheelPart {
   device: DeviceInfo;
   product: WheelProduct;
+  /** Set for a base the table does not know and the user added ("My wheel is not listed"). */
+  unlisted?: StoredWheel;
 }
 
-/** Every wheel part on USB, in the order Windows lists them, one per USB device. */
-export function wheelParts(devices: DeviceInfo[]): WheelPartFound[] {
+/** The brand of a base the user added: it has no row in ./brands.ts, so `brandOf` gives nothing. */
+export const UNLISTED_BRAND = 'unlisted';
+
+/**
+ * Every wheel part on USB, in the order Windows lists them, one per USB device: the models
+ * the table knows, and the bases the user added (`mine`), one per model.
+ */
+export function wheelParts(
+  devices: DeviceInfo[],
+  mine: readonly StoredWheel[] = []
+): WheelPartFound[] {
   const out: WheelPartFound[] = [];
   for (const device of devices) {
     const product = productOf(device.vendorId, device.productId);
-    if (!product) continue;
+    if (product) {
+      out.push({
+        role: product.role,
+        name: device.name || product.name,
+        vendorId: device.vendorId,
+        productId: device.productId,
+        device,
+        product,
+      });
+      continue;
+    }
+    const stored = device.isHub ? undefined : storedWheelOf(mine, device);
+    if (!stored || out.some((p) => p.unlisted === stored)) continue;
     out.push({
-      role: product.role,
-      name: device.name || product.name,
+      role: 'base',
+      name: device.name || stored.name,
       vendorId: device.vendorId,
       productId: device.productId,
       device,
-      product,
+      product: { brand: UNLISTED_BRAND, name: stored.name, role: 'base' },
+      unlisted: stored,
     });
   }
   return out;
 }
 
-export const wheelBases = (devices: DeviceInfo[]): WheelPartFound[] =>
-  wheelParts(devices).filter((p) => p.role === 'base');
+export const wheelBases = (
+  devices: DeviceInfo[],
+  mine: readonly StoredWheel[] = []
+): WheelPartFound[] => wheelParts(devices, mine).filter((p) => p.role === 'base');
+
+/** The base the page is about: one the table knows before one the user added. */
+export const firstBase = (parts: WheelPartFound[]): WheelPartFound | undefined =>
+  parts.find((p) => p.role === 'base' && !p.unlisted) ?? parts.find((p) => p.role === 'base');
+
+/** A base in words: "Moza R9", or the name an unlisted one reports. */
+const baseLabel = (p: WheelPartFound): string =>
+  p.unlisted ? p.name : `${brandOf(p.product.brand)?.name ?? ''} ${p.product.name}`.trim();
 
 export function controllersOf(
   live: InputDevice[] | undefined,
@@ -142,6 +184,49 @@ async function brandWithoutBase(ctx: CheckContext): Promise<WheelBrand | undefin
   return undefined;
 }
 
+/**
+ * The status of a base the user added: connected, with what Windows and games say about it
+ * and nothing that needs its model. No brand, no software rows, no mode, no profiles.
+ */
+function unlistedStatus(
+  base: WheelPartFound,
+  stored: StoredWheel,
+  parts: WheelPartFound[],
+  live: InputDevice[] | undefined,
+  unknownBases: WheelStatus['unknownBases']
+): WheelStatus {
+  const controllers = controllersOf(live, base);
+  const hub = base.device.hubChain[0]?.name;
+  return {
+    connected: true,
+    verifiedOnHardware: false,
+    unlisted: true,
+    ...(stored.maker ? { maker: stored.maker } : {}),
+    name: base.name,
+    vendorId: base.vendorId,
+    productId: base.productId,
+    mode: 'unknown',
+    modeLabel: 'Mode not known for this model',
+    controllers: controllers.length,
+    ...(hub ? { connection: hub } : {}),
+    accessories: [],
+    parts: [{ role: 'base', name: base.name, vendorId: base.vendorId, productId: base.productId }],
+    axes: (controllers[0]?.axisNames ?? []).map((a) => {
+      const axis = neutralAxisName(a);
+      return { axis, name: axisName(axis) };
+    }),
+    axesSourced: false,
+    software: [],
+    profiles: [],
+    recommendedLinks: [],
+    others: parts.filter((p) => p.role === 'base' && p !== base).map(baseLabel),
+    lastSeen: [],
+    unlistedWorks: [...UNLISTED_WORKS],
+    unlistedNotAvailable: [...UNLISTED_NOT_AVAILABLE],
+    unknownBases,
+  };
+}
+
 /** The brand-neutral half of the Wheel page; Fanatec adds its own (../fanatec/fanatec.ts). */
 export async function wheelBaseStatus(
   ctx: CheckContext,
@@ -151,12 +236,19 @@ export async function wheelBaseStatus(
   const all = devices.ok ? devices.value : [];
   const started = await ctx.ports.input.start();
   const live = started.ok ? started.value : undefined;
-  const parts = wheelParts(all);
-  const base = parts.find((p) => p.role === 'base');
+  const mine = await readMyWheels(ctx);
+  const parts = wheelParts(all, mine);
+  const base = firstBase(parts);
+  // Seen on USB, shaped like a wheel base, and not a model RigReady knows: said as it is.
+  const unknownBases = unlistedControllers(all, live, mine).filter((c) => c.looksLikeWheel);
+  if (base?.unlisted)
+    return { status: unlistedStatus(base, base.unlisted, parts, live, unknownBases), states: [] };
+  // With no base connected, the one the user added is the one to plug in.
+  const awaited = base ? undefined : mine[0]?.name;
   let brand = brandOf(base?.product.brand);
   if (!brand) brand = options.fanatecTraces ? brandOf('fanatec') : await brandWithoutBase(ctx);
   if (!brand) {
-    // No base and no wheel software: nothing to say about any brand.
+    // No base RigReady knows and no wheel software: nothing to say about any brand.
     return {
       status: {
         connected: false,
@@ -172,6 +264,8 @@ export async function wheelBaseStatus(
         recommendedLinks: [],
         others: [],
         lastSeen: [],
+        unknownBases,
+        ...(awaited ? { awaitedName: awaited } : {}),
       },
       states: [],
     };
@@ -194,10 +288,10 @@ export async function wheelBaseStatus(
     softwareNote: brand.softwareNote,
     profiles: [],
     recommendedLinks: brand.recommendedLinks ?? [],
-    others: parts
-      .filter((p) => p.role === 'base' && p !== base)
-      .map((p) => `${brandOf(p.product.brand)?.name ?? ''} ${p.product.name}`.trim()),
+    others: parts.filter((p) => p.role === 'base' && p !== base).map(baseLabel),
     lastSeen: [],
+    unknownBases,
+    ...(awaited ? { awaitedName: awaited } : {}),
   };
   if (base) {
     const { mode, label } = modeOf(base);
@@ -247,12 +341,6 @@ export const WheelBaseParamsSchema = z.object({
 });
 export type WheelBaseParams = z.infer<typeof WheelBaseParamsSchema>;
 
-const nameOf = (vendorId: string, productId: string): string => {
-  const product = productOf(vendorId, productId);
-  if (!product) return `${vendorId}:${productId}`;
-  return `${brandOf(product.brand)?.name ?? ''} ${product.name}`.trim();
-};
-
 function controllerLine(count: number, brand: WheelBrand | undefined): string {
   if (count >= 2)
     return brand?.controllersNote
@@ -280,7 +368,8 @@ export async function runWheelBaseCheck(
     const count = controllersOf(live, found).length;
     const details = [controllerLine(count, brand)];
     const hub = found.hubChain[0]?.name;
-    if (hub && /hub/i.test(hub))
+    // A chain of one is the PC's own port (its root hub): only a hub in between is advised against.
+    if (hub && /hub/i.test(hub) && found.hubChain.length > 1)
       details.push(
         `Connected through ${hub}. Wheel makers and iRacing advise a port on the PC itself.`
       );
@@ -300,9 +389,11 @@ export async function runWheelBaseCheck(
       // The setup was made with the base in this mode: it is what the setup expects.
       details.push(`It reports itself in ${mode.label}.`);
     }
+    // A base the user added: connected and seen by games is all that can be said of it.
+    if (!expected) details.push('RigReady does not know this model, so its mode is not checked.');
     return { pass: true, summary: `Connected${mode.mode === 'pc' ? ' in PC mode' : ''}`, details };
   }
-  const bases = wheelBases(devices.value);
+  const bases = wheelBases(devices.value, await readMyWheels(ctx));
   // The same base in another mode: the brand's other ids are on USB, the expected one is not.
   if (expected?.role === 'base' && vendorId === FANATEC_VENDOR) {
     const compatible = bases.find(
@@ -334,14 +425,12 @@ export async function runWheelBaseCheck(
       ],
     };
   }
-  const other = bases[0];
+  const other = firstBase(bases);
   if (other) {
     return {
       pass: false,
       summary: `A different base is connected: ${
-        other.product.brand === expected?.brand
-          ? other.product.name
-          : nameOf(other.vendorId, other.productId)
+        other.product.brand === expected?.brand ? other.product.name : baseLabel(other)
       }`,
     };
   }

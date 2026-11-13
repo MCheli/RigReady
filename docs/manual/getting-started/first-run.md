@@ -24,6 +24,8 @@ Nothing is changed by looking. If the PC could not be read just now, the screen 
 - **Restore from a backup** goes to **Configure > Backups**, for a backup RigReady made on another PC or before a reinstall. See [Restore a backup](../protect/restore.md) and [Moving to a new PC](../protect/new-pc.md).
 - **Import a shared setup** goes to **Configure > Share**, for a `.rigready` file somebody sent you. See [Share a setup](../protect/sharing.md).
 
+On a PC with DCS World, a line under the buttons says that RigReady reads the DCS bindings you already have from DCS's own files, so there is nothing to import. [DCS bindings](../dcs/bindings.md) shows them.
+
 ## An AI assistant, if you want one
 
 Under the three ways in, an optional line asks whether you want to use an AI assistant (Claude Desktop, LM Studio and others) with RigReady. **Connect an assistant** opens the list of assistants found on this PC, one button each; see [Connect an assistant](../ai/mcp-server.md). **Not now** puts the line away on this PC. Nothing is turned on until you connect one.

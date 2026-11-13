@@ -224,7 +224,7 @@ From the moment the release is published (step 6 above):
 |---|---|---|
 | The app asks GitHub for the newest release on its channel | 5 seconds after every start, then every 24 hours while it runs | `FIRST_CHECK_DELAY_MS`, `CHECK_INTERVAL_MS` in `src/features/updates/core/controller.ts` |
 | The installer is downloaded in the background | Right after the check finds it; about 130 MB | `UpdateController.checkAndDownload` |
-| Its SHA-512 is compared with `latest.yml`; once releases are signed, its Authenticode signature with the publisher in `app-update.yml` | Before it is offered | electron-updater (`NsisUpdater`) |
+| Its SHA-512 is compared with `latest.yml`; in a signed copy, its Authenticode signature with the publisher in `app-update.yml` | Before it is offered | electron-updater (`NsisUpdater`) |
 | The window says so. A `[security]` release says so on every screen, with **Restart to install** | As soon as the download starts | `SecurityUpdateNotice.vue`, `src/core/updateMarker.ts` |
 | It is installed | When the user presses Restart to install, or when RigReady quits; never while a game runs | `UpdateController.install`, `UpdateController.beforeQuit` |
 

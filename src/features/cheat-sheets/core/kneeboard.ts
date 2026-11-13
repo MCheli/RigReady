@@ -6,11 +6,13 @@ import { JsonStore } from '../../../core/jsonStore';
 import type { Clock, FileStore, Render } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
 import { KneeboardOptionsSchema, type KneeboardOptions } from './kneeboardOptions';
+import { pageComplete } from './pageCheck';
 import {
   KNEEBOARD_LIST_ROWS,
   KNEEBOARD_SIZE,
+  LIST_FILL,
   kneeboardDevicePage,
-  kneeboardListPage,
+  kneeboardListPages,
   listEntries,
   type PageStyle,
 } from './pages';
@@ -45,6 +47,8 @@ const ExportRecordSchema = z.object({
   options: KneeboardOptionsSchema,
   /** What the pages showed when they were written (see pagesFingerprint). */
   fingerprint: z.string(),
+  /** How the pages were laid out (PAGE_LAYOUT). Exports from before it was recorded are 1. */
+  layout: z.number().int().default(1),
   pages: z.array(PageRecordSchema),
 });
 export type ExportRecord = z.infer<typeof ExportRecordSchema>;
@@ -56,6 +60,19 @@ export const KneeboardManifestSchema = z.object({
 });
 
 export const PREFIX = 'RigReady - ';
+
+/**
+ * The layout of the pages. Layout 1 could cut a list off at the edge of the page (a
+ * section that did not fit was never seen); pages made with it are reported as needing a
+ * new export. Raise it whenever pages already exported would come out wrong.
+ */
+export const PAGE_LAYOUT = 2;
+
+/**
+ * How full a list page is planned, one try after another: when a rendered page shows that
+ * part of its list was cut off, the pages are planned again with more room to spare.
+ */
+const FILLS = [LIST_FILL, 0.8, 0.65] as const;
 
 export interface PlannedPage {
   name: string;
@@ -76,10 +93,50 @@ export function fileNamePart(title: string): string {
   return (clean || 'Device').slice(0, 44).trim();
 }
 
-function chosenDevices(sheet: Sheet, options: KneeboardOptions) {
-  return sheet.devices.filter((device) =>
+/**
+ * The devices that get pages. `order` is the device keys in the page order of the last
+ * export: a device keeps the place it had, and a new one goes after them. Without it the
+ * sheet's own order decides, which follows what is bound and so changes with the bindings:
+ * that order alone would give a device another page number from one export to the next.
+ */
+function chosenDevices(sheet: Sheet, options: KneeboardOptions, order: string[] = []) {
+  const chosen = sheet.devices.filter((device) =>
     options.devices.length > 0 ? options.devices.includes(device.key) : device.counts.bound > 0
   );
+  const place = (key: string): number => {
+    const at = order.indexOf(key);
+    return at < 0 ? order.length : at;
+  };
+  return chosen
+    .map((device, at) => ({ device, at }))
+    .sort((a, b) => place(a.device.key) - place(b.device.key) || a.at - b.at)
+    .map(({ device }) => device);
+}
+
+/** The device keys of an export in page order, each once. */
+export function pageOrder(record: Pick<ExportRecord, 'pages'> | undefined): string[] {
+  const keys: string[] = [];
+  for (const page of record?.pages ?? []) {
+    if (page.deviceKey && !keys.includes(page.deviceKey)) keys.push(page.deviceKey);
+  }
+  return keys;
+}
+
+/**
+ * The letter after a page number: nothing for the first page of an entry, then b, c and
+ * so on ("02", "02b", "02c"; after z comes zb). Names with a letter sort after the plain
+ * number and before the next one, which is the order DCS shows pages in.
+ */
+export function pageLetter(n: number): string {
+  if (n <= 0) return '';
+  return n <= 25 ? String.fromCharCode(97 + n) : `z${pageLetter(n - 25)}`;
+}
+
+export interface PagePlan {
+  /** The device keys in the page order of the last export (see pageOrder). */
+  order?: string[];
+  /** The share of a list page's room to plan for. */
+  fill?: number;
 }
 
 /** What the exported pages show, as one fingerprint: it changes when a binding, a note, a layout or an option does. */
@@ -101,35 +158,56 @@ export function pagesFingerprint(sheet: Sheet, options: KneeboardOptions): strin
   );
 }
 
-/** The pages an export writes, in kneeboard order, with their file names. */
-export function planPages(sheet: Sheet, options: KneeboardOptions, stamp: string): PlannedPage[] {
+/**
+ * The pages an export writes, in kneeboard order, with their file names.
+ *
+ * The summary and each device have one number each. A further page of the same entry (the
+ * summary going on, a device's list) carries that number with a letter: "02 - Stick",
+ * "02b - Stick list". So a list that grows by a page, or lists switched on, never moves
+ * the number of another device.
+ */
+export function planPages(
+  sheet: Sheet,
+  options: KneeboardOptions,
+  stamp: string,
+  plan: PagePlan = {}
+): PlannedPage[] {
   const pages: PlannedPage[] = [];
   const styles: PageStyle[] = (['light', 'night'] as const).filter((s) =>
     options.styles.includes(s)
   );
-  const devices = chosenDevices(sheet, options);
+  const devices = chosenDevices(sheet, options, plan.order);
   for (const style of styles) {
     // With both styles exported, each keeps its own run of numbers so either can be flipped through.
     const suffix =
       styles.length > 1 || style === 'night' ? ` (${style === 'night' ? 'night' : 'day'})` : '';
     let number = 0;
-    const name = (title: string): string =>
-      `${PREFIX}${style === 'night' && styles.length > 1 ? 'N' : ''}${String(++number).padStart(2, '0')} - ${fileNamePart(title)}${suffix}.png`;
-    const page = { style, stamp };
+    /**
+     * The names of one entry's pages: the next number, then that number with a letter. What
+     * a page is (" list", " 2") goes after the title, so a long device name that is cut
+     * short still says it.
+     */
+    const entry = (): ((title: string, what?: string) => string) => {
+      const digits = String(++number).padStart(2, '0');
+      let part = 0;
+      return (title, what = '') =>
+        `${PREFIX}${style === 'night' && styles.length > 1 ? 'N' : ''}${digits}${pageLetter(part++)} - ${fileNamePart(title)}${what}${suffix}.png`;
+    };
+    const page = { style, stamp, ...(plan.fill ? { fill: plan.fill } : {}) };
     if (options.summary) {
-      pages.push({
-        name: name('Key actions'),
-        html: kneeboardListPage(
-          sheet,
-          'Key actions',
-          summaryActions(sheet, KNEEBOARD_LIST_ROWS),
-          page
-        ),
-        kind: 'summary',
-        style,
-      });
+      const name = entry();
+      const actions = summaryActions(sheet, KNEEBOARD_LIST_ROWS);
+      for (const list of kneeboardListPages(sheet, 'Key actions', actions, page)) {
+        pages.push({
+          name: name('Key actions', list.part > 1 ? ` ${list.part}` : ''),
+          html: list.html,
+          kind: 'summary',
+          style,
+        });
+      }
     }
     for (const device of devices) {
+      const name = entry();
       pages.push({
         name: name(device.title),
         html: kneeboardDevicePage(sheet, device, page),
@@ -139,16 +217,13 @@ export function planPages(sheet: Sheet, options: KneeboardOptions, stamp: string
       });
       if (!options.lists) continue;
       const entries = listEntries(sheet, device.key);
-      for (let at = 0, part = 1; at < entries.length; at += KNEEBOARD_LIST_ROWS, part++) {
-        const many = entries.length > KNEEBOARD_LIST_ROWS;
+      if (entries.length === 0) continue;
+      // The page is about one device, so its rows do not repeat the device's name.
+      const lists = kneeboardListPages(sheet, device.title, entries, { ...page, devices: false });
+      for (const list of lists) {
         pages.push({
-          name: name(`${device.title} list${many ? ` ${part}` : ''}`),
-          html: kneeboardListPage(
-            sheet,
-            `${device.title}${many ? ` (${part})` : ''}`,
-            entries.slice(at, at + KNEEBOARD_LIST_ROWS),
-            page
-          ),
+          name: name(device.title, ` list${list.part > 1 ? ` ${list.part}` : ''}`),
+          html: list.html,
           kind: 'list',
           style,
           deviceKey: device.key,
@@ -253,20 +328,49 @@ export class Kneeboard {
     const options = KneeboardOptionsSchema.parse(rawOptions);
     const { files, render, clock } = this.deps;
     const stamp = clock.now().toISOString().slice(0, 10);
-    const planned = planPages(sheet, options, stamp);
-    if (planned.length === 0) {
-      return err('kneeboard.empty', 'There is nothing to export: no device has anything bound.');
-    }
-    const size = KNEEBOARD_SIZE;
-    const images: Uint8Array[] = [];
-    for (const page of planned) {
-      const png = await renderPage(render, page.html, size);
-      if (!png.ok) return png;
-      images.push(png.value);
-    }
-
     const previous = await this.record(sheet.aircraft.id);
     if (!previous.ok) return previous;
+    // Devices keep the page they had in the last export, so page numbers stay put.
+    const order = pageOrder(previous.value);
+    const size = KNEEBOARD_SIZE;
+    let planned: PlannedPage[] = [];
+    let images: Uint8Array[] = [];
+    let cutOff: string | undefined;
+    // A page that was rendered and found whole is not rendered again when the pages are planned anew.
+    const whole = new Map<string, Uint8Array>();
+    for (const fill of FILLS) {
+      planned = planPages(sheet, options, stamp, { order, fill });
+      if (planned.length === 0) {
+        return err('kneeboard.empty', 'There is nothing to export: no device has anything bound.');
+      }
+      images = [];
+      cutOff = undefined;
+      for (const page of planned) {
+        let image = whole.get(page.html);
+        if (!image) {
+          const png = await renderPage(render, page.html, size);
+          if (!png.ok) return png;
+          // The check after rendering: the end of the page's list is in the picture.
+          const complete = pageComplete(page.html, png.value);
+          if (!complete.ok) return complete;
+          if (!complete.value) {
+            cutOff = page.name;
+            break;
+          }
+          image = png.value;
+          whole.set(page.html, image);
+        }
+        images.push(image);
+      }
+      if (!cutOff) break;
+    }
+    if (cutOff) {
+      return err(
+        'kneeboard.fit',
+        `The list on "${cutOff}" did not fit on its page, so nothing was written. Shorter device names make it fit.`
+      );
+    }
+
     const before = previous.value?.folder === folder ? previous.value.pages : [];
     // An earlier export into another folder (DCS moved) is cleaned up like any other.
     const elsewhere =
@@ -389,6 +493,7 @@ export class Kneeboard {
           exportedAt: clock.now().toISOString(),
           options,
           fingerprint: pagesFingerprint(sheet, options),
+          layout: PAGE_LAYOUT,
           pages: records,
         },
       },
@@ -474,6 +579,14 @@ export class Kneeboard {
           missing.length === record.pages.length
             ? `The kneeboard pages for ${sheet.aircraft.name} are gone from the Kneeboard folder`
             : `${missing.length} of ${record.pages.length} kneeboard pages for ${sheet.aircraft.name} are missing`,
+      });
+    }
+    // Only a page with a list could be cut off; a device's picture was always scaled to fit.
+    if (record.layout < PAGE_LAYOUT && record.pages.some((page) => page.kind !== 'device')) {
+      return ok({
+        ...base,
+        state: 'stale',
+        summary: `The kneeboard pages for ${sheet.aircraft.name} were made by an older RigReady and can have a list cut off`,
       });
     }
     if (pagesFingerprint(sheet, record.options) !== record.fingerprint) {

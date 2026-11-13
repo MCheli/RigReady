@@ -494,7 +494,7 @@ describe('display capture', () => {
     expect(
       createApplyLayoutRemediation({
         ...deps,
-        applier: { applyAndWait: async () => err('x', 'x') },
+        applier: { applyKnown: async () => err('x', 'x') },
       }).describe(params)
     ).toBe('Apply the "Flying" layout');
     expect(await createLayoutCheck(deps).run(params, rig.ctx)).toEqual({

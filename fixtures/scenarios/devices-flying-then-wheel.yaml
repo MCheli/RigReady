@@ -1,0 +1,9 @@
+description: Devices - the flight gear is plugged in and the wheel base is not, before a swap to the wheel
+rig: mark-full
+extends: devices-rig.yaml
+# The rig as it is for flying: the button box and the rudder pedals have the first controller
+# numbers. A test then unplugs the flight gear and plugs the wheel base in while the app runs,
+# so the base gets the number the button box had (tests/e2e/devices-wheel.e2e.ts).
+mutations:
+  - op: unplugDevice
+    match: { vendorId: '0EB7', productId: '0007' }

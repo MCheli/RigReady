@@ -30,7 +30,7 @@ export async function readView(audio: AudioProvider): Promise<Result<AudioView>>
   return state.ok ? ok(audioView(state.value)) : state;
 }
 
-/** The Audio page's "Make default" and "Use for calls". */
+/** The Audio page's "Make default" and "Use for comms". */
 export async function setDefaultFromPage(
   audio: AudioProvider,
   id: string,
@@ -51,9 +51,9 @@ export async function setDefaultFromPage(
   const kind = device.flow === 'playback' ? 'output' : 'input';
   const message =
     role === 'communications'
-      ? `${device.name} is now the default for calls`
+      ? `${device.name} is now the default for comms`
       : role === 'both'
-        ? `${device.name} is now the default ${kind}, also for calls`
+        ? `${device.name} is now the default ${kind}, also for comms`
         : `${device.name} is now the default ${kind}`;
   return ok({ view: audioView(done.value), message });
 }

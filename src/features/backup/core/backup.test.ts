@@ -608,6 +608,23 @@ describe('restore', () => {
     expect(back.ok && back.value.checks.length).toBe(16);
   });
 
+  it('settings RigReady 1 left behind, restored from a backup, do not switch "keep in the tray" off', async () => {
+    const app = await start('first-run-after-version-one', []);
+    const { settings } = app.wiring.context;
+    // The backup holds settings.json as version 1 wrote it: "minimizeToTray": false, never chosen.
+    const outcome = await app.invoke<BackupOutcomeView>('backup:backUp', {
+      scope: { kind: 'full' },
+    });
+    await settings.update({ displayRevertSeconds: 40 });
+    const report = await app.invoke<RestoreReportView>('backup:restore', {
+      id: outcome.backup.id,
+      choices: { settings: 'overwrite' },
+    });
+    expect(report.restored.map((r) => r.ref)).toEqual(['settings']);
+    const now = await settings.get();
+    expect(now.ok && now.value).toMatchObject({ minimizeToTray: true, displayRevertSeconds: 15 });
+  });
+
   it('claims success only for files that match the backup after writing', async () => {
     const { app, backup } = await prepared();
     const optionsFile = dcsUser(app, 'Config', 'options.lua');

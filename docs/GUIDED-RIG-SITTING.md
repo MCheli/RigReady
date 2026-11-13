@@ -46,6 +46,7 @@ The production build has no test hooks, so the driver works through the UI and i
 - **`page` lists the shell first.** The header's and the menu's entries (about two dozen) come before the page's own. In a popped-out window they are listed too, although the sheet covers them.
 - **Slow pages.** `wait` for an element instead of pausing: `capture-game` after `fly-create`, `screens-apply` on the DCS screens tab (about six seconds behind a `page-skeleton`).
 - **Paths in JSON.** Write the body to a file and post it with `--data-binary @file`: a Windows path typed into a shell command loses backslashes.
+- **A call that fails** answers `{"error": "..."}` with the error's message only. The whole error is in the driver's own output, in the window it was started from.
 - **A second start.** RigReady runs once per profile, and the installer starts it when it finishes. If `launch` says RigReady ended as soon as it started, a copy is running: the owner quits it from the tray, then `launch` again.
 - **Listening for a control** ("Press it on the device", "Press or move") lasts about ten seconds. Tell the owner what to press first, then click.
 - **`robocopy`** returns 1 when it copied files; anything below 8 is success.

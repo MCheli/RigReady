@@ -16,15 +16,30 @@ const realSchedule: Schedule = (fn, ms) => {
  */
 export type LayoutDecision = 'kept' | 'reverted' | 'revertFailed';
 
+/**
+ * The least time the question waits when an assistant asked for the change. Whoever sits
+ * at the screens did not click anything: they have to notice the question, read it and
+ * look at the monitors first. It is as long as an assistant's own "may I?" question waits.
+ */
+export const ASSISTANT_SECONDS = 60;
+
+/** The countdown that is running: how long it was given, and who asked for the change. */
+export interface Countdown {
+  seconds: number;
+  /** The assistant that asked for the change. Not set when it was done in RigReady's window. */
+  askedBy?: string;
+}
+
 export class RevertGuard {
   private cancel: (() => void) | undefined;
   private decide: ((outcome: LayoutDecision) => void) | undefined;
+  private current: Countdown | undefined;
 
   constructor(
     private readonly displays: DisplayProvider,
     private readonly events: {
-      /** A layout was applied; the countdown started. */
-      armed(seconds: number): void;
+      /** A layout was applied; the countdown started. `askedBy`: the assistant that asked. */
+      armed(seconds: number, askedBy?: string): void;
       /** The countdown ended, by keep, by revert or by timeout. */
       settled(outcome: LayoutDecision): void;
     },
@@ -37,20 +52,31 @@ export class RevertGuard {
     return this.cancel !== undefined;
   }
 
+  /** The countdown that is running now, when one is. */
+  get running(): Countdown | undefined {
+    return this.pending ? this.current : undefined;
+  }
+
   /**
    * Starts the countdown. Resolves when this layout change has its answer: kept,
    * reverted (by the user or by the countdown), or a revert that failed. A newer change
    * arming the guard again answers the older one as kept (it was built upon).
+   *
+   * `askedBy` names the assistant that asked for the change. The person at the screens is
+   * then not the one who clicked, so the countdown is never shorter than ASSISTANT_SECONDS.
    */
-  arm(): Promise<LayoutDecision> {
+  arm(askedBy?: string): Promise<LayoutDecision> {
     this.cancel?.();
     this.answer('kept');
+    const seconds = askedBy ? Math.max(this.seconds, ASSISTANT_SECONDS) : this.seconds;
+    this.current = askedBy ? { seconds, askedBy } : { seconds };
     this.cancel = this.schedule(() => {
       this.cancel = undefined;
       void this.revertNow();
-    }, this.seconds * 1000);
+    }, seconds * 1000);
     const decision = new Promise<LayoutDecision>((resolve) => (this.decide = resolve));
-    this.events.armed(this.seconds);
+    if (askedBy) this.events.armed(seconds, askedBy);
+    else this.events.armed(seconds);
     return decision;
   }
 

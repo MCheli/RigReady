@@ -161,8 +161,15 @@ describe('Fly, end to end on scenarios', () => {
     await expect
       .poll(async () => (await app.invoke<{ pending: boolean }>('displays:pending')).pending)
       .toBe(true);
-    expect(app.events).toEqual([{ channel: 'displays:event:applied', payload: { seconds: 15 } }]);
-    expect(await app.invoke('displays:pending')).toEqual({ pending: true, seconds: 15 });
+    // Never kept on this PC before, so Make ready asks, and says it asks only this once.
+    expect(app.events).toEqual([
+      { channel: 'displays:event:applied', payload: { seconds: 15, firstTime: true } },
+    ]);
+    expect(await app.invoke('displays:pending')).toEqual({
+      pending: true,
+      seconds: 15,
+      firstTime: true,
+    });
     // The layout is applied, and the run goes no further until Keep or Go back.
     expect(finished).toBe(false);
     expect(await app.invoke('displays:keep')).toEqual({ kept: true });
@@ -218,8 +225,20 @@ describe('Fly, end to end on scenarios', () => {
     expect(await app.invoke('displays:revert')).toEqual(desk);
     expect((await app.invoke<ChecklistReport>('fly:check', P)).ready).toBe(false);
 
-    await app.invoke<ActionReport>('fly:makeReady', P);
-    await app.invoke('displays:keep');
+    // The first Make ready asked "Keep this monitor layout?" and it was kept. The same
+    // change with the same monitors is now applied with no question and no countdown.
+    const asked = () => app.events.filter((e) => e.channel === 'displays:event:applied').length;
+    expect(asked()).toBe(1);
+    app.layoutAnswer = 'wait';
+    const again = await app.invoke<ActionReport>('fly:makeReady', P);
+    expect(again.steps.map((s) => [s.ok, s.message])).toEqual([
+      [true, 'Applied the layout to 4 monitors'],
+    ]);
+    expect(again.report.ready).toBe(true);
+    expect(asked()).toBe(1);
+    expect(app.events.at(-1)).toEqual({ channel: 'displays:event:appliedKnown', payload: {} });
+    expect(await app.invoke('displays:pending')).toEqual({ pending: false, seconds: 15 });
+    expect(await app.invoke('displays:keep')).toEqual({ kept: false });
     const down = await app.invoke<ActionReport>('fly:standDown', P);
     expect(down.steps.map((s) => s.message)).toEqual([
       'Closed TrackIR5.exe',

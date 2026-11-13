@@ -78,7 +78,7 @@ test('audio: headset unplugged — the check says so and Make ready explains it 
   await shot('audio-page-without-headset');
 });
 
-test('audio page: make a device the default and the calls device, verified by reading back', async ({
+test('audio page: make a device the default and the comms device, verified by reading back', async ({
   rig,
 }) => {
   const { page, shot } = await rig.launch('flying-fresh', 'audio-page');
@@ -96,7 +96,7 @@ test('audio page: make a device the default and the calls device, verified by re
   await expect(device(page, HEADPHONES)).toHaveAttribute('data-default', 'true');
   await device(page, HEADPHONES).getByTestId('audio-use-for-calls').click();
   await expect(page.getByTestId('audio-notice')).toHaveText(
-    `${HEADPHONES} is now the default for calls`
+    `${HEADPHONES} is now the default for comms`
   );
   await expect(device(page, HEADPHONES)).toHaveAttribute('data-communications', 'true');
   await expect(device(page, HEADPHONES).getByTestId('audio-make-default')).toHaveCount(0);
@@ -109,7 +109,7 @@ test('capture: the current default devices are offered as audio checks', async (
   const audio = page.getByTestId('capture-page').getByTestId('capture-group-audio');
   await expect(audio).toContainText(`Sound output: ${SPEAKERS}`);
   await expect(audio).toContainText('Microphone: Headset Microphone (Arctis Pro Wireless Chat)');
-  await expect(audio).toContainText('Sound output for calls: DELL G3223D');
+  await expect(audio).toContainText('Sound output for comms: DELL G3223D');
   await audio.scrollIntoViewIfNeeded();
   await shot('capture');
 });

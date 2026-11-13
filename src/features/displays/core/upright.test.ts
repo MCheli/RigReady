@@ -93,6 +93,88 @@ describe('which way is up?', () => {
       /off or not connected/
     );
   });
+
+  type Turned = { kept: boolean; layoutsUpdated: number; message: string };
+  const places = (v: DisplaysView) => mfds(v).map((m) => [m.x, m.width, m.height, m.rotation]);
+
+  it('an arrow that points sideways gets a quarter turn: the screens beside it move to stay beside it, and saved layouts with it are corrected', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    // The desk as recorded: the three small screens in landscape, side by side.
+    const v = await app.invoke<DisplaysView>('displays:saveLayout', { name: 'All on' });
+    const [left, centre] = mfds(v);
+    expect(places(v)).toEqual([
+      [7680, 1024, 768, 0],
+      [8704, 1024, 768, 0],
+      [9728, 1024, 768, 0],
+    ]);
+
+    // The arrow on the left one is seen pointing right.
+    expect(await app.invoke<Turned>('displays:turn', { id: left!.id, arrow: 'right' })).toEqual({
+      kept: true,
+      layoutsUpdated: 1,
+      message: 'Turned USB_Monitor (1 of 3) a quarter turn and corrected it in 1 saved layout.',
+    });
+    // It is 768 wide now, and the two to its right closed the gap of 256.
+    expect(places(await view())).toEqual([
+      [7680, 768, 1024, 90],
+      [8448, 1024, 768, 0],
+      [9472, 1024, 768, 0],
+    ]);
+    // "All on" had it the old way. It holds the new arrangement, so the monitors match it.
+    expect(layoutStatus(await view(), 'All on')).toBe('current');
+    expect(mfds(await view())[0]!.uprightConfirmed).toBe(true);
+
+    // The arrow on the next one is seen pointing left: a quarter turn the other way.
+    const other = await app.invoke<Turned>('displays:turn', { id: centre!.id, arrow: 'left' });
+    expect(other.message).toBe(
+      'Turned USB_Monitor (2 of 3) a quarter turn and corrected it in 1 saved layout.'
+    );
+    expect(places(await view())).toEqual([
+      [7680, 768, 1024, 90],
+      [8448, 768, 1024, 270],
+      [9216, 1024, 768, 0],
+    ]);
+    expect(layoutStatus(await view(), 'All on')).toBe('current');
+  });
+
+  it('a quarter turn that is not kept leaves the screens and the saved layouts as they were', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    const v = await app.invoke<DisplaysView>('displays:saveLayout', { name: 'All on' });
+    const savedBefore = await layouts();
+    app.layoutAnswer = 'revert';
+    expect(
+      await app.invoke<Turned>('displays:turn', { id: mfds(v)[0]!.id, arrow: 'right' })
+    ).toEqual({
+      kept: false,
+      layoutsUpdated: 0,
+      message: 'USB_Monitor (1 of 3) is back the way it was. Nothing was changed.',
+    });
+    expect(places(await view())).toEqual(places(v));
+    expect(await layouts()).toEqual(savedBefore);
+    expect(mfds(await view())[0]!.uprightConfirmed).toBe(false);
+  });
+
+  it('refuses a quarter turn, and changes nothing, when the screens beside it cannot be moved to make room', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    // Four screens in a square: turning a corner would push its neighbours into each other.
+    const [a, b, c, d, e] = app.ports.state.displays;
+    Object.assign(a!, { x: 0, y: 0, width: 1024, height: 768 });
+    Object.assign(b!, { x: 1024, y: 0, width: 1024, height: 768 });
+    Object.assign(c!, { x: 0, y: 768, width: 1024, height: 768 });
+    Object.assign(d!, { x: 1024, y: 768, width: 1024, height: 768 });
+    Object.assign(e!, { enabled: false, x: 0, y: 0, width: 0, height: 0 });
+    const before = structuredClone(app.ports.state.displays);
+    await expect(app.invoke('displays:turn', { id: a!.id, arrow: 'right' })).rejects.toThrow(
+      'DELL G3223D cannot be turned here: the screens next to it could not be moved to make room. Nothing was changed.'
+    );
+    expect(app.ports.state.displays).toEqual(before);
+    expect(app.events.filter((event) => event.channel === 'displays:event:applied')).toEqual([]);
+    // Half a turn needs no room, so that is still possible.
+    const flipped = await app.invoke<Turned>('displays:turn', { id: a!.id, arrow: 'down' });
+    expect(flipped.message).toBe(
+      'Turned DELL G3223D the other way up and corrected it in 1 saved layout.'
+    );
+  });
 });
 
 const layoutStatus = (v: DisplaysView, name: string): string =>
