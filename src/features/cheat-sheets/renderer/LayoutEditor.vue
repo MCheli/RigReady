@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { errorText } from '../../../renderer/ipc';
+import SaveBar from '../../../renderer/components/SaveBar.vue';
 import {
   controlName,
   HAT_DIRECTIONS,
@@ -717,20 +718,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', key));
         @click="reset"
         >Discard my layout</v-btn
       >
-      <v-btn size="small" variant="text" data-testid="editor-cancel" @click="emit('close', false)"
-        >Cancel</v-btn
-      >
-      <v-btn
-        size="small"
-        color="primary"
-        variant="flat"
-        :loading="busy"
-        :disabled="!dirty || draft"
-        data-testid="editor-save"
-        @click="save"
-        >Save layout</v-btn
-      >
     </div>
+    <!--
+      Save layout and Cancel are in the shared bar at the bottom of the window, whatever the
+      size of the drawing. The bar is moved to the end of the page: it stays in view only as
+      the last thing in it. Cancel, and leaving the page, ask first when something was changed.
+      Photos with nothing placed yet cannot be saved, and the bar says so beside the button.
+    -->
+    <Teleport defer to=".cs-page">
+      <SaveBar
+        :dirty="dirty"
+        :saving="busy"
+        :disabled="!dirty"
+        :blocked="draft ? 'You can save once one control is placed.' : undefined"
+        :error="error || undefined"
+        save-label="Save layout"
+        back-label="Cancel"
+        save-testid="editor-save"
+        back-testid="editor-cancel"
+        @save="save"
+        @back="emit('close', false)"
+      />
+    </Teleport>
     <v-alert
       v-if="error"
       type="warning"

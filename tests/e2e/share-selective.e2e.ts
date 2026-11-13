@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Locator, Page } from '@playwright/test';
 import { checkRow, expect, test } from './harness';
+import { expectSaveBarPinned } from './saveBar';
 
 /** Checks that are switched off, and what an import does with devices and bindings that are not here. */
 
@@ -175,4 +176,50 @@ test("share: imported binding files under another PC's device IDs open Bindings,
   expect(await page.getByTestId('ids-orphan').count()).toBeGreaterThan(5);
   await expect(page.getByTestId('ids-new').first()).not.toHaveText('not chosen yet');
   await shot('device-ids');
+});
+
+test('share: Import and Cancel stay in the window from the top of what a file holds to its end, and Import says why it is off when nothing is ticked', async ({
+  rig,
+}) => {
+  const source = await rig.launch('share-dcs', 'share-import-bar-export', {
+    dialogs: { save: ['Documents/Squadron F-A-18C.rigready'] },
+  });
+  await exportSetup(source.page);
+  const file = path.join(source.home, 'Documents', 'Squadron F-A-18C.rigready');
+
+  const friend = await rig.launch('share-racing-pc', 'share-import-bar', {
+    dialogs: { open: [[file]] },
+  });
+  const { page, shot, dataRoot } = friend;
+  await openImport(page);
+  const go = page.getByTestId('import-apply');
+  await expect(go).toHaveText('Import');
+  await expect(go).toBeEnabled();
+  await expect(page.getByTestId('save-bar-clean')).toHaveText(
+    "Everything is written through RigReady's safety journal as one action you can undo."
+  );
+  // An import is not a change of the user's: the bar never calls it unsaved.
+  await expect(page.getByTestId('save-bar-unsaved')).toHaveCount(0);
+  await expectSaveBarPinned(page, go, shot);
+  await expect(page.getByTestId('import-cancel')).toBeInViewport({ ratio: 1 });
+
+  // Nothing ticked: Import is off, and the bar says what to do about it.
+  const ticked = page
+    .locator('[data-testid="import-part"][data-importable="true"]')
+    .getByTestId('import-part-check')
+    .locator('input');
+  const count = await ticked.count();
+  expect(count).toBeGreaterThan(1);
+  for (let i = 0; i < count; i++) await ticked.nth(i).uncheck();
+  await expect(go).toBeDisabled();
+  await expect(page.getByTestId('save-bar-why')).toHaveText('Tick at least one thing to import.');
+  await shot('nothing-ticked');
+
+  // Cancel goes back to choosing a file, and nothing was imported.
+  await page.getByTestId('import-cancel').click();
+  await expect(page.getByTestId('import-open')).toBeVisible();
+  await expect(page.getByTestId('save-bar')).toHaveCount(0);
+  await expect(page.getByTestId('import-result')).toHaveCount(0);
+  const profiles = await fs.readdir(path.join(dataRoot, 'profiles')).catch(() => []);
+  expect(profiles).toEqual([]);
 });

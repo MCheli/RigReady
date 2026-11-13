@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import ManualLink from '../../../renderer/components/ManualLink.vue';
 import NotOnThisPc from '../../../renderer/components/NotOnThisPc.vue';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
+import SaveBar from '../../../renderer/components/SaveBar.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
 import {
@@ -1183,19 +1184,6 @@ onBeforeUnmount(() => {
             >
               {{ showLua ? 'Hide' : 'Show' }} the file
             </v-btn>
-            <v-spacer />
-            <span v-if="blocked && preview" class="rr-row-sub" data-testid="screens-blocked">{{
-              blocked
-            }}</span>
-            <v-btn
-              color="primary"
-              :disabled="!!blocked || nothingToDo"
-              :loading="busy"
-              data-testid="screens-apply"
-              @click="apply()"
-            >
-              {{ nothingToDo ? 'In use' : 'Use in DCS' }}
-            </v-btn>
           </div>
           <div v-if="done" class="scr-done" data-testid="screens-done">
             <div class="rr-ok"><v-icon icon="mdi-check" size="16" /> {{ done.message }}</div>
@@ -1257,6 +1245,25 @@ onBeforeUnmount(() => {
           No MonitorSetup files found.
         </div>
       </div>
+
+      <!--
+        "Use in DCS" stays in view however far the tab is scrolled. Leaving asks nothing, as
+        before: "not in DCS yet" is also true of a proposal nobody has touched.
+      -->
+      <SaveBar
+        :dirty="!!preview && !nothingToDo"
+        :ask-before-leaving="false"
+        :saving="busy"
+        :blocked="blocked"
+        :disabled="nothingToDo"
+        :error="error"
+        :saved="done?.message"
+        :save-label="nothingToDo ? 'In use' : 'Use in DCS'"
+        save-testid="screens-apply"
+        unsaved-label="Not in DCS yet"
+        :clean-label="preview ? 'DCS uses this setup' : ''"
+        @save="apply()"
+      />
     </template>
 
     <v-dialog v-model="confirmOverwrite" max-width="680">

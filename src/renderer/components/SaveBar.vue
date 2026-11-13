@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue';
 import { onBeforeRouteLeave, useRouter, type RouteLocationRaw } from 'vue-router';
 
 /**
- * The bar at the bottom of an editor. Save and Back stay in view however far the page is
- * scrolled, and the bar says whether there are changes that are not saved yet. Leaving
- * with unsaved changes, by Back or by any other way out of the page, asks first.
+ * The bar at the bottom of a page with something to keep. Its button (Save, Import, "Use in
+ * DCS") and Back stay in view however far the page is scrolled, and the bar says whether
+ * there are changes that are not saved yet. Leaving with unsaved changes, by Back or by any
+ * other way out of the page, asks first.
  *
- * Put it last inside the page's `.rr-page`. The page keeps the saving itself: it hands in
- * `dirty` (what is on screen differs from what was saved), and saves on `save`.
+ * Put it last inside the page's `.rr-page`, or last inside a plain block that is itself the
+ * last thing in the page (a tab, a panel of the page): the bar stays in view for as long as
+ * that block is. The page keeps the saving itself: it hands in `dirty` (what is on screen
+ * differs from what was saved), and saves on `save`.
  *
  * While the bar is on screen it sets `--rr-save-bar-height` on the document, so anything
  * pinned to the bottom of the window (the running badge of the virtual controller) can sit
@@ -22,43 +25,92 @@ const props = withDefaults(
     saving?: boolean;
     /** Why Save cannot be pressed now, in words. Save is off while this is set. */
     blocked?: string;
+    /** Save is off and the reason needs no words: there is nothing to save yet. */
+    disabled?: boolean;
     /** What went wrong with the last save. */
     error?: string;
     /** What the last save did ("Saved My HOTAS"), shown until the next change. */
     saved?: string;
     saveLabel?: string;
     backLabel?: string;
-    /** Where Back goes. */
-    backTo: RouteLocationRaw;
+    /** Where Back goes. Without it, and without a `back` listener, the bar has no Back. */
+    backTo?: RouteLocationRaw;
+    /** `@back`: what Back does where the way back is not a route (a panel that closes). */
+    onBack?: () => void;
+    /** The words for the two states, where "unsaved changes" would be the wrong ones. */
+    unsavedLabel?: string;
+    cleanLabel?: string;
+    /**
+     * False where "not saved" does not mean the user changed something (a proposal the page
+     * made itself counts too): then nothing is asked on the way out.
+     */
+    askBeforeLeaving?: boolean;
+    /** The test ids of the two buttons, for a page whose tests know them by its own names. */
+    saveTestid?: string;
+    backTestid?: string;
   }>(),
   {
     saving: false,
     blocked: undefined,
+    disabled: false,
     error: undefined,
     saved: undefined,
     saveLabel: 'Save',
     backLabel: 'Back',
+    backTo: undefined,
+    onBack: undefined,
+    unsavedLabel: 'Unsaved changes',
+    cleanLabel: 'No unsaved changes',
+    askBeforeLeaving: true,
+    saveTestid: 'save-bar-save',
+    backTestid: 'save-bar-back',
   }
 );
 const emit = defineEmits<{ save: [] }>();
 
 const router = useRouter();
-/** Where the user was going when the bar asked about unsaved changes. */
-const asking = ref<RouteLocationRaw>();
+/** The status line says why Save is off (nothing to save, or the reason); it describes the button. */
+const stateId = `rr-save-bar-state-${useId()}`;
+const hasBack = computed(() => props.backTo !== undefined || props.onBack !== undefined);
+/** What the two buttons are, for a screen reader: "Save or go back", "Import or cancel". */
+const label = computed(() => {
+  if (!hasBack.value) return props.saveLabel;
+  const back = props.backLabel === 'Back' ? 'go back' : props.backLabel.toLowerCase();
+  return `${props.saveLabel} or ${back}`;
+});
+/**
+ * Set while the bar asks about unsaved changes: the route the user was going to, or no
+ * route when it was the page's own Back.
+ */
+const asking = ref<{ to?: RouteLocationRaw }>();
 let letGo = false;
 
 onBeforeRouteLeave((to) => {
-  if (!props.dirty || letGo) return true;
-  asking.value = to.fullPath;
+  if (!props.dirty || !props.askBeforeLeaving || letGo) return true;
+  asking.value = { to: to.fullPath };
   return false;
 });
 
+function back(): void {
+  if (props.backTo !== undefined) {
+    // The guard above asks, when there is something to ask.
+    void router.push(props.backTo);
+    return;
+  }
+  if (props.dirty && props.askBeforeLeaving) asking.value = {};
+  else props.onBack?.();
+}
+
 function leave(): void {
-  const to = asking.value;
+  const going = asking.value;
   asking.value = undefined;
-  if (to === undefined) return;
+  if (!going) return;
+  if (going.to === undefined) {
+    props.onBack?.();
+    return;
+  }
   letGo = true;
-  void router.push(to);
+  void router.push(going.to);
 }
 
 const bar = ref<HTMLElement>();
@@ -91,35 +143,30 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    ref="bar"
-    class="rr-save-bar"
-    role="group"
-    aria-label="Save or go back"
-    data-testid="save-bar"
-  >
-    <div class="rr-save-bar-state" role="status" data-testid="save-bar-state">
+  <div ref="bar" class="rr-save-bar" role="group" :aria-label="label" data-testid="save-bar">
+    <div :id="stateId" class="rr-save-bar-state" role="status" data-testid="save-bar-state">
       <span v-if="error" class="rr-bad" data-testid="save-bar-error">
         <v-icon icon="mdi-close-circle" size="16" /> {{ error }}
       </span>
       <span v-else-if="dirty" class="rr-warn" data-testid="save-bar-unsaved">
-        <v-icon icon="mdi-circle-medium" size="16" /> Unsaved changes
+        <v-icon icon="mdi-circle-medium" size="16" /> {{ unsavedLabel }}
       </span>
       <span v-else-if="saved" class="rr-ok" data-testid="save-bar-saved">
         <v-icon icon="mdi-check-circle" size="16" /> {{ saved }}
       </span>
-      <span v-else class="rr-muted" data-testid="save-bar-clean">No unsaved changes</span>
+      <span v-else class="rr-muted" data-testid="save-bar-clean">{{ cleanLabel }}</span>
       <span v-if="blocked" class="rr-save-bar-why" data-testid="save-bar-why">{{ blocked }}</span>
     </div>
-    <v-btn variant="text" data-testid="save-bar-back" @click="router.push(backTo)">{{
+    <v-btn v-if="hasBack" variant="text" :data-testid="backTestid" @click="back">{{
       backLabel
     }}</v-btn>
     <v-btn
       color="primary"
       variant="flat"
-      :disabled="blocked !== undefined"
+      :disabled="disabled || blocked !== undefined"
+      :aria-describedby="stateId"
       :loading="saving"
-      data-testid="save-bar-save"
+      :data-testid="saveTestid"
       @click="emit('save')"
       >{{ saveLabel }}</v-btn
     >

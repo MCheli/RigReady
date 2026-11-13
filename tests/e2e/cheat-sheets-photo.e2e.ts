@@ -4,6 +4,7 @@ import { deflateSync } from 'node:zlib';
 import type { Locator, Page } from '@playwright/test';
 import { axeViolations, colourOnlyStatus } from './a11y';
 import { expect, test, type RunningApp } from './harness';
+import { expectSaveBarPinned } from './saveBar';
 
 /**
  * A sheet from the user's own photos of a controller RigReady has no drawing of. A control
@@ -468,7 +469,9 @@ test('cheat sheets: my own photos - press a control and click its place, undo, m
   await page.keyboard.press('Control+z');
   await expect(page.getByTestId('photo-view-tab')).toHaveCount(2);
   await expect(p.progress).toHaveText('9 of 43 controls placed');
+  // Something was changed, so Cancel asks before it drops it.
   await page.getByTestId('editor-cancel').click();
+  await page.getByTestId('save-bar-leave-go').click();
   await expect(source).toHaveText('Your photos, 9 of 43 controls placed');
 });
 
@@ -726,6 +729,7 @@ test('cheat sheets: a file that is not a picture or is too large is refused with
   await page.getByTestId('photo-use-shipped').click();
   await expect(mode).toHaveAttribute('data-mode', 'drawing');
   await page.getByTestId('editor-cancel').click();
+  await page.getByTestId('save-bar-leave-go').click();
   await expect(source).toHaveAttribute('data-picture', 'drawing');
   await expect(source).not.toContainText('Your photos');
 });
@@ -793,5 +797,45 @@ test('cheat sheets: a device that is not connected is placed from the list of it
   await page.getByTestId('photo-use-cards').click();
   await expect(mode).toHaveAttribute('data-mode', 'cards');
   await page.getByTestId('editor-cancel').click();
+  await page.getByTestId('save-bar-leave-go').click();
   await expect(source).toHaveText('Your photos, 1 of 4 controls placed');
+});
+
+test('cheat sheets: my own photos - Save layout and Cancel stay in the window from the top of the page to its end, and the bar says why nothing can be saved yet', async ({
+  rig,
+}) => {
+  const run = await rig.launch('cheat-sheets-known-devices', 'cheat-sheets-photo-save-bar', {
+    dialogs: { open: [['Documents/box-top.png']] },
+  });
+  const { page, shot } = run;
+  await writeDocs(run, { 'box-top.png': boxFromAbove() });
+  await openSheets(page);
+  const panel = await controller(page, PANEL_GUID);
+  await run.sendInput([stateOf(panel)]);
+  await deviceEntry(page, panel.name).click();
+  await page.getByTestId('sheet-photo-drawing').click();
+  await expect(page.getByTestId('editor-mode')).toHaveAttribute('data-mode', 'photos');
+  const p = placer(page);
+  await expect(p.progress).toHaveText('0 of 43 controls placed');
+
+  // Nothing is placed yet: Save layout is off, and the bar says why beside it.
+  const save = page.getByTestId('editor-save');
+  await expect(save).toBeDisabled();
+  await expect(page.getByTestId('save-bar-why')).toHaveText(
+    'You can save once one control is placed.'
+  );
+  await expectSaveBarPinned(page, save, shot);
+  await expect(page.getByTestId('editor-cancel')).toBeInViewport({ ratio: 1 });
+
+  // One control placed: the reason is gone, Save layout is on and still in the window.
+  await run.sendInput([stateOf(panel, ['button:5'])]);
+  await expect(p.prompt).toHaveAttribute('data-state', 'place');
+  await run.sendInput([stateOf(panel)]);
+  await p.click(0.15, 0.25);
+  await expect(p.progress).toHaveText('1 of 43 controls placed');
+  await expect(page.getByTestId('save-bar-why')).toHaveCount(0);
+  await expect(page.getByTestId('save-bar-unsaved')).toBeVisible();
+  await expect(save).toBeEnabled();
+  await expect(save).toBeInViewport({ ratio: 1 });
+  await shot('one-placed-can-be-saved');
 });

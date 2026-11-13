@@ -1,4 +1,7 @@
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 import type { Locator, Page } from '@playwright/test';
+import * as yaml from 'js-yaml';
 import type { InputState } from '../../src/shared/models';
 import { axeViolations, colourOnlyStatus } from './a11y';
 import { expect, test } from './harness';
@@ -7,8 +10,9 @@ import { expect, test } from './harness';
  * Configure > Virtual controller: the driver missing, a profile made from a starting point
  * by moving the controls (with the live picture, the notes for one game and the Save bar
  * that never scrolls away), a setup that starts the virtual controller before launch
- * (hiding the real controllers) and stops it at Stand down, and two profiles of one name
- * told apart, with the warning before a profile a setup uses is deleted. The fake machine
+ * (hiding the real controllers) and stops it at Stand down, two profiles of one name
+ * told apart, with the warning before a profile a setup uses is deleted, and a renamed
+ * profile that has its new name in the setup that starts it. The fake machine
  * has a fake driver; the real one is tried by hand (tests/rig/virtualController.rig.test.ts).
  */
 
@@ -435,4 +439,61 @@ test('virtual controller: two profiles of one name are told apart, and deleting 
     'Deleted My flight stick to gamepad (my-flight-stick-to-gamepad-2)'
   );
   await expect(page.getByTestId('vc-profile')).toHaveCount(1);
+});
+
+interface SavedStep {
+  type: string;
+  params: Record<string, unknown>;
+}
+interface SavedSetup {
+  actions: { preLaunch: SavedStep[] };
+}
+
+test('virtual controller: a renamed profile has its new name on the Play page of the setup that starts it', async ({
+  rig,
+}) => {
+  const { page, shot, dataRoot } = await rig.launch(
+    'virtual-controller-ready',
+    'virtual-controller-renamed'
+  );
+  await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+
+  // A step whose profile was chosen from the list in the setup editor keeps the name beside
+  // the id (tests/e2e/setup-editor-lists.e2e.ts reads that in a saved setup), and the Play
+  // page says the name it finds there. The setup of this scenario keeps the id alone, so the
+  // name is put beside it here, the way the editor writes it.
+  const file = path.join(dataRoot, 'profiles', 'virtual-controller-ace-combat.yaml');
+  const read = async (): Promise<SavedSetup> =>
+    yaml.load(await fs.readFile(file, 'utf8')) as SavedSetup;
+  const arranged = await read();
+  expect(arranged.actions.preLaunch[0]?.params['profile']).toBe('my-ace-combat-stick');
+  arranged.actions.preLaunch[0]!.params['profileName'] = 'My Ace Combat stick';
+  await fs.writeFile(file, yaml.dump(arranged));
+
+  const plan = page.getByTestId('fly-plan-preLaunch');
+  await expect(plan).toContainText('My Ace Combat stick');
+
+  // Renamed in the editor, and saved.
+  await openPage(page);
+  await profileRow(page, 'my-ace-combat-stick').getByTestId('vc-edit').click();
+  await expect(page.getByTestId('vc-editor')).toBeVisible();
+  await page.getByTestId('vc-editor-name').locator('input').fill('Viper stick for Ace Combat');
+  await page.getByTestId('save-bar-save').click();
+  await expect(page.getByTestId('save-bar-saved')).toHaveText('Saved Viper stick for Ace Combat');
+  await shot('renamed');
+
+  // The setup has the new name beside the id, and kept what else the step holds.
+  await expect
+    .poll(async () => (await read()).actions.preLaunch[0]?.params)
+    .toEqual({
+      profile: 'my-ace-combat-stick',
+      profileName: 'Viper stick for Ace Combat',
+      hideControllers: true,
+    });
+
+  // Play says what Launch does first by the name the profile has now.
+  await page.getByTestId('mode-fly').click();
+  await expect(plan).toContainText('Viper stick for Ace Combat');
+  await expect(plan).not.toContainText('My Ace Combat stick');
+  await shot('play-says-the-new-name');
 });

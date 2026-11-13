@@ -141,6 +141,9 @@ export function profilePicker(
   };
 }
 
+const startText = (name: string, hide: boolean): string =>
+  `Start the virtual controller "${name}"${hide ? ', hiding the real controllers from games' : ''}`;
+
 export function startRemediation(
   emulator: () => Emulator,
   store: ProfileStore
@@ -155,8 +158,15 @@ export function startRemediation(
     provides: 'gamepad',
     // Without the driver nothing starts: a new setup that keeps the step checks for it too.
     requires: [driverCheck.type],
-    describe: (p) =>
-      `Start the virtual controller "${p.profileName ?? p.profile}"${p.hideControllers ? ', hiding the real controllers from games' : ''}`,
+    describe: (p) => startText(p.profileName ?? p.profile, p.hideControllers),
+    // The setup keeps the name the profile had when it was chosen, and the profile can be
+    // renamed after that: while the profile can be read, the fix says the name it has now.
+    async available(params) {
+      const profile = await store.get(params.profile);
+      return profile.ok
+        ? { ok: true, description: startText(profile.value.name, params.hideControllers) }
+        : { ok: true };
+    },
     async run(params, ctx) {
       const profile = await store.get(params.profile);
       if (!profile.ok) return profile;
