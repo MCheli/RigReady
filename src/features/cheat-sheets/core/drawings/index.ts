@@ -72,11 +72,15 @@ export {
   DrawingChangesSchema,
   DRAWING_FORMAT,
   DRAWING_VERSION,
+  MAX_VIEWS,
 } from './silhouette';
 export type {
   DeviceDrawing,
   DeviceDrawingInput,
   DrawingChanges,
+  DrawingView,
   PhysicalControl,
   Side,
 } from './silhouette';
+export * as photo from './photo';
+export type { HatWay, HatWays, Photo, Placement, Unplaced } from './photo';
