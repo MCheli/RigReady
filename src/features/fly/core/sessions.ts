@@ -122,10 +122,23 @@ export class SessionLog {
     );
   }
 
-  private async change(apply: (file: SessionFile) => SessionFile): Promise<Result<SessionFile>> {
-    const opened = await this.open();
-    if (!opened.ok) return opened;
-    return opened.value.store.write(apply(opened.value.value));
+  /** The changes still to run: one starts only when the one before it has written. */
+  private pending: Promise<unknown> = Promise.resolve();
+
+  /**
+   * Reads, applies, writes. Changes run one after another: two made at once (a game closing
+   * as the next one is launched) would both read the same history, and the second write
+   * would undo the first.
+   */
+  private change(apply: (file: SessionFile) => SessionFile): Promise<Result<SessionFile>> {
+    const run = this.pending.then(async () => {
+      const opened = await this.open();
+      if (!opened.ok) return opened;
+      return opened.value.store.write(apply(opened.value.value));
+    });
+    // A change that throws fails by itself; the next one still runs.
+    this.pending = run.catch(() => undefined);
+    return run;
   }
 
   async current(): Promise<Result<Current | undefined>> {

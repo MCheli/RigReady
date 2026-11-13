@@ -273,6 +273,8 @@ export class Fly {
     const before = await this.ctx.profiles.lastProfileId();
     if (before === id) return;
     const saved = await this.ctx.profiles.setLastProfileId(id, this.ctx.ports.clock.now());
+    // Every window goes on showing the setup that was in use before: the log says why.
+    if (!saved.ok) this.ctx.log.warn(`the setup in use could not be saved as ${id}`, saved.error);
     // From one setup to another: the other windows follow. The first setup ever noted is
     // the one every window opened on already, so there is nothing to follow.
     if (saved.ok && before !== undefined) this.events.switched?.(id);
