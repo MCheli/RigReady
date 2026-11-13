@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { ElectronApplication, Locator, Page } from '@playwright/test';
 import { panelBox } from '../../src/core/overlayPlace';
 import type { OverlayState, PressRow } from '../../src/features/overlay/contract';
-import { recentPresses } from '../../src/features/overlay/core/widgets';
+import { RECENT_PRESSES_SIZES, recentPresses } from '../../src/features/overlay/core/widgets';
 import type { InputState } from '../../src/shared/models';
 import { axeViolations, colourOnlyStatus, type Dom, type El } from './a11y';
 import { expect, openOption, screensDir, test } from './harness';
@@ -347,12 +347,41 @@ test('the overlay lists each press with what the game does on it, and lets it go
   await expect(fs.access(settingsFile(run.dataRoot))).rejects.toThrow();
   expect(await accessible(page)).toEqual([]);
   await shot(page, 'off');
-  // The preview has the size of the list, and nothing in it while the overlay is off.
+  // The preview has the size of the list. While the overlay is off it shows two examples of
+  // a press, each marked as one: two buttons of the panel under the HUD, with the Hornet's
+  // own names for what they do. Nothing was pressed, and nothing is listed as pressed.
+  const examples = preview.getByTestId('overlay-example');
+  await expect(examples).toHaveCount(2);
+  await expect(preview.getByTestId('overlay-example-mark')).toHaveText(['Example', 'Example']);
+  await expect(examples.nth(0).getByTestId('overlay-example-mark')).toBeVisible();
+  await expect(examples.nth(0).getByTestId('overlay-example-action')).toHaveText(
+    'UFC I/P Pushbutton'
+  );
+  await expect(examples.nth(0).getByTestId('overlay-example-control')).toHaveText(
+    'Button 1 · WINWING UFC1'
+  );
+  await expect(examples.nth(1).getByTestId('overlay-example-action')).toHaveText(
+    'UFC Keyboard Pushbutton - 1'
+  );
+  await expect(examples.nth(1).getByTestId('overlay-example-control')).toHaveText(
+    'Button 2 · WINWING UFC1'
+  );
+  // A line has the height it has over the game.
+  const exampleHeight = async (): Promise<number> =>
+    Math.round((await examples.first().boundingBox())?.height ?? 0);
+  expect(await exampleHeight()).toBe(RECENT_PRESSES_SIZES.medium.row);
+  await expect(page.getByTestId('overlay-preview-words')).toContainText(
+    'The lines marked “Example” are there to judge the size and the number of lines by, and are never shown over the game.'
+  );
   await expect(preview.getByTestId('overlay-press')).toHaveCount(0);
+  expect(await recent(page)).toEqual([]);
   await shot(page, 'preview-off', page.getByTestId('overlay-preview-row'));
 
   // The fading is tried as it is where Windows shows animations, whatever this PC is set to.
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  // An example was not pressed, so it does not fade: it is there for as long as it is off.
+  await expect(examples.first().locator('.rp-pill')).toHaveCSS('animation-name', 'none');
+  await expect(examples.first().locator('.rp-pill')).toHaveCSS('opacity', '1');
 
   // ---- On: one window, over everything, that cannot be given the keyboard ----
   const popup = await turnOn(app, page);
@@ -391,6 +420,13 @@ test('the overlay lists each press with what the game does on it, and lets it go
   const lines = popup.getByTestId('overlay-press');
   const shown = preview.getByTestId('overlay-press');
   await expect(lines).toHaveCount(0);
+  // The examples went the moment it came on, and the window over the game never has any.
+  await expect(examples).toHaveCount(0);
+  await expect(popup.getByTestId('overlay-example')).toHaveCount(0);
+  await expect(popup.getByText('Example')).toHaveCount(0);
+  expect(
+    (await invoke<OverlayState>(page, 'overlay:current')).widgets[0]!.examples
+  ).toBeUndefined();
   expect(await accessible(page)).toEqual([]);
 
   // ---- What is held when it starts is rest, not a press ----
@@ -576,9 +612,41 @@ test('the overlay lists each press with what the game does on it, and lets it go
     })
     .toEqual(large);
   await expect(lines).toHaveCount(2);
+  // On, the preview shows what is pressed and no example.
+  await expect(shown).toHaveCount(2);
+  await expect(examples).toHaveCount(0);
   await shot(popup, 'large');
   await shot(page, 'options');
   expect(await accessible(page)).toEqual([]);
+
+  // ---- Off again: the examples are back, at the size and with the number of lines set ----
+  await page.getByTestId('overlay-on').locator('input').uncheck();
+  await expect(main).toHaveAttribute('data-on', 'false');
+  await expect.poll(() => panels(app)).toEqual([]);
+  await expect(shown).toHaveCount(0);
+  await expect(examples).toHaveCount(2);
+  expect(await exampleHeight()).toBe(RECENT_PRESSES_SIZES.large.row);
+  // One line: one example, the first.
+  await page.getByTestId('overlay-lines').click();
+  await page.locator('.v-overlay--active').getByRole('option', { name: '1', exact: true }).click();
+  await expect(examples).toHaveCount(1);
+  await expect(examples.first().getByTestId('overlay-example-action')).toHaveText(
+    'UFC I/P Pushbutton'
+  );
+  // Small: the line is as high as a small one is over the game.
+  await page.getByTestId('overlay-size-small').click();
+  await expect.poll(exampleHeight).toBe(RECENT_PRESSES_SIZES.small.row);
+  await expect(examples.first().getByTestId('overlay-example-mark')).toBeVisible();
+  expect(await accessible(page)).toEqual([]);
+  await shot(page, 'examples-follow-the-options', page.getByTestId('overlay-preview-row'));
+  // Room for five lines again: there are two examples, and no more.
+  await page.getByTestId('overlay-lines').click();
+  await page.locator('.v-overlay--active').getByRole('option', { name: '5', exact: true }).click();
+  await expect(examples).toHaveCount(2);
+  // None of this was a press, and none of it put anything over the game.
+  expect(await recent(page)).toEqual([]);
+  expect(await panels(app)).toEqual([]);
+  expect(await saved(run.dataRoot)).toMatchObject({ on: false });
 });
 
 test('the overlay goes where it is put, stays there, and comes up again with RigReady', async ({
@@ -805,6 +873,16 @@ test('on a PC with no game the overlay lists presses without what they do, and a
   await expect(page.getByTestId('overlay-aircraft')).toHaveCount(0);
   await expect(whole).not.toContainText('WINWING');
   await expect(whole).not.toContainText('F/A-18C');
+  // With no bindings to go by, the examples are what a press shows here: the control and
+  // the controller, which is not named, as it may be any.
+  const examples = page.getByTestId('overlay-preview').getByTestId('overlay-example');
+  await expect(examples).toHaveCount(2);
+  await expect(examples.getByTestId('overlay-example-action')).toHaveText(['Button 1', 'Hat 1 up']);
+  await expect(examples.getByTestId('overlay-example-control')).toHaveText([
+    'Your controller',
+    'Your controller',
+  ]);
+  await expect(examples.getByTestId('overlay-example-mark')).toHaveText(['Example', 'Example']);
   expect(await panels(app)).toEqual([]);
   expect(await accessible(page)).toEqual([]);
   await shot(page, 'no-game');
@@ -854,6 +932,8 @@ test('on a PC with no game the overlay lists presses without what they do, and a
   await expect(lines.first().getByTestId('overlay-press-action')).toHaveText('Hat 1 up');
   await expect(popup.getByText('Not bound')).toHaveCount(0);
   await expect(page.getByTestId('overlay-preview').getByTestId('overlay-press')).toHaveCount(2);
+  await expect(examples).toHaveCount(0);
+  await expect(popup.getByTestId('overlay-example')).toHaveCount(0);
   await shot(popup, 'without-what-they-do');
 
   // ---- Turned off from the palette: the window is gone ----
@@ -863,6 +943,7 @@ test('on a PC with no game the overlay lists presses without what they do, and a
   await saidOff.getByTestId('toast-close').click();
   await expect(saidOff).toHaveCount(0);
   await expect(main).toHaveAttribute('data-on', 'false');
+  await expect(examples).toHaveCount(2);
   await expect(page.getByTestId('overlay-place-words')).toContainText('turn the overlay on first');
   await expect.poll(() => panels(app)).toEqual([]);
   expect(await saved(run.dataRoot)).toMatchObject({ on: false });
@@ -903,7 +984,11 @@ test('on a PC with no game the overlay lists presses without what they do, and a
   await expect(page.getByTestId('overlay-error')).toHaveCount(0);
   await expect(main).toHaveAttribute('data-on', 'false');
   await expect(page.getByTestId('overlay-lifetime-value')).toHaveText('5 seconds');
+  // Off, on a PC with no game: the two plain examples, as they are seen.
+  await expect(examples).toHaveCount(2);
+  await shot(page, 'plain-examples', page.getByTestId('overlay-preview-row'));
   await turnOn(app, page);
+  await expect(examples).toHaveCount(0);
   await expect(status).toContainText('On, over whatever is on BenQ GW2480');
   expect(await saved(run.dataRoot)).toMatchObject({ on: true });
 });

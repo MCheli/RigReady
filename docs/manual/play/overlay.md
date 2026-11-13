@@ -61,7 +61,13 @@ The list hangs from the edge it is nearest to. In the upper half of the screen t
 - **Size**: small, medium or large. The text and the room the list takes go together.
 - **Presses the game has nothing on**: turned off, a press that is not bound is left out, and one that is on the list goes at once.
 
-**Preview** shows the list at the size it has over the game, on a bright background. While the overlay is on, what you press shows there as well.
+**Preview** shows the list at the size it has over the game, on a bright background.
+
+While the overlay is off, the preview shows two lines marked **Example**, so that you can settle Size and Lines before you turn it on: they change as you set them. They are buttons bound for the aircraft or car chosen above, with the game's own names for what they do. Where RigReady has no bindings to go by they are "Button 1" and "Hat 1 up" on "Your controller". Examples are only ever on this page: nothing is put over the game while the overlay is off.
+
+![The preview while the overlay is off: two lines marked Example](../../../artifacts/screens/overlay/02-preview-off.png)
+
+Turn the overlay on and the examples are gone: what you press shows in the preview instead, as it does over the game.
 
 ![The options and the preview on the Overlay page](../../../artifacts/screens/overlay/06-on.png)
 

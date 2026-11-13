@@ -1,4 +1,4 @@
-import type { PressRow } from './model';
+import type { ExamplePress, PressRow } from './model';
 import type { At } from './settings';
 
 /**
@@ -71,7 +71,8 @@ export interface RowWords {
 
 export const NOT_BOUND = 'Not bound';
 
-export function rowWords(row: PressRow): RowWords {
+/** Of a press, or of an example of one: both are worded here, so they read the same. */
+export function rowWords(row: ExamplePress): RowWords {
   const [first, ...rest] = row.actions;
   const where = `${row.control} · ${row.device}`;
   if (first) {

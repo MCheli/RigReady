@@ -19,6 +19,24 @@ import { RECENT_PRESSES } from './widgets';
 const PANEL = panelId(RECENT_PRESSES);
 const TRIGGER = 'Gun Trigger - SECOND DETENT (Press to shoot)';
 const STARTING = 'The input reader is still starting.';
+/**
+ * What the preview shows for the Hornet while the overlay is off: the first two buttons of the
+ * controller the recorded rig has the most of its own bindings on, the panel under the HUD.
+ */
+const HORNET_EXAMPLES = [
+  {
+    control: 'Button 1',
+    device: 'WINWING UFC1',
+    actions: [{ action: 'UFC I/P Pushbutton', modifiers: [] }],
+    known: true,
+  },
+  {
+    control: 'Button 2',
+    device: 'WINWING UFC1',
+    actions: [{ action: 'UFC Keyboard Pushbutton - 1', modifiers: [] }],
+    known: true,
+  },
+];
 
 interface Seen {
   changed: OverlayState[];
@@ -1072,6 +1090,86 @@ describe('which game and aircraft the words come from', () => {
     await service.idle();
     app.ports.input.emit([held(stick, [10, 7])]);
     expect(actionsOf(rowsOf(service)[0])).toContain(TRIGGER);
+  });
+});
+
+describe('the examples the page shows while the overlay is off', () => {
+  it('two lines from the bindings in use, as a press of those buttons shows; they are no presses', async () => {
+    const { app, service, seen } = await overlay();
+    const state = value(await service.state());
+    expect(state.on).toBe(false);
+    expect(state.widgets[0]!.examples).toEqual(HORNET_EXAMPLES);
+    // Nothing was pressed, and no window is there to show anything in.
+    expect(rowsOf(service)).toEqual([]);
+    expect(seen.presses).toEqual([]);
+    expect(app.ports.overlays.panels.size).toBe(0);
+  });
+
+  it('a press of the first of them shows the same words once the overlay is on', async () => {
+    const { app, service } = await flying();
+    const [first] = HORNET_EXAMPLES;
+    const panel = controller(app, 'WINWING UFC1');
+    app.ports.input.emit([held(panel)]);
+    app.ports.input.emit([held(panel, [1])]);
+    const [row] = rowsOf(service);
+    expect({
+      control: row!.control,
+      device: row!.device,
+      actions: row!.actions,
+      known: row!.known,
+    }).toEqual(first);
+  });
+
+  it('turned on there are none, in what the page is told and in what a window is; turned off they are back', async () => {
+    const { app, service, seen } = await overlay();
+    const on = value(await service.setOn(true));
+    expect('examples' in on.widgets[0]!).toBe(false);
+    const stick = controller(app, 'WINWING Orion');
+    app.ports.input.emit([held(stick)]);
+    app.ports.input.emit([held(stick, [5])]);
+    // The window of the overlay asks for the state as the page does.
+    expect('examples' in value(await service.state()).widgets[0]!).toBe(false);
+    expect('examples' in value(service.current()).widgets[0]!).toBe(false);
+    const whileOn = seen.changed.filter((state) => state.on);
+    expect(whileOn.length).toBeGreaterThan(0);
+    for (const state of whileOn) {
+      for (const widget of state.widgets) expect('examples' in widget).toBe(false);
+    }
+    // What is pressed is what is listed, and nothing else.
+    expect(seen.presses.flat().map((row) => row.control)).toEqual(['Button 5']);
+
+    const off = value(await service.setOn(false));
+    expect(off.widgets[0]!.examples).toEqual(HORNET_EXAMPLES);
+    expect(rowsOf(service)).toEqual([]);
+  });
+
+  it('they name a controller as the user named it, and are those of the aircraft chosen', async () => {
+    const { app, service } = await overlay('cheat-sheets-hornet');
+    // On this rig the stick and the throttle have names; the panel gets one here.
+    const file = path.join(app.ports.folders.dataRoot(), 'devices.json');
+    const kept = JSON.parse(await fs.readFile(file, 'utf8')) as { names: unknown[] };
+    kept.names.push({ vendorId: '4098', productId: 'BEDE', name: 'Up front' });
+    await fs.writeFile(file, JSON.stringify(kept));
+    const state = value(await service.state());
+    expect(state.widgets[0]!.examples).toEqual(
+      HORNET_EXAMPLES.map((line) => ({ ...line, device: 'Up front' }))
+    );
+    const huey = value(await service.chooseAircraft('UH-1H'));
+    expect(huey.widgets[0]!.examples).toHaveLength(2);
+    expect(huey.widgets[0]!.examples).not.toEqual(state.widgets[0]!.examples);
+    for (const line of huey.widgets[0]!.examples!) {
+      expect(line.known).toBe(true);
+      expect(line.actions.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('on a PC with no game: a button and a hat as a press shows them there, and no hardware by name', async () => {
+    const { service } = await overlay('dcs-bindings-no-dcs', []);
+    const state = value(await service.state());
+    expect(state.widgets[0]!.examples).toEqual([
+      { control: 'Button 1', device: 'Your controller', actions: [], known: false },
+      { control: 'Hat 1 up', device: 'Your controller', actions: [], known: false },
+    ]);
   });
 });
 

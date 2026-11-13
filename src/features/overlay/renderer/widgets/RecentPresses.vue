@@ -8,10 +8,16 @@
  * the oldest line is over. With nothing pressed there is no timer and nothing on the screen.
  *
  * The colours are its own and do not follow the app: it is read over a game, not on a page.
+ *
+ * The preview on the page also hands it `examples` while the overlay is off: lines to judge
+ * the size and the number of lines by. They are drawn in place of the presses (there are
+ * none while it is off), each marked "Example", and they stay: nothing was pressed, so
+ * nothing fades. The window over the game is never given any.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useClient } from '../../../../renderer/ipc';
 import { overlayContract, type PressRow } from '../../contract';
+import type { ExamplePress } from '../../core/model';
 import type { At } from '../../core/settings';
 import { alive, anchorOf, nextEnd, rowWords, takeRows, type ShownRow } from '../../core/shown';
 import {
@@ -26,6 +32,8 @@ const props = defineProps<{
   options: Record<string, unknown>;
   /** Where its window is on the screen: the list hangs from the nearest edge. */
   at: At;
+  /** Only from the preview on the page, while the overlay is off: examples of a press. */
+  examples?: readonly ExamplePress[] | undefined;
 }>();
 
 const api = useClient(overlayContract);
@@ -45,6 +53,12 @@ const measures = computed(() => {
 
 const shown = ref<ShownRow[]>([]);
 const lines = computed(() => shown.value.map((line) => ({ ...line, words: rowWords(line.row) })));
+/** As many of the examples as the list has lines, worded as a press is. */
+const exampleLines = computed(() =>
+  (props.examples ?? [])
+    .slice(0, options.value.rows)
+    .map((press) => ({ press, words: rowWords(press) }))
+);
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -110,7 +124,35 @@ onBeforeUnmount(() => {
     :data-edge="anchor.edge"
     :data-side="anchor.side"
   >
-    <TransitionGroup name="rp-line">
+    <template v-if="examples">
+      <div
+        v-for="(line, index) in exampleLines"
+        :key="index"
+        class="rp-line"
+        data-testid="overlay-example"
+        :data-control="line.press.control"
+        :data-device="line.press.device"
+      >
+        <div class="rp-pill rp-example">
+          <div class="rp-main">
+            <span v-if="line.words.held.length > 0" class="rp-held">
+              {{ line.words.held.join(' + ') }} +
+            </span>
+            <span class="rp-action" data-testid="overlay-example-action">
+              {{ line.words.main }}
+            </span>
+            <span v-if="line.words.more > 0" class="rp-tag">+{{ line.words.more }}</span>
+          </div>
+          <div class="rp-sub rp-sub-marked">
+            <span class="rp-mark" data-testid="overlay-example-mark">Example</span>
+            <span class="rp-sub-words" data-testid="overlay-example-control">
+              {{ line.words.sub }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </template>
+    <TransitionGroup v-else name="rp-line">
       <div
         v-for="line in lines"
         :key="line.row.id"
@@ -240,6 +282,33 @@ onBeforeUnmount(() => {
   line-height: 1.3;
   color: #c9d0d9;
 }
+/* An example on the page says that it is one, in the small line: the large words keep the
+   room they have over the game, so the size is judged on the real thing. */
+.rp-sub-marked {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.rp-mark {
+  flex: none;
+  padding: 0 0.5em;
+  border-radius: 0.8em;
+  background: #a8d1f5;
+  color: #0a0d11;
+  font-weight: 600;
+}
+.rp-sub-words {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rp-middle .rp-sub-marked {
+  justify-content: center;
+}
+.rp-right .rp-sub-marked {
+  justify-content: flex-end;
+}
 .rp-middle .rp-main {
   justify-content: center;
 }
@@ -281,7 +350,8 @@ onBeforeUnmount(() => {
  * line has no animation then: it stays as it is and goes when its time is over.
  */
 @media (prefers-reduced-motion: no-preference) {
-  .rp-pill {
+  /* An example was not pressed, so it does not fade. */
+  .rp-pill:not(.rp-example) {
     animation-name: rp-fade;
     animation-timing-function: linear;
     animation-fill-mode: both;

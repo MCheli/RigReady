@@ -43,6 +43,18 @@ export type PressRow = z.infer<typeof PressRowSchema>;
 
 export const PressRowsSchema = z.object({ rows: z.array(PressRowSchema) });
 
+/**
+ * A line that is an example of a press and not one: what the preview on the Overlay page
+ * shows while the overlay is off, marked as an example. Never among the presses.
+ */
+export const ExamplePressSchema = PressRowSchema.pick({
+  control: true,
+  device: true,
+  actions: true,
+  known: true,
+});
+export type ExamplePress = z.infer<typeof ExamplePressSchema>;
+
 export const WidgetPlaceSchema = z.object({
   /** The screen it is shown on now (a monitor id); absent when no screen is on. */
   screen: z.string().optional(),
@@ -68,6 +80,11 @@ export const WidgetStateSchema = z.object({
   moving: z.boolean(),
   /** Why it is not showing although the overlay is on. */
   problem: z.string().optional(),
+  /**
+   * Lines for the preview on the page to judge the size and the number of lines by. Only
+   * while the overlay is off, and only for the page: no window of the overlay is up then.
+   */
+  examples: z.array(ExamplePressSchema).optional(),
 });
 export type WidgetState = z.infer<typeof WidgetStateSchema>;
 

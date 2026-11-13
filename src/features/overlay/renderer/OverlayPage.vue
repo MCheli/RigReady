@@ -418,8 +418,9 @@ onBeforeUnmount(() => {
                   it shows here as it does there.
                 </template>
                 <template v-else>
-                  The size it has over the game. Turn the overlay on and what you press shows here
-                  too.
+                  The size it has over the game, on a bright scene. The lines marked “Example” are
+                  there to judge the size and the number of lines by, and are never shown over the
+                  game. Turn the overlay on and what you press shows here instead.
                 </template>
               </div>
             </div>
@@ -438,6 +439,7 @@ onBeforeUnmount(() => {
                   v-if="WIDGET_PARTS[widget.id]"
                   :options="widget.options"
                   :at="widget.place.at"
+                  :examples="widget.examples"
                 />
               </div>
             </div>

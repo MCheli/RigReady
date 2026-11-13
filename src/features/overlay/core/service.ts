@@ -1,4 +1,9 @@
-import { controlFromDirectInput, controlLabel, type BoundAircraft } from '../../../core/bindings';
+import {
+  controlFromDirectInput,
+  controlLabel,
+  type BoundAircraft,
+  type BoundDevice,
+} from '../../../core/bindings';
 import type { BindingReader } from '../../../core/bindings';
 import { boundControl, boundInputsOf, type BoundInputs } from '../../../core/boundInputs';
 import type { MainContext } from '../../../core/feature';
@@ -14,8 +19,16 @@ import type {
 } from '../../../shared/models';
 import { aircraftNamedBy, pickAircraft, type AircraftPick } from './aircraft';
 import { shortDeviceName } from './deviceName';
+import { examplePresses, pressActions } from './examples';
 import { PressFeed, type FeedLimits } from './feed';
-import type { OverlaySource, OverlayState, PressAction, PressRow, WidgetState } from './model';
+import type {
+  ExamplePress,
+  OverlaySource,
+  OverlayState,
+  PressAction,
+  PressRow,
+  WidgetState,
+} from './model';
 import { overlayScreens, placeSignature, resolvePlace, screenNames, storedMonitor } from './place';
 import { PressTracker } from './presses';
 import { NO_SETTINGS, type At, type OverlaySettings, type StoredMonitor } from './settings';
@@ -79,6 +92,8 @@ interface Source {
   choices: BoundAircraft[];
   /** The bindings in effect, by controller and input. Absent: they could not be read. */
   bound?: BoundInputs;
+  /** The controllers those bindings are for, as the game knows them. */
+  devices?: BoundDevice[];
   problem?: string;
 }
 
@@ -128,6 +143,8 @@ export class OverlayService {
   private pressOptions: RecentPressesOptions = recentPresses.read(undefined);
 
   private source: Source = { choices: [] };
+  /** The example lines for the page, worked out once for the source and the names. */
+  private examples: ExamplePress[] | undefined;
   /** The setup that was last played when the source was read. */
   private lastSetup: string | undefined;
   private deviceNames: DeviceNames = NO_NAMES;
@@ -400,10 +417,8 @@ export class OverlayService {
           continue;
         }
         const known = this.source.bound !== undefined;
-        const actions = (boundControl(this.source.bound, device.guid, change.input)?.actions ?? [])
-          .map(({ action, modifiers }) => ({ action, modifiers }))
-          // What works on its own before what needs something held with it.
-          .sort((a, b) => Number(a.modifiers.length > 0) - Number(b.modifiers.length > 0));
+        // What works on its own before what needs something held with it.
+        const actions = pressActions(boundControl(this.source.bound, device.guid, change.input));
         if (known && actions.length === 0 && !this.pressOptions.showUnbound) continue;
         this.feed.press(now, key, change.input, {
           control: controlWords(change.input),
@@ -451,6 +466,37 @@ export class OverlayService {
       this.deviceLabels.set(key, label);
     }
     return label;
+  }
+
+  /** A controller of the game's bindings, named as a press of it names it. */
+  private boundLabel(device: BoundDevice): string {
+    let given: string | undefined;
+    try {
+      if (device.vendorId && device.productId) {
+        given = this.deviceNames
+          .nameOf({
+            vendorId: device.vendorId,
+            productId: device.productId,
+            ...(device.guid ? { guid: device.guid } : {}),
+          })
+          ?.trim();
+      }
+    } catch (e) {
+      this.ctx.log.warn('a device name could not be looked up', e);
+    }
+    return given || device.givenName?.trim() || shortDeviceName(device.name);
+  }
+
+  /**
+   * What the preview on the page shows while the overlay is off: examples of a press, from
+   * the bindings in use where there are any. They are no presses: they are not in the list
+   * (`recent`, the `presses` event), so no window of the overlay ever has them.
+   */
+  private exampleLines(): ExamplePress[] {
+    this.examples ??= examplePresses(this.source.bound, this.source.devices ?? [], (device) =>
+      this.boundLabel(device)
+    );
+    return this.examples;
   }
 
   /** Looks at what may have changed behind the overlay's back, when it has been a while. */
@@ -532,6 +578,7 @@ export class OverlayService {
   private async readNames(): Promise<void> {
     this.deviceNames = await this.ctx.names.devices();
     this.deviceLabels.clear();
+    this.examples = undefined;
   }
 
   private async lastPlayed(): Promise<string | undefined> {
@@ -584,8 +631,12 @@ export class OverlayService {
           } else {
             source.pick = pick;
             const bindings = await reader.bindings(pick.aircraft.id);
-            if (bindings.ok) source.bound = boundInputsOf(reader, bindings.value);
-            else source.problem = bindings.error.message;
+            if (bindings.ok) {
+              source.bound = boundInputsOf(reader, bindings.value);
+              source.devices = bindings.value.devices;
+            } else {
+              source.problem = bindings.error.message;
+            }
           }
         }
       } catch (e) {
@@ -594,6 +645,7 @@ export class OverlayService {
       }
     }
     this.source = source;
+    this.examples = undefined;
   }
 
   /**
@@ -834,6 +886,8 @@ export class OverlayService {
         showing: this.shown.has(kind.id),
         moving: this.moving.has(kind.id),
         ...(problem ? { problem } : {}),
+        // Only while it is off: turned on, the preview shows what is pressed.
+        ...(!on && kind.id === RECENT_PRESSES ? { examples: this.exampleLines() } : {}),
       };
     });
     const { setup, game, pick, choices, problem } = this.source;
