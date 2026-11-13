@@ -15,14 +15,16 @@ export async function deskLayoutId(ctx: Ctx): Promise<string | undefined> {
 
 /**
  * Stand down applies the desk layout (chosen on the Monitors page with "Use as desk layout"
- * or in Settings under "Desk layout"; the setting is the same), with the same keep-or-revert
- * countdown as any other layout change. Monitors of the desk layout that are not connected
- * are left out. Without a desk layout it does nothing (and the per-setup stand-down puts
- * back the layout from before Make ready instead).
+ * or in Settings under "Desk layout"; the setting is the same). When the desk layout has
+ * been kept before on this PC with the same monitors connected, it is applied without the
+ * "Keep this monitor layout?" question; otherwise with the question and its countdown, as
+ * any change made by hand (`proven.ts` has the exact rule). Monitors of the desk layout
+ * that are not connected are left out. Without a desk layout it does nothing (and the
+ * per-setup stand-down puts back the layout from before Make ready instead).
  */
 export function createDeskLayoutStep(
   ctx: Ctx,
-  applier: Pick<LayoutApplier, 'applyAndWait'>,
+  applier: Pick<LayoutApplier, 'applyKnown'>,
   names: () => Promise<MonitorNames>
 ): StandDownStep {
   return {
@@ -57,7 +59,8 @@ export function createDeskLayoutStep(
         );
       }
       if (analysis.changes.length === 0) return ok(null);
-      const applied = await applier.applyAndWait(analysis.targets);
+      // Without the question when this PC has kept it before with these monitors.
+      const applied = await applier.applyKnown(analysis.targets);
       if (!applied.ok) return applied;
       // Read back: the desk layout is only reported as applied when it is there.
       const after = await ports.displays.read();

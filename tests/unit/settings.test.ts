@@ -380,6 +380,27 @@ describe('Stand down and the desk layout', () => {
     // Already in the desk layout: nothing to do, and nothing is claimed.
     const again = await app.invoke<ActionReport>('fly:standDown', P);
     expect(again.steps.some((s) => s.itemId === 'displays.deskLayout')).toBe(false);
+
+    // Flying again another day. The desk layout was kept with these monitors, so this
+    // Stand down applies it without the question: nothing waits, and nothing counts down.
+    app.ports.state.displays = structuredClone(flying);
+    const asked = app.events.filter((e) => e.channel === 'displays:event:applied').length;
+    app.layoutAnswer = 'wait';
+    const second = await app.invoke<ActionReport>('fly:standDown', P);
+    expect(second.steps).toContainEqual({
+      itemId: 'displays.deskLayout',
+      title: 'Desk monitor layout',
+      ok: true,
+      message: 'Applied desk layout "Desk"',
+    });
+    expect(app.events.filter((e) => e.channel === 'displays:event:applied')).toHaveLength(asked);
+    expect(app.events.some((e) => e.channel === 'displays:event:appliedKnown')).toBe(true);
+    expect(await app.invoke('displays:pending')).toMatchObject({ pending: false });
+    expect(app.ports.state.displays.find((d) => d.name === 'DELL G3223D')).toMatchObject({
+      enabled: true,
+      primary: true,
+    });
+    app.layoutAnswer = 'keep';
   });
 
   it('skips monitors of the desk layout that are not connected, and fails clearly when it cannot apply', async () => {
@@ -437,7 +458,7 @@ describe('Stand down and the desk layout', () => {
     await expect
       .poll(async () => (await app!.invoke<{ pending: boolean }>('displays:pending')).pending)
       .toBe(true);
-    expect(await app.invoke('displays:pending')).toEqual({ pending: true, seconds: 30 });
+    expect(await app.invoke('displays:pending')).toMatchObject({ pending: true, seconds: 30 });
     await app.invoke('displays:keep');
     await making;
   });

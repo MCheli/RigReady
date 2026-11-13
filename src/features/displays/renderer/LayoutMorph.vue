@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { frameWidth as widthOfFrame, mapKey } from '../core/mapKey';
 import { morphOf, type MorphBox, type PreviewMonitor } from '../core/previewMap';
+import { useWidth } from './measure';
 import { useReducedMotion } from './motion';
 
 /**
  * What applying a layout would do, as one map of the monitors that changes from how they
  * are to how they would be: monitors slide to their new place, turn, and switch on or off.
  * Before and After flip it by hand. With less motion asked for, the two are side by side.
+ *
+ * A name is always written the right way round and never left out. A box too narrow for
+ * its name, before or after, shows a letter in both, and the key under the picture says
+ * which screen that is.
  */
 const props = withDefaults(
   defineProps<{
@@ -48,6 +54,38 @@ function show(state: State | undefined): void {
 const frames = computed<State[]>(() => (reduced.value ? ['before', 'after'] : [showing.value]));
 const frameWidth = computed(() => `${Math.round(props.maxHeight / morph.value.ratio)}px`);
 
+const root = ref<HTMLElement>();
+const room = useWidth(root);
+/** The gap between the two frames when they are side by side (.morph-frames.pair). */
+const PAIR_GAP = 16;
+/** The text size in a box (.morph-text). */
+const FONT = 11.5;
+
+/**
+ * The marks for the boxes whose name does not fit. A box is measured at its narrowest,
+ * before or after, so what is written on it does not change while it moves.
+ */
+const key = computed(() => {
+  const whole = room.value;
+  const each = whole !== undefined && reduced.value ? (whole - PAIR_GAP) / 2 : whole;
+  const drawn = widthOfFrame(each, props.maxHeight, morph.value.ratio);
+  return mapKey(
+    morph.value.boxes.map((box) => {
+      const places = [box.before, box.after].filter((p) => p !== undefined);
+      const where = box.after ?? box.before;
+      return {
+        id: box.id,
+        label: box.label,
+        left: where?.left ?? 0,
+        top: where?.top ?? 0,
+        width: (Math.min(...places.map((p) => p.width)) / 100) * drawn,
+      };
+    }),
+    FONT
+  );
+});
+const letters = computed(() => new Map(key.value.map((entry) => [entry.id, entry.mark])));
+
 function boxStyle(box: MorphBox, state: State): Record<string, string> {
   // A monitor that is off in this state stays where it is in the other one, and fades.
   const rect = box[state] ?? box[state === 'before' ? 'after' : 'before'];
@@ -76,6 +114,7 @@ const summary = computed(() =>
 
 <template>
   <div
+    ref="root"
     class="morph"
     data-testid="layout-morph"
     :data-showing="reduced ? 'both' : showing"
@@ -126,18 +165,27 @@ const summary = computed(() =>
               :data-on="box[state] !== undefined"
               :data-rotation="state === 'before' ? box.rotationBefore : box.rotationAfter"
               :data-changes="box.changes.join(', ')"
+              :data-mark="letters.get(box.id)"
             >
-              <v-icon
-                v-if="state === 'before' ? box.primaryBefore : box.primaryAfter"
-                icon="mdi-star"
-                size="12"
-                class="morph-star"
-              />
-              <div class="morph-text">
-                <span class="morph-label">{{ box.label }}</span>
-                <small>{{ state === 'before' ? box.sizeBefore : box.sizeAfter }}</small>
-                <small v-if="!box.connected" class="rr-warn">not connected</small>
+              <!-- Too narrow for its name: a letter stands for it, and the key names it. -->
+              <div v-if="letters.has(box.id)" class="morph-text">
+                <span class="morph-letter" data-testid="morph-letter">{{
+                  letters.get(box.id)
+                }}</span>
               </div>
+              <template v-else>
+                <v-icon
+                  v-if="state === 'before' ? box.primaryBefore : box.primaryAfter"
+                  icon="mdi-star"
+                  size="12"
+                  class="morph-star"
+                />
+                <div class="morph-text">
+                  <span class="morph-label">{{ box.label }}</span>
+                  <small>{{ state === 'before' ? box.sizeBefore : box.sizeAfter }}</small>
+                  <small v-if="!box.connected" class="rr-warn">not connected</small>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -151,6 +199,18 @@ const summary = computed(() =>
           </span>
         </div>
       </div>
+    </div>
+    <div v-if="key.length" class="morph-key" data-testid="morph-key">
+      <span
+        v-for="entry in key"
+        :key="entry.id"
+        class="morph-key-item"
+        data-testid="morph-key-item"
+        :data-label="entry.label"
+      >
+        <span class="morph-key-mark">{{ entry.mark }}</span>
+        {{ entry.label }}
+      </span>
     </div>
   </div>
 </template>
@@ -251,25 +311,28 @@ const summary = computed(() =>
     display: none;
   }
 }
-/* Narrow and upright: the name runs up the screen. */
-@container (max-width: 84px) and (max-aspect-ratio: 1/1) {
-  .morph-label {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    max-width: none;
-    max-height: 100%;
-  }
+.morph-letter {
+  font-weight: 700;
 }
-/* Too small for a name at all: the tooltip still has it. */
-@container (max-width: 34px) and (min-aspect-ratio: 1/1) {
-  .morph-text {
-    display: none;
-  }
+/* What the letters stand for. One key for both states, so it does not jump. */
+.morph-key {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--rr-muted);
 }
-@container (max-width: 26px) {
-  .morph-text {
-    display: none;
-  }
+.morph-key-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+.morph-key-mark {
+  font-weight: 700;
+  color: var(--rr-text);
 }
 .morph-off {
   display: flex;

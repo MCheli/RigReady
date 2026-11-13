@@ -5,6 +5,7 @@ import type { Clock, FileStore } from '../../../core/ports';
 import { err, ok, type Result } from '../../../core/result';
 import { DisplayTargetSchema, type DisplayTarget } from '../../../shared/models';
 import { checkMonitorName, type MonitorNames } from './labels';
+import { sameProof, type Proof } from './proven';
 
 const NamesSchema = z.object({
   schemaVersion: z.literal(1).default(1),
@@ -183,6 +184,68 @@ export class UprightStore {
     const saved = await this.store.update((current) => ({
       schemaVersion: 1 as const,
       confirmed: [...new Set([...current.confirmed, ...keys])],
+    }));
+    return saved.ok ? ok(undefined) : saved;
+  }
+}
+
+const ProofSchema = z.object({
+  /** When "Keep it" was pressed. */
+  keptAt: z.string(),
+  monitors: z.array(z.string()).min(1),
+  asked: z.array(z.string()).min(1),
+  others: z.array(z.string()).default([]),
+});
+
+const ProvenSchema = z.object({
+  schemaVersion: z.literal(1).default(1),
+  kept: z.array(ProofSchema).default([]),
+});
+
+/** More than anyone has layouts times monitor sets; the oldest go first. */
+const PROVEN_MAX = 60;
+
+/**
+ * The monitor changes a person has kept on this PC, at <data root>/displays/proven.json.
+ * Make ready and Stand down apply a change found here without the "Keep this monitor
+ * layout?" question. What a record means, and when one is written, is in `proven.ts`.
+ *
+ * A file that cannot be read holds nothing: the question is then asked, as for a change
+ * never kept.
+ */
+export class ProvenStore {
+  private readonly store: JsonStore<typeof ProvenSchema>;
+
+  constructor(
+    files: FileStore,
+    dataRoot: string,
+    private readonly clock: Clock
+  ) {
+    this.store = new JsonStore(files, path.join(dataRoot, 'displays', 'proven.json'), ProvenSchema);
+  }
+
+  async has(proof: Proof): Promise<boolean> {
+    const value = await this.store.read();
+    return value.ok && value.value.kept.some((kept) => sameProof(kept, proof));
+  }
+
+  /** A person kept this change, and the monitors were read back as it asked. */
+  async add(proof: Proof): Promise<Result<void>> {
+    const keptAt = this.clock.now().toISOString();
+    const saved = await this.store.update((current) => ({
+      schemaVersion: 1 as const,
+      kept: [...current.kept.filter((kept) => !sameProof(kept, proof)), { ...proof, keptAt }].slice(
+        -PROVEN_MAX
+      ),
+    }));
+    return saved.ok ? ok(undefined) : saved;
+  }
+
+  /** The change did not go as it did when it was kept: it is asked about again next time. */
+  async forget(proof: Proof): Promise<Result<void>> {
+    const saved = await this.store.update((current) => ({
+      schemaVersion: 1 as const,
+      kept: current.kept.filter((kept) => !sameProof(kept, proof)),
     }));
     return saved.ok ? ok(undefined) : saved;
   }
