@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ChangePreviewSchema } from '../../shared/changePreview';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 
 /** The id of the set every car uses (Documents\iRacing\controls.cfg). */
@@ -29,6 +30,11 @@ export const OverviewSchema = z.object({
   carFolders: z.number().int(),
   /** The page of the app that repairs a controller's id in iRacing's files, when there is one. */
   repairRoute: z.string().optional(),
+  /**
+   * Changing a binding is switched on for this run of RigReady (RIGREADY_IRACING_EDIT=1).
+   * Off unless someone turned it on: no file RigReady changed has been loaded by iRacing yet.
+   */
+  editing: z.boolean(),
 });
 export type Overview = z.infer<typeof OverviewSchema>;
 
@@ -126,17 +132,132 @@ export const SetViewSchema = z.object({
 });
 export type SetView = z.infer<typeof SetViewSchema>;
 
-export const iracingBindingsContract = defineContract('iracing-bindings', {
-  /** Where iRacing keeps bindings and which sets there are. */
-  overview: channel(noInput, OverviewSchema, {
-    describe:
-      "Says whether iRacing's bindings are on this PC, where they are kept, whether the simulator is running, and which sets there are: one for all cars, and one for each car that has custom controls. Start here: the set ids iracing-bindings:set takes come from it. Changes nothing.",
-    tier: 'read',
+/** What an action can be bound to from RigReady: one controller button, or one key. */
+export const WantedBindingSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('button'),
+    /** The controller's DirectInput instance GUID, as a `pressed` event gives it. */
+    device: z.string(),
+    /** The button's number as the page shows it: the first button is 1. */
+    button: z.number().int().min(1).max(128),
   }),
-  /** Every action of one set, with what is bound to it. */
-  set: channel(z.object({ id: z.string() }), SetViewSchema, {
-    describe:
-      'Lists every action of one iRacing binding set with what is bound to it (a controller button or axis, or a key), the controllers the set names and whether each is plugged in, the inputs that do more than one thing, and for a car what differs from the set for all cars. id is a set id from iracing-bindings:overview ("all" for all cars). Reads only: RigReady does not change iRacing bindings.',
-    tier: 'read',
+  z.object({
+    kind: z.literal('key'),
+    /** iRacing's own key code. */
+    keyCode: z.number().int().min(0).max(255),
+    /** Two bits each: Shift 0x03, Ctrl 0x0C, Alt 0x30. */
+    modifiers: z.number().int().min(0).max(63),
   }),
+]);
+export type WantedBinding = z.infer<typeof WantedBindingSchema>;
+
+export const ChangeRequestSchema = z.object({
+  /** A set id from overview: "all", or "car:<folder>". */
+  set: z.string(),
+  /** iRacing's id of the action: "HeadlightFlash". */
+  action: z.string(),
+  /** What to bind it to; null clears the binding. */
+  binding: WantedBindingSchema.nullable(),
 });
+export type ChangeRequest = z.infer<typeof ChangeRequestSchema>;
+
+/** One change as it would be, before anything is written. */
+export const ChangeReviewSchema = z.object({
+  set: BindingSetSchema,
+  action: z.object({ id: z.string(), name: z.string() }),
+  /** What the action has now: "H on the keyboard", "Button 5 on Button Box", "Not bound". */
+  before: z.string(),
+  /** What it would have. */
+  after: z.string(),
+  /** True when the action already has exactly this: saving would change nothing. */
+  same: z.boolean(),
+  /** The other actions of this set the same button or key would also do. */
+  conflicts: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      group: ActionGroupSchema,
+      /** An action of iRacing's camera editor: it only works while the editor is open. */
+      cameraEditor: z.boolean(),
+    })
+  ),
+  /** Why it cannot be saved right now (iRacing is open), when it cannot. */
+  blocked: z.string().optional(),
+  /** The file as it would change. */
+  preview: ChangePreviewSchema,
+});
+export type ChangeReview = z.infer<typeof ChangeReviewSchema>;
+
+export const ChangeResultSchema = z.object({
+  /** False when the action already had that binding: nothing was written. */
+  changed: z.boolean(),
+  message: z.string(),
+  file: z.string(),
+});
+export type ChangeResult = z.infer<typeof ChangeResultSchema>;
+
+/** Something the user just pressed on a controller while the page listens. */
+export const PressedSchema = z.object({
+  /** The controller's DirectInput instance GUID. */
+  device: z.string(),
+  deviceName: z.string(),
+  kind: z.enum(['button', 'hat', 'axis']),
+  /** For a button: its number, the first being 1. */
+  button: z.number().int().optional(),
+  /** "Button 5", "a hat switch", "an axis". */
+  label: z.string(),
+});
+export type Pressed = z.infer<typeof PressedSchema>;
+
+const EDIT_OFF =
+  'Changing iRacing bindings is switched off in RigReady until it is proven on a rig; this answers with an error unless the owner switched it on.';
+
+export const iracingBindingsContract = defineContract(
+  'iracing-bindings',
+  {
+    /** Where iRacing keeps bindings and which sets there are. */
+    overview: channel(noInput, OverviewSchema, {
+      describe:
+        "Says whether iRacing's bindings are on this PC, where they are kept, whether the simulator is running, and which sets there are: one for all cars, and one for each car that has custom controls. Start here: the set ids iracing-bindings:set takes come from it. Changes nothing.",
+      tier: 'read',
+    }),
+    /** Every action of one set, with what is bound to it. */
+    set: channel(z.object({ id: z.string() }), SetViewSchema, {
+      describe:
+        'Lists every action of one iRacing binding set with what is bound to it (a controller button or axis, or a key), the controllers the set names and whether each is plugged in, the inputs that do more than one thing, and for a car what differs from the set for all cars. id is a set id from iracing-bindings:overview ("all" for all cars). Reads only.',
+      tier: 'read',
+    }),
+
+    /**
+     * One binding as it would change, before anything is written: what the action has now
+     * and would have, what else the same input does, and the file. Writes nothing.
+     */
+    changePreview: channel(ChangeRequestSchema, ChangeReviewSchema, {
+      describe: `Shows what binding one iRacing action to a controller button or a key, or clearing it, would change. Writes nothing. ${EDIT_OFF}`,
+      tier: 'off',
+    }),
+    /**
+     * Sets or clears one binding in the set's controls.cfg, through FileStore (a backup
+     * first, one entry on the Safety page). Refused while the simulator runs.
+     */
+    change: channel(ChangeRequestSchema, ChangeResultSchema, {
+      describe: `Binds one iRacing action to a controller button or a key, or clears it, in iRacing's own file, after a backup. Refused while iRacing runs. ${EDIT_OFF}`,
+      tier: 'off',
+    }),
+
+    /** Starts reporting presses on any controller as `pressed` events. */
+    listenStart: channel(noInput, z.object({ listening: z.boolean() }), {
+      describe:
+        'Starts sending pressed events for every controller press, for binding by pressing on the iRacing bindings page.',
+      tier: 'off',
+    }),
+    listenStop: channel(noInput, z.object({ listening: z.boolean() }), {
+      describe: 'Stops the pressed events started by listenStart.',
+      tier: 'off',
+    }),
+  },
+  {
+    /** A button, hat direction or axis the user just used, while the page listens. */
+    pressed: PressedSchema,
+  }
+);
