@@ -41,6 +41,8 @@ interface Proposed extends Scoped {
   selectedByDefault: boolean;
   kind?: GameKind | undefined;
   forGames?: string[] | undefined;
+  /** Said by the feature whose check it is: this one is about the microphone. */
+  microphone?: boolean | undefined;
   group?: string | undefined;
   title?: string | undefined;
   device?: { model?: string | undefined } | undefined;
@@ -91,9 +93,6 @@ export function gearOf(candidate: Pick<Proposed, 'title' | 'device'>): GearKind 
   return kind === 'other' || kind === 'keyboard' || kind === 'mouse' ? undefined : kind;
 }
 
-const isMicrophone = (candidate: Proposed): boolean =>
-  candidate.check?.type === 'audio.defaultDevice' && candidate.check.params['flow'] === 'recording';
-
 /**
  * Whether the game plausibly needs it. Gear of a kind the game does not read is left
  * out, and so is the program that runs such gear: a head tracker's software is not kept
@@ -103,7 +102,7 @@ const isMicrophone = (candidate: Proposed): boolean =>
  * maker than something the game cannot use.
  */
 function suits(candidate: Proposed, uses: PlayedWith): boolean {
-  if (isMicrophone(candidate)) return uses.microphone;
+  if (candidate.microphone) return uses.microphone;
   if (candidate.group !== 'devices' && candidate.group !== 'apps') return true;
   const gear = gearOf(candidate);
   if (gear) return !uses.gear || uses.gear.includes(gear);

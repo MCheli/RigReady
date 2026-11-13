@@ -467,6 +467,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
         game?: string;
         kind?: GameKind;
         forGames?: string[];
+        microphone?: boolean;
         variant?: { id: string; name: string };
         device?: { model?: string };
         check: ProposedCheck;

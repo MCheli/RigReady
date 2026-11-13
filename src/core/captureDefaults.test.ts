@@ -32,12 +32,16 @@ const helper = (
   title,
   ...extra,
 });
+// The audio feature marks its microphone check; these rules never read a check's type.
+const audioCheck = { type: 'audio.defaultDevice', params: { flow: 'recording' } };
 const microphone = {
   selectedByDefault: true,
   group: 'audio',
   title: 'Microphone',
-  check: { type: 'audio.defaultDevice', params: { flow: 'recording' } },
+  microphone: true,
+  check: audioCheck,
 };
+const unmarked = { selectedByDefault: true, group: 'audio', title: 'Sound', check: audioCheck };
 
 const racing: CaptureChoice = { game: 'iracing', variant: '', family: 'racing' };
 const flight: CaptureChoice = { game: 'dcs', variant: '', family: 'flight' };
@@ -98,6 +102,8 @@ describe('CFG-PROFILE-017: a new setup starts from the game', () => {
     expect(keptByDefault(helper('TrackIR software'), gamepadGame)).toBe(false);
     expect(keptByDefault(microphone, gamepadGame)).toBe(false);
     expect(keptByDefault(microphone, flight)).toBe(true);
+    // The mark decides, not the type of the check: without it the same check is kept.
+    expect(keptByDefault(unmarked, gamepadGame)).toBe(true);
     expect(keptByDefault(device('VKB Gladiator NXT'), gamepadGame)).toBe(true);
     expect(keptByDefault(device('TrackIR 5'), gamepadGame)).toBe(false);
     expect(keptByDefault(device('WINWING MFD1-L'), gamepadGame)).toBe(false);

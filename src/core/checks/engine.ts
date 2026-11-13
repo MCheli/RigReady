@@ -627,6 +627,7 @@ export const CaptureCandidateSchema = z.object({
   }),
   game: z.string().optional(),
   forGames: z.array(z.string()).optional(),
+  microphone: z.boolean().optional(),
   ask: z
     .object({
       param: z.string(),

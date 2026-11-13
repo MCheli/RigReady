@@ -248,6 +248,12 @@ export interface CaptureCandidate {
    */
   forGames?: string[];
   /**
+   * True for a check about the microphone. It is kept by default only in a setup for a game
+   * played with one (see GameModule.playedWith), or when nothing says the game has none.
+   * The feature that owns the check says so here: core does not know check types.
+   */
+  microphone?: boolean;
+  /**
    * One question the capture screen asks when this candidate is kept; the answer is
    * stored in the item's params under `param` (and handled by the check's `adopt`).
    */
