@@ -34,7 +34,7 @@ A profile says which of your controls drives each part of the virtual controller
 
 **Notes for one game.** A starting point made for one game also says, under a part's plain description, what the part does in that game: "In Ace Combat 8: Lock on". These are notes only; they change nothing a game is sent. A copy keeps them, and its row says "notes for Ace Combat 8". To use the copy for another game, press **Remove the notes for Ace Combat 8** in the editor: the controls you chose stay. The other starting points name no game.
 
-**Names.** No two profiles share a name. A copy gets a name of its own ("My HOTAS", then "My HOTAS 2"), and the editor does not save a name another profile already has. Profiles that shared a name before this rule still load: each says so on its row, and the id on the row tells them apart.
+**Names.** No two profiles share a name. A copy gets a name of its own ("My HOTAS", then "My HOTAS 2"), and the editor does not save a name another profile already has. Profiles that shared a name before this rule still load: each says so on its row, and the id on the row tells them apart. The copy opens in the editor; if you went on to another page while it was being made, you stay there and the copy is in the list.
 
 **Which setups use it.** Each of your profiles says which setups start it, such as 'Used by the setup "Ace Combat 8"', or "No setup uses it".
 

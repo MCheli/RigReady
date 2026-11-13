@@ -294,8 +294,32 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
     await use(rig);
 
     const failed = testInfo.status !== testInfo.expectedStatus;
-    const roots = new Set<IsolatedEnv>();
-    for (const { app, isolated, page } of started) {
+    const roots = new Set(started.map((entry) => entry.isolated));
+    // The app's own log says what the main process saw: it is kept with the failure output.
+    const logNames = new Map(
+      [...roots].map((isolated, i) => [
+        isolated,
+        roots.size > 1 ? `rigready-${i + 1}.log` : 'rigready.log',
+      ])
+    );
+    const keepLogs = async (): Promise<void> => {
+      for (const [isolated, name] of logNames) {
+        await fs
+          .copyFile(path.join(isolated.dataRoot, 'logs', 'rigready.log'), testInfo.outputPath(name))
+          .catch(() => undefined);
+      }
+    };
+    if (failed) {
+      // Kept and attached before the window is captured or the app is closed: an app that no
+      // longer answers (a capture or a close that never returns) still leaves its log here.
+      await keepLogs();
+      for (const name of logNames.values()) {
+        await testInfo
+          .attach(name, { path: testInfo.outputPath(name), contentType: 'text/plain' })
+          .catch(() => undefined);
+      }
+    }
+    for (const { app, page } of started) {
       if (failed && page) {
         // A window hidden in the tray cannot be captured, and waiting on it would only hold up
         // the next test: it is brought out first, briefly, and the capture is given a bound.
@@ -320,19 +344,9 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
         ]);
         app.process().kill();
       }
-      roots.add(isolated);
     }
-    if (failed) {
-      // The app's own log says what the main process saw: it is kept with the failure output.
-      let n = 0;
-      for (const isolated of roots) {
-        n++;
-        const name = roots.size > 1 ? `rigready-${n}.log` : 'rigready.log';
-        await fs
-          .copyFile(path.join(isolated.dataRoot, 'logs', 'rigready.log'), testInfo.outputPath(name))
-          .catch(() => undefined);
-      }
-    }
+    // Once the app has closed, the kept copy is brought up to date with what it wrote last.
+    if (failed) await keepLogs();
     for (const isolated of roots) await isolated.cleanup().catch(() => undefined);
   },
 });

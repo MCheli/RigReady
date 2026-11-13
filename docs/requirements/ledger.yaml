@@ -8820,6 +8820,29 @@ requirements:
       - 'artifacts/screens/setup-from-game-gamepad/04-second-setup-starts-at-the-top.png'
     notes: "From the sitting of 2026-11-12. It showed where the next page could draw at once from what was already loaded: Play after a second setup was created stayed as far down as Create setup was. A page that loads first was at its top already."
 
+  - id: WOW-UI-014
+    title: A page never moves you on after you have left it
+    job: platform
+    area: shell
+    priority: p1
+    done_means:
+      - "A page that moves the user on once RigReady has done what they asked (a new setup saved, Play or Clone on the Setups page, Make a copy on Virtual controller) does so only while the user is still on that page. If they went on to another page before the answer came (a slow disk, a busy PC), they stay there, and what they asked for is done all the same."
+      - "Each of those four is tested with its files slowed on purpose (the slowFiles mutation) and a move to Monitors before the answer: the user is still on Monitors once main has answered."
+    status: done
+    evidence:
+      - "src/renderer/stillHere.test.ts#yes, while the user is on the page where they pressed the button"
+      - "src/renderer/stillHere.test.ts#no, once the user went on to another page before the answer came"
+      - "src/renderer/stillHere.test.ts#no, when the page that asked was left and opened afresh in the meantime"
+      - "tests/e2e/save-then-move-on.e2e.ts#a new setup saved slowly: going on to Monitors before it answers keeps you there"
+      - "tests/e2e/save-then-move-on.e2e.ts#Play on a setup in the list answered slowly: going on to Monitors before it answers keeps you there"
+      - "tests/e2e/save-then-move-on.e2e.ts#a setup cloned slowly: going on to Monitors before the copy is made keeps you there"
+      - "tests/e2e/save-then-move-on.e2e.ts#a virtual controller profile copied slowly: going on to Monitors before the copy is made keeps you there"
+      - "artifacts/screens/save-then-move-on-capture/01-still-on-monitors.png"
+      - "artifacts/screens/save-then-move-on-play/01-still-on-monitors.png"
+      - "artifacts/screens/save-then-move-on-clone/01-still-on-monitors.png"
+      - "artifacts/screens/save-then-move-on-vc-copy/01-still-on-monitors.png"
+    notes: "2026-11-12: found through integration.e2e.ts on GitHub's runners, where the setup editor's save answered after the test had opened Play and took it back to the Setups list (fixed in pull request 96). The same pattern was in these four places; each failed its new scenario before the fix (the page ended on Play, the copy's editor or the virtual controller editor) and passes after."
+
   # ---------------------------------------------------------------------------
   # SECURITY (docs/research/security-review-2026-11.md, SECURITY.md)
   # ---------------------------------------------------------------------------

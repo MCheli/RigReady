@@ -5,6 +5,7 @@ import EmptyState from '../../../renderer/components/EmptyState.vue';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged, onMachineChanged } from '../../../renderer/machine';
+import { useStillHere } from '../../../renderer/stillHere';
 import type { PadReport } from '../../../shared/models';
 import { virtualControllerContract, type ProfileSummary, type VcState } from '../contract';
 import { PART_LABELS } from '../core/profile';
@@ -14,6 +15,7 @@ import PadPicture from './PadPicture.vue';
 
 const api = useClient(virtualControllerContract);
 const router = useRouter();
+const stillHere = useStillHere();
 const view = ref<VcState>();
 const error = ref<string>();
 const message = ref<string>();
@@ -110,6 +112,7 @@ async function copy(profile: ProfileSummary): Promise<void> {
   if (busy.value) return;
   busy.value = `copy:${profile.id}`;
   error.value = undefined;
+  const here = stillHere();
   // RigReady names the copy: never a name another profile has.
   const result = await api.copy({ from: profile.id });
   busy.value = undefined;
@@ -117,6 +120,8 @@ async function copy(profile: ProfileSummary): Promise<void> {
     error.value = errorText(result.error);
     return;
   }
+  // The copy opens in the editor, unless the user went on to another page meanwhile.
+  if (!here()) return;
   await router.push(`/configure/virtual-controller/edit?id=${encodeURIComponent(result.value.id)}`);
 }
 

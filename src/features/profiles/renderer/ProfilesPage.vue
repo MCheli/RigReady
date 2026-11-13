@@ -5,11 +5,13 @@ import type { Profile } from '../../../core/profile/schema';
 import ManualLink from '../../../renderer/components/ManualLink.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
+import { useStillHere } from '../../../renderer/stillHere';
 import { profilesContract, type ProfileOverview } from '../contract';
 import EarlierSetups from './EarlierSetups.vue';
 
 const api = useClient(profilesContract);
 const router = useRouter();
+const stillHere = useStillHere();
 const overview = ref<ProfileOverview>();
 const error = ref<string>();
 const message = ref<string>();
@@ -41,24 +43,28 @@ function used(iso: string | undefined): string {
 }
 
 async function fly(profile: Profile): Promise<void> {
+  const here = stillHere();
   const result = await api.use({ id: profile.id });
   if (!result.ok) {
     error.value = errorText(result.error);
     return;
   }
-  await router.push('/');
+  // A user who went on to another page meanwhile stays there.
+  if (here()) await router.push('/');
 }
 
 async function clone(profile: Profile): Promise<void> {
   busy.value = profile.id;
+  const here = stillHere();
   const result = await api.clone({ id: profile.id });
   busy.value = undefined;
   if (!result.ok) {
     error.value = errorText(result.error);
     return;
   }
-  // Straight into the editor, to give the copy its own name.
-  await router.push(`/configure/profiles/${result.value.id}`);
+  // Straight into the editor, to give the copy its own name; unless the user went on to
+  // another page meanwhile: the copy is then in this list for later.
+  if (here()) await router.push(`/configure/profiles/${result.value.id}`);
 }
 
 async function confirmDelete(): Promise<void> {
