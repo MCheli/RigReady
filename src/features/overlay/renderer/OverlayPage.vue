@@ -9,7 +9,12 @@ import type { Result } from '../../../core/result';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
-import { overlayContract, type OverlayState, type WidgetState } from '../contract';
+import {
+  overlayContract,
+  type OverlayState,
+  type SetupOverlay,
+  type WidgetState,
+} from '../contract';
 import { NOT_READ } from '../core/model';
 import type { At } from '../core/settings';
 import { NAMED_PLACES } from '../core/shown';
@@ -57,9 +62,14 @@ function setOptions(widget: WidgetState, options: Record<string, unknown>): void
   void change(() => api.options({ widget: widget.id, options }));
 }
 
+/** The choice in Screen that is no monitor of its own: whichever is main in the layout in use. */
+const MAIN = 'main';
+
 function putOn(widget: WidgetState, screen: unknown): void {
   if (typeof screen !== 'string') return;
-  void change(() => api.place({ widget: widget.id, screen, at: widget.place.at }));
+  void change(() =>
+    api.place({ widget: widget.id, screen: screen === MAIN ? null : screen, at: widget.place.at })
+  );
 }
 
 function putAt(widget: WidgetState, at: At): void {
@@ -82,13 +92,81 @@ const showingOn = computed(() => {
   return [...new Set(names)].join(' and ');
 });
 
-const screenItems = computed(() =>
-  (state.value?.screens ?? []).map((screen) => ({
-    title: screen.primary ? `${screen.name} (main)` : screen.name,
-    value: screen.id,
-    props: { subtitle: `${screen.width} × ${screen.height}` },
-  }))
+const screenItems = computed(() => {
+  const screens = state.value?.screens ?? [];
+  const main = screens.find((screen) => screen.primary) ?? screens[0];
+  return [
+    {
+      title: 'The main screen',
+      value: MAIN,
+      props: {
+        subtitle: main
+          ? `Whichever is main in the monitor layout in use: now ${main.name}`
+          : 'Whichever is main in the monitor layout in use',
+      },
+    },
+    ...screens.map((screen) => ({
+      title: screen.primary ? `${screen.name} (main)` : screen.name,
+      value: screen.id,
+      props: { subtitle: `${screen.width} × ${screen.height}` },
+    })),
+  ];
+});
+
+const screenOf = (widget: WidgetState): string | undefined =>
+  widget.place.main ? MAIN : widget.place.screen;
+
+/** The overlay is up: on, and on in the setup in use. */
+const up = computed(() => state.value?.on === true && !state.value.offInSetup);
+
+/** What brings presses into the preview while it shows examples. */
+const previewNext = computed(() =>
+  state.value?.on
+    ? 'Play a setup that has the overlay on and what you press shows here instead.'
+    : 'Turn the overlay on and what you press shows here instead.'
 );
+
+/** What the Screen choice does: go with the main screen, or stay on one monitor. */
+const screenWords = (widget: WidgetState): string =>
+  widget.place.main
+    ? 'It goes on whichever monitor is main in the monitor layout in use.'
+    : 'Remembered for that monitor, so it is on the same one after you change your monitor layout.';
+
+/** "A", "A and B", "A, B and C". */
+function together(parts: string[]): string {
+  return parts.length <= 1
+    ? (parts[0] ?? '')
+    : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+}
+
+/** The setups whose monitor layout turns off the screen a part was put on, in words. */
+function offInWords(widget: WidgetState): string | undefined {
+  const off = widget.place.offIn;
+  if (!off || off.length === 0) return undefined;
+  const monitor = widget.place.away ?? widget.place.screenName ?? 'Its screen';
+  // A saved layout by its name; the layouts setups keep of their own together.
+  const own = off.filter((o) => !o.layout).map((o) => `“${o.setup}”`);
+  const where = together([
+    ...off.filter((o) => o.layout).map((o) => `“${o.layout}”, the monitor layout of “${o.setup}”`),
+    ...(own.length > 0
+      ? [`the monitor ${own.length > 1 ? 'layouts' : 'layout'} of ${together(own)}`]
+      : []),
+  ]);
+  const those = off.length > 1 ? 'those layouts are' : 'that layout is';
+  return `${monitor} is off in ${where}. While ${those} in use, the overlay is on the main screen instead. Choose “The main screen” to have it go with the layout in use.`;
+}
+
+/** One setup in the list: on or off, and whether that was chosen or is how it started. */
+function setupWords(setup: SetupOverlay): string {
+  const state = setup.on
+    ? setup.chosen
+      ? 'On: you turned it on in this setup.'
+      : 'On to begin with.'
+    : setup.chosen
+      ? 'Off: you turned it off in this setup.'
+      : 'Off to begin with.';
+  return setup.why ? `${state} ${setup.why}` : state;
+}
 
 const aircraftItems = computed(() =>
   (state.value?.source.choices ?? []).map((choice) => ({
@@ -212,6 +290,10 @@ onBeforeUnmount(() => {
               <template v-if="!state.on">
                 Off. Nothing is put over the game, and the controllers are not read for it.
               </template>
+              <span v-else-if="state.offInSetup" class="rr-warn" data-testid="overlay-off-in-setup">
+                On, but the setup in use, “{{ state.offInSetup.name }}”, has it off, so nothing is
+                put over the game now. It comes up when you play a setup that has it on.
+              </span>
               <template v-else-if="showingOn">
                 On, over whatever is on {{ showingOn }}. It comes up again whenever RigReady runs,
                 until you turn it off here.
@@ -235,6 +317,60 @@ onBeforeUnmount(() => {
             <div class="rr-warn" data-testid="overlay-not-read">{{ NOT_READ }}.</div>
             <div v-if="state.input.problem" class="rr-row-sub" data-testid="overlay-input-problem">
               {{ state.input.problem }}
+            </div>
+          </div>
+        </div>
+        <div class="rr-row" data-testid="overlay-setups">
+          <div class="rr-row-main">
+            <div class="rr-row-title">In your setups</div>
+            <div class="rr-row-sub">
+              Each setup has its own switch for the overlay, in the setup. A setup starts with it on
+              when RigReady can read the bindings of its game, so the overlay can say what a press
+              does, and off when it cannot.
+            </div>
+            <ul v-if="state.setups.length > 0" class="op-setups">
+              <li
+                v-for="setup in state.setups"
+                :key="setup.id"
+                class="op-setup"
+                data-testid="overlay-setup"
+                :data-setup="setup.id"
+                :data-on="setup.on"
+              >
+                <v-icon
+                  :icon="setup.on ? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
+                  size="18"
+                  class="op-setup-icon"
+                  aria-hidden="true"
+                />
+                <div class="op-setup-words">
+                  <div>
+                    <span class="op-setup-name">{{ setup.name }}</span>
+                    <span
+                      v-if="setup.id === state.source.setup?.id"
+                      class="op-in-use"
+                      data-testid="overlay-setup-in-use"
+                    >
+                      In use
+                    </span>
+                  </div>
+                  <div class="rr-row-sub" data-testid="overlay-setup-words">
+                    {{ setupWords(setup) }}
+                  </div>
+                </div>
+                <v-btn
+                  variant="text"
+                  size="small"
+                  :to="`/configure/profiles/${setup.id}`"
+                  :aria-label="`Change it in ${setup.name}`"
+                  data-testid="overlay-setup-change"
+                >
+                  Change
+                </v-btn>
+              </li>
+            </ul>
+            <div v-else class="rr-row-sub" data-testid="overlay-no-setups">
+              There is no setup yet, so it shows whenever it is on.
             </div>
           </div>
         </div>
@@ -330,19 +466,23 @@ onBeforeUnmount(() => {
           <div class="rr-row">
             <div class="rr-row-main">
               <div class="rr-row-title">Screen</div>
-              <div class="rr-row-sub">
-                Remembered for that monitor, so it is on the same one after you change your monitor
-                layout.
+              <div class="rr-row-sub" data-testid="overlay-screen-words">
+                {{ screenWords(widget) }}
                 <span v-if="widget.place.away" data-testid="overlay-away">
                   It belongs on “{{ widget.place.away }}”, which is off now, so it is on the main
                   screen until that one is back.
+                </span>
+              </div>
+              <div v-if="offInWords(widget)" class="rr-row-sub">
+                <span class="rr-warn" data-testid="overlay-off-in-layout">
+                  {{ offInWords(widget) }}
                 </span>
               </div>
             </div>
             <v-select
               class="op-screen-select"
               :items="screenItems"
-              :model-value="widget.place.screen"
+              :model-value="screenOf(widget)"
               label="Screen"
               density="compact"
               variant="outlined"
@@ -419,14 +559,14 @@ onBeforeUnmount(() => {
             <div class="rr-row-main">
               <div class="rr-row-title">Preview</div>
               <div class="rr-row-sub" data-testid="overlay-preview-words">
-                <template v-if="state.on">
+                <template v-if="up">
                   The size it has over the game, on a bright scene. Press a button on a controller:
                   it shows here as it does there.
                 </template>
                 <template v-else>
                   The size it has over the game, on a bright scene. The lines marked “Example” are
                   there to judge the size and the number of lines by, and are never shown over the
-                  game. Turn the overlay on and what you press shows here instead.
+                  game. {{ previewNext }}
                 </template>
               </div>
             </div>
@@ -468,6 +608,40 @@ onBeforeUnmount(() => {
 .op-screen-select {
   flex: none;
   width: 280px;
+}
+
+/* Each setup, and whether the overlay shows in it. */
+.op-setups {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  max-width: 760px;
+}
+.op-setup {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid var(--rr-border);
+}
+.op-setup-icon {
+  margin-top: 2px;
+  color: var(--rr-text-2);
+}
+.op-setup-words {
+  flex: 1;
+  min-width: 0;
+}
+.op-setup-name {
+  color: var(--rr-text);
+}
+.op-in-use {
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid var(--rr-border-strong);
+  border-radius: 4px;
+  font-size: var(--rr-text-sm);
+  color: var(--rr-text-2);
 }
 
 /* The screen, small, with the nine places that have a name. */

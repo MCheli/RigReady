@@ -1,0 +1,20 @@
+description: Racing rig on iRacing 2026.11, which keeps its bindings in a control profile
+rig: mark-full
+extends: racing-fresh.yaml
+# iRacing 2026 Season 3 and later keep control profiles. On its first run the build of
+# November 2026 copied the older Documents\iRacing\controls.cfg into the profile
+# "Baseline", added two actions (PitSummaryToggle, ToggleUIVisibleDrive) and wrote
+# [ControlProfiles] Global=Baseline into app.ini. From then on it reads the profile, and the
+# older file stays as it was. The profile here is the owner's real one of 13 Nov 2026 with
+# the made-up device id of the recorded rig (src/features/iracing-bindings/core/carFixture.test.ts
+# holds it to the recorded file). app-profiles.ini is the recorded app.ini with that section.
+mutations:
+  - op: writeFile
+    path: Documents/iRacing/app.ini
+    from: data/iracing-bindings/app-profiles.ini
+  - op: writeFile
+    path: Documents/iRacing/profiles/controls/Baseline/controls.cfg
+    from: data/iracing-bindings/profile-controls.cfg
+  - op: writeFile
+    path: Documents/iRacing/profiles/controls/Baseline/joyCalib.yaml
+    from: data/iracing-bindings/profile-joyCalib.yaml

@@ -1,5 +1,6 @@
-import { findMonitor } from '../../../core/displays/identity';
+import { findMonitor, matchMonitors } from '../../../core/displays/identity';
 import type { DisplayInfo } from '../../../shared/models';
+import type { OffIn } from './model';
 import type { At, StoredMonitor, StoredPlace } from './settings';
 
 /**
@@ -115,6 +116,46 @@ export function resolvePlace(
     (found ? names.get(found.id.toLowerCase()) : undefined) ||
     'the screen it was on';
   return { display: main, at, own: false, away: name };
+}
+
+/** A monitor of a saved layout: enough to find it among the connected ones, and on or off. */
+export interface LayoutMonitor {
+  id: string;
+  serial?: string | undefined;
+  usbSerial?: string | undefined;
+  enabled: boolean;
+}
+
+/** The monitor layout a setup applies at Make ready (its monitor check). */
+export interface SetupLayout {
+  /** The setup's name. */
+  setup: string;
+  /** The saved layout's name, when the setup uses one. */
+  layout?: string | undefined;
+  monitors: readonly LayoutMonitor[];
+}
+
+/**
+ * The setups whose monitor layout turns off the monitor a widget was put on. Both are found
+ * among the monitors connected now, as applying the layout finds them, so a monitor on
+ * another connector is still the same one. A layout that does not name the monitor leaves
+ * it as it is, and a monitor that is not connected cannot be told: neither is said.
+ */
+export function offInLayouts(
+  monitor: StoredMonitor,
+  layouts: readonly SetupLayout[],
+  displays: readonly DisplayInfo[]
+): OffIn[] {
+  const now = findMonitor(monitor, [], [...displays]);
+  if (!now) return [];
+  return layouts.flatMap((layout) => {
+    const match = matchMonitors([...layout.monitors], [...displays]).find(
+      (m) => m.actual?.id === now.id
+    );
+    return match && !match.expected.enabled
+      ? [{ setup: layout.setup, ...(layout.layout ? { layout: layout.layout } : {}) }]
+      : [];
+  });
 }
 
 /**

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from 'vue-router';
 import {
   CHECK_GROUPS,
@@ -10,6 +10,7 @@ import {
   type Profile,
   type ProfileActions,
 } from '../../../core/profile/schema';
+import { manifests } from '../../../renderer/features';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { useStillHere } from '../../../renderer/stillHere';
 import { useUnsaved, wayOut } from '../../../renderer/unsaved';
@@ -32,6 +33,16 @@ import { launchKindOf, steamAppShown, steamLaunchFor, type LaunchKind } from './
 
 const props = defineProps<{ id: string }>();
 const api = useClient(profilesContract);
+
+/** Sections other features add for a choice each setup makes (manifest `setupSections`). */
+const featureSections = manifests
+  .flatMap((m) => (m.setupSections ?? []).map((section) => ({ feature: m.id, ...section })))
+  .sort((a, b) => (a.order ?? 500) - (b.order ?? 500) || a.title.localeCompare(b.title))
+  .map((section) => ({
+    feature: section.feature,
+    title: section.title,
+    view: defineAsyncComponent(section.component),
+  }));
 const router = useRouter();
 
 const draft = ref<Profile>();
@@ -865,6 +876,11 @@ async function openFile(mode: 'openFile' | 'showFile'): Promise<void> {
       </template>
 
       <StandDownOnCloseEditor :profile="draft" @update:profile="draft = $event" />
+
+      <template v-for="section in featureSections" :key="`${section.feature}/${section.title}`">
+        <h2 class="rr-section-title">{{ section.title }}</h2>
+        <component :is="section.view" :profile="draft" @update:profile="draft = $event" />
+      </template>
 
       <div class="edit-footer">
         <v-alert

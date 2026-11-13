@@ -97,6 +97,14 @@ extensions:
     standDownAfterSeconds: 120
 ```
 
+Whether the [overlay](../play/overlay.md) shows while the setup is in use is kept in `overlay`, as `on` (RigReady writes the key in quotes, `'on'`). Without it, or with anything but true or false, the setup has the overlay on when RigReady can read the bindings of its game and off when it cannot.
+
+```yaml
+extensions:
+  overlay:
+    'on': false
+```
+
 ## Comments and anchors
 
 RigReady reads a file with comments without complaint, and leaves them in place as long as the file is only read. But RigReady writes the whole file when a setup is saved from the editor, when a check's **Mark verified** button ([Checks and fixes](checks.md#game-updated-since-you-last-verified-game-updated)) stores a new version, and when another feature keeps its data with the setup. A save from the editor warns first: **Your comments will be lost**. If you keep notes in the file, keep a copy of them elsewhere, or use the setup's **Notes** field instead. The Setups page marks such a file with "YAML comments", so you know before you open the editor.

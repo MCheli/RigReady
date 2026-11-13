@@ -1,6 +1,6 @@
 ---
 title: The setup editor
-description: "Every part of Configure > Setups > Edit: name and game, what Launch starts, the shortcut, the checklist, the steps, and Stand down when the game closes."
+description: "Every part of Configure > Setups > Edit: name and game, what Launch starts, the shortcut, the checklist, the steps, Stand down on close, and the overlay."
 order: 20
 ---
 
@@ -73,6 +73,12 @@ What each list means is on [Launch targets and steps](launch.md).
 Every setup has its own answer. What the countdown looks like, and when it does not start, is on [Stand down](../play/stand-down.md#stand-down-when-the-game-closes).
 
 ![When the game closes](../../../artifacts/screens/fly-stand-down-setting/02-lengths.png)
+
+## Overlay
+
+**Show the overlay in this setup**: whether the [overlay](../play/overlay.md) is over the game while this setup is the one in use. A setup starts with it on when RigReady can read the bindings of its game, so the overlay can say what each press does, and off when it cannot; the line under the switch then says why ("RigReady cannot read the bindings of X-Plane 12"). Switch it the way you want it for this setup, for example on for DCS and off for iRacing; it is saved with the setup. **Open Overlay** goes to the page where the overlay is turned on as a whole and where its place and look are set, the same for every setup.
+
+![A setup whose game RigReady cannot read the bindings of: off to begin with, and why](../../../artifacts/screens/overlay-setups/06-no-bindings-reason.png)
 
 ## Saving
 

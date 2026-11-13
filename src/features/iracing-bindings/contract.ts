@@ -2,7 +2,11 @@ import { z } from 'zod';
 import { ChangePreviewSchema } from '../../shared/changePreview';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 
-/** The id of the set every car uses (Documents\iRacing\controls.cfg). */
+/**
+ * The id of the set every car uses: the control profile app.ini names for all cars
+ * (Documents\iRacing\profiles\controls\<name>\controls.cfg), or on an iRacing from
+ * before control profiles, Documents\iRacing\controls.cfg.
+ */
 export const ALL_CARS = 'all';
 
 /** One set of bindings iRacing keeps: the one for all cars, or one car's custom controls. */
@@ -14,8 +18,32 @@ export const BindingSetSchema = z.object({
   general: z.boolean(),
   /** The controls.cfg this set is read from. */
   file: z.string(),
+  /** The iRacing control profile the file belongs to; absent on an iRacing without them. */
+  profile: z.string().optional(),
+  /**
+   * For a car: the other cars whose app.ini line names the same profile. A change to this
+   * set changes their bindings too, and the page says so before and after saving.
+   */
+  sharedWith: z.array(z.string()).optional(),
 });
 export type BindingSet = z.infer<typeof BindingSetSchema>;
+
+/**
+ * Where this iRacing keeps the bindings it uses. Since 2026 Season 3 iRacing keeps control
+ * profiles (Documents\iRacing\profiles\controls\<name>) and app.ini [ControlProfiles]
+ * says which one it loads; the older files beside them are no longer read.
+ */
+export const BindingSourceSchema = z.object({
+  /** "profiles": control profiles. "files": an iRacing from before them. */
+  kind: z.enum(['profiles', 'files']),
+  /** The profile for all cars, as app.ini names it. */
+  profile: z.string().optional(),
+  /** Why no set for all cars could be found among the profiles, when none could. */
+  problem: z.string().optional(),
+  /** Bindings files from before control profiles that iRacing no longer reads. */
+  oldFiles: z.array(z.string()),
+});
+export type BindingSource = z.infer<typeof BindingSourceSchema>;
 
 export const OverviewSchema = z.object({
   /** iRacing's program was found on this PC. */
@@ -26,15 +54,12 @@ export const OverviewSchema = z.object({
   simRunning: z.boolean(),
   /** The sets found, "All cars" first. Empty when iRacing has no controls.cfg yet. */
   sets: z.array(BindingSetSchema),
+  /** Control profiles or the older files, and the profile iRacing loads for all cars. */
+  source: BindingSourceSchema,
   /** How many car folders iRacing has under setups (cars driven at least once). */
   carFolders: z.number().int(),
   /** The page of the app that repairs a controller's id in iRacing's files, when there is one. */
   repairRoute: z.string().optional(),
-  /**
-   * Changing a binding is switched on for this run of RigReady (RIGREADY_IRACING_EDIT=1).
-   * Off unless someone turned it on: no file RigReady changed has been loaded by iRacing yet.
-   */
-  editing: z.boolean(),
 });
 export type Overview = z.infer<typeof OverviewSchema>;
 
@@ -219,8 +244,9 @@ export const PressedSchema = z.object({
 });
 export type Pressed = z.infer<typeof PressedSchema>;
 
-const EDIT_OFF =
-  'Changing iRacing bindings is switched off in RigReady until it is proven on a rig; this answers with an error unless the owner switched it on.';
+/** Why the channels that change a binding are not among a local AI's tools. */
+const ON_THE_PAGE =
+  'Used by the iRacing bindings page, where the user presses the button or the key and approves the change; it is not offered to a local AI.';
 
 export const iracingBindingsContract = defineContract(
   'iracing-bindings',
@@ -243,7 +269,7 @@ export const iracingBindingsContract = defineContract(
      * and would have, what else the same input does, and the file. Writes nothing.
      */
     changePreview: channel(ChangeRequestSchema, ChangeReviewSchema, {
-      describe: `Shows what binding one iRacing action to a controller button or a key, or clearing it, would change. Writes nothing. ${EDIT_OFF}`,
+      describe: `Shows what binding one iRacing action to a controller button or a key, or clearing it, would change. Writes nothing. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
     /**
@@ -251,7 +277,7 @@ export const iracingBindingsContract = defineContract(
      * first, one entry on the Safety page). Refused while the simulator runs.
      */
     change: channel(ChangeRequestSchema, ChangeResultSchema, {
-      describe: `Binds one iRacing action to a controller button or a key, or clears it, in iRacing's own file, after a backup. Refused while iRacing runs. ${EDIT_OFF}`,
+      describe: `Binds one iRacing action to a controller button or a key, or clears it, in iRacing's own file, after a backup. Refused while iRacing runs. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
 

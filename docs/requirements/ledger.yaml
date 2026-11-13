@@ -1916,6 +1916,21 @@ requirements:
       - "artifacts/screens/profiles-version-one-two-controllers/01-bring-over.png"
       - "artifacts/screens/profiles-version-one-two-controllers/02-play.png"
 
+  - id: CFG-PROFILE-FIXLABEL-001
+    title: The setup editor names an item's fix with the names in its label as written
+    job: configure
+    area: profiles
+    priority: p3
+    done_means:
+      - "The line under an item in the setup editor says 'fix: ' and the fix's label with only an ordinary first word lowered ('start SimAppPro', 'switch iRacing’s control profile'); a first word that is a name or an abbreviation, and every word after it, keep their capitals."
+    notes:
+      - "2026-11-13: the editor lowered the whole label ('start simapppro', 'switch iracing’s control profile'), found while adding the iRacing control profile check."
+    status: done
+    evidence:
+      - "src/features/profiles/renderer/inSentence.test.ts#lowers only an ordinary first word, and keeps names and abbreviations as written"
+      - "tests/e2e/setup-editor-fix-label.e2e.ts#setup editor: the fix of an item keeps the names in its label"
+      - "artifacts/screens/setup-editor-fix-label/01-fix-label.png"
+
   # ---------------------------------------------------------------------------
   # DISPLAYS
   # ---------------------------------------------------------------------------
@@ -4897,7 +4912,7 @@ requirements:
       - "src/features/overlay/core/service.test.ts#the same control pressed again counts up instead of adding a line"
       - "src/features/overlay/core/service.test.ts#a switch or lever going through its positions is one line that changes"
       - "src/features/overlay/core/service.test.ts#the aircraft the setup in use names, until the user chooses another"
-      - "src/features/overlay/core/service.test.ts#another setup played while flying is picked up on a press: the words are never those of another game"
+      - "src/features/overlay/core/service.test.ts#another setup played while flying is picked up at once: the words are never those of another game"
       - "src/features/overlay/core/service.test.ts#a setup for a game whose bindings are not on this PC gives presses without words, and says why"
       - "src/features/overlay/core/service.test.ts#a racing game: the one set of bindings it has, by the control a press is on"
       - "src/features/overlay/core/service.test.ts#without a setup, and with the bindings of several games here, none is guessed"
@@ -5047,6 +5062,63 @@ requirements:
       - "2026-11-12: not built, by the owner's decision: 'We're going to ignore the VR part of that for now. We can leave that as an unsatisfied requirement.' The overlay of OVERLAY-001 to OVERLAY-006 is a window on a monitor, and a headset is not a monitor: a game in VR draws straight to the headset, so nothing of this overlay is seen in it. Showing something there takes an overlay layer of the VR runtime (an OpenXR API layer, or a SteamVR overlay), which is research first. The third criterion is met by the page ('It does not show inside a VR headset.') and by docs/manual/play/overlay.md; the first two are open."
     status: todo
     evidence: []
+
+  - id: OVERLAY-008
+    title: The overlay is a choice of each setup, on where RigReady can read the game's bindings
+    job: configure
+    area: overlay
+    priority: p1
+    done_means:
+      - "Each setup has its own switch, 'Show the overlay in this setup', in the setup editor, saved with the setup (extensions.overlay). While the overlay is turned on, it is up while the setup in use has it on and down while it has it off; playing another setup takes it up or down at once, also while nothing is pressed (E2E, scenario overlay-setups)."
+      - "A setup that says nothing (made before this, or never switched) has it on when RigReady can read the bindings of its game on this PC, so a press is shown with what it does, and off otherwise, with the reason beside the switch ('RigReady cannot read the bindings of X-Plane 12, so the overlay cannot say what a press does'). The default comes from the game's binding reader and whether it finds the bindings; no game is named in the code."
+      - "The Overlay page keeps the switch for the overlay as a whole, its look and its place, and lists every setup with On or Off, whether that was chosen or is how it started, the reason, the setup in use, and a way to the setup. With the setup in use off it says so, shows the example lines in the preview, does not read the controllers for it and does not let it be framed. 'Turn the overlay on' in the palette says so and leads to that setup."
+    notes:
+      - "2026-11-13: the owner's requirement O2 from the second look: 'I would maybe want it on in DCS and off in iRacing ... it should just be off in games where we don't support the bindings or we don't know what the controls are bound to ... don't go make it always on for DCS and always off for iRacing for every user.' The switch on the Overlay page stays as the switch for the overlay as a whole (off until the user turns it on, OVERLAY-001), so nobody gets a window over the screen by making a setup; each setup then decides whether it shows. Shared changes, made for this: ProfileStore.onChanged in src/core/profile/store.ts (said after a save, a removal and another setup in use), so the overlay goes with the setup in use while it is down and hears no presses; a setupSections slot in the feature manifest (src/shared/feature.ts), shown by the setup editor (src/features/profiles/renderer/ProfileEditPage.vue), so the overlay's switch and its reason live in the overlay feature. The setup's data is profile.extensions.overlay, the place the profile schema keeps for a feature's own data, so ProfileSchema did not change. A setup file changed by hand outside RigReady is picked up when the Overlay page is opened, or on a press after two minutes."
+    status: done
+    evidence:
+      - "src/features/overlay/core/setupChoice.test.ts#says nothing until the user switches it, and then what was switched"
+      - "src/features/overlay/core/setupChoice.test.ts#a value a hand edit got wrong says nothing, so the setup goes by its game"
+      - "src/features/overlay/core/service.test.ts#on to begin with where RigReady can read the game’s bindings, off with the reason where it cannot"
+      - "src/features/overlay/core/service.test.ts#down when a setup that has it off is played, and up again with one that has it on, at once"
+      - "src/features/overlay/core/service.test.ts#the user’s switch in the setup goes before what its game gives, both ways"
+      - "src/features/overlay/core/service.test.ts#at the owner’s desk: on in the flight and the racing setup, off in X-Plane, and the Dell is off in both layouts"
+      - "src/features/overlay/core/service.test.ts#turned off on the Overlay page it shows in no setup, and nothing is done when setups change"
+      - "src/features/overlay/core/service.test.ts#bindings gone while it is up: a bindings change takes it down before anyone is told"
+      - "src/features/overlay/core/service.test.ts#bindings gone while it is up: choosing an aircraft takes it down, also when the choice is refused"
+      - "src/features/overlay/core/service.test.ts#bindings gone and brought back by RigReady while it is down: it comes up again by itself"
+      - "src/features/overlay/core/service.test.ts#switched back on in its setup, it comes up with the bindings as they are now"
+      - "src/features/overlay/main.test.ts#the switch saved in the setup editor takes it down and up, and the editor is told the default"
+      - "tests/unit/fileStore.test.ts#says when a setup is saved, deleted or another one is in use, and not for a refused save"
+      - "tests/unit/paletteCommands.test.ts#turned on while the setup in use has it off, it says so and leads to that setup"
+      - "tests/e2e/overlay-setups.e2e.ts#the overlay is a choice of each setup, and can go with the main screen"
+      - "artifacts/screens/overlay-setups/01-setups-on-the-page.png"
+      - "artifacts/screens/overlay-setups/04-setup-switch-on.png"
+      - "artifacts/screens/overlay-setups/05-setup-switch-off.png"
+      - "artifacts/screens/overlay-setups/06-no-bindings-reason.png"
+      - "artifacts/screens/overlay-setups/07-off-in-the-setup-in-use.png"
+      - "docs/manual/play/overlay.md"
+      - "docs/manual/setups/editor.md"
+
+  - id: OVERLAY-009
+    title: "The overlay can go with the main screen, and warns of a screen a setup's layout turns off"
+    job: configure
+    area: overlay
+    priority: p1
+    done_means:
+      - "Screen on the Overlay page offers 'The main screen' first, which follows whichever monitor is main in the monitor layout in use, and is where the overlay starts. Chosen, no monitor is kept for it; another monitor layout with another main monitor takes the overlay there. A drag let go on the main screen keeps following it (E2E, scenario overlay-setups)."
+      - "When the overlay was put on one monitor and that monitor is off in the monitor layout of a setup that has the overlay on (its monitor check, a saved layout by name or the setup's own), the page warns under Screen and names the setups and layouts. A setup with the overlay off, and a monitor check that is switched off, do not count."
+    notes:
+      - "2026-11-13: the second look's finding O1: the overlay's screen was the Dell, which is off in the owner's Flying layout, and the page offered no 'whichever is main'. Until now the overlay already followed the main screen until a monitor was chosen, but the page showed that as the monitor that happened to be main, so it read as a choice of the Dell. Known limit, in the manual: a layout applied by Make ready is noticed on the first press at least ten seconds after the last look, or when the Overlay page opens (OVERLAY-005)."
+    status: done
+    evidence:
+      - "src/features/overlay/core/service.test.ts#\"The main screen\" goes with whichever monitor is main, and is where it starts"
+      - "src/features/overlay/core/service.test.ts#let go on the main screen it goes on following it; let go on another it belongs there"
+      - "src/features/overlay/core/service.test.ts#says so when the screen it was put on is off in the monitor layout of a setup that has it on"
+      - "src/features/overlay/main.test.ts#\"The main screen\" is chosen with a screen of null"
+      - "tests/e2e/overlay-setups.e2e.ts#the overlay is a choice of each setup, and can go with the main screen"
+      - "artifacts/screens/overlay-setups/02-main-screen-choice.png"
+      - "artifacts/screens/overlay-setups/03-off-in-a-setup-layout.png"
+      - "docs/manual/play/overlay.md"
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
@@ -6504,14 +6576,21 @@ requirements:
     area: iracing-bindings
     priority: p2
     done_means:
-      - "A car is offered only when its folder under Documents/iRacing/setups has a controls.cfg of its own; the page says how many cars have a folder and how many have custom controls."
+      - "On iRacing 2026 Season 3 and later a car is offered when app.ini [ControlProfiles] has a line for it, keyed by iRacing's path name of the car, whose profile has a controls.cfg, whether or not the car has a folder under Documents; it is named by that key and its profile. On an older iRacing a car is offered when its folder under Documents/iRacing/setups has a controls.cfg of its own. The page says how many cars have bindings of their own."
       - "Choosing a car shows its own bindings, marks every action that differs from All cars, shows what All cars has for it, and can narrow the list to the differences."
       - "The chosen car is kept in the page's address, and a set id never becomes a file path."
-      - "A controls.cfg that iRacing itself wrote for a car (recorded from a rig where one car has custom controls) is read the same way, with no binding RigReady cannot read."
+      - "A controls.cfg that iRacing itself wrote for a car (recorded from a rig where one car has bindings of its own) is read the same way, with no binding RigReady cannot read."
     notes:
       - "2026-11-12: criteria 1 to 3 are met by the tests below. The fourth is open, and that is why the entry is not done: the owner's PC has 184 car folders and none has custom controls, so no per-car file written by iRacing has ever been read. The car file of the tests (fixtures/scenarios/data/iracing-bindings/controls-car.cfg) is made up: the recorded file with eight records changed, on the assumption that a per-car file is a whole copy in the same format (docs/research/iracing-bindings.md, 'Per-car bindings'). To close it, with iRacing closed afterwards: in iRacing tick 'Use custom controls for this car' for one car, change two bindings, quit; copy Documents/iRacing/setups/<car>/controls.cfg and joyCalib.yaml into the rig fixture; add a test that reads it with no unread binding. A file in another format is refused with a plain message, it is not shown wrongly."
-    status: in_progress
+      - "2026-11-13: iRacing 2026 Season 3 and later keep a car's own controls as a control profile named after the car (release notes; docs/research/iracing-bindings.md, 'Control profiles'). How app.ini names a car's profile has not been seen: RigReady takes a [ControlProfiles] line keyed by the car's folder name, by analogy with Global, and ignores any other line, so another format gives a missing car, not a wrong one. Closing the fourth point now means recording a car's profile and its app.ini line from iRacing itself."
+      - "2026-11-13, 12:27, rig: the owner made a profile in iRacing's Options and gave it to the Cadillac CTS-V. iRacing 2026.11.02.01 wrote app.ini [ControlProfiles] as 'cadillacctsvr=Test Profile CTSV' then 'Global=Baseline', and profiles/controls/Test Profile CTSV with controls.cfg and joyCalib.yaml. The key is iRacing's car path name, not a folder name (the earlier guess), and a car needs no folder under Documents to have one. RigReady now takes every line but Global as one car, and the test is built from that exact shape, with the real profile and the recorded rig's made-up wheel id: 369 actions, none RigReady cannot read, two that differ from all cars. Criterion 4 holds with that file. Done. The older per-car file (setups/<car>/controls.cfg) of an iRacing from before control profiles is still only the made-up one; that iRacing no longer exists to record from."
+    status: done
     evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#reads a car’s own profile as iRacing names it in app.ini, with no car folder needed"
+      - "src/features/iracing-bindings/core/view.test.ts#lists a car only when its profile has a controls.cfg, and the older car files as not read"
+      - "src/features/iracing-bindings/core/carFixture.test.ts#is Baseline with exactly the two bindings RigReady wrote, byte for byte"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with a control profile of its own, named as iRacing names it"
+      - "artifacts/screens/iracing-bindings-profile-car/01-car-profile.png"
       - "src/features/iracing-bindings/core/view.test.ts#lists a car only when it has a controls.cfg of its own"
       - "src/features/iracing-bindings/core/view.test.ts#shows the car’s own bindings and where they differ from all cars"
       - "src/features/iracing-bindings/core/view.test.ts#still shows the car when the set for all cars cannot be read, and says what is missing"
@@ -6561,26 +6640,27 @@ requirements:
       - "artifacts/screens/iracing-bindings-car/03-car-shared.png"
 
   - id: BIND-IRACING-006
-    title: iRacing bindings are shown, not changed, and the page says why
+    title: Looking at iRacing bindings changes nothing, and the page says what it can change
     job: configure
     area: iracing-bindings
     priority: p2
     done_means:
-      - "The page has no control that edits, clears, copies or saves a binding. The feature has two channels that read; using them leaves every file of the iRacing folder as it was. The channels that change a binding (BIND-IRACING-007) answer with an error and read, listen to and write nothing, unless RigReady was started with RIGREADY_IRACING_EDIT=1 in its environment, which is off by default; they are never offered to a local AI."
-      - "The page says it does not change bindings and how to change one in iRacing, and gives the reasons on request."
+      - "The feature has two channels that read; using them leaves every file of the iRacing folder as it was. The channels that change a binding (BIND-IRACING-007) are never offered to a local AI."
+      - "The page says what it changes (one button or key at a time, shown before it is saved, with Undo on the Safety page), what iRacing has been seen to use, and that an axis or a hat switch is bound in iRacing itself."
       - "While the simulator runs the page says that a binding changed in this session may not show yet; the launcher alone does not count."
       - "The Cheat sheet button opens the cheat sheets for iRacing with the set being shown."
+    notes:
+      - "2026-11-13: until today the page could not change a binding and said why, with five reasons. Changing is now on (BIND-IRACING-007, proven on the rig), so the read-only notice and its reasons left the page and the first two criteria were rewritten to what the page says now."
     status: done
     evidence:
       - "src/features/iracing-bindings/core/view.test.ts#leaves every file of the iRacing folder as it was, byte for byte"
+      - "src/features/iracing-bindings/core/view.test.ts#leaves every file of the iRacing folder as it was"
       - "src/features/iracing-bindings/core/view.test.ts#has two channels that read; the ones that change are kept from a local AI"
-      - "src/features/iracing-bindings/core/change.test.ts#is on only when RIGREADY_IRACING_EDIT is exactly 1"
-      - "src/features/iracing-bindings/core/change.test.ts#refuses every channel of it, reads nothing, listens to nothing and writes nothing"
       - "src/features/iracing-bindings/core/view.test.ts#knows the simulator from the launcher: only the simulator writes these files"
       - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: every action for all cars, with search, filters and shared inputs"
       - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a wheel with a new Windows id, and the simulator running"
       - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with custom controls, and what it changes"
-      - "artifacts/screens/iracing-bindings-all-cars/03-why-read-only.png"
+      - "artifacts/screens/iracing-bindings-all-cars/03-editing-notice.png"
       - "artifacts/screens/iracing-bindings-moved-wheel/02-simulator-running.png"
       - "artifacts/screens/iracing-bindings-car/04-car-cheat-sheet.png"
 
@@ -6593,15 +6673,37 @@ requirements:
       - "RigReady sets one action to one controller button or one key with Shift, Ctrl and Alt, or clears it, and changes only bytes +8 to +67 of that one record: the header, the first two fields of the record, every other record and the end of the file stay byte for byte as they were, and no change gives the same file. It writes only what a file from iRacing shows, and refuses the rest with the reason: an axis, a hat switch, a kind the action does not take, a record or a file it cannot read exactly."
       - "A binding is set by pressing the button or the key, and cleared, for All cars and for a car with custom controls. Before saving, the page shows what the action has now and after, and names every other action the same button or key already does in that set. Save writes only into the file that was shown: when it changed since, nothing is written and the page says to look again."
       - "Every save goes through FileStore: a backup first, one entry on the Safety page, and Undo puts the file back. Saving is refused while iRacingSim64DX11.exe runs, and when RigReady cannot tell whether it runs, and the page says why before saving."
-      - "A controls.cfg in which RigReady changed one button and one key is accepted by iRacing: both show in iRacing's Options > Controls, every other binding and setting is as before, and the file iRacing saves afterwards differs from the file before only in those two actions, each as RigReady wrote it (rig evidence, owner present; the steps are 'The second look' in docs/research/iracing-bindings.md)."
-      - "A controls.cfg that iRacing itself wrote for a car with custom controls has been read byte for byte, and a change RigReady made to it is accepted by iRacing (rig evidence, owner present)."
-      - "Until the two rig points hold, changing a binding is off: it is on only when RigReady starts with RIGREADY_IRACING_EDIT=1 in its environment, and otherwise nothing of it can be reached (BIND-IRACING-006)."
+      - "A change goes into the file iRacing reads: on iRacing 2026 Season 3 and later the control profile app.ini names (BIND-IRACING-009), never the older Documents/iRacing/controls.cfg beside it."
+      - "A button and a key that RigReady wrote into the control profile iRacing uses are used by iRacing: each did nothing before the change, and did its action in a test drive after it (rig evidence, owner present)."
+      - "A controls.cfg that iRacing itself wrote for a car with bindings of its own has been read byte for byte (BIND-IRACING-003), and a change for that car goes into it with the same writer and the same review."
+      - "Changing a binding is on as RigReady ships, with no switch. A press only shows the review; nothing is written until its Save, and the page says so."
     notes:
       - "2026-11-12: first note, when this was not started. The read and write round trip of the owner's real file is byte for byte identical (BIND-IRACING-001), but that only proves the reader loses nothing. The layout comes from one file from one rig with one bound controller; the header settings, the first field of each record, three bits of the mask and the last two bytes are not understood; a hat switch binding and a real per-car file have never been seen; and no file changed by RigReady has been opened by iRacing, because no game may be started on the rig in this round. iRacing's own advice for a file it does not like is to delete it and bind everything again."
       - "2026-11-12, later: the writer, the review, the save through FileStore and the edit screen are built and tested, behind a switch that is off (points 1, 2, 3 and 6; the evidence below). in_progress, not done: points 4 and 5 are open. No file changed by RigReady has been loaded by iRacing. tests/rig/iracingBindingsEdit.rig.test.ts is written and has NOT been run; its two steps go with the six steps of 'The second look'. No car on the owner's PC has custom controls, so per-car changes rest on the made-up car file of the scenario tests. A button of a controller the file does not name yet is written like one it does name, which is a guess until iRacing has loaded such a file. Axes and hat switches are not part of this requirement: BIND-IRACING-008."
       - "2026-11-13: review L8 and L6. Save worked the change out again from the file as it was then, so the 'now' and the conflicts the user approved could be another file's: the preview now carries the file's SHA-256 (seen), and Save writes nothing when the file is no longer that one, and says to look again. A listen cut short (Clear, Close) while the controllers were still starting went on in main and could still take a key in the window: main now drops a start that a stop overtook, and the dialog's listen takes no key or press once it was cut short. Both unit tests failed before the fix. The window half of L6 has no test of its own: there is no component test harness, and the fake input reader cannot be made to start slowly and then answer (hangProvider never answers)."
-    status: in_progress
+      - "2026-11-13, rig test (sitting log 11:05 to 11:35; beta.5 with the switch on, the owner's real files): RigReady bound Flash headlights to button 8 of the wheel base and Black box show next to Shift+J. In a test drive button 8 flashed the headlights; Shift+J did nothing and iRacing's Options > Controls showed the action unassigned. The 'after' rig step passed (only those two records differed, each as RigReady writes it; iRacing did not rewrite the file on close) and Undo on the Safety page put the file back byte for byte. It proved nothing about point 5: iRacing had updated itself to 2026.11.02.01 that morning, made the control profile profiles/controls/Baseline on its first run (10:45) and reads that, while RigReady wrote the older Documents/iRacing/controls.cfg. Button 8 flashes the headlights after Undo too, with neither file binding it, so the button's effect came from outside iRacing's control files; the key failing is what reading the profile predicts. The key record has exactly the form of iRacing's own Shift records, and 0x4a is J (docs/research/iracing-bindings.md, 'The rig test of 13 Nov 2026'). What the rig test did prove: Undo on the Safety page restores an iRacing bindings file byte for byte."
+      - "2026-11-13, later: the change now goes into the control profile (point 4, the tests below), and the rig test copies app.ini and the profiles and keeps the profile file for its 'after' step. The switch stays off until 'The second look' passes on the profile. Points 5 and 6 stay open; buttons and keys are both unproven in iRacing."
+      - "2026-11-13, retest on the rig (sitting log 12:10 to 12:18; a test build of feat/iracing-edit-on at a621fc2a with the switch on, the owner's real profile): the page read profile 'Baseline', 369 actions. In a test drive the owner's chosen rim button and Shift+J first did nothing. RigReady then bound Look up (LookUp, first field 0) to Button 10 on the FANATEC Podium Wheel Base DD2 and Hide or show the driving UI (ToggleUIVisibleDrive, first field 1) to Shift+J, both written to profiles/controls/Baseline/controls.cfg. In iRacing 2026.11.02.01, in a test drive, holding the button tilted the view up and Shift+J hid the driving UI. Point 5 holds for a button and a key. At 12:27 iRacing copied Baseline, with both records unchanged, into a new car profile (BIND-IRACING-003; carFixture.test.ts shows RigReady's writer gives that file byte for byte)."
+      - "2026-11-13, retest, finding IR3: the Look up change seemed to save straight after the press, while the notice said RigReady shows what will change first. The code cannot do that: a press only calls changePreview, which writes nothing, and change is called from the review's Save alone. The journal has the two writes at 12:16:15 and 12:16:58 and nothing that tells who pressed Save; the review was most likely confirmed without being noticed. The scenario test now presses the wheel button, holds and presses it again with the review open, checks the file is unchanged, and only then saves. The notice and the review now say 'writes nothing until you press Save'."
+      - "2026-11-13, done: the switch RIGREADY_IRACING_EDIT is gone; changing is on as RigReady ships. Point 6 is rewritten to what holds: a car's own profile written by iRacing is read byte for byte and gets the same writer; a change RigReady made in a car's profile has not itself been driven in that car. A clear has not been tried in iRacing either; it writes what iRacing has for an action that was never bound. Both are noted in docs/research/iracing-bindings.md."
+      - "2026-11-13, Copilot review of PR 121: (1) the preview's 'seen' now covers which file and which cars the set is for as well as its bytes, so a save after app.ini pointed All cars at another profile with the same bytes, or after another car joined the profile, writes nothing; (2) when several cars name one profile, the edit box, the review's For, the saved message and the Safety page name every one of them ('cadillacctsvr and bmwm4gt3, which share the profile …'), never fewer; (4) a save into a car's own profile (Test Profile CTSV) is tested through changePreview and change and in a scenario: previewed, backed up, only that record written, Baseline and the older file unchanged, Undo restores it. A save into a car's own profile has not itself been tried in iRacing; it is the same writer on the same kind of file as the Baseline save that was."
+    status: done
     evidence:
+      - "src/features/iracing-bindings/core/change.test.ts#previews, backs up and writes the car’s profile, and nothing else"
+      - "src/features/iracing-bindings/core/change.test.ts#names every car that shares the profile, before saving and after"
+      - "src/features/iracing-bindings/core/change.test.ts#writes nothing when another car joined the profile after the preview"
+      - "src/features/iracing-bindings/core/change.test.ts#writes nothing when app.ini points All cars at another profile with the same bytes"
+      - "tests/e2e/iracing-bindings-edit.e2e.ts#iRacing bindings: a change in a car’s own control profile, and a profile two cars share"
+      - "artifacts/screens/iracing-bindings-edit-car-profile/01-car-profile-review.png"
+      - "artifacts/screens/iracing-bindings-edit-car-profile/02-shared-profile-review.png"
+      - "src/features/iracing-bindings/core/change.test.ts#needs no switch: with nothing in the environment every channel of it answers"
+      - "src/features/iracing-bindings/core/change.test.ts#turns nothing off when the old switch is set to anything"
+      - "src/features/iracing-bindings/core/change.test.ts#writes the control profile iRacing uses, never the older controls.cfg beside it"
+      - "src/features/iracing-bindings/core/carFixture.test.ts#is Baseline with exactly the two bindings RigReady wrote, byte for byte"
+      - "tests/e2e/iracing-bindings-edit.e2e.ts#iRacing bindings: a change goes into the control profile iRacing uses"
+      - "artifacts/screens/iracing-bindings-edit-profile/01-change-box.png"
+      - "artifacts/screens/iracing-bindings-edit-profile/02-review-before-save.png"
+      - "artifacts/screens/iracing-bindings-edit-profile/03-confirm.png"
       - "src/features/iracing-bindings/core/change.test.ts#writes nothing when the file changed after the preview: what the user approved may not hold"
       - "src/features/iracing-bindings/core/change.test.ts#a listen stopped while the controllers were still starting reports nothing afterwards"
       - "src/features/iracing-bindings/core/edit.test.ts#gives back the recorded file byte for byte when an action is set to what it has, for every action"
@@ -6616,8 +6718,6 @@ requirements:
       - "src/features/iracing-bindings/core/edit.test.ts#never throws on a damaged file, and never changes a byte outside the record when it does answer"
       - "src/features/iracing-bindings/core/keys.test.ts#refuses what it cannot be sure of, and says to bind it in iRacing"
       - "src/features/iracing-bindings/core/keys.test.ts#only ever gives a code iRacing has a name for, whatever is pressed"
-      - "src/features/iracing-bindings/core/change.test.ts#is on only when RIGREADY_IRACING_EDIT is exactly 1"
-      - "src/features/iracing-bindings/core/change.test.ts#refuses every channel of it, reads nothing, listens to nothing and writes nothing"
       - "src/features/iracing-bindings/core/change.test.ts#names what the same key or button already does in that set"
       - "src/features/iracing-bindings/core/change.test.ts#binds a button: a backup first, one entry on the Safety page, only that record changed, and Undo puts the file back"
       - "src/features/iracing-bindings/core/change.test.ts#writes exactly the file the preview showed"
@@ -6625,9 +6725,9 @@ requirements:
       - "src/features/iracing-bindings/core/change.test.ts#changes one car’s set in that car’s file and leaves the file for all cars alone"
       - "src/features/iracing-bindings/core/change.test.ts#while iRacing runs: the reason is shown before saving and nothing is written"
       - "src/features/iracing-bindings/core/change.test.ts#reports what is pressed on any controller while the page listens, and stops when told"
-      - "tests/e2e/iracing-bindings-edit.e2e.ts#iRacing bindings, switched on: bind by pressing a button or a key, clear, and undo"
-      - "tests/e2e/iracing-bindings-edit.e2e.ts#iRacing bindings, switched on: one car’s own bindings, and no saving while iRacing runs"
-      - "artifacts/screens/iracing-bindings-edit/01-switched-on.png"
+      - "tests/e2e/iracing-bindings-edit.e2e.ts#iRacing bindings: bind by pressing a button or a key, clear, and undo"
+      - "tests/e2e/iracing-bindings-edit.e2e.ts#iRacing bindings: one car’s own bindings, and no saving while iRacing runs"
+      - "artifacts/screens/iracing-bindings-edit/01-change-column.png"
       - "artifacts/screens/iracing-bindings-edit/03-press-now.png"
       - "artifacts/screens/iracing-bindings-edit/04-review.png"
       - "artifacts/screens/iracing-bindings-edit/05-saved.png"
@@ -6651,6 +6751,40 @@ requirements:
       - "2026-11-12: not started. No file here shows how iRacing stores a hat switch, and iRacing calibrates an axis as it binds it. RigReady refuses both with the reason and points to iRacing's Options > Controls. It waits for BIND-IRACING-007 to pass on the rig and for the files of step 3 in docs/research/iracing-bindings.md, 'Is writing safe?'."
     status: todo
     evidence: []
+
+  - id: BIND-IRACING-009
+    title: Show the bindings iRacing really uses, from its control profile
+    job: configure
+    area: iracing-bindings
+    priority: p1
+    done_means:
+      - "On an iRacing with control profiles (Documents/iRacing/profiles/controls exists, iRacing 2026 Season 3 and later), the set for all cars is the controls.cfg of the profile that app.ini [ControlProfiles] Global names, with the calibration names of the joyCalib.yaml beside it. The older Documents/iRacing/controls.cfg is not shown."
+      - "The page says which profile it reads and, when the older controls.cfg is there, that iRacing does not read it any more; the path of the file shown is at the bottom of the page."
+      - "When app.ini cannot be read, names no profile for all cars, or names one without a controls.cfg, the page says it cannot tell which bindings iRacing uses and shows no list, not even a car's own profile that is there. It never shows the older file in their place. A profile name that is not one plain folder name never becomes a path."
+      - "Without a profiles folder (an iRacing from before control profiles) the older files are read as before."
+      - "The control profile iRacing 2026.11 wrote on the owner's rig (369 actions: the 367 of the older file unchanged and two new ones, no bytes after the last record) is read byte for byte with every record understood, and the actions it added are listed."
+    notes:
+      - "2026-11-13: found at the rig test of BIND-IRACING-007. iRacing updated itself to 2026.11.02.01 that morning; on its first run (10:45) it copied the older controls.cfg into profiles/controls/Baseline, added PitSummaryToggle and ToggleUIVisibleDrive, and wrote [ControlProfiles] Global=Baseline into app.ini. From then on it read the profile, and RigReady's page showed the older file. The real files were read read-only and the reader was run on copies of them (the page reads Baseline: 369 actions, 183 bound, every record understood). The scenario's profile is the owner's real one with the recorded rig's made-up wheel id. Not in this requirement: the racing feature's iRacing reader (iRacing page, id repair, cheat sheets) still reads only the older files."
+      - "2026-11-13, Copilot review of PR 121: with app.ini naming a missing profile for all cars and an existing car profile, the page hid the warning and showed the car's table. It now shows the warning whenever the profile for all cars cannot be found, and no list (the scenario test below)."
+    status: done
+    evidence:
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with a control profile of its own, named as iRacing names it"
+      - "artifacts/screens/iracing-bindings-profile-car/02-profile-not-found.png"
+      - "src/features/iracing-bindings/core/view.test.ts#reads the profile app.ini names for all cars, not the older controls.cfg"
+      - "src/features/iracing-bindings/core/view.test.ts#shows what the profile has when the older file says something else"
+      - "src/features/iracing-bindings/core/view.test.ts#names the wheel and its axes from the calibration file of the profile"
+      - "src/features/iracing-bindings/core/view.test.ts#reads the profile app.ini names, whatever its name"
+      - "src/features/iracing-bindings/core/view.test.ts#says it cannot tell which bindings iRacing uses when app.ini names no profile"
+      - "src/features/iracing-bindings/core/view.test.ts#says so when the profile app.ini names has no controls.cfg"
+      - "src/features/iracing-bindings/core/view.test.ts#never turns a profile name into a path outside the profiles folder"
+      - "src/features/iracing-bindings/core/view.test.ts#reads app.ini’s section whatever its case, and skips comments and padding"
+      - "src/features/iracing-bindings/core/view.test.ts#leaves every file of the iRacing folder as it was"
+      - "src/features/iracing-bindings/core/view.test.ts#finds the set for all cars on the racing rig, and no car with custom controls"
+      - "src/features/iracing-bindings/core/carFixture.test.ts#is the recorded file with two new actions, no bytes after them, and a new size"
+      - "src/features/iracing-bindings/core/names.test.ts#names the black box actions as iRacing does: the arrows work inside the box shown"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: an iRacing with control profiles shows the profile it uses"
+      - "artifacts/screens/iracing-bindings-profiles/01-profile.png"
+      - "docs/research/iracing-bindings.md"
 
   # ---------------------------------------------------------------------------
   # RACING — Le Mans Ultimate
