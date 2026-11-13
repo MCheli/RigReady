@@ -10,7 +10,7 @@ Le Mans Ultimate is a Steam game whose settings live inside the game folder, in 
 
 The game is found through Steam (app 2399420) when its manifest says it is installed and `Le Mans Ultimate.exe` is in the folder. Otherwise the game page offers **Choose folder…**.
 
-**Launch** asks Steam to start it, so Easy Anti-Cheat and the Steam sign-in work. The game counts as running when `Le Mans Ultimate.exe` or `start_protected_game.exe` is running. The version is the Steam build; when Steam has an update queued, the page and the [Racing overview](index.md#configure-racing) say "update waiting", because the game may not start until it is done. The game page also says "Last run as version 1.3000 (game log)" from the newest trace log.
+**Launch** asks Steam to start it, so Easy Anti-Cheat and the Steam sign-in work. The game counts as running when `Le Mans Ultimate.exe` or `start_protected_game.exe` is running. The version is the Steam build; when Steam has an update queued, the page and the [Racing overview](index.md#configure-games-racing) say "update waiting", because the game may not start until it is done. The game page also says "Last run as version 1.3000 (game log)" from the newest trace log.
 
 ## Files worth backing up
 
@@ -25,7 +25,7 @@ The path variables `{LMU_INSTALL}` and `{LMU_USER}` are available in a setup; se
 
 ## The bindings and controllers page
 
-**Configure > Racing > Le Mans Ultimate** reads `direct input.json` and `current controls.json`.
+**Configure > Games > Racing > Le Mans Ultimate** reads `direct input.json` and `current controls.json`.
 
 **Controllers** lists each controller the game has set up, with the name you gave it on the [Devices page](../hardware/devices.md), the game's name for it, its type ("Wheel"), how many bindings use it, its vendor and product ID, and a state:
 

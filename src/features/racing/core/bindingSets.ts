@@ -122,7 +122,7 @@ export function bindingSetPicker(games: GameRegistry): ParamPicker {
     label: 'Saved bindings',
     fills: ['name', 'game'],
     empty:
-      'You have no saved bindings yet. Back them up on Configure > Racing, then choose them here.',
+      'You have no saved bindings yet. Back them up on Configure > Games > Racing, then choose them here.',
     async choices(ctx) {
       const rctx = { ...ctx, games };
       const out: PickerChoice[] = [];

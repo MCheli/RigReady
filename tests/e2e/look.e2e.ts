@@ -334,12 +334,19 @@ test('look: the navigation shows where you are, also on a page below an entry, a
   await go(page, '/configure/profiles/dcs-f-a-18c');
   await expect(active).toHaveText('Setups');
   await expect(active).toHaveAttribute('aria-current', 'location');
-  // The wheel has an entry of its own below Racing: that one, not both.
+  // The wheel has an entry of its own inside the Racing page's address: that one, not both.
   await go(page, '/configure/racing/wheel');
   await expect(active).toHaveText('Wheel');
   await expect(active).toHaveAttribute('aria-current', 'page');
   await expect(page.locator('.configure-link[aria-current]')).toHaveCount(1);
+  // The Racing page has no entry of its own: it opens from Games and is under Games.
   await go(page, '/configure/racing');
-  await expect(active).toHaveText('Racing');
+  await expect(active).toHaveText('Games');
+  await expect(active).toHaveAttribute('aria-current', 'location');
   await shot('racing');
+  // A game's bindings are under the one Bindings entry.
+  await go(page, '/configure/iracing-bindings');
+  await expect(active).toHaveText('Bindings');
+  await expect(active).toHaveAttribute('aria-current', 'location');
+  await expect(page.locator('.configure-link[aria-current]')).toHaveCount(1);
 });

@@ -38,10 +38,56 @@ export interface SettingsSection {
   order?: number;
 }
 
+/**
+ * A page of a feature that is about one game or one kind of game ("DCS World", "Racing").
+ * It has no entry of its own in the menu: the Games page offers it with a card, and the
+ * menu marks Games while it is open. So the menu does not grow when a game gets a page.
+ */
+export interface GamePage {
+  /** Its name, on its card and in the command palette: "DCS World". */
+  title: string;
+  /** Material Design Icons name. */
+  icon: string;
+  /** Its route. A route below it belongs to it too ("/configure/dcs/screens"). */
+  to: string;
+  /** One line on its card: what is set up there. */
+  about: string;
+  /**
+   * The games it is about, by the id of their game module ("dcs", "iracing"). Its card is
+   * shown when one of them is found on this PC, so nobody is offered a page about a game
+   * they do not have; the page of the game itself (Games, then the game) still leads there.
+   */
+  games: string[];
+  /** Lower comes first, in the 200s of the Games section. */
+  order: number;
+}
+
+/**
+ * The bindings page of one game. The menu has one Bindings entry for all games: it opens
+ * the page of the game chosen last, and its game picker lists every page declared here.
+ */
+export interface BindingsPage {
+  /**
+   * The game's id, as its game module has it ("dcs", "iracing"). Until a game has been
+   * chosen, Bindings opens the page of the game the setup in use is for.
+   */
+  game: string;
+  /** What the picker calls the game: "DCS". The page is "DCS bindings" in the palette. */
+  name: string;
+  /** Its route. A route below it belongs to it too ("/configure/dcs-bindings/devices"). */
+  to: string;
+  /** Lower comes first in the picker: 1 to 999. */
+  order: number;
+}
+
 export interface FeatureManifest {
   id: string;
   /** Entries in the Configure navigation. */
   nav?: NavEntry[];
+  /** Pages about a game that are reached from Games instead of an entry of their own. */
+  gamePages?: GamePage[];
+  /** Bindings pages, one per game, reached from the one Bindings entry and its game picker. */
+  bindings?: BindingsPage[];
   /**
    * Routes. Paths under /configure render inside the Configure layout; a route with
    * meta.mode === 'fly' renders as the Play screen.
@@ -102,14 +148,118 @@ const SECTION_ORDER: NavEntry['section'][] = [
   'RigReady',
 ];
 
-/** The Configure navigation: every feature's entries by section, in order. */
+/**
+ * The menu's one Bindings entry. It is the shell's own, there as soon as one feature has a
+ * bindings page: the route opens the page of the game chosen last (src/renderer/router.ts).
+ */
+export const BINDINGS_ENTRY: NavEntry = {
+  title: 'Bindings',
+  icon: 'mdi-controller',
+  to: '/configure/bindings',
+  order: 300,
+  section: 'Controls',
+};
+
+/** Who an entry or a page comes from when no feature folder does: the shell itself. */
+export const SHELL_FEATURE = 'shell';
+
+const byOrder = <T extends { order: number; to: string }>(a: T, b: T): number =>
+  a.order - b.order || a.to.localeCompare(b.to);
+
+/** Every bindings page the features declare, in the picker's order, with its feature. */
+export function bindingsPagesOf(
+  manifests: FeatureManifest[]
+): (BindingsPage & { feature: string })[] {
+  return manifests
+    .flatMap((m) => (m.bindings ?? []).map((page) => ({ ...page, feature: m.id })))
+    .sort(byOrder);
+}
+
+/** Every game page the features declare, in the order of their cards, with its feature. */
+export function gamePagesOf(manifests: FeatureManifest[]): (GamePage & { feature: string })[] {
+  return manifests
+    .flatMap((m) => (m.gamePages ?? []).map((page) => ({ ...page, feature: m.id })))
+    .sort(byOrder);
+}
+
+/**
+ * Every entry of the menu with the feature it comes from: the features' own, and the
+ * Bindings entry once a feature has a bindings page.
+ */
+export function navEntriesOf(manifests: FeatureManifest[]): { entry: NavEntry; feature: string }[] {
+  const own = manifests.flatMap((m) => (m.nav ?? []).map((entry) => ({ entry, feature: m.id })));
+  return bindingsPagesOf(manifests).length > 0
+    ? [...own, { entry: BINDINGS_ENTRY, feature: SHELL_FEATURE }]
+    : own;
+}
+
+/** A page without an entry of its own that stands under one, named and placed like an entry. */
+export interface Place {
+  entry: NavEntry;
+  feature: string;
+  /** The route of the menu entry it stands under. */
+  under: string;
+}
+
+/**
+ * One feature's pages that stand under another's entry, each named and placed as an entry
+ * of its own would be: a game page in the Games section, a bindings page right after the
+ * Bindings entry and before the next one ("DCS bindings").
+ */
+export function placeEntriesOf(manifest: FeatureManifest): {
+  entry: NavEntry;
+  kind: 'game' | 'bindings';
+}[] {
+  const games = (manifest.gamePages ?? []).map((page) => ({
+    kind: 'game' as const,
+    entry: {
+      title: page.title,
+      icon: page.icon,
+      to: page.to,
+      order: page.order,
+      section: 'Games' as const,
+    },
+  }));
+  const bindings = (manifest.bindings ?? []).map((page) => ({
+    kind: 'bindings' as const,
+    entry: {
+      title: `${page.name} bindings`,
+      icon: BINDINGS_ENTRY.icon,
+      to: page.to,
+      order: BINDINGS_ENTRY.order + page.order / 1000,
+      section: BINDINGS_ENTRY.section,
+    },
+  }));
+  return [...games, ...bindings];
+}
+
+/**
+ * The pages that have no entry of their own but stand under one: each game page under the
+ * first entry of the Games section, each bindings page under Bindings. The menu marks that
+ * entry while one is open, and the command palette lists them where their entries used to
+ * be, under the same names ("DCS World", "DCS bindings").
+ */
+export function placesOf(manifests: FeatureManifest[]): Place[] {
+  const games = navEntriesOf(manifests)
+    .map(({ entry }) => entry)
+    .filter((entry) => entry.section === 'Games')
+    .sort((a, b) => a.order - b.order)[0];
+  return manifests.flatMap((m) =>
+    placeEntriesOf(m).flatMap(({ entry, kind }): Place[] => {
+      const under = kind === 'game' ? games?.to : BINDINGS_ENTRY.to;
+      return under ? [{ entry, feature: m.id, under }] : [];
+    })
+  );
+}
+
+/** The Configure navigation: every entry by section, in order. */
 export function navSectionsOf(
   manifests: FeatureManifest[]
 ): { section: NavEntry['section']; entries: NavEntry[] }[] {
+  const entries = navEntriesOf(manifests).map(({ entry }) => entry);
   return SECTION_ORDER.map((section) => ({
     section,
-    entries: manifests
-      .flatMap((m) => m.nav ?? [])
+    entries: entries
       .filter((entry) => entry.section === section)
       .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title)),
   })).filter((group) => group.entries.length > 0);
@@ -206,6 +356,11 @@ export interface FeatureCommands {
    * with a quiet accent; nothing depends on it.
    */
   setupKind?: (shell: CommandShell) => Promise<GameKind | undefined>;
+  /**
+   * The id of the game the setup in use is for ("dcs"), when this feature knows. Bindings
+   * opens that game's page until the user has chosen one.
+   */
+  setupGame?: (shell: CommandShell) => Promise<string | undefined>;
   /**
    * Calls `changed` whenever the setup in use may have become another one, so the shell
    * asks `setupKind` again. Returns the function that stops it.

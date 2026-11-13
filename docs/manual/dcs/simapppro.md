@@ -4,7 +4,7 @@ description: What RigReady does in SimAppPro's place (screens, options.lua, Expo
 order: 120
 ---
 
-SimAppPro is WinWing's own app. It configures DCS for the WinWing MFD screens and talks to the WinWing hardware while you fly. RigReady's aim is to do the configuration part itself, so a setup does not depend on SimAppPro's wizards, and to say plainly what still needs SimAppPro running. The **SimAppPro** tab of **Configure > DCS World** is where that stands.
+SimAppPro is WinWing's own app. It configures DCS for the WinWing MFD screens and talks to the WinWing hardware while you fly. RigReady's aim is to do the configuration part itself, so a setup does not depend on SimAppPro's wizards, and to say plainly what still needs SimAppPro running. The **SimAppPro** tab of **Configure > Games > DCS World** is where that stands.
 
 ## What RigReady knows about SimAppPro
 

@@ -37,4 +37,4 @@ Where each id and folder comes from is recorded in `docs/research/game-modules-2
 
 ![The Assetto Corsa Competizione page after Launch](../../../artifacts/screens/games-more-sims/03-acc.png)
 
-These games have no page under **Configure > Racing** and no bindings for the [cheat sheets](../dcs/cheat-sheets.md) or the [trainer](../dcs/trainer.md); those cover the games listed with a bindings page in [Games](index.md).
+These games have no page under **Configure > Games > Racing** and no bindings for the [cheat sheets](../dcs/cheat-sheets.md) or the [trainer](../dcs/trainer.md); those cover the games listed with a bindings page in [Games](index.md).

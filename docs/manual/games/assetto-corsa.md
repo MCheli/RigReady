@@ -18,7 +18,7 @@ Assetto Corsa and Content Manager write `controls.ini` while they are open, so a
 
 ## The bindings and controllers page
 
-**Configure > Racing > Assetto Corsa** reads `controls.ini`.
+**Configure > Games > Racing > Assetto Corsa** reads `controls.ini`.
 
 **Controllers** lists the `[CONTROLLERS]` section: each controller's number and name as the game stored them, how many bindings use it, a short form of its Windows instance ID (Content Manager stores one; a file saved only by the game has none), and a state matched against the connected controllers:
 

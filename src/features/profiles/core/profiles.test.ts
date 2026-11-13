@@ -752,7 +752,7 @@ describe('CFG-PROFILE-019: the lists the editor picks from', () => {
     expect(listOf('racing.bindingSet', 'backupId')).toMatchObject({
       choices: [],
       empty:
-        'You have no saved bindings yet. Back them up on Configure > Racing, then choose them here.',
+        'You have no saved bindings yet. Back them up on Configure > Games > Racing, then choose them here.',
     });
     expect(listOf('virtual-controller.start', 'profile')).toMatchObject({
       choices: [],

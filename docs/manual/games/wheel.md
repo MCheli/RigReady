@@ -4,7 +4,7 @@ description: The Wheel page: a wheel base of any brand, its pedals and axes, the
 order: 80
 ---
 
-**Configure > Wheel** (under Hardware, and reached from the [Racing overview](index.md#configure-racing)) is the page for your wheel base, whatever its brand. RigReady recognises a base from its USB vendor and product ID and knows these brands: Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek SimSports and Cammus. The sources for every ID and file are in [docs/research/wheelbases.md](../../research/wheelbases.md) (Fanatec: [docs/research/racing.md](../../research/racing.md)).
+**Configure > Wheel** (under Hardware, and reached from the [Racing overview](index.md#configure-games-racing)) is the page for your wheel base, whatever its brand. RigReady recognises a base from its USB vendor and product ID and knows these brands: Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek SimSports and Cammus. The sources for every ID and file are in [docs/research/wheelbases.md](../../research/wheelbases.md) (Fanatec: [docs/research/racing.md](../../research/racing.md)).
 
 ## Tested on which wheels
 
@@ -33,7 +33,7 @@ With no base that RigReady knows plugged in, the panel says "No wheel base RigRe
 
 ## My wheel is not listed
 
-RigReady recognises a wheel base by its USB ID, from a list of models. A base that is not in the list is still seen as a game controller. When such a controller looks like a wheel base, the panel says so: "RigReady sees <name>, but does not know this model", with the reason it takes it for a wheel. The reason is its name (it says wheel, steering or direct drive), or its USB vendor ID when that belongs to a maker of racing gear only. The [Racing overview](index.md#configure-racing) says the same on its wheel card.
+RigReady recognises a wheel base by its USB ID, from a list of models. A base that is not in the list is still seen as a game controller. When such a controller looks like a wheel base, the panel says so: "RigReady sees <name>, but does not know this model", with the reason it takes it for a wheel. The reason is its name (it says wheel, steering or direct drive), or its USB vendor ID when that belongs to a maker of racing gear only. The [Racing overview](index.md#configure-games-racing) says the same on its wheel card.
 
 ![A wheel base RigReady does not know: seen, and said to be unknown](../../../artifacts/screens/racing-wheel-not-listed/02-seen.png)
 

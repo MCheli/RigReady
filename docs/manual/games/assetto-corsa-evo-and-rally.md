@@ -23,6 +23,6 @@ It is an Unreal Engine game, and its settings are under `%LOCALAPPDATA%\acr\Save
 
 ## Setups
 
-A setup for either game is a racing setup: by default it keeps the racing gear and helper apps, and the common racing checks apply (the wheel base in PC mode, the helper apps). See [Games](index.md) and [setups](../setups/index.md). Neither game appears on the [Racing overview](index.md#configure-racing), because there is nothing about its bindings to show there.
+A setup for either game is a racing setup: by default it keeps the racing gear and helper apps, and the common racing checks apply (the wheel base in PC mode, the helper apps). See [Games](index.md) and [setups](../setups/index.md). Neither game appears on the [Racing overview](index.md#configure-games-racing), because there is nothing about its bindings to show there.
 
 ![The games list on a PC with the Assetto Corsa titles](../../../artifacts/screens/generic-configure/04-games.png)

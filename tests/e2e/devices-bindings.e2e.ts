@@ -20,7 +20,7 @@ async function openDevices(page: Page): Promise<void> {
 
 async function openBindings(page: Page, tab?: string): Promise<void> {
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-dcs-bindings').click();
+  await page.getByTestId('nav-bindings').click();
   await expect(page.getByTestId('bind-overview')).toBeVisible();
   if (tab) await page.getByTestId(`bind-tab-${tab}`).click();
 }
@@ -409,7 +409,7 @@ test('names: identical controllers each show the name the owner gave them in DCS
   await openDevices(page);
   await nameDevice(page, 'WINWING MFD1-L', 'MFD left');
   await nameDevice(page, 'WINWING MFD1-R', 'MFD right');
-  await page.getByTestId('nav-dcs-bindings').click();
+  await page.getByTestId('nav-bindings').click();
   await page.getByTestId('bind-tab-device-ids').click();
   const orphan = page
     .locator('[data-testid="ids-orphan"][data-device="WINWING MFD1"]')

@@ -39,9 +39,10 @@ test('racing: a wheel base RigReady does not know is seen, named as unknown, the
   const status = page.getByTestId('wheel-status');
   const problems: Record<string, unknown[]> = {};
 
-  // The Racing page: the base is seen and said to be of a model RigReady does not know.
+  // The Racing page: the base is seen and said to be of a model RigReady does not know. This
+  // PC has no racing game, so Games offers no Racing card; the page is opened by its address.
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-racing').click();
+  await go(page, '/configure/racing');
   const card = page.getByTestId('racing-wheel-card');
   await expect(card).toContainText(`RigReady sees ${BASE}, but does not know this model`);
   await expect(page.getByTestId('racing-wheel-summary')).toContainText(
