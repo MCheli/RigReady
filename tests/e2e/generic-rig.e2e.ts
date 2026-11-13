@@ -147,13 +147,6 @@ const PAGES: ConfigurePage[] = [
     notFound: 'iRacing',
   },
   {
-    name: 'iracing-bindings',
-    route: '/configure/iracing-bindings',
-    testId: 'iracing-bindings-page',
-    says: ['iRacing was not found on this PC', 'iRacing game page'],
-    notFound: 'iRacing',
-  },
-  {
     name: 'racing-lmu',
     route: '/configure/racing/lmu',
     testId: 'lmu-page',
@@ -288,6 +281,14 @@ const PAGES: ConfigurePage[] = [
     testId: 'vc-page',
     says: ['Not installed', 'No profiles of your own yet', 'Install the ViGEmBus driver'],
     never: ['WINWING'],
+  },
+  // Last, so that the numbered screenshots of the pages above keep their names.
+  {
+    name: 'iracing-bindings',
+    route: '/configure/iracing-bindings',
+    testId: 'iracing-bindings-page',
+    says: ['iRacing was not found on this PC', 'iRacing game page'],
+    notFound: 'iRacing',
   },
 ];
 
