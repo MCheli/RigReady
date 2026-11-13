@@ -241,7 +241,19 @@ const actions = {
 // Playwright can fail outside the call that started it (an app that will not start, a window that
 // closed under a click). The driver logs it and stays up: a sitting must not lose its driver.
 for (const event of ['unhandledRejection', 'uncaughtException'])
-  process.on(event, (e) => console.error(`${event}: ${e?.message ?? e}`));
+  process.on(event, (e) => console.error('%s: %s', event, String(e?.message ?? e)));
+
+// What a failed call tells its caller: the error's message alone, without the "at ..." lines
+// Playwright adds to the message of a failed evaluate.
+function plainMessage(e) {
+  const message =
+    typeof e?.message === 'string' ? e.message : 'the call failed: see the driver output';
+  return message
+    .split('\n')
+    .filter((line) => !/^\s+at\s/.test(line))
+    .join('\n')
+    .slice(0, 2000);
+}
 
 http
   .createServer(async (req, res) => {
@@ -261,19 +273,22 @@ http
       if (!['launch', 'close', 'stop'].includes(name) && !page) throw new Error('not launched');
       reply(200, await fn(body ? JSON.parse(body) : {}));
     } catch (e) {
-      reply(500, { error: String(e?.message ?? e).slice(0, 2000) });
+      // The whole error goes to the driver's own output; the caller gets its message.
+      console.error('%s failed:', JSON.stringify(name), e);
+      reply(500, { error: plainMessage(e) });
     }
   })
   .on('error', (e) => {
     // A driver left over from an earlier run holds the port: say so instead of a stack trace.
     if (e.code === 'EADDRINUSE') {
       console.error(
-        `port ${PORT} is in use: another rig driver is running. POST /stop to it, or set RIG_DRIVER_PORT.`
+        'port %s is in use: another rig driver is running. POST /stop to it, or set RIG_DRIVER_PORT.',
+        PORT
       );
       process.exit(1);
     }
     throw e;
   })
   .listen(PORT, '127.0.0.1', () =>
-    console.log(`rig driver on http://127.0.0.1:${PORT}\nx-rig-token: ${TOKEN}`)
+    console.log('rig driver on http://127.0.0.1:%s\nx-rig-token: %s', PORT, TOKEN)
   );
