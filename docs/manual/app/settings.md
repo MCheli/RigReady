@@ -12,7 +12,7 @@ The settings are kept in `settings.json` in RigReady's [data folder](index.md). 
 
 **Start with Windows.** RigReady starts in the tray when you sign in, without opening its window. It is off by default. The switch shows what Windows actually has: when Windows will not accept the entry, or has it switched off, the page says so. See [Start with Windows is off](../troubleshooting/start-with-windows-off.md).
 
-**Keep running in the tray when the window is closed.** On by default: closing the window hides RigReady to the [tray](../one-click/tray.md), and **Quit** in the tray icon's menu ends it. Off: closing the window quits.
+**Keep RigReady in the tray when you close the window.** On by default: closing the window hides it, and RigReady keeps running with its icon in the [tray](../one-click/tray.md), next to the clock. Windows may keep that icon under the ^ arrow. **Quit** in the icon's menu ends RigReady. Off: closing the window quits RigReady, and its tray icon goes away too. The line under the switch says which of the two closing the window does now. From anywhere, Ctrl+K and "tray" finds this switch.
 
 ## Monitor layouts
 
@@ -22,7 +22,7 @@ The settings are kept in `settings.json` in RigReady's [data folder](index.md). 
 
 **Keep automatic backups for.** How many days the automatic copies of changed files are kept (30 by default, 1 to 3650), and how many of the newest changes are always kept whatever their age (50 by default). Older copies are removed when RigReady starts. See [the Safety page](../protect/safety-page.md).
 
-**Monitor layout revert timer.** How many seconds a newly applied layout waits for you to keep it before it goes back by itself: 15 by default, 5 to 120.
+**Monitor layout revert timer.** How many seconds a newly applied layout waits for you to keep it before it goes back by itself: 15 by default, 5 to 120. When an AI assistant asked for the change, the wait is at least 60 seconds. Make ready and Stand down do not ask at all about a layout you kept before ([Monitor layouts](../monitors-and-audio/layouts.md#when-rigready-asks-and-when-it-does-not)).
 
 **Check timeout.** How many seconds one check may run before it is reported as timed out: 5 by default, 1 to 60. A check can have its own limit in [the setup editor](../setups/editor.md).
 

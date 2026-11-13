@@ -128,6 +128,33 @@ describe('SettingsStore', () => {
     expect(aside).toHaveLength(1);
     expect(store.takeNotice()).toContain('could not be read');
   });
+
+  it('the settings file RigReady 1 left behind does not switch "keep in the tray" off; a choice made in this version stays', async () => {
+    // The data folder of version 1.1.0: its settings.json says "minimizeToTray": false, written
+    // as a default behind a switch that was disabled.
+    app = await wiredApp('first-run-after-version-one', NO_FILES);
+    const file = path.join(app.ports.folders.dataRoot(), 'settings.json');
+    const versionOne = await fs.readFile(file, 'utf8');
+    expect(JSON.parse(versionOne)).toMatchObject({ version: 1, minimizeToTray: false });
+
+    const view = await app.invoke<SettingsView>('settings:get');
+    expect(view.settings).toEqual(defaultSettings());
+    expect(view.settings.minimizeToTray).toBe(true);
+    // Reading it changed nothing on disk.
+    expect(await fs.readFile(file, 'utf8')).toBe(versionOne);
+
+    // Switched off here, it is the user's own choice: saved, and still off at the next start.
+    const off = await app.invoke<SettingsView>('settings:update', { minimizeToTray: false });
+    expect(off.settings.minimizeToTray).toBe(false);
+    expect(JSON.parse(await fs.readFile(file, 'utf8'))).toMatchObject({
+      schemaVersion: 1,
+      minimizeToTray: false,
+    });
+    const next = new SettingsStore(app.ports.files, app.ports.folders.dataRoot(), app.clock);
+    expect((await next.get()).ok && (await next.get())).toMatchObject({
+      value: { minimizeToTray: false },
+    });
+  });
 });
 
 describe('DisplayLayoutStore', () => {
@@ -380,6 +407,27 @@ describe('Stand down and the desk layout', () => {
     // Already in the desk layout: nothing to do, and nothing is claimed.
     const again = await app.invoke<ActionReport>('fly:standDown', P);
     expect(again.steps.some((s) => s.itemId === 'displays.deskLayout')).toBe(false);
+
+    // Flying again another day. The desk layout was kept with these monitors, so this
+    // Stand down applies it without the question: nothing waits, and nothing counts down.
+    app.ports.state.displays = structuredClone(flying);
+    const asked = app.events.filter((e) => e.channel === 'displays:event:applied').length;
+    app.layoutAnswer = 'wait';
+    const second = await app.invoke<ActionReport>('fly:standDown', P);
+    expect(second.steps).toContainEqual({
+      itemId: 'displays.deskLayout',
+      title: 'Desk monitor layout',
+      ok: true,
+      message: 'Applied desk layout "Desk"',
+    });
+    expect(app.events.filter((e) => e.channel === 'displays:event:applied')).toHaveLength(asked);
+    expect(app.events.some((e) => e.channel === 'displays:event:appliedKnown')).toBe(true);
+    expect(await app.invoke('displays:pending')).toMatchObject({ pending: false });
+    expect(app.ports.state.displays.find((d) => d.name === 'DELL G3223D')).toMatchObject({
+      enabled: true,
+      primary: true,
+    });
+    app.layoutAnswer = 'keep';
   });
 
   it('skips monitors of the desk layout that are not connected, and fails clearly when it cannot apply', async () => {
@@ -437,7 +485,7 @@ describe('Stand down and the desk layout', () => {
     await expect
       .poll(async () => (await app!.invoke<{ pending: boolean }>('displays:pending')).pending)
       .toBe(true);
-    expect(await app.invoke('displays:pending')).toEqual({ pending: true, seconds: 30 });
+    expect(await app.invoke('displays:pending')).toMatchObject({ pending: true, seconds: 30 });
     await app.invoke('displays:keep');
     await making;
   });

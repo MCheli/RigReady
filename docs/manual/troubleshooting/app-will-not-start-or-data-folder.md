@@ -10,7 +10,9 @@ RigReady starts whatever its data folder looks like. A damaged file of its own i
 
 **It is already running.** RigReady runs once. Starting it again, from the Start menu, a [desktop shortcut](../one-click/desktop-shortcut.md) or a [Jump List](../one-click/taskbar.md) task, hands what you asked for to the running copy ([The command line](../one-click/command-line.md)): the window comes forward, or the shortcut's setup is made ready and launched. Look for the icon in the [tray](../one-click/tray.md); one click brings the window out, a double-click always opens it.
 
-**It is in the tray.** With **Keep running in the tray when the window is closed** on ([Settings](../app/settings.md#startup)), closing the window does not quit. **Quit** is in the tray icon's menu.
+**It is in the tray.** With **Keep RigReady in the tray when you close the window** on ([Settings](../app/settings.md#startup)), closing the window does not quit: RigReady keeps running, with its icon in the tray next to the clock. Windows may keep that icon under the ^ arrow. **Quit** is in the tray icon's menu.
+
+**You closed the window and there is no icon in the tray.** Look under the ^ arrow first. If the icon is not there, that switch is off and closing the window quit RigReady. Start RigReady again and turn the switch on in [Settings](../app/settings.md#startup). The line under the switch says what closing the window does.
 
 **It could not start.** When RigReady fails before it has a window, Windows shows a message box, "RigReady could not start", with the error, and points at the log: `logs\rigready.log` in [the data folder](../app/index.md), `~/.rigready`. Copy the error and the end of the log into a [problem report](../app/diagnostics.md#reporting-a-problem).
 

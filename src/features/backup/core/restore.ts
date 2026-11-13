@@ -9,7 +9,7 @@ import { isWithin, startsByItself } from '../../../core/paths';
 import { expandPath } from '../../../core/pathVariables';
 import { ProfileSchema, type Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
-import { AppSettingsSchema } from '../../../core/settings';
+import { SettingsFileSchema } from '../../../core/settings';
 import { TrackedItemSchema, trackedFileTarget, unknownVariableText } from '../../../core/tracked';
 import {
   backupFile,
@@ -816,7 +816,7 @@ async function restoreOwn(
     return ok(name === layout.name ? {} : { keptBoth: `Saved as "${name}"` });
   }
   if (entry.kind === 'settings') {
-    const parsed = parseJson(opened.data.get('rigready/settings.json')!, AppSettingsSchema);
+    const parsed = parseJson(opened.data.get('rigready/settings.json')!, SettingsFileSchema);
     if (!parsed) return err('restore.settings', 'The settings in the backup are not valid.');
     const updated = await ctx.settings.update({
       deskLayoutId: parsed.deskLayoutId ?? null,

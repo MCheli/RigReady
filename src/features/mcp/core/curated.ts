@@ -282,7 +282,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
     name: 'rig_make_ready',
     title: 'Make the rig ready',
     description:
-      'Runs every available fix of a setup in the order Make ready does (start apps, apply the monitor layout, set audio, restore files), then checks again. Answers with what each step did and what is still not met. A fix that starts a program the setup names as needing confirmation runs only with approvePrograms; a script an assistant wrote is never run this way (the user runs it from RigReady). A monitor layout it applies reverts by itself unless the user keeps it in RigReady.',
+      'Runs every available fix of a setup in the order Make ready does (start apps, apply the monitor layout, set audio, restore files), then checks again. Answers with what each step did and what is still not met. A fix that starts a program the setup names as needing confirmation runs only with approvePrograms; a script an assistant wrote is never run this way (the user runs it from RigReady). A monitor layout that was kept on this PC before is applied at once; any other reverts by itself unless the user keeps it in the RigReady window, and the call waits for that answer.',
     input: z.object({
       setup: SetupArg.optional(),
       approvePrograms: z
@@ -391,7 +391,7 @@ export function builtinTools(deps: { manual(): ManualPage[] }): McpToolDefinitio
     name: 'rig_stand_down',
     title: 'Stand down',
     description:
-      "After a session: closes the helper apps the setup marks for closing, puts the monitors back into the desk layout (with the keep-or-revert countdown) and runs the setup's stand-down actions. With closeGame, the game is asked to close first. Answers with what each step did.",
+      "After a session: closes the helper apps the setup marks for closing, puts the monitors back into the desk layout (at once when that layout was kept on this PC before, otherwise it reverts by itself unless the user keeps it in the RigReady window) and runs the setup's stand-down actions. With closeGame, the game is asked to close first. Answers with what each step did.",
     input: z.object({
       setup: SetupArg.optional(),
       closeGame: z

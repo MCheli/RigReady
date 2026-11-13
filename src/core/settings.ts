@@ -45,6 +45,22 @@ export const AppSettingsSchema = z.object({
 });
 export type AppSettings = z.infer<typeof AppSettingsSchema>;
 
+/**
+ * RigReady 1 kept its settings in this same file. It wrote "minimizeToTray": false there for a
+ * switch that was disabled, so nobody chose it; read as a choice, it made closing the window
+ * quit the app for everyone who came from version 1. A file version 1 wrote has a "version"
+ * key and no "schemaVersion". In such a file that one value is left out, so the default
+ * applies. Once this version saves the file, what it holds is the user's own choice.
+ */
+function withoutVersionOnePlaceholder(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw;
+  if ('schemaVersion' in raw || !('version' in raw)) return raw;
+  return Object.fromEntries(Object.entries(raw).filter(([key]) => key !== 'minimizeToTray'));
+}
+
+/** What a settings.json is read with, on disk or in a backup: AppSettingsSchema, version 1 aside. */
+export const SettingsFileSchema = z.preprocess(withoutVersionOnePlaceholder, AppSettingsSchema);
+
 /** A partial change: nested objects are merged one level deep. */
 export const AppSettingsPatchSchema = z.object({
   deskLayoutId: z.string().nullable().optional(),
@@ -113,9 +129,9 @@ export class SettingsStore {
     // only content that is not settings is set aside.
     const text = await readDataText(this.files, this.file);
     if (!text.ok) return text;
-    let parsed: ReturnType<typeof AppSettingsSchema.safeParse> | undefined;
+    let parsed: ReturnType<typeof SettingsFileSchema.safeParse> | undefined;
     try {
-      parsed = AppSettingsSchema.safeParse(JSON.parse(text.value));
+      parsed = SettingsFileSchema.safeParse(JSON.parse(text.value));
     } catch {
       // Not JSON: handled below like any content that is not settings (set aside, defaults, notice).
       parsed = undefined;

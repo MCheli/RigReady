@@ -22,7 +22,7 @@ A shortcut, a Jump List entry, the hotkey and the command line all run the same 
 
 1. RigReady's window comes to the front, and a strip at the bottom of it says what is happening: "Looking for DCS F/A-18C", "Checking DCS F/A-18C", "Making DCS F/A-18C ready" with the steps as they go, "Launching DCS F/A-18C".
 2. The setup is checked and becomes the setup in use.
-3. Make ready runs every fix, in the same order as on the Play screen. A monitor change still asks **Keep this monitor layout?** ([Monitor layouts](../monitors-and-audio/layouts.md#keep-it-or-go-back)). A fix that runs a program you would have to confirm ([Scripts](../setups/scripts.md)) is not run, since nobody can be asked; it is listed with what still needs you.
+3. Make ready runs every fix, in the same order as on the Play screen. A monitor layout that was not kept on this PC before still asks **Keep this monitor layout?**, and the game is not launched until it is kept; a layout you kept before is applied without the question ([Monitor layouts](../monitors-and-audio/layouts.md#when-rigready-asks-and-when-it-does-not)). A fix that runs a program you would have to confirm ([Scripts](../setups/scripts.md)) is not run, since nobody can be asked; it is listed with what still needs you.
 4. The game is launched only when every required check is met. Otherwise nothing is launched: the strip says "DCS F/A-18C was not launched: 2 required items are not met", with the reasons, and stays until you put it away. The Play screen behind it shows the same.
 5. After a launch the window goes to the tray when **Hide RigReady after Launch** is on ([The Play menu](../play/the-menu.md)).
 

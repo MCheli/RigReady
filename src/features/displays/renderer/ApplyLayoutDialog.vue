@@ -10,9 +10,14 @@ import LayoutMorph from './LayoutMorph.vue';
  * "What would change" before a saved layout is applied. Monitors the layout needs that
  * are not connected are named, and the layout is then only applied when the user says
  * to go without them.
+ *
+ * Applying waits for the answer to "Keep this layout?", which is asked on top of this
+ * dialog. Only then is it known whether the layout is there, so only then does this say
+ * anything about it: what it hands to the page is what really happened, kept or gone back.
+ * Until then it stays open and cannot be closed, so a refusal is never lost in a closed dialog.
  */
 const props = defineProps<{ layoutId: string | undefined }>();
-const emit = defineEmits<{ close: []; applied: [message: string] }>();
+const emit = defineEmits<{ close: []; applied: [result: { kept: boolean; message: string }] }>();
 
 const api = useClient(displaysContract);
 const preview = ref<ApplyPreview>();
@@ -49,6 +54,10 @@ const canApply = computed(
 const applyLabel = computed(() =>
   preview.value?.missing.length ? `Apply without ${joinNames(preview.value.missing)}` : 'Apply'
 );
+/** Monitors that are on and that this layout does not list: they stay on. */
+const staysOn = computed(() =>
+  (preview.value?.untouched ?? []).filter((m) => m.on).map((m) => m.label)
+);
 
 async function apply(): Promise<void> {
   if (!preview.value) return;
@@ -60,8 +69,12 @@ async function apply(): Promise<void> {
   });
   applying.value = false;
   notifyMachineChanged();
-  if (result.ok) emit('applied', result.value.message);
+  if (result.ok) emit('applied', result.value);
   else error.value = errorText(result.error);
+}
+
+function close(): void {
+  if (!applying.value) emit('close');
 }
 </script>
 
@@ -70,7 +83,8 @@ async function apply(): Promise<void> {
     :model-value="layoutId !== undefined"
     max-width="680"
     scrollable
-    @update:model-value="emit('close')"
+    :persistent="applying"
+    @update:model-value="close"
   >
     <v-card data-testid="apply-dialog">
       <v-card-title>
@@ -111,6 +125,18 @@ async function apply(): Promise<void> {
             <v-icon icon="mdi-check" class="rr-ok" /> The monitors already match this layout.
           </div>
           <template v-else>
+            <v-alert
+              v-if="staysOn.length"
+              type="info"
+              variant="tonal"
+              density="compact"
+              class="mb-3"
+              data-testid="apply-untouched"
+            >
+              {{ joinNames(staysOn) }} {{ staysOn.length === 1 ? 'is' : 'are' }} not in this layout,
+              so {{ staysOn.length === 1 ? 'it stays' : 'they stay' }} on. A layout only switches
+              off a monitor it lists.
+            </v-alert>
             <LayoutMorph
               v-if="preview.before.length"
               class="apply-picture"
@@ -136,7 +162,7 @@ async function apply(): Promise<void> {
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" data-testid="apply-cancel" @click="emit('close')">
+        <v-btn variant="text" :disabled="applying" data-testid="apply-cancel" @click="close">
           {{ canApply ? 'Cancel' : 'Close' }}
         </v-btn>
         <v-btn

@@ -129,7 +129,7 @@ Every window (the main one and panels opened with `openPanel`) is created with c
 - **Tracked paths are confined.** A file or folder may be tracked for backup only when it is under the allowed roots or a game's own folder, or when main vouches for it (picked in the native dialog, already tracked, or suggested by a game module or backup source). Never a network or device path. Credential files are never read into a backup, snapshot or shared setup (`src/core/credentials.ts`).
 - Lua from the game or from other tools is never run with file or process access: data files go through a strict parser, programs through a sandboxed VM with an instruction budget (`src/core/lua`).
 - Imported bundles are validated with zod, inspected before unpacking, never write outside resolved known folders, and never carry runnable content silently: scripts and launch commands are stripped and listed for the user.
-- Display apply uses the Windows display configuration API directly, captures the prior layout, and exposes revert. A new layout reverts by itself unless the user keeps it.
+- Display apply uses the Windows display configuration API directly, captures the prior layout, and exposes revert. A new layout reverts by itself unless the user keeps it. The one exception is Make ready and Stand down applying a change that is known to work on this PC: the same change, with the same monitors connected, kept before by a person in RigReady's window and read back as asked (`src/features/displays/core/proven.ts` has the exact rule; the fact is stored in `<data root>/displays/proven.json`). Any doubt, and every change made by hand, asks.
 - No administrator rights: nothing asks for elevation, the installer is per user (`tests/unit/noAdmin.test.ts`).
 
 ## Conventions

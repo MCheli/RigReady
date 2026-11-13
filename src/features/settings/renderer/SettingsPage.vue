@@ -162,13 +162,22 @@ const layoutSummary = (layout: SettingsView['layouts'][number]): string => {
         </div>
         <div class="rr-row">
           <div class="rr-row-main">
-            <div class="rr-row-title">Keep running in the tray when the window is closed</div>
-            <div class="rr-row-sub">Quit from the tray icon's menu.</div>
+            <div class="rr-row-title">Keep RigReady in the tray when you close the window</div>
+            <div class="rr-row-sub" data-testid="setting-minimize-to-tray-effect">
+              <template v-if="settings.minimizeToTray">
+                Closing the window hides it. RigReady keeps running, with its icon in the tray next
+                to the clock. Windows may keep that icon under the ^ arrow. To quit, right-click the
+                icon and choose Quit.
+              </template>
+              <template v-else>
+                Closing the window quits RigReady. Its tray icon goes away too.
+              </template>
+            </div>
           </div>
           <v-switch
             :model-value="settings.minimizeToTray"
             data-testid="setting-minimize-to-tray"
-            aria-label="Keep running in the tray"
+            aria-label="Keep RigReady in the tray when you close the window"
             @update:model-value="setSwitch('minimizeToTray', $event === true)"
           />
         </div>

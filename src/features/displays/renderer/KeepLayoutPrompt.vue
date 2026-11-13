@@ -3,11 +3,14 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import ManualLink from '../../../renderer/components/ManualLink.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
-import { displaysContract, type RecoveryView } from '../contract';
+import { displaysContract, type LayoutQuestion, type RecoveryView } from '../contract';
 
 /**
  * Shown on any screen after a monitor layout is applied. Main owns the countdown and
  * reverts by itself when it runs out; this only shows it and sends the decision.
+ *
+ * It says who asked when that was an assistant (the person at the screens did not click
+ * anything), and that it is asked only once when Make ready or Stand down is asking.
  *
  * Also asks, once at startup, about a layout change that never got an answer because
  * RigReady was closed during the countdown.
@@ -15,6 +18,10 @@ import { displaysContract, type RecoveryView } from '../contract';
 const api = useClient(displaysContract);
 const open = ref(false);
 const remaining = ref(0);
+/** The assistant that asked for the change, when one did. */
+const askedBy = ref<string>();
+/** Make ready or Stand down is asking, and keeping it ends the asking. */
+const firstTime = ref(false);
 const recovery = ref<RecoveryView>();
 const recoveryError = ref<string>();
 const recovering = ref(false);
@@ -23,8 +30,10 @@ const answerError = ref<string>();
 let ticker: ReturnType<typeof setInterval> | undefined;
 const unsubscribe: (() => void)[] = [];
 
-function start(seconds: number): void {
-  remaining.value = seconds;
+function start(question: LayoutQuestion): void {
+  remaining.value = question.seconds;
+  askedBy.value = question.askedBy;
+  firstTime.value = question.firstTime === true;
   open.value = true;
   clearInterval(ticker);
   ticker = setInterval(() => {
@@ -66,13 +75,13 @@ const savedAtText = (iso: string): string =>
 
 onMounted(async () => {
   unsubscribe.push(
-    api.on('applied', ({ seconds }) => {
+    api.on('applied', (question) => {
       // A change made now has its own question. What an earlier run left is no longer what
       // would be put back: the layout from before this change has taken its place. (Putting
       // the earlier layout back is a change too; that one is this question being answered,
       // and if it did not go through, the reason is shown here once the countdown is over.)
       if (!recovering.value) recovery.value = undefined;
-      start(seconds);
+      start(question);
     })
   );
   unsubscribe.push(
@@ -81,10 +90,18 @@ onMounted(async () => {
       notifyMachineChanged();
     })
   );
+  unsubscribe.push(
+    // Make ready or Stand down applied a layout that was kept before: no question, but
+    // the monitors changed, so the pages that show them read again.
+    api.on('appliedKnown', () => {
+      if (!recovering.value) recovery.value = undefined;
+      notifyMachineChanged();
+    })
+  );
   // The window may have been reloaded while a decision was open.
   const state = await api.pending();
   if (state.ok && state.value.pending) {
-    start(state.value.seconds);
+    start(state.value);
     return;
   }
   const left = await api.recovery();
@@ -103,8 +120,16 @@ onBeforeUnmount(() => {
     <v-card data-testid="keep-layout">
       <v-card-title>Keep this monitor layout?</v-card-title>
       <v-card-text>
-        The monitors were rearranged. If you do nothing, the previous layout comes back in
+        <span v-if="askedBy" data-testid="keep-layout-asked-by"
+          >{{ askedBy }} asked RigReady to rearrange the monitors.</span
+        >
+        <template v-else>The monitors were rearranged.</template>
+        If you do nothing, the previous layout comes back in
         <strong data-testid="keep-layout-seconds">{{ remaining }}</strong> seconds.
+        <p v-if="firstTime" class="keep-once" data-testid="keep-layout-once">
+          RigReady asks this the first time a layout is used on this PC. Once you keep it, Make
+          ready and Stand down apply it without asking.
+        </p>
         <v-alert
           v-if="answerError"
           type="error"
@@ -173,6 +198,11 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.keep-once {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--rr-muted);
+}
 .recovery-list {
   padding-left: 20px;
   font-size: 13px;

@@ -1,8 +1,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { runAsAssistant } from '../../../core/assistantScripts';
 import { err } from '../../../core/result';
-import { markFull, wiredApp, type WiredApp } from '../../../../tests/helpers';
+import { markFull, mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { ApplyPreview, DisplaysView, RecoveryView } from '../contract';
 
 /** The Monitors page's main side, called through IPC exactly as the renderer does. */
@@ -25,6 +26,9 @@ const enabledNames = () =>
     .filter((d) => d.enabled)
     .map((d) => d.name)
     .sort();
+/** How many times "Keep this monitor layout?" was asked so far. */
+const questions = (): number =>
+  app.events.filter((e) => e.channel === 'displays:event:applied').length;
 
 describe('Monitors page: the current arrangement', () => {
   it('lists every connected monitor with identity, mode, position, rotation and flags', async () => {
@@ -137,35 +141,82 @@ describe('Monitors page: saved layouts', () => {
     ).toMatchObject({ enabled: false, width: 1024, height: 768 });
   });
 
-  it('applies Flying (Dell off, MFD screens on) and Desk (the reverse), each with the keep prompt', async () => {
+  it('applies Flying (Dell off, MFD screens on) and Desk (the reverse), each with the keep prompt, and says "Applied" only of a layout that was kept', async () => {
     app = await wiredApp('displays-layouts', NO_FILES);
+    // The question stays open until this test answers it, as a person would.
+    app.layoutAnswer = 'wait';
     expect((await view()).canRevert).toBe(false);
     const preview = await app.invoke<ApplyPreview>('displays:preview', { id: 'flying' });
     expect(preview.missing).toEqual([]);
     expect(preview.changes).toContain('DELL G3223D is on, expected off');
     expect(preview.changes).toContain('USB_Monitor (3 of 3) is rotated 0°, expected 90°');
-    expect(await app.invoke('displays:applyLayout', { id: 'flying' })).toEqual({
-      message: 'Applied "Flying"',
-    });
+    let said: unknown;
+    const flying = app.invoke('displays:applyLayout', { id: 'flying' }).then((a) => (said = a));
+    await expect.poll(questions).toBe(1);
     expect(enabledNames()).toEqual(['LC49G95T', 'USB_Monitor', 'USB_Monitor', 'USB_Monitor']);
     expect(app.events).toContainEqual({
       channel: 'displays:event:applied',
       payload: { seconds: 15 },
     });
     expect(layout(await view(), 'Flying').status).toBe('current');
-    await app.invoke('displays:keep');
+    // Nothing is said about the layout while the question is open: it may still go back.
+    expect(said).toBeUndefined();
+    expect(await app.invoke('displays:keep')).toEqual({ kept: true });
+    expect(await flying).toEqual({ kept: true, message: 'Applied "Flying"' });
     // Kept, and still undoable from the Monitors page.
     expect((await view()).canRevert).toBe(true);
 
+    // Desk is applied and the person goes back: it is never called applied.
+    const desk = app.invoke('displays:applyLayout', { id: 'desk' });
+    await expect.poll(questions).toBe(2);
+    expect(enabledNames()).toEqual(['DELL G3223D', 'LC49G95T']);
+    expect(app.ports.state.displays.find((d) => d.primary)?.name).toBe('DELL G3223D');
+    await app.invoke('displays:revert');
+    expect(await desk).toEqual({
+      kept: false,
+      message: '"Desk" was not kept. The monitors are back the way they were.',
+    });
+    expect(enabledNames()).toEqual(['LC49G95T', 'USB_Monitor', 'USB_Monitor', 'USB_Monitor']);
+    expect(layout(await view(), 'Desk').status).toBe('different');
+
+    app.layoutAnswer = 'keep';
     expect(await app.invoke('displays:applyLayout', { id: 'desk' })).toEqual({
+      kept: true,
       message: 'Applied "Desk"',
     });
     expect(enabledNames()).toEqual(['DELL G3223D', 'LC49G95T']);
-    expect(app.ports.state.displays.find((d) => d.primary)?.name).toBe('DELL G3223D');
-    await app.invoke('displays:keep');
     expect(await app.invoke('displays:applyLayout', { id: 'desk' })).toEqual({
+      kept: true,
       message: 'The monitors already match "Desk". Nothing was changed.',
     });
+  });
+
+  it('says a layout was not kept when the countdown runs out with nobody answering', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    app.layoutAnswer = 'wait';
+    const before = structuredClone(app.ports.state.displays);
+    // The shortest countdown the settings allow would still be seconds: the countdown's own
+    // timer is what ends here, exactly as when nobody is at the screens.
+    const timers = vi.spyOn(globalThis, 'setTimeout');
+    const applying = app.invoke('displays:applyLayout', { id: 'flying' });
+    await expect.poll(questions).toBe(1);
+    const index = timers.mock.calls.findIndex(([, ms]) => ms === 15_000);
+    expect(index).toBeGreaterThanOrEqual(0);
+    const runOut = timers.mock.calls[index]![0] as () => void;
+    // The real 15 seconds are not waited for, and must not fire after the test either.
+    clearTimeout(timers.mock.results[index]!.value as NodeJS.Timeout);
+    timers.mockRestore();
+    runOut();
+    expect(await applying).toEqual({
+      kept: false,
+      message: '"Flying" was not kept. The monitors are back the way they were.',
+    });
+    expect(app.ports.state.displays).toEqual(before);
+    expect(app.events).toContainEqual({
+      channel: 'displays:event:settled',
+      payload: { outcome: 'reverted' },
+    });
+    expect(await app.invoke('displays:pending')).toMatchObject({ pending: false });
   });
 
   it('draws the preview from the monitors as they are, and "after" is where they are once applied', async () => {
@@ -223,8 +274,207 @@ describe('Monitors page: saved layouts', () => {
     expect(app.ports.state.displays).toEqual(before);
     expect(
       await app.invoke('displays:applyLayout', { id: 'racing', withoutMissing: true })
-    ).toEqual({ message: 'Applied "Racing" without TV' });
+    ).toEqual({ kept: true, message: 'Applied "Racing" without TV' });
     expect(enabledNames()).toEqual(['LC49G95T']);
+  });
+
+  it('lists the monitors of a layout as they stand on the desk: left to right, the ones that are off last', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    const file = path.join(app.ports.folders.dataRoot(), 'displays', 'layouts.json');
+    const flyingInFile = async (): Promise<{ name: string; enabled: boolean; x: number }[]> =>
+      JSON.parse(await fs.readFile(file, 'utf8')).layouts.find(
+        (l: { id: string }) => l.id === 'flying'
+      ).displays;
+    const stored = await flyingInFile();
+    // In the file in the order the screens happened to be captured: centre, the one that is
+    // off, right, ultrawide, left.
+    const captured = [stored[2], stored[4], stored[3], stored[0], stored[1]];
+    const v = await app.invoke<DisplaysView>('displays:editLayout', {
+      id: 'flying',
+      displays: captured,
+    });
+    expect((await flyingInFile()).map((d) => (d.enabled ? d.x : 'off'))).toEqual([
+      5888,
+      'off',
+      6656,
+      0,
+      5120,
+    ]);
+    expect(layout(v, 'Flying').monitors.map((m) => [m.name, m.enabled ? m.x : 'off'])).toEqual([
+      ['LC49G95T', 0],
+      ['USB_Monitor', 5120],
+      ['USB_Monitor', 5888],
+      ['USB_Monitor', 6656],
+      ['DELL G3223D', 'off'],
+    ]);
+  });
+
+  it('says which connected monitors a layout does not list, and leaves those as they are when it is applied', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    const dell = structuredClone(app.ports.state.displays.find((d) => d.name === 'DELL G3223D')!);
+    // Every layout of the scenario lists every connected monitor.
+    expect((await view()).layouts.map((l) => l.untouched)).toEqual([[], [], []]);
+
+    // A layout saved while the Dell was unplugged does not list it.
+    await app.invoke('displays:applyLayout', { id: 'flying' });
+    await mutate(app, [{ op: 'unplugDisplay', match: { name: 'DELL G3223D' } }]);
+    let v = await app.invoke<DisplaysView>('displays:saveLayout', { name: 'Flying, Dell away' });
+    const saved = layout(v, 'Flying, Dell away');
+    expect(saved.monitors.map((m) => m.name)).not.toContain('DELL G3223D');
+    expect(saved.untouched).toEqual([]);
+
+    // The Dell comes back, switched on, to the left of the ultrawide.
+    await mutate(app, [
+      { op: 'plugDisplay', display: { ...dell, enabled: true, primary: false, x: -2560, y: 0 } },
+    ]);
+    v = await view();
+    expect(layout(v, 'Flying, Dell away').untouched).toEqual([{ label: 'DELL G3223D', on: true }]);
+    // Flying itself lists the Dell (as off), so it has nothing it leaves alone.
+    expect(layout(v, 'Flying').untouched).toEqual([]);
+    expect(layout(v, 'Flying').differences).toEqual(['DELL G3223D is on, expected off']);
+    // As far as the layout goes the monitors match it: the Dell is not its business.
+    expect(layout(v, 'Flying, Dell away').status).toBe('current');
+
+    // Something of the layout differs, so there is something to apply.
+    await mutate(app, [
+      { op: 'setDisplay', match: { name: 'USB_Monitor', index: 0 }, set: { enabled: false } },
+    ]);
+    const preview = await app.invoke<ApplyPreview>('displays:preview', { id: saved.id });
+    expect(preview.changes).toEqual(['USB_Monitor (1 of 3) is off, expected on']);
+    expect(preview.untouched).toEqual([{ label: 'DELL G3223D', on: true }]);
+    expect(await app.invoke('displays:applyLayout', { id: saved.id })).toEqual({
+      kept: true,
+      message: 'Applied "Flying, Dell away"',
+    });
+    // The Dell is still on: a layout switches off only a monitor it lists.
+    expect(enabledNames()).toEqual([
+      'DELL G3223D',
+      'LC49G95T',
+      'USB_Monitor',
+      'USB_Monitor',
+      'USB_Monitor',
+    ]);
+    // Flying lists it, and switches it off.
+    await app.invoke('displays:applyLayout', { id: 'flying' });
+    expect(enabledNames()).toEqual(['LC49G95T', 'USB_Monitor', 'USB_Monitor', 'USB_Monitor']);
+    expect(layout(await view(), 'Flying, Dell away').untouched).toEqual([
+      { label: 'DELL G3223D', on: false },
+    ]);
+  });
+
+  it('New layout: saves the monitors as they are with only the chosen ones on, and does not touch the monitors', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    const before = structuredClone(app.ports.state.displays);
+    const idOf = (name: string, index = 0): string =>
+      before.filter((d) => d.name === name)[index]!.id;
+
+    let v = await app.invoke<DisplaysView>('displays:newLayout', {
+      name: 'Widescreen only',
+      stayOn: [idOf('LC49G95T')],
+    });
+    // Saving a layout changes nothing on the monitors and asks nothing.
+    expect(app.ports.state.displays).toEqual(before);
+    expect(questions()).toBe(0);
+    const made = layout(v, 'Widescreen only');
+    // Every connected monitor is in it; the ones not chosen as off. The one left on is the
+    // main display, at 0,0.
+    expect(made.monitors.map((m) => [m.name, m.enabled, m.primary, m.x, m.y])).toEqual([
+      ['LC49G95T', true, true, 0, 0],
+      ['DELL G3223D', false, false, 0, 0],
+      ['USB_Monitor', false, false, 0, 0],
+      ['USB_Monitor', false, false, 0, 0],
+      ['USB_Monitor', false, false, 0, 0],
+    ]);
+    expect(made.status).toBe('different');
+    expect(made.untouched).toEqual([]);
+
+    // The ones left on close up where one between them went: the ultrawide is off, so the
+    // first MFD screen comes to stand against the Dell.
+    v = await app.invoke<DisplaysView>('displays:newLayout', {
+      name: 'Dell and one MFD',
+      stayOn: [idOf('DELL G3223D'), idOf('USB_Monitor', 0)],
+    });
+    expect(
+      layout(v, 'Dell and one MFD')
+        .monitors.filter((m) => m.enabled)
+        .map((m) => [m.name, m.primary, m.x, m.y, m.width, m.height])
+    ).toEqual([
+      ['DELL G3223D', true, 0, 0, 2560, 1440],
+      ['USB_Monitor', false, 2560, 0, 1024, 768],
+    ]);
+
+    // Refused, each with its reason, and nothing is saved.
+    await expect(app.invoke('displays:newLayout', { name: 'None', stayOn: [] })).rejects.toThrow(
+      /ipc.input/
+    );
+    await expect(
+      app.invoke('displays:newLayout', { name: 'Unknown', stayOn: ['not-a-monitor'] })
+    ).rejects.toThrow(/A monitor that is off or not connected cannot be chosen/);
+    await expect(
+      app.invoke('displays:newLayout', { name: 'widescreen ONLY', stayOn: [idOf('LC49G95T')] })
+    ).rejects.toThrow(/already a layout named/);
+    expect((await view()).layouts.map((l) => l.name)).toEqual([
+      'Flying',
+      'Racing',
+      'Desk',
+      'Widescreen only',
+      'Dell and one MFD',
+    ]);
+
+    // Applying it is what switches the others off, with the usual question.
+    expect(await app.invoke('displays:applyLayout', { id: made.id })).toEqual({
+      kept: true,
+      message: 'Applied "Widescreen only"',
+    });
+    expect(questions()).toBe(1);
+    expect(enabledNames()).toEqual(['LC49G95T']);
+    // A monitor that is off now has no size or place to save, so it cannot be chosen.
+    await expect(
+      app.invoke('displays:newLayout', { name: 'Dell too', stayOn: [idOf('DELL G3223D')] })
+    ).rejects.toThrow(/Switch it on in Windows first/);
+  });
+
+  it('gives a change an assistant asked for at least a minute and names the assistant; its own "keep" proves nothing', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    app.layoutAnswer = 'wait';
+    const proven = path.join(app.ports.folders.dataRoot(), 'displays', 'proven.json');
+    const provenCount = async (): Promise<number> =>
+      fs.readFile(proven, 'utf8').then(
+        (text) => (JSON.parse(text) as { kept: unknown[] }).kept.length,
+        () => 0
+      );
+    const applying = runAsAssistant('Claude Desktop', () =>
+      app.invoke('displays:applyLayout', { id: 'flying' })
+    );
+    await expect.poll(questions).toBe(1);
+    // Whoever sits at the screens did not click: 60 seconds, not the 15 of the settings.
+    expect(app.events.at(-1)).toEqual({
+      channel: 'displays:event:applied',
+      payload: { seconds: 60, askedBy: 'Claude Desktop' },
+    });
+    expect(await app.invoke('displays:pending')).toEqual({
+      pending: true,
+      seconds: 60,
+      askedBy: 'Claude Desktop',
+    });
+    // The assistant keeps it itself. It is kept, but an assistant cannot see the screens.
+    expect(await runAsAssistant('Claude Desktop', () => app.invoke('displays:keep'))).toEqual({
+      kept: true,
+    });
+    expect(await applying).toEqual({ kept: true, message: 'Applied "Flying"' });
+    expect(await provenCount()).toBe(0);
+
+    // The same change kept by a person in RigReady's window is remembered.
+    await app.invoke('displays:revert');
+    const byHand = app.invoke('displays:applyLayout', { id: 'flying' });
+    await expect.poll(questions).toBe(2);
+    expect(app.events.at(-1)).toEqual({
+      channel: 'displays:event:applied',
+      payload: { seconds: 15 },
+    });
+    expect(await app.invoke('displays:keep')).toEqual({ kept: true });
+    expect(await byHand).toEqual({ kept: true, message: 'Applied "Flying"' });
+    expect(await provenCount()).toBe(1);
   });
 
   it('creates, renames, edits, updates, sets as desk layout and deletes layouts', async () => {
@@ -232,8 +482,9 @@ describe('Monitors page: saved layouts', () => {
     let v = await app.invoke<DisplaysView>('displays:saveLayout', { name: 'Desk as found' });
     const found = layout(v, 'Desk as found');
     expect(found.status).toBe('current');
+    // Saving under a name that is taken is refused, and says how a layout is saved again.
     await expect(app.invoke('displays:saveLayout', { name: 'flying' })).rejects.toThrow(
-      /already a layout named/
+      /There is already a layout named "flying"\. To save it again as the monitors are now, open its menu and choose "Replace with the monitors as they are now"\./
     );
     v = await app.invoke('displays:renameLayout', { id: found.id, name: 'Office' });
     expect(v.layouts.map((l) => l.name)).toContain('Office');
@@ -281,7 +532,6 @@ describe('Monitors page: saved layouts', () => {
     v = await app.invoke('displays:updateLayout', { id: found.id });
     expect(layout(v, 'Office').status).toBe('current');
     await app.invoke('displays:applyLayout', { id: 'flying' });
-    await app.invoke('displays:keep');
     v = await app.invoke('displays:updateLayout', { id: 'racing' });
     expect(layout(v, 'Racing').monitors.map((m) => m.name)).toContain('TV');
     expect(layout(v, 'Racing').status).toBe('incomplete');
@@ -334,9 +584,9 @@ describe('Monitors page: saved layouts', () => {
       return apply(targets);
     };
     expect(await app.invoke('displays:applyLayout', { id: saved.id })).toEqual({
+      kept: true,
       message: 'Applied "Desk now"',
     });
-    await app.invoke('displays:keep');
     expect(handed.at(-1)!.find((t) => t.name === 'LC49G95T')!.refreshHz).toBe(120);
     expect(ultrawide().refreshHz).toBe(120);
     expect(layout(await view(), 'Desk now').status).toBe('current');
@@ -362,13 +612,87 @@ describe('Monitors page: saved layouts', () => {
       layout(v, 'Desk now').monitors.find((m) => m.name === 'LC49G95T')!.refreshHz
     ).toBeUndefined();
     await app.invoke('displays:applyLayout', { id: 'flying' });
-    await app.invoke('displays:keep');
     const back = await app.invoke<{ message: string }>('displays:applyLayout', { id: saved.id });
     expect(back.message).toBe('Applied "Desk now"');
-    await app.invoke('displays:keep');
     expect(handed.at(-1)!.find((t) => t.name === 'LC49G95T')!.refreshHz).toBeUndefined();
     expect(ultrawide().refreshHz).toBe(60);
     expect(layout(await view(), 'Desk now').status).toBe('current');
+  });
+
+  it('replacing a layout picks up a refresh rate that was changed in Windows, and applying the layout brings that rate back', async () => {
+    app = await wiredApp('displays-layouts', NO_FILES);
+    const dell = () => app.ports.state.displays.find((d) => d.name === 'DELL G3223D')!;
+    const file = path.join(app.ports.folders.dataRoot(), 'displays', 'layouts.json');
+    type Stored = {
+      name: string;
+      enabled: boolean;
+      primary: boolean;
+      x: number;
+      refreshHz?: number;
+    };
+    const stored = async (id: string) =>
+      JSON.parse(await fs.readFile(file, 'utf8')).layouts.find((l: { id: string }) => l.id === id)
+        .displays as Stored[];
+    const rateIn = async (id: string) =>
+      (await stored(id)).find((d) => d.name === 'DELL G3223D')!.refreshHz;
+
+    // The Dell as Windows set it up: the signal it lists first, just under 60 Hz. Saved so.
+    expect(dell().refreshHz).toBe(59.95);
+    await app.invoke('displays:updateLayout', { id: 'desk' });
+    expect(await rateIn('desk')).toBe(59.95);
+
+    // The rate is raised in Windows. The layout says the monitors differ from it, and why.
+    dell().refreshHz = 165;
+    expect(layout(await view(), 'Desk')).toMatchObject({
+      status: 'different',
+      differences: ['DELL G3223D runs at 165 Hz, expected 59.95 Hz'],
+    });
+    // "Replace with the monitors as they are now" takes the new rate.
+    const v = await app.invoke<DisplaysView>('displays:updateLayout', { id: 'desk' });
+    expect(await rateIn('desk')).toBe(165);
+    expect(layout(v, 'Desk').status).toBe('current');
+    expect(layout(v, 'Desk').monitors.find((m) => m.name === 'DELL G3223D')!.refreshHz).toBe(165);
+
+    // Flying switches the Dell off. Windows would bring it back at the signal it lists first.
+    await app.invoke('displays:applyLayout', { id: 'flying' });
+    expect(dell().enabled).toBe(false);
+    dell().refreshHz = 59.95;
+    const apply = app.ports.displays.apply.bind(app.ports.displays);
+    const handed: { name: string; refreshHz?: number }[][] = [];
+    app.ports.displays.apply = async (targets) => {
+      handed.push(targets);
+      return apply(targets);
+    };
+    // Desk asks for the rate it holds, and the Dell runs at it again.
+    expect(await app.invoke('displays:applyLayout', { id: 'desk' })).toEqual({
+      kept: true,
+      message: 'Applied "Desk"',
+    });
+    expect(handed.at(-1)!.find((t) => t.name === 'DELL G3223D')!.refreshHz).toBe(165);
+    expect(dell()).toMatchObject({ enabled: true, refreshHz: 165 });
+    // Also when only the rate dropped while the monitor stayed on.
+    dell().refreshHz = 59.95;
+    expect(layout(await view(), 'Desk').differences).toEqual([
+      'DELL G3223D runs at 59.95 Hz, expected 165 Hz',
+    ]);
+    await app.invoke('displays:applyLayout', { id: 'desk' });
+    expect(dell().refreshHz).toBe(165);
+
+    // A monitor switched off in a layout's arrangement takes no rate with it: an old rate
+    // must not come back when it is switched on in that layout later.
+    const dellOff = (await stored('desk')).map((d) =>
+      d.name === 'DELL G3223D'
+        ? { ...d, enabled: false, primary: false }
+        : d.name === 'LC49G95T'
+          ? { ...d, primary: true, x: 0 }
+          : d
+    );
+    await app.invoke('displays:editLayout', { id: 'desk', displays: dellOff });
+    const off = (await stored('desk')).find((d) => d.name === 'DELL G3223D')!;
+    expect(off.enabled).toBe(false);
+    expect(off.refreshHz).toBeUndefined();
+    // The monitors that stay on keep theirs.
+    expect((await stored('desk')).find((d) => d.name === 'LC49G95T')!.refreshHz).toBe(120);
   });
 
   it('reports a damaged layouts file without losing the monitor list', async () => {
@@ -389,8 +713,11 @@ describe('a layout change RigReady never got an answer for', () => {
     const offer = await app.invoke<RecoveryView | null>('displays:recovery');
     expect(offer?.savedAt).toBe('2026-10-03T11:58:00.000Z');
     expect(offer?.lines).toContain('DELL G3223D: 2560x1440 at 0,0, main');
+    app.layoutAnswer = 'wait';
+    // The answer says where things stand, not how it ends: the question about it is open.
     expect(await app.invoke('displays:recover', { restore: true })).toEqual({
-      message: 'Put back the earlier layout',
+      message:
+        'The earlier layout is back. Keep it, or the monitors change back when the countdown ends.',
     });
     expect(app.ports.state.displays.find((d) => d.primary)?.name).toBe('DELL G3223D');
     // That too waits for Keep; once kept there is nothing left to offer.
@@ -418,13 +745,16 @@ describe('a layout change RigReady never got an answer for', () => {
 
   it('is written before every change and removed once the change is kept or reverted', async () => {
     app = await wiredApp('displays-layouts', NO_FILES);
+    app.layoutAnswer = 'wait';
     const file = path.join(app.ports.folders.dataRoot(), 'displays', 'pending-revert.json');
-    await app.invoke('displays:applyLayout', { id: 'flying' });
+    const applying = app.invoke('displays:applyLayout', { id: 'flying' });
+    await expect.poll(questions).toBe(1);
     const saved = JSON.parse(await fs.readFile(file, 'utf8'));
     expect(saved.displays.find((d: { name: string }) => d.name === 'DELL G3223D').enabled).toBe(
       true
     );
     await app.invoke('displays:revert');
+    expect(await applying).toMatchObject({ kept: false });
     await expect
       .poll(() =>
         fs.access(file).then(
@@ -449,7 +779,8 @@ describe('a layout change RigReady never got an answer for', () => {
     // A start with --launch is here while the window still asks whether anything was left
     // behind: the file exists and the monitors are not as it says, which is exactly what an
     // earlier run would have left.
-    await app.invoke('displays:applyLayout', { id: 'flying' });
+    const applying = app.invoke('displays:applyLayout', { id: 'flying' });
+    await expect.poll(questions).toBe(1);
     expect(await there()).toBe(true);
     expect(await app.invoke('displays:pending')).toMatchObject({ pending: true });
     expect(await app.invoke('displays:recovery')).toBeNull();
@@ -463,6 +794,7 @@ describe('a layout change RigReady never got an answer for', () => {
     expect(await there()).toBe(true);
     expect(await app.invoke('displays:pending')).toMatchObject({ pending: true });
     await app.invoke('displays:keep');
+    expect(await applying).toMatchObject({ kept: true });
     await expect.poll(there).toBe(false);
     expect(await app.invoke('displays:recovery')).toBeNull();
   });
