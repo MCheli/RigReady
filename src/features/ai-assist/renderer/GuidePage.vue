@@ -163,10 +163,7 @@ onBeforeUnmount(() => {
       {{ store.error }}
     </v-alert>
 
-    <PageSkeleton
-      v-if="store.loading"
-      :label="iracing ? 'Reading iRacing’s bindings…' : 'Reading the games’ bindings…'"
-    />
+    <PageSkeleton v-if="store.loading" label="Reading the games’ bindings…" />
 
     <div v-else-if="!store.game" class="rr-panel rr-empty" data-testid="ai-no-game">
       <v-icon icon="mdi-controller-off" size="36" class="mb-3" />
