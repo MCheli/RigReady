@@ -28,13 +28,13 @@ Unexpected errors are shown on every screen as a small notice; this page keeps t
 
 Before it is copied, personal details are removed the same way as for a [shared setup](../protect/sharing.md#the-privacy-review): your folders become variables such as `{DOCUMENTS}`, your Windows user name, the PC name, device serial numbers, device instance paths and audio device IDs are replaced, and anything that looks like a key or a password is masked. The confirmation says how many characters were copied and that this was done.
 
-**Export diagnostics…** writes the same report as a zip, together with every log file and the settings file, all scrubbed the same way. The default name is `RigReady-diagnostics-<date>.zip` in Documents. **Open log folder** opens the folder in Explorer; the files there are the raw log, which already writes your user folder as `~` and masks keys, but is not scrubbed of serial numbers and device paths.
+**Export diagnostics…** writes the same report as a zip, together with every log file and the settings file, all scrubbed the same way. The default name is `RigReady-diagnostics-<date>.zip` in Documents. **Open log folder** opens the folder in Explorer; the files there are the raw log, which already writes your user folder as `~` and masks keys and pairing tokens, but is not scrubbed of serial numbers and device paths.
 
 ![The report copied](../../../artifacts/screens/diagnostics/04-copied.png)
 
 ## The log
 
-The log is `logs\rigready.log` in the [data folder](index.md). When it reaches 5 MB it is rotated, and four older files are kept beside it. Each line has the time, the level, the feature it came from and the message. Expected failures (a check that fails, a file that cannot be read) are reported on the screen that asked and only appear in the log at the debug level; the log is for what went wrong underneath.
+The log is `logs\rigready.log` in the [data folder](index.md). When it reaches 5 MB it is rotated, and four older files are kept beside it. Each line has the time, the level, the feature it came from and the message. A check that fails is reported on the screen that asked and is not an error. A request RigReady could not carry out (a file that cannot be read, a program that is missing, an AI provider that says no) is reported on the screen that asked and also leaves one line in the log: the part of RigReady that was asked, the error's code and the message you were shown. The same error from the same place is written at most once a minute, with a count of the ones in between. A failed request to an AI provider adds the host, the model, the HTTP status, the provider's own reason and error code, and the id the provider gave the request. Never in these lines: what you typed, the text of a request, an API key or a pairing token. With them, an export tells whoever helps you what happened without the detailed log having been on.
 
 ## Unexpected errors
 

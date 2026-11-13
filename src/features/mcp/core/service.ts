@@ -61,6 +61,9 @@ import type { z } from 'zod';
 /** Seconds a question waits for the user before it is a no. */
 export const CONFIRM_SECONDS = 60;
 
+/** A flood of calls over the rate limit leaves one line in the log for each assistant in this time. */
+const RATE_LINE_EVERY_MS = 10_000;
+
 export interface ServiceDeps {
   ports: Ports;
   log: Logger;
@@ -148,7 +151,10 @@ export class McpService {
         if (await this.pairings.noteCall(id)) deps.emit.changed();
       },
     });
-    this.stopActivity = this.activity.onRecord((entry) => deps.emit.activity(entry));
+    this.stopActivity = this.activity.onRecord((entry) => {
+      deps.emit.activity(entry);
+      this.logCall(entry);
+    });
     const manual = deps.manual ?? bundledManual;
     const { resources, templates } = builtinResources({
       manual,
@@ -167,6 +173,40 @@ export class McpService {
       identify: (token) => this.pairings.identify(token),
       onRequest: () => deps.emit.changed(),
     });
+  }
+
+  /** When a call over the rate limit was last written to the log, by assistant. */
+  private readonly rateLines = new Map<string, number>();
+
+  /**
+   * One line in the log for a call an assistant made: who, which tool and channel, how it
+   * ended and how long it took, and for one that did not work, why. A read that worked is in
+   * the detailed log only. Never the call's input or its answer. A flood over the rate limit
+   * writes one line every ten seconds, not one a call.
+   */
+  private logCall(entry: ActivityEntry): void {
+    const { log, ports } = this.deps;
+    const line = {
+      client: entry.client,
+      tool: entry.tool,
+      ...(entry.channel ? { channel: entry.channel } : {}),
+      tier: entry.tier,
+      outcome: entry.outcome,
+      ms: entry.ms,
+      summary: entry.summary,
+    };
+    if (entry.outcome === 'ok') {
+      if (entry.tier === 'read') log.debug('an assistant call ran', line);
+      else log.info('an assistant call ran', line);
+      return;
+    }
+    if (entry.outcome === 'rate') {
+      const now = ports.clock.now().getTime();
+      const last = this.rateLines.get(entry.client);
+      if (last !== undefined && now - last < RATE_LINE_EVERY_MS) return;
+      this.rateLines.set(entry.client, now);
+    }
+    log.warn('an assistant call did not go through', { ...line, message: entry.message });
   }
 
   /** The surface the settings name right now; the catalogue is rebuilt when it changes. */

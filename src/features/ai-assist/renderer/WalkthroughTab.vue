@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { ItemView } from '../core/model';
+import GuideFile from './GuideFile.vue';
 import { useAiStore } from './store';
 
 /**
@@ -51,17 +52,21 @@ const position = computed(() => {
 <template>
   <div v-if="!guide.guide" class="rr-panel rr-empty" data-testid="ai-no-guide">
     <v-icon icon="mdi-book-open-blank-variant" size="36" class="mb-3" />
-    <div class="rr-row-title">There is no guide for the {{ guide.aircraftName }} yet</div>
-    <div class="rr-row-sub">
+    <div v-if="guide.stored" class="rr-row-title">
+      The guide file for the {{ guide.aircraftName }} needs a fix
+    </div>
+    <div v-else class="rr-row-title">There is no guide for the {{ guide.aircraftName }} yet</div>
+    <div v-if="!guide.stored" class="rr-row-sub">
       RigReady ships guides for the F/A-18C, F-16C, A-10C, F-14, F-15E, Ka-50, UH-1H and a dozen
-      more, but not yet for this one. Guides are plain data files anyone can write (see the packs
-      folder in RigReady's source).
+      more, but not yet for this one. A guide is a plain text file: import one somebody shared with
+      you, or start your own from a short example and edit it in Notepad. Neither needs an AI key.
       <template v-if="store.aiReady">
-        With your API key, AI help can draft one from this aircraft's own list of actions.
+        With your API key, AI help can also draft one from this aircraft's own list of actions.
       </template>
     </div>
+    <GuideFile centered />
     <v-btn
-      v-if="store.aiReady"
+      v-if="store.aiReady && !guide.stored"
       class="mt-4"
       color="primary"
       variant="tonal"
@@ -107,6 +112,7 @@ const position = computed(() => {
         This guide was drafted by AI ({{ guide.guide.drafted.by }}) and has not been checked by a
         person. Use it as a starting point.
       </v-alert>
+      <GuideFile />
     </div>
 
     <div class="walk-grid">

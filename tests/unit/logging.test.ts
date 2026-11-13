@@ -74,6 +74,23 @@ describe('the logger', () => {
     expect(lines).toHaveLength(5);
   });
 
+  it('never writes a pairing token of the MCP server, whole or cut short', () => {
+    const token = `rr_${'9e'.repeat(32)}`;
+    const { lines, log } = capture();
+    log.info(`paired with ${token}`);
+    log.info('request', { headers: { authorization: `Bearer ${token}` } });
+    log.warn('command', `claude mcp add rigready --header "Authorization: Bearer ${token}"`);
+    log.error('failed', new Error(`401 for ${token}`));
+    // A text longer than the logger keeps is cut first: what is left of a token is masked too.
+    log.info('long', `${'x'.repeat(LOG_MAX_TEXT - 30)} ${token}`);
+    const all = lines.join('');
+    expect(all).not.toContain(token);
+    expect(all).not.toMatch(/rr_[0-9a-f]{16}/i);
+    expect(all).not.toContain('9e9e9e9e');
+    expect(lines[0]).toContain('paired with rr_***');
+    expect(lines).toHaveLength(5);
+  });
+
   it('writes paths, but with the home folder as ~ and no Windows user name', () => {
     const { lines, log } = capture('debug', ['D:\\Profiles\\mark']);
     log.info('read C:\\Users\\Jane Doe\\Saved Games\\DCS\\Config\\options.lua');
