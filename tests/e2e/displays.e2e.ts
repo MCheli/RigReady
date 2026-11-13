@@ -318,6 +318,9 @@ test('monitors: edit a layout by hand; overlapping monitors are refused with a r
   await expect(dialog.getByTestId('edit-error')).toContainText(
     'DELL G3223D and USB_Monitor (1 of 3) overlap.'
   );
+  // Why it was refused and the button to try again are both in view: only the rows scroll.
+  await expect(dialog.getByTestId('edit-error')).toBeInViewport({ ratio: 1 });
+  await expect(dialog.getByTestId('edit-save')).toBeInViewport({ ratio: 1 });
   await shot('overlap-refused');
   const x = mfd.getByTestId('edit-x').locator('input');
   await x.fill('7680');
@@ -1102,4 +1105,37 @@ test('an assistant asks for Make ready: the question names the assistant and giv
     await client.close();
   }
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
+});
+
+test('monitors: in a window too low for the layout editor, its rows scroll and Save layout stays in view', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('displays-layouts', 'display-edit-low-window');
+  await openMonitors(page);
+  // The smallest window the app allows.
+  await page.setViewportSize({ width: 960, height: 640 });
+  await menu(page, 'Desk', 'layout-edit');
+  const dialog = page.getByTestId('edit-dialog');
+  await expect(dialog).toBeVisible();
+  const title = dialog.getByText('Edit "Desk"');
+  const save = dialog.getByTestId('edit-save');
+  const rows = dialog.getByTestId('edit-row');
+
+  // The editor is taller than the window: the last monitor's row is not in view yet.
+  // The title and the buttons are, and they stay while the rows are scrolled.
+  await expect(rows.first()).toBeVisible();
+  await expect(rows.last()).not.toBeInViewport();
+  await expect(title).toBeInViewport({ ratio: 1 });
+  await expect(save).toBeInViewport({ ratio: 1 });
+  await shot('top-of-the-rows');
+  await rows.last().scrollIntoViewIfNeeded();
+  await expect(rows.last()).toBeInViewport({ ratio: 1 });
+  await expect(title).toBeInViewport({ ratio: 1 });
+  await expect(save).toBeInViewport({ ratio: 1 });
+  await shot('last-row');
+
+  // And it saves from there.
+  await save.click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId('displays-notice')).toContainText('Saved "Desk"');
 });

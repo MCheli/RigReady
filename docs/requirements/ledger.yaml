@@ -2223,6 +2223,24 @@ requirements:
     status: in_progress
     evidence: []
 
+  - id: DISP-020
+    title: Save layout stays in view in the monitor layout editor
+    job: configure
+    area: displays
+    priority: p2
+    done_means:
+      - "In the dialog that edits a monitor layout by hand, only the rows of monitors scroll: the title and the buttons Cancel and 'Save layout' stay inside the window, also in the smallest window RigReady allows, which is too low for all the rows."
+      - "A layout that is refused says why between the rows and the buttons, in view without scrolling."
+    status: done
+    evidence:
+      - test: "tests/e2e/displays.e2e.ts#monitors: in a window too low for the layout editor, its rows scroll and Save layout stays in view"
+      - test: "tests/e2e/displays.e2e.ts#monitors: edit a layout by hand; overlapping monitors are refused with a reason"
+      - "artifacts/screens/display-edit-low-window/01-top-of-the-rows.png"
+      - "artifacts/screens/display-edit-low-window/02-last-row.png"
+      - "artifacts/screens/display-edit/01-overlap-refused.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. Before, a dialog taller than the window scrolled as a whole, the buttons with the rows, and the reason for a refusal was under the last row, where it scrolled away with them. A dialog keeps its own buttons; it does not use the shared Save bar."
+
   # ---------------------------------------------------------------------------
   # DEVICES AND TROUBLESHOOTING
   # ---------------------------------------------------------------------------

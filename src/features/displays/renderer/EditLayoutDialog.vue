@@ -129,7 +129,13 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <v-dialog :model-value="layout !== undefined" max-width="880" @update:model-value="emit('close')">
+  <!-- `scrollable`: with many monitors, or in a low window, the rows scroll and the buttons stay. -->
+  <v-dialog
+    :model-value="layout !== undefined"
+    max-width="880"
+    scrollable
+    @update:model-value="emit('close')"
+  >
     <v-card v-if="layout" data-testid="edit-dialog">
       <v-card-title>Edit "{{ layout.name }}"</v-card-title>
       <v-card-text>
@@ -211,10 +217,17 @@ async function save(): Promise<void> {
             />
           </div>
         </div>
-        <v-alert v-if="error" type="error" variant="tonal" class="mt-3" data-testid="edit-error">
-          {{ error }}
-        </v-alert>
       </v-card-text>
+      <!-- Outside the part that scrolls: why a save was refused stays in view with the buttons. -->
+      <v-alert
+        v-if="error"
+        type="error"
+        variant="tonal"
+        class="edit-error"
+        data-testid="edit-error"
+      >
+        {{ error }}
+      </v-alert>
       <v-card-actions>
         <v-spacer />
         <v-btn variant="text" @click="emit('close')">Cancel</v-btn>
@@ -236,6 +249,11 @@ async function save(): Promise<void> {
 .edit-hint {
   font-size: 13px;
   margin: 0 0 12px;
+}
+/* Between the rows and the buttons, at its own height: it neither stretches nor scrolls away. */
+.edit-error {
+  flex: none;
+  margin: 4px 20px 0;
 }
 /* A fixed height, whatever is drawn: the rows and buttons below never move. */
 .edit-preview {
