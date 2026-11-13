@@ -67,7 +67,7 @@ describe('Le Mans Ultimate bindings', () => {
     app.ports.state.input.push({
       index: 0,
       name: 'FANATEC ClubSport Wheel Base V2.5',
-      guid: '20B0BED0-03A4-11F1-8001-444553540000',
+      guid: '45D4BEA1-60A1-17D8-8001-444553540000',
       productGuid: '00040EB7-0000-0000-0000-504944564944',
       vendorId: '0EB7',
       productId: '0004',
@@ -271,7 +271,7 @@ describe('Le Mans Ultimate: a controller Windows renamed', () => {
       ...app.ports.state.input.find((d) => d.vendorId === '0EB7')!,
       index: 9,
       name: 'FANATEC Podium Wheel Base DD2 (2)',
-      guid: '20B0BED0-03A4-11F1-8002-444553540000',
+      guid: '45D4BEA1-60A1-17D8-8002-444553540000',
     });
     device = (await app.invoke<LmuView>('racing:lmu')).devices[0]!;
     expect(device.state).toBe('connected');

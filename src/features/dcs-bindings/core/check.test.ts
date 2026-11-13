@@ -360,7 +360,7 @@ describe('the feature through IPC', () => {
     const pressed = app.events.filter((e) => e.channel === 'dcs-bindings:event:pressed');
     expect(pressed.map((e) => e.payload)).toEqual([
       {
-        guid: '806DDF00-B756-11f0-8023-444553540000',
+        guid: '480FAD44-D166-18c0-8023-444553540000',
         deviceName: stick.name,
         key: 'JOY_BTN5',
         label: 'Button 5',

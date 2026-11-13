@@ -194,7 +194,7 @@ describe('stream-deck.connected', () => {
       pass: true,
       summary: 'Stream Deck XL connected',
     });
-    expect(await connectedCheck.run({ serial: 'A00NA33331P1UB' }, rig.ctx)).toMatchObject({
+    expect(await connectedCheck.run({ serial: 'S11FD24013B3QA' }, rig.ctx)).toMatchObject({
       pass: true,
     });
     expect(await connectedCheck.run({ serial: 'OTHER' }, rig.ctx)).toEqual({
@@ -249,7 +249,7 @@ describe('Stream Deck capture', () => {
     const two = await streamDeckCapture.capture(rig.ctx);
     const devices = two.ok ? two.value.filter((c) => c.group === 'devices') : [];
     expect(devices.map((c) => c.check.params)).toEqual([
-      { serial: 'A00NA33331P1UB' },
+      { serial: 'S11FD24013B3QA' },
       { serial: 'B1' },
     ]);
     await rig.cleanup();

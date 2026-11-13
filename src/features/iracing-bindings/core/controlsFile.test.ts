@@ -22,7 +22,7 @@ const recorded = path.join(
   'iRacing',
   'controls.cfg'
 );
-const WHEEL = '20B0BED0-03A4-11F1-8001-444553540000';
+const WHEEL = '45D4BEA1-60A1-17D8-8001-444553540000';
 const WHEEL_PRODUCT = '00070EB7-0000-0000-0000-504944564944';
 
 const read = async (file = recorded): Promise<Uint8Array> =>

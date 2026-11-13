@@ -14,7 +14,7 @@
       "edid": "DELD139",
       "gdiName": "\\\\.\\DISPLAY2",
       "refreshHz": 59.95,
-      "serial": "12NFXG3",
+      "serial": "25PGII6",
       "connector": "DisplayPort",
       "modes": [
         {
@@ -138,7 +138,7 @@
       "edid": "SAM7053",
       "gdiName": "\\\\.\\DISPLAY1",
       "refreshHz": 120,
-      "serial": "H4ZR900542",
+      "serial": "O8HO530811",
       "connector": "DisplayPort",
       "modes": [
         {
@@ -198,7 +198,7 @@
       "gdiName": "\\\\.\\DISPLAY7",
       "refreshHz": 60,
       "serial": "1",
-      "usbSerial": "WWIN29320221210163532",
+      "usbSerial": "PBOC22104847830214489",
       "usbId": "17E9:FF00",
       "connector": "USB",
       "modes": [
@@ -224,7 +224,7 @@
       "gdiName": "\\\\.\\DISPLAY6",
       "refreshHz": 60,
       "serial": "1",
-      "usbSerial": "WWIN29320221210092611",
+      "usbSerial": "ZJPC47736095181552826",
       "usbId": "17E9:FF00",
       "connector": "USB",
       "modes": [
@@ -250,7 +250,7 @@
       "gdiName": "\\\\.\\DISPLAY5",
       "refreshHz": 60,
       "serial": "1",
-      "usbSerial": "WWIN29320221210093818",
+      "usbSerial": "NVFC74178362619330533",
       "usbId": "17E9:FF00",
       "connector": "USB",
       "modes": [

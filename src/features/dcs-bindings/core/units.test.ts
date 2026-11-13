@@ -63,8 +63,8 @@ describe('input names', () => {
       'JOY_BTN_POV1_U',
       'A',
     ]);
-    expect(diffFileNameFor('WINWING ICP', '806DB7F0-B756-11F0-8020-444553540000')).toBe(
-      'WINWING ICP {806DB7F0-B756-11f0-8020-444553540000}.diff.lua'
+    expect(diffFileNameFor('WINWING ICP', '113EE9E0-E314-11C7-8020-444553540000')).toBe(
+      'WINWING ICP {113EE9E0-E314-11c7-8020-444553540000}.diff.lua'
     );
     expect(diffFileNameFor('Keyboard', undefined)).toBe('Keyboard.diff.lua');
   });

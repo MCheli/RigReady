@@ -16,8 +16,8 @@ Default audio when recorded: playback Speakers (Realtek), communications playbac
 |---|---|
 | `devices.json`, `usb-tree.json` | 62 USB devices with hub chains |
 | `displays.json` | 5 monitors |
-| `processes.json` | every running process (paths as on the PC, user name replaced) |
-| `services.json` | 718 Windows services with state |
+| `processes.json` | 44 running processes: the programs the tests and scenarios read and a few of Windows' own (`RECORDED_PROCESSES` in `scripts/lib/recordPlan.ts`; paths as on the PC, user name replaced) |
+| `services.json` | 22 Windows services with state: the ones the tests read and a few of Windows' own (`RECORDED_SERVICES`) |
 | `audio.json` | 10 endpoints and the defaults |
 | `input.json` | 12 DirectInput game controllers with instance GUID, product GUID, VID/PID, axis names |
 | `registry.json` | 252 keys: DirectInput calibration slots (instance GUIDs) and OEM names, joystick slots, Steam path, Steam's per-app state for the sims, uninstall entries of the sims and helper apps, `HKCU\Software\Endor\FanatecService`, `HKLM\SOFTWARE\WOW6432Node\Fanatec Endor AG`, the iRacing installer key. No Eagle Dynamics keys exist (Steam edition). |
@@ -39,11 +39,13 @@ Default audio when recorded: playback Speakers (Realtek), communications playbac
 
 ## Privacy
 
-Paths have the Windows user name replaced with `User`. Steam account ids are replaced with the neutral id `76561197960265728`, and the player name and nickname in LMU's `Settings.JSON` with `Player`. Never recorded: `%APPDATA%\SimAppPro\config.json` (account credentials), DCS `network.vault` and `steam_authdata.bin`. The recording still contains real device serial numbers and the full list of running programs and services.
+Paths have the Windows user name replaced with `User`. Steam account ids are replaced with the neutral id `76561197960265728`, and the player name and nickname in LMU's `Settings.JSON` with `Player`. Never recorded: `%APPDATA%\SimAppPro\config.json` (account credentials), DCS `network.vault` and `steam_authdata.bin`.
+
+Every device serial number (USB devices and monitors) and every instance GUID (the game controllers' in `input.json`, in the registry's calibration slots, in DCS binding file names and in the other recorded files; the audio endpoints') is a stable made-up value of the same shape: same length, digits and letters in the same places, the same case. `scripts/lib/sanitize.ts` (`identityReplacements`, `replaceIdentity`) makes them, and the recorder applies it, so the same device always gets the same made-up value and a re-recording keeps the values the tests name. A DirectInput GUID keeps its slot counter and its fixed `444553540000` node; GUIDs Windows made at the same moment share their made-up time. Serials that name no unit (`1`, `FF`, all zeros) stay as they are. The process and service lists hold only what the tests read and a few of Windows' own.
 
 ## Monitor identity (added 2026-10-03, evening)
 
-`displays.json` also carries, per monitor: `serial` (from the EDID Windows keeps in the registry: `12NFXG3` for the Dell, `H4ZR900542` for the ultrawide, `1` on all three MFD screens, which therefore identifies none of them), `usbSerial` and `usbId` for the three MFD screens (the DisplayLink USB device each hangs off, `17E9:FF00`, serials `WWIN29320221210163532`, `WWIN29320221210092611`, `WWIN29320221210093818`), `connector` (`DisplayPort`, `USB`), and `modes`: the three largest resolutions each monitor offers with every refresh rate (the full lists are 100 to 190 modes; the MFD screens have exactly one, 1024x768 at 60 Hz). These fields were merged into the existing recording from a read of the same desk state; nothing else in the file changed.
+`displays.json` also carries, per monitor (serials made up, see Privacy): `serial` (from the EDID Windows keeps in the registry: `25PGII6` for the Dell, `O8HO530811` for the ultrawide, `1` on all three MFD screens, which therefore identifies none of them), `usbSerial` and `usbId` for the three MFD screens (the DisplayLink USB device each hangs off, `17E9:FF00`, serials `PBOC22104847830214489`, `ZJPC47736095181552826`, `NVFC74178362619330533`), `connector` (`DisplayPort`, `USB`), and `modes`: the three largest resolutions each monitor offers with every refresh rate (the full lists are 100 to 190 modes; the MFD screens have exactly one, 1024x768 at 60 Hz). These fields were merged into the existing recording from a read of the same desk state; nothing else in the file changed.
 
 ## MFD screen orientation: 90 is likely, still not seen on the panels
 

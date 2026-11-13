@@ -127,7 +127,7 @@ describe('sharing a setup', () => {
       ])
     );
     expect(found('path')).toContain(dcsUser(app));
-    expect(found('deviceId')).toContain('T-Pendular-Rudder {7F3956A0-B756-11f0-801B-444553540000}');
+    expect(found('deviceId')).toContain('T-Pendular-Rudder {0F1424B4-D566-14a0-801B-444553540000}');
     // Defaults: identities go, controller ids in file names stay.
     const byKind = (kind: string) => review.findings.find((f) => f.kind === kind)!;
     expect(byKind('serial').defaultAction).toBe('remove');

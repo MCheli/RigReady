@@ -74,11 +74,11 @@
                 "name": "USB3.1 Hub",
                 "children": [
                   {
-                    "instanceId": "USB\\VID_17E9&PID_FF00\\WWIN29320221210092611",
+                    "instanceId": "USB\\VID_17E9&PID_FF00\\ZJPC47736095181552826",
                     "name": "WINWING USB 3.0 Display1",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_17E9&PID_FF00\\WWIN29320221210092611",
+                      "instanceId": "USB\\VID_17E9&PID_FF00\\ZJPC47736095181552826",
                       "vendorId": "17E9",
                       "productId": "FF00",
                       "name": "WINWING USB 3.0 Display1",
@@ -104,7 +104,7 @@
                         }
                       ],
                       "manufacturer": "(Standard USB Host Controller)",
-                      "serial": "WWIN29320221210092611"
+                      "serial": "ZJPC47736095181552826"
                     }
                   }
                 ],
@@ -193,11 +193,11 @@
                 "name": "USB3.1 Hub",
                 "children": [
                   {
-                    "instanceId": "USB\\VID_17E9&PID_FF00\\WWIN29320221210093818",
+                    "instanceId": "USB\\VID_17E9&PID_FF00\\NVFC74178362619330533",
                     "name": "WINWING USB 3.0 Display1",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_17E9&PID_FF00\\WWIN29320221210093818",
+                      "instanceId": "USB\\VID_17E9&PID_FF00\\NVFC74178362619330533",
                       "vendorId": "17E9",
                       "productId": "FF00",
                       "name": "WINWING USB 3.0 Display1",
@@ -223,7 +223,7 @@
                         }
                       ],
                       "manufacturer": "(Standard USB Host Controller)",
-                      "serial": "WWIN29320221210093818"
+                      "serial": "NVFC74178362619330533"
                     }
                   }
                 ],
@@ -315,11 +315,11 @@
                 "name": "USB3.1 Hub",
                 "children": [
                   {
-                    "instanceId": "USB\\VID_17E9&PID_FF00\\WWIN29320221210163532",
+                    "instanceId": "USB\\VID_17E9&PID_FF00\\PBOC22104847830214489",
                     "name": "WINWING USB 3.0 Display1",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_17E9&PID_FF00\\WWIN29320221210163532",
+                      "instanceId": "USB\\VID_17E9&PID_FF00\\PBOC22104847830214489",
                       "vendorId": "17E9",
                       "productId": "FF00",
                       "name": "WINWING USB 3.0 Display1",
@@ -345,7 +345,7 @@
                         }
                       ],
                       "manufacturer": "(Standard USB Host Controller)",
-                      "serial": "WWIN29320221210163532"
+                      "serial": "PBOC22104847830214489"
                     }
                   }
                 ],
@@ -415,11 +415,11 @@
         }
       },
       {
-        "instanceId": "USB\\VID_0B05&PID_19AF\\9876543210",
+        "instanceId": "USB\\VID_0B05&PID_19AF\\9212087420",
         "name": "AURA LED Controller",
         "children": [],
         "device": {
-          "instanceId": "USB\\VID_0B05&PID_19AF\\9876543210",
+          "instanceId": "USB\\VID_0B05&PID_19AF\\9212087420",
           "vendorId": "0B05",
           "productId": "19AF",
           "name": "AURA LED Controller",
@@ -433,11 +433,11 @@
             }
           ],
           "manufacturer": "(Standard USB Host Controller)",
-          "serial": "9876543210"
+          "serial": "9212087420"
         }
       },
       {
-        "instanceId": "USB\\VID_2109&PID_0817\\MSFT30000000000",
+        "instanceId": "USB\\VID_2109&PID_0817\\XXXG25854801386",
         "name": "Generic SuperSpeed USB Hub",
         "children": [
           {
@@ -462,7 +462,7 @@
                       "name": "Generic SuperSpeed USB Hub"
                     },
                     {
-                      "instanceId": "USB\\VID_2109&PID_0817\\MSFT30000000000",
+                      "instanceId": "USB\\VID_2109&PID_0817\\XXXG25854801386",
                       "name": "Generic SuperSpeed USB Hub"
                     },
                     {
@@ -491,7 +491,7 @@
                       "name": "Generic SuperSpeed USB Hub"
                     },
                     {
-                      "instanceId": "USB\\VID_2109&PID_0817\\MSFT30000000000",
+                      "instanceId": "USB\\VID_2109&PID_0817\\XXXG25854801386",
                       "name": "Generic SuperSpeed USB Hub"
                     },
                     {
@@ -513,7 +513,7 @@
               "isHub": true,
               "hubChain": [
                 {
-                  "instanceId": "USB\\VID_2109&PID_0817\\MSFT30000000000",
+                  "instanceId": "USB\\VID_2109&PID_0817\\XXXG25854801386",
                   "name": "Generic SuperSpeed USB Hub"
                 },
                 {
@@ -526,7 +526,7 @@
           }
         ],
         "device": {
-          "instanceId": "USB\\VID_2109&PID_0817\\MSFT30000000000",
+          "instanceId": "USB\\VID_2109&PID_0817\\XXXG25854801386",
           "vendorId": "2109",
           "productId": "0817",
           "name": "USB3.0 Hub             ",
@@ -540,7 +540,7 @@
             }
           ],
           "manufacturer": "(Standard USB HUBs)",
-          "serial": "MSFT30000000000"
+          "serial": "XXXG25854801386"
         }
       },
       {
@@ -673,11 +673,11 @@
                     }
                   },
                   {
-                    "instanceId": "USB\\VID_0FD9&PID_008F\\A00NA33331P1UB",
+                    "instanceId": "USB\\VID_0FD9&PID_008F\\S11FD24013B3QA",
                     "name": "Stream Deck XL",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_0FD9&PID_008F\\A00NA33331P1UB",
+                      "instanceId": "USB\\VID_0FD9&PID_008F\\S11FD24013B3QA",
                       "vendorId": "0FD9",
                       "productId": "008F",
                       "name": "Stream Deck XL",
@@ -703,7 +703,7 @@
                         }
                       ],
                       "manufacturer": "(Standard system devices)",
-                      "serial": "A00NA33331P1UB"
+                      "serial": "S11FD24013B3QA"
                     }
                   }
                 ],
@@ -737,11 +737,11 @@
                 "name": "USB2.1 Hub",
                 "children": [
                   {
-                    "instanceId": "USB\\VID_4098&PID_BF06\\8E3C6012D4664221F33630B2",
+                    "instanceId": "USB\\VID_4098&PID_BF06\\4E2E9327A3187152B92813B5",
                     "name": "WINWING ICP",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_4098&PID_BF06\\8E3C6012D4664221F33630B2",
+                      "instanceId": "USB\\VID_4098&PID_BF06\\4E2E9327A3187152B92813B5",
                       "vendorId": "4098",
                       "productId": "BF06",
                       "name": "WINWING ICP",
@@ -767,15 +767,15 @@
                         }
                       ],
                       "manufacturer": "(Standard system devices)",
-                      "serial": "8E3C6012D4664221F33630B2"
+                      "serial": "4E2E9327A3187152B92813B5"
                     }
                   },
                   {
-                    "instanceId": "USB\\VID_4098&PID_BEE0\\53BD7012E446232143263042",
+                    "instanceId": "USB\\VID_4098&PID_BEE0\\75BB4533E728022501736627",
                     "name": "WINWING MFD1-C",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_4098&PID_BEE0\\53BD7012E446232143263042",
+                      "instanceId": "USB\\VID_4098&PID_BEE0\\75BB4533E728022501736627",
                       "vendorId": "4098",
                       "productId": "BEE0",
                       "name": "WINWING MFD1-C",
@@ -801,7 +801,7 @@
                         }
                       ],
                       "manufacturer": "(Standard system devices)",
-                      "serial": "53BD7012E446232143263042"
+                      "serial": "75BB4533E728022501736627"
                     }
                   }
                 ],
@@ -864,11 +864,11 @@
                 "name": "USB2.1 Hub",
                 "children": [
                   {
-                    "instanceId": "USB\\VID_4098&PID_BF05\\B167D012E4465321A2E63072",
+                    "instanceId": "USB\\VID_4098&PID_BF05\\F601F748F9599339D6F63447",
                     "name": "WINWING F18 TAKEOFF PANEL 2",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_4098&PID_BF05\\B167D012E4465321A2E63072",
+                      "instanceId": "USB\\VID_4098&PID_BF05\\F601F748F9599339D6F63447",
                       "vendorId": "4098",
                       "productId": "BF05",
                       "name": "WINWING F18 TAKEOFF PANEL 2",
@@ -894,15 +894,15 @@
                         }
                       ],
                       "manufacturer": "(Standard system devices)",
-                      "serial": "B167D012E4465321A2E63072"
+                      "serial": "F601F748F9599339D6F63447"
                     }
                   },
                   {
-                    "instanceId": "USB\\VID_4098&PID_BEDE\\AE372062A4E6D221B2465002",
+                    "instanceId": "USB\\VID_4098&PID_BEDE\\DD741978C0B0C192F4206238",
                     "name": "WINWING UFC1 + HUD1",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_4098&PID_BEDE\\AE372062A4E6D221B2465002",
+                      "instanceId": "USB\\VID_4098&PID_BEDE\\DD741978C0B0C192F4206238",
                       "vendorId": "4098",
                       "productId": "BEDE",
                       "name": "WINWING UFC1 + HUD1",
@@ -928,7 +928,7 @@
                         }
                       ],
                       "manufacturer": "(Standard system devices)",
-                      "serial": "AE372062A4E6D221B2465002"
+                      "serial": "DD741978C0B0C192F4206238"
                     }
                   }
                 ],
@@ -1054,11 +1054,11 @@
                     }
                   },
                   {
-                    "instanceId": "USB\\VID_4098&PID_BE03\\0FA12062F4362231C4766072",
+                    "instanceId": "USB\\VID_4098&PID_BE03\\9EF92793D9984080B4841193",
                     "name": "WINWING F18 STARTUP PANEL",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_4098&PID_BE03\\0FA12062F4362231C4766072",
+                      "instanceId": "USB\\VID_4098&PID_BE03\\9EF92793D9984080B4841193",
                       "vendorId": "4098",
                       "productId": "BE03",
                       "name": "WINWING F18 STARTUP PANEL",
@@ -1084,7 +1084,7 @@
                         }
                       ],
                       "manufacturer": "(Standard system devices)",
-                      "serial": "0FA12062F4362231C4766072"
+                      "serial": "9EF92793D9984080B4841193"
                     }
                   }
                 ],
@@ -1118,11 +1118,11 @@
                 "name": "Generic USB Hub",
                 "children": [
                   {
-                    "instanceId": "USB\\VID_2357&PID_0604\\E848B8C82000",
+                    "instanceId": "USB\\VID_2357&PID_0604\\C344F5B58360",
                     "name": "TP-Link UB500 Adapter",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_2357&PID_0604\\E848B8C82000",
+                      "instanceId": "USB\\VID_2357&PID_0604\\C344F5B58360",
                       "vendorId": "2357",
                       "productId": "0604",
                       "name": "TP-Link UB500 Adapter",
@@ -1148,15 +1148,15 @@
                         }
                       ],
                       "manufacturer": "TP-Link Systems Inc.",
-                      "serial": "E848B8C82000"
+                      "serial": "C344F5B58360"
                     }
                   },
                   {
-                    "instanceId": "USB\\VID_4098&PID_BEA8\\82E72012C416422192F650B2",
+                    "instanceId": "USB\\VID_4098&PID_BEA8\\22D55963A162301390D140A0",
                     "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_4098&PID_BEA8\\82E72012C416422192F650B2",
+                      "instanceId": "USB\\VID_4098&PID_BEA8\\22D55963A162301390D140A0",
                       "vendorId": "4098",
                       "productId": "BEA8",
                       "name": "WINWING Orion Joystick Base 2 + JGRIP-F16",
@@ -1182,15 +1182,15 @@
                         }
                       ],
                       "manufacturer": "(Standard system devices)",
-                      "serial": "82E72012C416422192F650B2"
+                      "serial": "22D55963A162301390D140A0"
                     }
                   },
                   {
-                    "instanceId": "USB\\VID_4098&PID_BD26\\14067062F4E6C33163562052",
+                    "instanceId": "USB\\VID_4098&PID_BD26\\43246085F6B9D37844328767",
                     "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_4098&PID_BD26\\14067062F4E6C33163562052",
+                      "instanceId": "USB\\VID_4098&PID_BD26\\43246085F6B9D37844328767",
                       "vendorId": "4098",
                       "productId": "BD26",
                       "name": "WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R",
@@ -1216,7 +1216,7 @@
                         }
                       ],
                       "manufacturer": "(Standard system devices)",
-                      "serial": "14067062F4E6C33163562052"
+                      "serial": "43246085F6B9D37844328767"
                     }
                   }
                 ],
@@ -1284,11 +1284,11 @@
                     }
                   },
                   {
-                    "instanceId": "USB\\VID_4098&PID_BEE2\\80E62062A4E6D221B2465002",
+                    "instanceId": "USB\\VID_4098&PID_BEE2\\52F94702D5B0D916B2951379",
                     "name": "WINWING MFD1-R",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_4098&PID_BEE2\\80E62062A4E6D221B2465002",
+                      "instanceId": "USB\\VID_4098&PID_BEE2\\52F94702D5B0D916B2951379",
                       "vendorId": "4098",
                       "productId": "BEE2",
                       "name": "WINWING MFD1-R",
@@ -1314,7 +1314,7 @@
                         }
                       ],
                       "manufacturer": "(Standard system devices)",
-                      "serial": "80E62062A4E6D221B2465002"
+                      "serial": "52F94702D5B0D916B2951379"
                     }
                   }
                 ],
@@ -1348,11 +1348,11 @@
                 "name": "USB2.1 Hub",
                 "children": [
                   {
-                    "instanceId": "USB\\VID_4098&PID_BEE1\\6EFA7012E446232143263042",
+                    "instanceId": "USB\\VID_4098&PID_BEE1\\8EAA7079D834839151957409",
                     "name": "WINWING MFD1-L",
                     "children": [],
                     "device": {
-                      "instanceId": "USB\\VID_4098&PID_BEE1\\6EFA7012E446232143263042",
+                      "instanceId": "USB\\VID_4098&PID_BEE1\\8EAA7079D834839151957409",
                       "vendorId": "4098",
                       "productId": "BEE1",
                       "name": "WINWING MFD1-L",
@@ -1378,7 +1378,7 @@
                         }
                       ],
                       "manufacturer": "(Standard system devices)",
-                      "serial": "6EFA7012E446232143263042"
+                      "serial": "8EAA7079D834839151957409"
                     }
                   }
                 ],
@@ -1473,7 +1473,7 @@
         }
       },
       {
-        "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+        "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
         "name": "Generic USB Hub",
         "children": [
           {
@@ -1490,7 +1490,7 @@
               "isHub": false,
               "hubChain": [
                 {
-                  "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                  "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                   "name": "Generic USB Hub"
                 },
                 {
@@ -1531,7 +1531,7 @@
                           "name": "Generic USB Hub"
                         },
                         {
-                          "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                          "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                           "name": "Generic USB Hub"
                         },
                         {
@@ -1557,7 +1557,7 @@
                       "name": "Generic USB Hub"
                     },
                     {
-                      "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                      "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                       "name": "Generic USB Hub"
                     },
                     {
@@ -1594,7 +1594,7 @@
                           "name": "Generic USB Hub"
                         },
                         {
-                          "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                          "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                           "name": "Generic USB Hub"
                         },
                         {
@@ -1628,7 +1628,7 @@
                           "name": "Generic USB Hub"
                         },
                         {
-                          "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                          "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                           "name": "Generic USB Hub"
                         },
                         {
@@ -1661,7 +1661,7 @@
                           "name": "Generic USB Hub"
                         },
                         {
-                          "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                          "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                           "name": "Generic USB Hub"
                         },
                         {
@@ -1687,7 +1687,7 @@
                       "name": "Generic USB Hub"
                     },
                     {
-                      "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                      "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                       "name": "Generic USB Hub"
                     },
                     {
@@ -1716,7 +1716,7 @@
                       "name": "Generic USB Hub"
                     },
                     {
-                      "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                      "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                       "name": "Generic USB Hub"
                     },
                     {
@@ -1738,7 +1738,7 @@
               "isHub": true,
               "hubChain": [
                 {
-                  "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                  "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                   "name": "Generic USB Hub"
                 },
                 {
@@ -1763,7 +1763,7 @@
               "isHub": false,
               "hubChain": [
                 {
-                  "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                  "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                   "name": "Generic USB Hub"
                 },
                 {
@@ -1789,7 +1789,7 @@
               "isHub": false,
               "hubChain": [
                 {
-                  "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+                  "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
                   "name": "Generic USB Hub"
                 },
                 {
@@ -1802,7 +1802,7 @@
           }
         ],
         "device": {
-          "instanceId": "USB\\VID_2109&PID_2817\\MSFT20000000000",
+          "instanceId": "USB\\VID_2109&PID_2817\\XLDI05432476451",
           "vendorId": "2109",
           "productId": "2817",
           "name": "USB2.0 Hub             ",
@@ -1816,7 +1816,7 @@
             }
           ],
           "manufacturer": "(Standard USB HUBs)",
-          "serial": "MSFT20000000000"
+          "serial": "XLDI05432476451"
         }
       },
       {

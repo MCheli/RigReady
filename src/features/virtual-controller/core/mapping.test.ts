@@ -20,7 +20,7 @@ const close = (value: number, expected: number): void => expect(value).toBeClose
 const stick: InputDevice = {
   index: 0,
   name: 'WINWING Orion Joystick Base 2 + JGRIP-F16',
-  guid: '806DDF00-B756-11F0-8023-444553540000',
+  guid: '480FAD44-D166-18C0-8023-444553540000',
   productGuid: '',
   vendorId: '4098',
   productId: 'BEA8',
@@ -32,7 +32,7 @@ const stick: InputDevice = {
 const pedals: InputDevice = {
   index: 1,
   name: 'T-Pendular-Rudder',
-  guid: '7F3956A0-B756-11F0-801B-444553540000',
+  guid: '0F1424B4-D566-14A0-801B-444553540000',
   productGuid: '',
   vendorId: '044F',
   productId: 'B68F',

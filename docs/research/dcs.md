@@ -50,9 +50,9 @@ SG\Config\Input\
 The file name is `<DeviceName> {<GUID>}.diff.lua`. DCS calls `<DeviceName> {<GUID>}` the device's "full id". `dcs.log` prints it on every start [verified, `SG\Logs\dcs.log`]:
 
 ```
-INPUT (Main): created [WINWING MFD1-R] with full id [WINWING MFD1-R {806E0610-B756-11f0-8024-444553540000}],SUPPLEMENTAL|UNKNOWN
-INPUT (Main): created [WINWING ICP] with full id [WINWING ICP {806DB7F0-B756-11f0-8020-444553540000}],JOYSTICK|LIMITED
-INPUT (Main): created [T-Pendular-Rudder] with full id [T-Pendular-Rudder {7F3956A0-B756-11f0-801B-444553540000}],JOYSTICK|LIMITED
+INPUT (Main): created [WINWING MFD1-R] with full id [WINWING MFD1-R {757B5173-A027-19e9-8024-444553540000}],SUPPLEMENTAL|UNKNOWN
+INPUT (Main): created [WINWING ICP] with full id [WINWING ICP {113EE9E0-E314-11c7-8020-444553540000}],JOYSTICK|LIMITED
+INPUT (Main): created [T-Pendular-Rudder] with full id [T-Pendular-Rudder {0F1424B4-D566-14a0-801B-444553540000}],JOYSTICK|LIMITED
 ```
 
 **DeviceName** is the DirectInput product name. Windows stores it as `OEMName` under `HKCU\System\CurrentControlSet\Control\MediaProperties\PrivateProperties\Joystick\OEM\VID_xxxx&PID_yyyy` (also under HKLM) [verified: for example, `VID_4098&PID_BEE0 = WINWING MFD1-C` and `VID_3344&PID_C259 = R-VPC Panel #1`]. Some vendors' names end in a space (DCS's own `DefaultAssignments.lua` says so for CH and VKB devices). Never trim it.
@@ -65,8 +65,8 @@ HKCU\System\CurrentControlSet\Control\MediaProperties\PrivateProperties\DirectIn
 
 [verified: every GUID in the owner's file names matches one of these registry values; table in 1.3]. Facts about these GUIDs:
 
-- They are **version-1 (time-based) UUIDs** whose node field is `444553540000` (ASCII `DEST`). The timestamp is when Windows first registered that controller. For example, `806D90E0-B756-11F0-801E-...` decodes to 2025-11-01 19:10, and `DF6F4BD0-FA0C-11F0-8002-...` decodes to 2026-01-25 16:42 [verified by decoding]. The 3rd/4th group (`80xx`) is a counter per allocation.
-- **Text casing: copy DCS exactly.** DCS writes Data1, Data2 and Data4 in upper case and **Data3 in lower case**: `806D90E0-B756-11f0-801E-444553540000` [verified in every file name and in `dcs.log`]. Match case-insensitively, but write in DCS's style.
+- They are **version-1 (time-based) UUIDs** whose node field is `444553540000` (ASCII `DEST`). The timestamp is when Windows first registered that controller. The first three groups of a GUID such as `750F20B7-A796-13E8-801E-...` hold that time. The GUIDs of the recorded rig (`fixtures/rigs/mark-full`) are stable made-up values: their times are not real moments. The 3rd/4th group (`80xx`) is a counter per allocation.
+- **Text casing: copy DCS exactly.** DCS writes Data1, Data2 and Data4 in upper case and **Data3 in lower case**: `750F20B7-A796-13e8-801E-444553540000` [verified in every file name and in `dcs.log`]. Match case-insensitively, but write in DCS's style.
 - **One entry per VID/PID plus a calibration slot `<n>`.** The three WinWing MFDs have different PIDs (`BEE0` = C, `BEE1` = L, `BEE2` = R), so they never collide [verified].
 - **When a GUID changes** (evidence plus [web] reports):
   - The `Calibration\<n>` key is deleted, or Windows hands out a new slot. On this PC `VID_3344&PID_C259` (Virpil panel) has two slots, `\0` = `...8001` (Joystick Id 0, stale) and `\1` = `...8002` (Joystick Id 10, in use). Only one panel is plugged in [verified via `Get-PnpDevice`]. So this device's GUID has already changed once. DCS uses `...8002`.
@@ -83,17 +83,17 @@ All 11 files are under `SG\Config\Input\FA-18C_hornet\joystick\`, last written 2
 
 | Device name (file prefix) | GUID in file name | VID&PID \ slot | DCS type in log | Built-in default axis assignment | Default cleanup visible in the diff |
 |---|---|---|---|---|---|
-| R-VPC Panel #1 | DF6F4BD0-FA0C-11f0-8002-… | 3344&C259 \1 (slot \0 stale) | SUPPLEMENTAL | none listed, so the generic `default` set (see 1.5) | no `removed` entries |
-| T-Pendular-Rudder | 7F3956A0-B756-11f0-801B-… | 044F&B68F \0 | JOYSTICK\|LIMITED | rudder Z, brakes Y/X | removes Pitch/Roll/Thrust (stale, see 1.8) |
-| WINWING F18 STARTUP PANEL | 806D90E0-B756-11f0-801E-… | 4098&BE03 \0 | SUPPLEMENTAL | not in the panel list, so `default` | removes 4 axes and 8 POV views |
-| WINWING F18 TAKEOFF PANEL 2 | 806E0610-B756-11f0-8025-… | 4098&BF05 \0 | SUPPLEMENTAL | panel list (no axes) | none |
-| WINWING ICP | 806DB7F0-B756-11f0-8020-… | 4098&BF06 \0 | JOYSTICK\|LIMITED | panel list | removes Pitch/Roll |
-| WINWING MFD1-C | 806DDF00-B756-11f0-8021-… | 4098&BEE0 \0 | SUPPLEMENTAL | panel list | none |
-| WINWING MFD1-L | 7F3956A0-B756-11f0-801A-… | 4098&BEE1 \0 | SUPPLEMENTAL | panel list | none |
-| WINWING MFD1-R | 806E0610-B756-11f0-8024-… | 4098&BEE2 \0 | SUPPLEMENTAL | panel list | removes 8 POV views |
-| WINWING Orion Joystick Base 2 + JGRIP-F16 | 806DDF00-B756-11f0-8023-… | 4098&BEA8 \0 | JOYSTICK\|STANDARD | roll X, pitch Y | removes Rudder RZ and 4 POV views; `changed` pitch curve |
-| WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R | 806DDF00-B756-11f0-8022-… | 4098&BD26 \0 | SUPPLEMENTAL | **not listed** (only the "Orion Throttle Base II" variants are), so `default` | 4 removed |
-| WINWING UFC1 + HUD1 | 806E0610-B756-11f0-8026-… | 4098&BEDE \0 | 1STPERSON\|SIXDOF | panel list | 4 removed |
+| R-VPC Panel #1 | FE8D5FF1-DF2D-17c3-8002-… | 3344&C259 \1 (slot \0 stale) | SUPPLEMENTAL | none listed, so the generic `default` set (see 1.5) | no `removed` entries |
+| T-Pendular-Rudder | 0F1424B4-D566-14a0-801B-… | 044F&B68F \0 | JOYSTICK\|LIMITED | rudder Z, brakes Y/X | removes Pitch/Roll/Thrust (stale, see 1.8) |
+| WINWING F18 STARTUP PANEL | 750F20B7-A796-13e8-801E-… | 4098&BE03 \0 | SUPPLEMENTAL | not in the panel list, so `default` | removes 4 axes and 8 POV views |
+| WINWING F18 TAKEOFF PANEL 2 | 757B5173-A027-19e9-8025-… | 4098&BF05 \0 | SUPPLEMENTAL | panel list (no axes) | none |
+| WINWING ICP | 113EE9E0-E314-11c7-8020-… | 4098&BF06 \0 | JOYSTICK\|LIMITED | panel list | removes Pitch/Roll |
+| WINWING MFD1-C | 480FAD44-D166-18c0-8021-… | 4098&BEE0 \0 | SUPPLEMENTAL | panel list | none |
+| WINWING MFD1-L | 0F1424B4-D566-14a0-801A-… | 4098&BEE1 \0 | SUPPLEMENTAL | panel list | none |
+| WINWING MFD1-R | 757B5173-A027-19e9-8024-… | 4098&BEE2 \0 | SUPPLEMENTAL | panel list | removes 8 POV views |
+| WINWING Orion Joystick Base 2 + JGRIP-F16 | 480FAD44-D166-18c0-8023-… | 4098&BEA8 \0 | JOYSTICK\|STANDARD | roll X, pitch Y | removes Rudder RZ and 4 POV views; `changed` pitch curve |
+| WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R | 480FAD44-D166-18c0-8022-… | 4098&BD26 \0 | SUPPLEMENTAL | **not listed** (only the "Orion Throttle Base II" variants are), so `default` | 4 removed |
+| WINWING UFC1 + HUD1 | 757B5173-A027-19e9-8026-… | 4098&BEDE \0 | 1STPERSON\|SIXDOF | panel list | 4 removed |
 
 Other DirectInput devices in the registry: Fanatec Podium DD2 `0EB7&0007` (3 slots) and an Xbox 360 controller `045E&028E` (first registered today) [verified].
 
@@ -108,7 +108,7 @@ DCS writes it with `Serializer:serialize_sorted('local diff', diff)` followed by
 - Each key is written as `["key"] = ` or `[1] = `. Nested tables open with `{` and close with `},`. The top level closes with `}`.
 - Top-level keys: `axisDiffs`, `keyDiffs`, and (for force-feedback devices) `ffDiffs`. A key is left out when it is empty. If all three are empty, DCS **deletes the file** (`os.remove`) [source `saveDeviceProfile`].
 
-Real excerpt (`WINWING Orion Joystick Base 2 + JGRIP-F16 {806DDF00-B756-11f0-8023-444553540000}.diff.lua`, abridged):
+Real excerpt (`WINWING Orion Joystick Base 2 + JGRIP-F16 {480FAD44-D166-18c0-8023-444553540000}.diff.lua`, abridged):
 
 ```lua
 local diff = {

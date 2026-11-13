@@ -43,7 +43,7 @@ async function scan(): Promise<MigrationScan> {
 const OLD_STICK =
   'WINWING Orion Joystick Base 2 + JGRIP-F16 {D3437B70-A035-11EE-8001-444553540000}';
 const NEW_STICK =
-  'WINWING Orion Joystick Base 2 + JGRIP-F16 {806DDF00-B756-11f0-8023-444553540000}';
+  'WINWING Orion Joystick Base 2 + JGRIP-F16 {480FAD44-D166-18c0-8023-444553540000}';
 
 describe('detecting device id changes', () => {
   it('finds nothing on the rig as recorded, and does not call an unplugged device a changed id', async () => {
@@ -76,43 +76,43 @@ describe('detecting device id changes', () => {
     expect(ids).toEqual({
       'R-VPC Panel #1': [
         '4BB05F90-9AA7-11ee-8021-444553540000',
-        'DF6F4BD0-FA0C-11f0-8002-444553540000',
+        'FE8D5FF1-DF2D-17c3-8002-444553540000',
       ],
       'T-Pendular-Rudder': [
         '4770BA10-9AA7-11ee-801C-444553540000',
-        '7F3956A0-B756-11f0-801B-444553540000',
+        '0F1424B4-D566-14a0-801B-444553540000',
       ],
       'WINWING F18 STARTUP PANEL': [
         '4B36E9D0-9AA7-11ee-801D-444553540000',
-        '806D90E0-B756-11f0-801E-444553540000',
+        '750F20B7-A796-13e8-801E-444553540000',
       ],
       'WINWING F18 TAKEOFF PANEL 2': [
         '4F222DC0-9AA7-11ee-8024-444553540000',
-        '806E0610-B756-11f0-8025-444553540000',
+        '757B5173-A027-19e9-8025-444553540000',
       ],
       'WINWING MFD1-C': [
         '4F916A50-9AA7-11ee-8027-444553540000',
-        '806DDF00-B756-11f0-8021-444553540000',
+        '480FAD44-D166-18c0-8021-444553540000',
       ],
       'WINWING MFD1-L': [
         '4B3710E0-9AA7-11ee-801E-444553540000',
-        '7F3956A0-B756-11f0-801A-444553540000',
+        '0F1424B4-D566-14a0-801A-444553540000',
       ],
       'WINWING MFD1-R': [
         '5206D720-9AA7-11ee-8028-444553540000',
-        '806E0610-B756-11f0-8024-444553540000',
+        '757B5173-A027-19e9-8024-444553540000',
       ],
       'WINWING Orion Joystick Base 2 + JGRIP-F16': [
         'D3437B70-A035-11ee-8001-444553540000',
-        '806DDF00-B756-11f0-8023-444553540000',
+        '480FAD44-D166-18c0-8023-444553540000',
       ],
       'WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R': [
         '4F6FD890-9AA7-11ee-8026-444553540000',
-        '806DDF00-B756-11f0-8022-444553540000',
+        '480FAD44-D166-18c0-8022-444553540000',
       ],
       'WINWING UFC1 + HUD1': [
         '4F2206B0-9AA7-11ee-8023-444553540000',
-        '806E0610-B756-11f0-8026-444553540000',
+        '757B5173-A027-19e9-8026-444553540000',
       ],
     });
     // The attached devices now have no bindings of the user's.
@@ -211,7 +211,7 @@ describe('migrating', () => {
       path: path.join(joystickDir(rig.home, HUEY), `${OLD_STICK}.diff.lua`),
       to: path.join(joystickDir(rig.home, HUEY), `${NEW_STICK}.diff.lua`),
       title: 'WINWING Orion Joystick Base 2 + JGRIP-F16 · UH-1H',
-      lines: ["Rename to the attached device's id 806DDF00-B756-11f0-8023-444553540000"],
+      lines: ["Rename to the attached device's id 480FAD44-D166-18c0-8023-444553540000"],
     });
     const rewrites = plan.value.files.filter((f) => f.action === 'change');
     expect(rewrites.map((f) => path.basename(f.path)).sort()).toEqual([
@@ -377,14 +377,14 @@ describe('migrating', () => {
     // written under that id, and the panel now has …8002.
     const dir = joystickDir(rig.home);
     const now = (await fs.readdir(dir)).find((f) => f.startsWith('R-VPC'))!;
-    const stale = 'R-VPC Panel #1 {DF6F4BD0-FA0C-11f0-8001-444553540000}.diff.lua';
+    const stale = 'R-VPC Panel #1 {FE8D5FF1-DF2D-17c3-8001-444553540000}.diff.lua';
     await fs.rename(path.join(dir, now), path.join(dir, stale));
     const found = await scan();
     expect(found.orphans).toHaveLength(1);
     expect(found.orphans[0]).toMatchObject({
       status: 'ready',
-      oldGuid: 'DF6F4BD0-FA0C-11f0-8001-444553540000',
-      proposed: 'DF6F4BD0-FA0C-11f0-8002-444553540000',
+      oldGuid: 'FE8D5FF1-DF2D-17c3-8001-444553540000',
+      proposed: 'FE8D5FF1-DF2D-17c3-8002-444553540000',
       candidates: [{ vendorId: '3344', productId: 'C259', nameChanged: false }],
     });
   });

@@ -17,7 +17,7 @@ import { expect, test, type RunningApp } from './harness';
 const ROUTE = '/configure/iracing-bindings';
 const SWITCH_ON = { env: { RIGREADY_IRACING_EDIT: '1' } };
 const WHEEL = 'FANATEC Podium Wheel Base DD2';
-const WHEEL_GUID = '20B0BED0-03A4-11F1-8001-444553540000';
+const WHEEL_GUID = '45D4BEA1-60A1-17D8-8001-444553540000';
 const BOX_GUID = '5EED0001-7A11-11EF-8004-444553540000';
 const CAR = 'mx5 mx52016';
 const CAR_ROUTE = `${ROUTE}?set=${encodeURIComponent(`car:${CAR}`)}`;

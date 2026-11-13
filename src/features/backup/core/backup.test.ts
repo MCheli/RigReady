@@ -665,8 +665,8 @@ describe('restore', () => {
     });
     expect(report.restored).toHaveLength(18);
     expect(report.deviceIds?.files.map((f) => path.basename(f))).toEqual([
-      'T-Pendular-Rudder {7F3956A0-B756-11f0-801B-444553540000}.diff.lua',
-      'T-Pendular-Rudder {7F3956A0-B756-11f0-801B-444553540000}.diff.lua',
+      'T-Pendular-Rudder {0F1424B4-D566-14a0-801B-444553540000}.diff.lua',
+      'T-Pendular-Rudder {0F1424B4-D566-14a0-801B-444553540000}.diff.lua',
     ]);
     expect(report.deviceIds?.message).toMatch(/device IDs this PC does not use/);
   });
@@ -1034,14 +1034,14 @@ describe('what changed since it last worked', () => {
       'Input',
       'FA-18C_hornet',
       'joystick',
-      'T-Pendular-Rudder {7F3956A0-B756-11f0-801B-444553540000}.diff.lua'
+      'T-Pendular-Rudder {0F1424B4-D566-14a0-801B-444553540000}.diff.lua'
     );
     await fs.rm(rudder);
     changes = await app.invoke<ChangesViewData>('backup:changes', { profileId: 'dcs-f-a-18c' });
     const keys = changes.comparison!.changes.map((c) => [c.key, c.status]);
     expect(keys).toEqual([
       [
-        '{DCS_USER}/Config/Input/FA-18C_hornet/joystick/T-Pendular-Rudder {7F3956A0-B756-11f0-801B-444553540000}.diff.lua',
+        '{DCS_USER}/Config/Input/FA-18C_hornet/joystick/T-Pendular-Rudder {0F1424B4-D566-14a0-801B-444553540000}.diff.lua',
         'removed',
       ],
       ['{DCS_USER}/Config/options.lua', 'changed'],

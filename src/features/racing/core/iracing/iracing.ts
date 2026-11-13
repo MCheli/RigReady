@@ -64,7 +64,7 @@ export async function readFiles(
   return result;
 }
 
-/** The DirectInput collection number in an instance GUID: 20B0BED0-03A4-11F1-8001-... -> "8001". */
+/** The DirectInput collection number in an instance GUID: 45D4BEA1-60A1-17D8-8001-... -> "8001". */
 const collection = (guid: string): string => cleanGuid(guid).split('-')[3] ?? '';
 
 /**

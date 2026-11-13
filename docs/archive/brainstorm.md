@@ -1934,7 +1934,7 @@ checks:
   - type: script
     name: "VPN Connected"
     description: "Verify connected to squadron VPN"
-    command: "ping -n 1 192.168.50.1"
+    command: "ping -n 1 vpn.squadron.example"
     timeout: 5000
     successExitCodes: [0]
     required: false  # Warning, not failure

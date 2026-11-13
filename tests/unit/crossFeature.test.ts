@@ -745,7 +745,7 @@ describe('DCS screen setup and the monitors', () => {
     // The name given on the Monitors page, and what follows the screen to another port.
     expect(setup.desktop.find((d) => d.id === mfds[0]!.id)).toMatchObject({
       name: 'MFD left',
-      usbSerial: 'WWIN29320221210163532',
+      usbSerial: 'PBOC22104847830214489',
     });
     await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     type Overview = { monitorSetup: { problems: string[] } };

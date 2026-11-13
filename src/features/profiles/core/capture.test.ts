@@ -178,8 +178,23 @@ describe('capture: apps', () => {
     const discord = main.find((c) => c.title === 'Discord')!;
     expect(discord).toMatchObject({ selectedByDefault: false, icon: 'mdi-forum-outline' });
     expect(discord.description).toBe('For voice chat · Discord.exe');
-    // Background programs are offered by image name and kept out of the main list.
-    expect(more.length).toBeGreaterThan(30);
+    // Background programs are offered by image name and kept out of the main list: every
+    // program running from outside the Windows folder is offered once, in one list or the other.
+    const running = await app.ports.processes.list();
+    const outside = new Set(
+      (running.ok ? running.value : [])
+        .filter((p) => p.path !== undefined && !/^[a-z]:\\windows\\/i.test(p.path))
+        .map((p) => p.name.toLowerCase())
+    );
+    const offers = (name: string): number =>
+      apps.filter(
+        (c) =>
+          c.program?.toLowerCase() === name ||
+          (c.covers ?? []).some((covered) => covered.toLowerCase() === name)
+      ).length;
+    expect(outside.size).toBeGreaterThan(8);
+    expect([...outside].filter((name) => offers(name) !== 1)).toEqual([]);
+    expect(more.length).toBeGreaterThan(3);
     expect(more.every((c) => !c.selectedByDefault && c.generic)).toBe(true);
     expect(more.map((c) => c.title)).toContain('msedgewebview2');
     expect(apps.some((c) => /^[a-z]:\\windows\\/i.test(c.description ?? ''))).toBe(false);

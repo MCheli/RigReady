@@ -4,7 +4,7 @@ description: Why Windows gives a controller a new ID, what that does to DCS bind
 order: 60
 ---
 
-DCS names every binding file after the device and an ID Windows gave it, for example `WINWING ICP {806DB7F0-B756-11f0-8020-444553540000}.diff.lua`. When that ID changes, DCS looks for a file that is not there and your bindings seem lost. The **Device IDs** tab of **Configure > Bindings** with **DCS** chosen moves them to the new ID.
+DCS names every binding file after the device and an ID Windows gave it, for example `WINWING ICP {113EE9E0-E314-11c7-8020-444553540000}.diff.lua`. When that ID changes, DCS looks for a file that is not there and your bindings seem lost. The **Device IDs** tab of **Configure > Bindings** with **DCS** chosen moves them to the new ID.
 
 ## Why the ID changes
 

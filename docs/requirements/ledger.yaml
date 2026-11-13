@@ -3631,7 +3631,7 @@ requirements:
     priority: p1
     done_means:
       - "RigReady compares diff file GUIDs per aircraft with the DirectInput GUIDs of connected devices and lists files whose device name matches a connected device but whose GUID does not ('orphaned bindings')."
-      - "Fixture recreating the owner's 2026-02 situation (backup GUIDs 4F6FD890-..., current 806DDF00-...) lists all ten affected devices with old and new GUIDs."
+      - "Fixture recreating the owner's 2026-02 situation (backup GUIDs 4F6FD890-..., current 480FAD44-...) lists all ten affected devices with old and new GUIDs."
       - "A Fly check (optional by default) warns 'Bindings for WINWING UFC1 + HUD1 belong to an old device ID' when this is detected for the profile's aircraft."
     status: done
     evidence:

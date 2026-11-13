@@ -55,7 +55,7 @@ checks:
     required: true
     params: &microphone
       flow: recording
-      id: '{0.0.1.00000000}.{2255b204-0d8f-4fb5-8c8a-10ee65d5a884}'
+      id: '{0.0.1.00000000}.{7826c841-8f5c-4eb2-8a4d-68da05f3e663}'
       name: Headset Microphone (Arctis Pro Wireless Chat)
       role: default
     remediation:
