@@ -40,6 +40,17 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
   const sending = ref(false);
   /** Something went wrong: said in red. */
   const error = ref<string>();
+  /** Which kind of failure `error` tells of. */
+  const errorCode = ref<string>();
+  /**
+   * The monthly budget holds the message back. Its way out is in Settings, which the panel
+   * covers: the panel offers a button that leads there.
+   */
+  const budgetStopped = computed(
+    () => error.value !== undefined && errorCode.value === 'ai.budget'
+  );
+  /** Asked from that button: Settings brings the monthly budget into view, then takes this back. */
+  const showBudget = ref(false);
   /** Something the user should know that is no failure: a stop, a request made ready again. */
   const notice = ref<string>();
   /** The request on screen was sent and came back with a failure: its button reads "Try again". */
@@ -103,6 +114,12 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
     if (listed.ok) scripts.value = listed.value.scripts;
   }
 
+  /** Says what went wrong, and remembers which kind of failure it was. */
+  function fail(message: string, code: string): void {
+    error.value = message;
+    errorCode.value = code;
+  }
+
   function clearMessages(): void {
     error.value = undefined;
     notice.value = undefined;
@@ -148,7 +165,7 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
       return undefined;
     }
     if (!result.ok) {
-      error.value = errorText(result.error);
+      fail(errorText(result.error), result.error.code);
       return undefined;
     }
     preview.value = result.value;
@@ -246,18 +263,18 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
         notice.value = message;
         return;
       case 'ai.busy':
-        error.value = message;
+        fail(message, failure.code);
         return;
       case 'ai.budget':
         // Held back by the monthly budget, on the estimate: it stays ready, and goes once
         // the budget is raised or turned off in Settings.
-        error.value = message;
+        fail(message, failure.code);
         return;
       case 'ai.conversation':
         // The conversation is gone in RigReady: nothing more can be sent in it.
         preview.value = undefined;
         conversation.value = undefined;
-        error.value = message;
+        fail(message, failure.code);
         return;
       case 'ai.expired':
       case 'ai.changed': {
@@ -278,7 +295,7 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
       default:
         // The provider refused or could not be reached: the request is still ready.
         failed.value = true;
-        error.value = message;
+        fail(message, failure.code);
     }
   }
 
@@ -469,6 +486,8 @@ export const useAssistantStore = defineStore('ai-assistant', () => {
     preparing,
     sending,
     error,
+    budgetStopped,
+    showBudget,
     notice,
     failed,
     skipPreview,

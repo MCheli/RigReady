@@ -37,20 +37,56 @@ const MAX_DELIMITERS = 1000;
 const MAX_LABEL = 300;
 /** A web address, at most. */
 const MAX_LINK = 2000;
+/**
+ * How far a reply may be read ahead of its place to find where a link ends: this many
+ * characters for each of its own, and this many besides. A reply written to be read needs
+ * about one for each of its own. Once they are spent, the rest of the reply is shown as
+ * written and no more links are made in it.
+ */
+const LOOKS_PER_CHARACTER = 8;
+const LOOKS_BESIDES = 10_000;
 
 /** Marks that turn the direction of text around: they can make an address read as another. */
 const BIDI = /[‎‏‪-‮⁦-⁩]/g;
 /** Control characters other than the line break. */
 const CONTROL = /[^\P{Cc}\n]/gu;
 
-export function parseMarkdown(source: string): Block[] {
+/**
+ * The work of the parse under way, in steps: one for each character read, and one more each
+ * time a character or a run is read again. How long a parse takes depends on the machine; the
+ * steps do not, so the tests hold the parser to them.
+ */
+let steps = 0;
+/** The steps spent reading ahead for the end of a link, and how many this reply may spend. */
+let looked = 0;
+let allowance = 0;
+
+function look(characters: number): void {
+  looked += characters;
+  steps += characters;
+}
+
+/** Whether the reply has read ahead all it may: from here on no link is made in it. */
+function spent(): boolean {
+  return looked > allowance;
+}
+
+/** A reply parsed, with the steps it took. */
+export function measureMarkdown(source: string): { tree: Block[]; steps: number } {
   const text = source
     .replace(/\r\n?/g, '\n')
     .replace(/\t/g, '    ')
     .replace(BIDI, '')
     .replace(CONTROL, '');
-  if (text.length > MAX_MARKDOWN) return plain(text);
-  return blocks(text.split('\n'), 0);
+  steps = text.length;
+  looked = 0;
+  allowance = LOOKS_BESIDES + LOOKS_PER_CHARACTER * text.length;
+  const tree = text.length > MAX_MARKDOWN ? plain(text) : blocks(text.split('\n'), 0);
+  return { tree, steps };
+}
+
+export function parseMarkdown(source: string): Block[] {
+  return measureMarkdown(source).tree;
 }
 
 /** A web address a link may lead to: http or https, a host, no sign-in part. */
@@ -119,7 +155,11 @@ function lines(text: string): Inline[] {
 }
 
 function isSpace(c: string | undefined): boolean {
-  return c === undefined || c === ' ' || c === '\n' || c === ' ' || /\s/.test(c);
+  if (c === undefined) return true;
+  const code = c.charCodeAt(0);
+  // Asked of every character of an address: the plain ones are settled without the pattern.
+  if (code < 128) return code === 32 || (code >= 9 && code <= 13);
+  return /\s/.test(c);
 }
 
 function indentOf(line: string): number {
@@ -241,6 +281,7 @@ function interrupts(line: string): boolean {
 }
 
 function blocks(source: string[], depth: number): Block[] {
+  for (const line of source) steps += line.length + 1;
   if (depth > MAX_DEPTH) {
     const text = source.join('\n').trim();
     return text === '' ? [] : [{ kind: 'paragraph', children: lines(text) }];
@@ -412,32 +453,69 @@ function closingTicks(s: string, from: number, size: number): number {
   return -1;
 }
 
-/** `[label](address "title")` from the `[` at `at`: the label, the address and where it ends. */
-function linkAt(s: string, at: number): { label: string; dest: string; end: number } | undefined {
-  let depth = 0;
-  let close = -1;
-  const limit = Math.min(s.length, at + MAX_LABEL + 2);
-  for (let i = at; i < limit; i += 1) {
+/** Where the last run of each length of backticks begins: a run is closed only before it. */
+function tickRuns(s: string): Map<number, number> {
+  const last = new Map<number, number>();
+  let i = s.indexOf('`');
+  while (i >= 0) {
+    let run = 0;
+    while (s[i + run] === '`') run += 1;
+    last.set(run, i);
+    i = s.indexOf('`', i + run);
+  }
+  steps += s.length;
+  return last;
+}
+
+/**
+ * For each "[" of the text, where the "]" that closes it is; -1 everywhere else. A backslash
+ * takes the character after it out of the count. One pass over the text, so that no label is
+ * looked for twice.
+ */
+function closingBrackets(s: string): Int32Array {
+  const closes = new Int32Array(s.length).fill(-1);
+  const open: number[] = [];
+  for (let i = 0; i < s.length; i += 1) {
     const c = s[i];
     if (c === '\\') {
       i += 1;
     } else if (c === '[') {
-      depth += 1;
+      open.push(i);
     } else if (c === ']') {
-      depth -= 1;
-      if (depth === 0) {
-        close = i;
-        break;
-      }
+      const from = open.pop();
+      if (from !== undefined) closes[from] = i;
     }
   }
-  if (close < 0 || s[close + 1] !== '(') return undefined;
-  let i = close + 2;
+  steps += s.length;
+  return closes;
+}
+
+/** Where `mark` first is from `from`, no more than `reach` characters on; -1 when it is not. */
+function within(s: string, mark: string, from: number, reach: number): number {
+  const at = s.slice(from, from + reach + 1).indexOf(mark);
+  look(at < 0 ? Math.min(reach, s.length - from) : at);
+  return at < 0 ? -1 : from + at;
+}
+
+/** The first place from `from` that is not a space or a line break. */
+function pastSpaces(s: string, from: number): number {
+  let i = from;
   while (s[i] === ' ' || s[i] === '\n') i += 1;
+  look(i - from);
+  return i;
+}
+
+/**
+ * The rest of `[label](address "title")` from the "]" at `close`: the address, and where the
+ * link ends.
+ */
+function linkAt(s: string, close: number): { dest: string; end: number } | undefined {
+  if (s[close + 1] !== '(') return undefined;
+  let i = pastSpaces(s, close + 2);
   let dest = '';
   if (s[i] === '<') {
-    const end = s.indexOf('>', i);
-    if (end < 0 || end - i > MAX_LINK) return undefined;
+    const end = within(s, '>', i, MAX_LINK);
+    if (end < 0) return undefined;
     dest = s.slice(i + 1, end);
     i = end + 1;
   } else {
@@ -453,19 +531,18 @@ function linkAt(s: string, at: number): { label: string; dest: string; end: numb
       }
       i += 1;
     }
+    look(i - begin);
     dest = s.slice(begin, i);
   }
-  while (s[i] === ' ' || s[i] === '\n') i += 1;
+  i = pastSpaces(s, i);
   // A title in quotes is allowed and not used.
   const quote = s[i];
   if (quote === '"' || quote === "'") {
-    const end = s.indexOf(quote, i + 1);
-    if (end < 0 || end - i > MAX_LABEL) return undefined;
-    i = end + 1;
-    while (s[i] === ' ' || s[i] === '\n') i += 1;
+    const end = within(s, quote, i + 1, MAX_LABEL - 1);
+    if (end < 0) return undefined;
+    i = pastSpaces(s, end + 1);
   }
-  if (s[i] !== ')') return undefined;
-  return { label: s.slice(at + 1, close), dest, end: i + 1 };
+  return s[i] === ')' ? { dest, end: i + 1 } : undefined;
 }
 
 /** Whether a label reads like a web address itself: then it must be the one the link leads to. */
@@ -508,11 +585,19 @@ function writtenLink(text: string, href: string): Inline {
 /** A web address written out in the text, from `at`: up to the first space, without the sentence's own marks. */
 function bareLink(s: string, at: number): { href: string; text: string; end: number } | undefined {
   let end = at;
+  // How many more closing brackets than opening ones the address holds, of each shape.
+  let round = 0;
+  let square = 0;
   while (end < s.length && end - at <= MAX_LINK) {
     const c = s[end];
     if (isSpace(c) || c === '<' || c === '>' || c === '"' || c === '`') break;
+    if (c === '(') round -= 1;
+    else if (c === ')') round += 1;
+    else if (c === '[') square -= 1;
+    else if (c === ']') square += 1;
     end += 1;
   }
+  look(end - at);
   // "(see https://rigready.io/docs/)." ends before the bracket and the full stop.
   for (;;) {
     const last = s[end - 1];
@@ -521,13 +606,16 @@ function bareLink(s: string, at: number): { href: string; text: string; end: num
       end -= 1;
       continue;
     }
-    if (last === ')' || last === ']') {
-      const open = last === ')' ? '(' : '[';
-      const text = s.slice(at, end);
-      if (text.split(open).length < text.split(last).length) {
-        end -= 1;
-        continue;
-      }
+    // A closing bracket that nothing in the address opens is the sentence's.
+    if (last === ')' && round > 0) {
+      round -= 1;
+      end -= 1;
+      continue;
+    }
+    if (last === ']' && square > 0) {
+      square -= 1;
+      end -= 1;
+      continue;
     }
     break;
   }
@@ -537,16 +625,20 @@ function bareLink(s: string, at: number): { href: string; text: string; end: num
 }
 
 function inline(s: string, inLink = false): Inline[] {
+  steps += s.length;
   const tokens: Token[] = [];
   let text = '';
   const flush = (): void => {
     if (text !== '') tokens.push({ kind: 'text', text });
     text = '';
   };
-  /** Searches that already failed once from further left: they cannot succeed further right. */
-  const dead = new Set<string>();
-  /** No label can close after this. */
-  const lastBracket = inLink ? -1 : s.lastIndexOf(']');
+  /** Where the last run of each length of backticks begins, found at the first backtick. */
+  let lastTicks: Map<number, number> | undefined;
+  /** Where the "]" of each "[" is, found at the first "[". */
+  let closes: Int32Array | undefined;
+  /** The last ")" and the last ">": past them no link can end. */
+  let lastParen = -1;
+  let lastAngle: number | undefined;
   let delimiters = 0;
   let i = 0;
   while (i < s.length) {
@@ -567,14 +659,15 @@ function inline(s: string, inLink = false): Inline[] {
     if (c === '`') {
       let size = 0;
       while (s[i + size] === '`') size += 1;
-      const key = `\`${size}`;
-      const close = dead.has(key) ? -1 : closingTicks(s, i + size, size);
+      lastTicks ??= tickRuns(s);
+      // A run this long further on closes it; without one the backticks are text.
+      const close = (lastTicks.get(size) ?? -1) > i ? closingTicks(s, i + size, size) : -1;
       if (close < 0) {
-        dead.add(key);
         text += s.slice(i, i + size);
         i += size;
         continue;
       }
+      steps += close - i;
       let code = s.slice(i + size, close).replace(/\n/g, ' ');
       if (code.length > 2 && code.startsWith(' ') && code.endsWith(' ') && code.trim() !== '') {
         code = code.slice(1, -1);
@@ -602,24 +695,37 @@ function inline(s: string, inLink = false): Inline[] {
       i += count;
       continue;
     }
-    if (!inLink && (c === '[' || (c === '!' && s[i + 1] === '['))) {
+    // A reply that has read ahead all it may is shown as written from here on.
+    const links = !inLink && !spent();
+    if (links && (c === '[' || (c === '!' && s[i + 1] === '['))) {
       // An image is never loaded: it is shown as a link to it.
       const at = c === '!' ? i + 1 : i;
-      const found = at < lastBracket ? linkAt(s, at) : undefined;
+      if (!closes) {
+        closes = closingBrackets(s);
+        lastParen = s.lastIndexOf(')');
+      }
+      const close = closes[at] ?? -1;
+      // A label has a length, and its link ends in a ")" further on.
+      const found =
+        close > at && close - at <= MAX_LABEL + 1 && close + 1 < lastParen
+          ? linkAt(s, close)
+          : undefined;
       const href = found ? safeLink(found.dest) : undefined;
       if (found && href) {
         flush();
-        tokens.push(linkToken(found.label, href));
+        tokens.push(linkToken(s.slice(at + 1, close), href));
         i = found.end;
         continue;
       }
-      text += c;
-      i += 1;
+      // "![" that is no image is no link either: both marks are text.
+      text += s.slice(i, at + 1);
+      i = at + 1;
       continue;
     }
-    if (!inLink && c === '<' && /^<https?:\/\//i.test(s.slice(i, i + 9))) {
-      const end = s.indexOf('>', i);
-      const href = end > 0 && end - i <= MAX_LINK ? safeLink(s.slice(i + 1, end)) : undefined;
+    if (links && c === '<' && /^<https?:\/\//i.test(s.slice(i, i + 9))) {
+      lastAngle ??= s.lastIndexOf('>');
+      const end = i < lastAngle ? within(s, '>', i, MAX_LINK) : -1;
+      const href = end > 0 ? safeLink(s.slice(i + 1, end)) : undefined;
       if (href) {
         flush();
         tokens.push(writtenLink(s.slice(i + 1, end), href));
@@ -628,7 +734,7 @@ function inline(s: string, inLink = false): Inline[] {
       }
     }
     if (
-      !inLink &&
+      links &&
       (c === 'h' || c === 'H') &&
       /^https?:\/\//i.test(s.slice(i, i + 8)) &&
       !/[A-Za-z0-9]/.test(s[i - 1] ?? ' ')
@@ -662,52 +768,57 @@ function nestingOf(children: Inline[]): number {
  * the nearest run of its kind that can open (the way CommonMark does it).
  */
 function emphasis(tokens: Token[]): Inline[] {
-  let i = 0;
-  while (i < tokens.length) {
-    const closer = tokens[i];
-    if (!closer || closer.kind !== 'delimiter' || !closer.close || closer.count === 0) {
-      i += 1;
-      continue;
-    }
-    let found = -1;
-    for (let j = i - 1; j >= 0; j -= 1) {
-      const t = tokens[j];
-      if (!t || t.kind !== 'delimiter' || !t.open || t.char !== closer.char || t.count === 0) {
-        continue;
+  /** What has been read so far, with its pairs made. Only its end ever changes. */
+  const read: Token[] = [];
+  /**
+   * For each kind of closing run, the place below which nothing opens for it: a search that
+   * found nothing is not made again over the same runs (CommonMark's "openers bottom").
+   */
+  const floors = new Map<string, number>();
+  for (const token of tokens) {
+    // A run that can close does so as long as it has marks left and finds a run to open it.
+    while (token.kind === 'delimiter' && token.close && token.count > 0) {
+      // All that a run's opening for this one depends on, besides the run itself.
+      const kind = `${token.char}${token.count % 3}${token.open}`;
+      const floor = floors.get(kind) ?? 0;
+      let found = -1;
+      for (let j = read.length - 1; j >= floor; j -= 1) {
+        const t = read[j];
+        if (!t || t.kind !== 'delimiter' || !t.open || t.char !== token.char) continue;
+        // CommonMark's rule of three: "*a**b*" is one italic, not a bold cut in two.
+        const both = t.close || token.open;
+        const sum = t.count + token.count;
+        if (both && sum % 3 === 0 && !(t.count % 3 === 0 && token.count % 3 === 0)) continue;
+        found = j;
+        break;
       }
-      // CommonMark's rule of three: "*a**b*" is one italic, not a bold cut in two.
-      const both = t.close || closer.open;
-      const sum = t.count + closer.count;
-      if (both && sum % 3 === 0 && !(t.count % 3 === 0 && closer.count % 3 === 0)) continue;
-      found = j;
-      break;
+      steps += read.length - Math.max(found, floor);
+      if (found < 0) {
+        floors.set(kind, read.length);
+        break;
+      }
+      // The opener changes now, and may open where it could not: nothing above it is settled.
+      for (const [key, at] of floors) if (at > found) floors.set(key, found);
+      const opener = read[found] as Delimiter;
+      const use = opener.count >= 2 && token.count >= 2 ? 2 : 1;
+      const children = settle(read.splice(found + 1));
+      const deep = nestingOf(children) + 1;
+      let node: Inline;
+      if (deep > MAX_NESTING) {
+        node = { kind: 'text', text: plainText(children) };
+      } else {
+        node = { kind: use === 2 ? 'strong' : 'em', children };
+        nesting.set(node, deep);
+      }
+      opener.count -= use;
+      token.count -= use;
+      if (opener.count === 0) read.pop();
+      read.push(node);
     }
-    if (found < 0) {
-      i += 1;
-      continue;
-    }
-    const opener = tokens[found] as Delimiter;
-    const use = opener.count >= 2 && closer.count >= 2 ? 2 : 1;
-    const children = settle(tokens.slice(found + 1, i));
-    const deep = nestingOf(children) + 1;
-    let node: Inline;
-    if (deep > MAX_NESTING) {
-      node = { kind: 'text', text: plainText(children) };
-    } else {
-      node = { kind: use === 2 ? 'strong' : 'em', children };
-      nesting.set(node, deep);
-    }
-    opener.count -= use;
-    closer.count -= use;
-    tokens.splice(found + 1, i - found - 1, node);
-    i = found + 2;
-    if (opener.count === 0) {
-      tokens.splice(found, 1);
-      i -= 1;
-    }
-    if (closer.count === 0) tokens.splice(i, 1);
+    // A run with marks left stays, to open for a later one or to be text.
+    if (token.kind !== 'delimiter' || token.count > 0) read.push(token);
   }
-  return settle(tokens);
+  return settle(read);
 }
 
 /** What is left of the runs is text; pieces of text side by side become one. */

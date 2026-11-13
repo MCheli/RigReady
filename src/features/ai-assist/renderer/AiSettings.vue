@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { Result } from '../../../core/result';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { aiAssistContract } from '../contract';
 import type { AiStatus } from '../core/model';
+import { useAssistantStore } from './assistantStore';
 import { ceilingHint, parseDollars } from './assistantText';
 import {
   ACKNOWLEDGE_TICK,
@@ -340,6 +341,25 @@ onBeforeUnmount(() => {
   off?.();
   offMonth?.();
 });
+
+// The assistant's panel leads here when the monthly budget held a message back: the row comes
+// into view with its amount ready to be typed over, whether this page was open behind the
+// panel or is opened now.
+const assistant = useAssistantStore();
+const budgetRow = ref<HTMLElement>();
+watch(
+  [() => assistant.showBudget, status],
+  async ([asked, loaded]) => {
+    if (!asked || !loaded) return;
+    assistant.showBudget = false;
+    await nextTick();
+    budgetRow.value?.scrollIntoView({ block: 'center' });
+    const amount = budgetRow.value?.querySelector('input');
+    amount?.focus({ preventScroll: true });
+    amount?.select();
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -557,7 +577,7 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <div class="rr-row">
+      <div ref="budgetRow" class="rr-row" data-testid="ai-budget-row">
         <div class="rr-row-main">
           <div class="rr-row-title">Stop sending when the estimate for a month reaches</div>
           <div class="rr-row-sub" data-testid="ai-budget-hint">{{ budgetHint(status) }}</div>

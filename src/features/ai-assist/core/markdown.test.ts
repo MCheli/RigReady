@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MAX_MARKDOWN,
+  measureMarkdown,
   parseMarkdown,
   plainText,
   safeLink,
@@ -398,39 +399,46 @@ describe('a reply that means harm', () => {
   });
 
   it('stays quick and shallow on text built to be slow or deep', () => {
-    const size = 30_000;
-    const hard: [string, string][] = [
-      ['unclosed italics', '*a '.repeat(size / 3)],
-      ['unclosed bold', '**a '.repeat(size / 4)],
-      ['stars only', '*'.repeat(size)],
-      ['underscores only', '_'.repeat(size)],
-      ['open brackets', '['.repeat(size)],
-      ['brackets that close late', `${'['.repeat(size / 2)}${']'.repeat(size / 2)}`],
-      ['labels without addresses', '[a]'.repeat(size / 3)],
-      ['half links', '[a]('.repeat(size / 4)],
-      ['ticks of every length', Array.from({ length: 240 }, (_, n) => '`'.repeat(n + 1)).join(' ')],
-      ['single ticks', '` '.repeat(size / 2)],
-      ['nested quotes', `${'>'.repeat(size)} deep`],
-      [
-        'nested bullets',
-        Array.from({ length: 400 }, (_, n) => `${' '.repeat(n * 2)}- x`).join('\n'),
-      ],
-      ['nested emphasis', `${'*a '.repeat(400)}b${' a*'.repeat(400)}`],
-      ['angle brackets', '<https://'.repeat(size / 9)],
-      ['addresses', 'https://a.example/ '.repeat(size / 19)],
-      ['backslashes', '\\'.repeat(size)],
-      ['blank lines', '\n'.repeat(size)],
-      ['one long line', 'a'.repeat(size)],
-      ['hashes', '#'.repeat(size)],
-      ['rule or list', '- '.repeat(size / 2)],
-    ];
-    for (const [name, source] of hard) {
-      const began = performance.now();
-      const tree = parseMarkdown(source);
-      const took = performance.now() - began;
-      expect(took, `${name} took ${Math.round(took)} ms`).toBeLessThan(1500);
-      expect(depthOf(tree), name).toBeLessThanOrEqual(40);
+    // How long a parse takes depends on the machine, so the parser is held to its own count
+    // of its work: so many steps for each character, for a text and for one twice as long.
+    // The clock is only a backstop.
+    for (const size of [30_000, 60_000]) {
+      for (const [name, source] of hard(size)) {
+        const began = performance.now();
+        const { tree, steps } = measureMarkdown(source);
+        const took = performance.now() - began;
+        const each = (steps / source.length).toFixed(1);
+        expect(
+          steps,
+          `${name}: ${each} steps for each of ${source.length} characters`
+        ).toBeLessThanOrEqual(20 * source.length + 15_000);
+        expect(took, `${name} took ${Math.round(took)} ms`).toBeLessThan(1500);
+        expect(depthOf(tree), name).toBeLessThanOrEqual(40);
+      }
     }
+  });
+
+  it('makes no more links in a text that costs too much to read, and loses none of it', () => {
+    // Each "[a](" sends the parser ahead for the end of a link that never comes.
+    const costly = `${'[a]('.repeat(5_000)})`;
+    const last = '[last](https://rigready.io/two)';
+    const source = `[first](https://rigready.io/one)\n\n${costly}\n\n${last}`;
+    expect(links(source)).toEqual(['https://rigready.io/one']);
+    expect(plainText(parseMarkdown(source))).toBe(`first${costly}${last}`);
+  });
+
+  it('keeps every link of a long reply written to be read', () => {
+    const table = `[${'[1, 2, [3, 4]], '.repeat(600)}]`;
+    const line = (n: number): string =>
+      `- [Page ${n}](https://rigready.io/docs/${n}) or <https://rigready.io/a/${n}>, see ` +
+      `https://rigready.io/b/${n} (with \`code ${n}\`, list[${n}], *a note* and a [label).`;
+    const source = `${table}\n\n${Array.from({ length: 500 }, (_, n) => line(n)).join('\n')}`;
+    expect(source.length).toBeGreaterThan(MAX_MARKDOWN * 0.8);
+    expect(source.length).toBeLessThan(MAX_MARKDOWN);
+    expect(links(source)).toHaveLength(1500);
+    expect(links(`${source}\n\n[last](https://rigready.io/two)`).at(-1)).toBe(
+      'https://rigready.io/two'
+    );
   });
 
   it('a reply longer than any real one is shown as plain text', () => {
@@ -519,6 +527,57 @@ describe('a reply that means harm', () => {
     }
   });
 });
+
+/** Texts built to be slow or deep to read, each about `size` characters long. */
+function hard(size: number): [string, string][] {
+  return [
+    ['unclosed italics', '*a '.repeat(size / 3)],
+    ['unclosed bold', '**a '.repeat(size / 4)],
+    ['stars only', '*'.repeat(size)],
+    ['underscores only', '_'.repeat(size)],
+    ['open brackets', '['.repeat(size)],
+    ['brackets that close late', `${'['.repeat(size / 2)}${']'.repeat(size / 2)}`],
+    ['brackets that close late, then a link', `${'['.repeat(size / 2)}${']'.repeat(size / 2)}(x)`],
+    ['labels without addresses', '[a]'.repeat(size / 3)],
+    ['half links', '[a]('.repeat(size / 4)],
+    ['half links, closed once at the end', `${'[a]('.repeat(size / 4)})`],
+    ['half links, closed now and then', `${'[a]('.repeat(499)})`.repeat(size / 2000)],
+    ['half images', `${'![a]('.repeat(size / 5)})`],
+    ['half links in angle brackets', `${'[a](<'.repeat(size / 5)})`],
+    ['half links with a title', `${'[a](b "'.repeat(size / 7)})`],
+    ['half links before spaces', `${'[a]('.repeat(250)}x${' '.repeat(1000)}) `.repeat(size / 2000)],
+    ['links nested in addresses', `${'[a]('.repeat(400)}x${')'.repeat(400)} `.repeat(size / 2000)],
+    ['ticks of every length', Array.from({ length: 240 }, (_, n) => '`'.repeat(n + 1)).join(' ')],
+    ['single ticks', '` '.repeat(size / 2)],
+    ['an odd tick out', `${'`` a '.repeat(size / 5)}\``],
+    ['nested quotes', `${'>'.repeat(size)} deep`],
+    ['quotes eight deep', `${'> '.repeat(8)}a\n`.repeat(size / 18)],
+    ['nested bullets', Array.from({ length: 400 }, (_, n) => `${' '.repeat(n * 2)}- x`).join('\n')],
+    ['list items and blank lines', '- a\n\n\n'.repeat(size / 6)],
+    ['nested emphasis', `${'*a '.repeat(400)}b${' a*'.repeat(400)}`],
+    ['closers without openers', `${'a\n'.repeat(29)}a* `.repeat(size / 61)],
+    ['closers after a long paragraph', `${'a\n'.repeat(size / 2 - 1500)}${'a* '.repeat(999)}`],
+    ['openers of another kind', `${'*a '.repeat(450)}${' a_'.repeat(450)}\n\n`.repeat(size / 3000)],
+    ['pairs before a long paragraph', `${'*a* '.repeat(450)}${'a\n'.repeat(size / 2 - 900)}`],
+    ['one long pair', `${'*'.repeat(size / 2)}a${'*'.repeat(size / 2)}`],
+    ['angle brackets', '<https://'.repeat(size / 9)],
+    ['angle brackets, closed once at the end', `${'<https://'.repeat(size / 9)}>`],
+    ['addresses', 'https://a.example/ '.repeat(size / 19)],
+    [
+      'addresses that end in brackets',
+      `https://a.example/${')'.repeat(1980)} `.repeat(size / 2000),
+    ],
+    ['addresses with a sign-in part', 'https://u@'.repeat(size / 10)],
+    ['backslashes', '\\'.repeat(size)],
+    ['escaped stars', '\\*'.repeat(size / 2)],
+    ['escaped stars after a path', `C:\\a${'\\*'.repeat(size / 2)}`],
+    ['blank lines', '\n'.repeat(size)],
+    ['one long line', 'a'.repeat(size)],
+    ['the letter h', 'h'.repeat(size)],
+    ['hashes', '#'.repeat(size)],
+    ['rule or list', '- '.repeat(size / 2)],
+  ];
+}
 
 function depthOf(tree: (Block | Inline)[]): number {
   let deepest = 0;

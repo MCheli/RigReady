@@ -166,6 +166,8 @@ describe('ASSIST-001 the panel after a request failed or was dropped', () => {
     expect(store.error).toBeTruthy();
     expect(store.error).not.toMatch(/no longer ready/);
     expect(store.failed).toBe(true);
+    // No budget held it back: the way to the budget in Settings is not offered.
+    expect(store.budgetStopped).toBe(false);
     expect(store.sending).toBe(false);
     // Nothing was lost: the message is back in the box and the same request is still ready.
     expect(store.draft).toBe(QUESTION);
@@ -593,12 +595,15 @@ describe('ASSIST-007 the panel at the monthly budget', () => {
     expect(store.error).toMatch(/What you are charged is in your provider's console\./);
     // Not a failure of the provider: no "Try again" for something that cannot go.
     expect(store.failed).toBe(false);
+    // The way out is in Settings, which the panel covers: the panel offers the way there.
+    expect(store.budgetStopped).toBe(true);
     expect(store.draft).toBe(QUESTION);
     expect(sentRequests(running)).toBe(1);
 
     // Turned off in Settings: the old reason goes, and the message can be made ready.
     await store.api.setMonthlyBudget({ dollars: 0 });
     await vi.waitFor(() => expect(store.error).toBeUndefined());
+    expect(store.budgetStopped).toBe(false);
     reply(running, text('It is not.'));
     expect(await store.prepare()).toBe(true);
     await store.send();
@@ -630,6 +635,7 @@ describe('ASSIST-007 the panel at the monthly budget', () => {
     expect(sentRequests(running)).toBe(1);
     expect(store.error).toMatch(/^Stopped on RigReady's estimate, not on a bill: /);
     expect(store.failed).toBe(false);
+    expect(store.budgetStopped).toBe(true);
     expect(store.preview?.requestId).toBe(shown.requestId);
     expect(store.draft).toBe(QUESTION);
     expect(store.sending).toBe(false);
@@ -641,6 +647,7 @@ describe('ASSIST-007 the panel at the monthly budget', () => {
     await running.wiring.handlers.get('ai-assist:setMonthlyBudget')!({ dollars: 5 });
     await store.settingsChanged();
     expect(store.error).toBeUndefined();
+    expect(store.budgetStopped).toBe(false);
     expect(store.preview?.text).toBe(QUESTION);
     expect(store.preview?.month).toMatchObject({ state: 'ok', budget: 5 });
     reply(running, text('It is not.'));

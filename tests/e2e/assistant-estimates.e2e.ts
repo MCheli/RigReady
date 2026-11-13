@@ -273,6 +273,27 @@ test('assistant estimates: prices are named and can be typed, a limit needs an a
   expect(await colourOnlyStatus(page)).toEqual([]);
   await shot('month-stopped');
 
+  // The way out is in Settings, which the panel covers: the stop has a button that closes the
+  // panel and puts the monthly budget on screen, ready to be typed over.
+  await page.getByTestId('assistant-open').click();
+  const way = page.getByTestId('assistant-budget-settings');
+  await expect(way).toHaveText('Open the budget in Settings');
+  await way.click();
+  await expect(page.getByTestId('assistant-panel')).not.toBeInViewport();
+  await expect(field(page, 'ai-monthly-budget')).toBeFocused();
+  await expect(page.getByTestId('ai-budget-row')).toBeInViewport({ ratio: 1 });
+  expect(await colourOnlyStatus(page)).toEqual([]);
+  await shot('budget-from-the-stop');
+  // From any other page too: the stop is still said in the panel, and the press leads here.
+  await page.getByTestId('nav-safety').click();
+  await expect(page.getByTestId('ai-settings')).toHaveCount(0);
+  await page.getByTestId('assistant-open').click();
+  await expect(page.getByTestId('assistant-error')).toContainText('Nothing was sent.');
+  await way.click();
+  await expect(page.getByTestId('assistant-panel')).not.toBeInViewport();
+  await expect(field(page, 'ai-monthly-budget')).toBeFocused();
+  await expect(page.getByTestId('ai-budget-row')).toBeInViewport({ ratio: 1 });
+
   // Turned off again in Settings, the reason goes and the message can be made ready.
   await type(page, 'ai-monthly-budget', '0');
   await expect(page.getByTestId('ai-settings-saved')).toContainText('Saved: no monthly budget');

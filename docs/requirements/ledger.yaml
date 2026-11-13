@@ -3617,6 +3617,7 @@ requirements:
     notes:
       - "2026-11-12: the panel was reworked after the owner's first use on the rig. A request that failed stays ready and one press sends it again, with the message back in the box; the conversation is the one scrolling region, with proposals where they were made; replies are shown formatted; every request says what reading it costs, and a ceiling per question stops and asks (ASSIST-005). The unit tests below prove this on the real code paths: the panel's store against the wired app, the log through the real logger. Open: tests/e2e/assistant.e2e.ts was extended and has a second test ('assistant: a request the provider refuses can be sent again with one press', scenario assistant-refused). Neither has been run since the rework, because no window may be opened while the rig sitting runs. The two screenshots below show the panel as it was before; they, the other six of artifacts/screens/assistant and the two new ones of artifacts/screens/assistant-refused (refused, answered-after-retry) wait to be taken by that run. Back to done once the run has passed and the screenshots are committed."
       - "2026-11-12, after the sitting: windows were allowed again. Both tests of tests/e2e/assistant.e2e.ts passed against the build of this commit, with the isolated launch, and the eight screenshots of artifacts/screens/assistant and the two of artifacts/screens/assistant-refused were taken by that run and are committed with it. Back to done. The dollar figures in them are worded as estimates (ASSIST-008)."
+      - "2026-11-12, later: the renderer of replies now counts its own work, and reads ahead of its place for the end of a link only up to a fixed number of characters for each character of the reply. A reply that spends that keeps all of its text and gets no more links; a long reply written to be read keeps every one. Its test holds it to counted steps, for each hard text and for one twice as long, so the result is the same on every machine; the 1500 ms on the clock stay as a loose backstop. Compared once with the renderer as it was on one million random texts (a run that is not kept in the repository): none was parsed differently."
     status: done
     evidence:
       - "src/features/ai-assist/core/assistant.test.ts#offers the guided catalogue with the new tools and none of the channels kept from assistants"
@@ -3642,6 +3643,9 @@ requirements:
       - "artifacts/screens/assistant/02-first-request.png"
       - "artifacts/screens/assistant-refused/01-refused.png"
       - "artifacts/screens/assistant-refused/02-answered-after-retry.png"
+      - "src/features/ai-assist/core/markdown.test.ts#stays quick and shallow on text built to be slow or deep"
+      - "src/features/ai-assist/core/markdown.test.ts#makes no more links in a text that costs too much to read, and loses none of it"
+      - "src/features/ai-assist/core/markdown.test.ts#keeps every link of a long reply written to be read"
 
   - id: ASSIST-002
     title: Find where helper programs are installed
@@ -3759,6 +3763,7 @@ requirements:
       - "The message that holds a request back says it stopped on RigReady's estimate, not on a bill, gives the estimate and the budget, says that nothing was sent and where the true figure is; the user's message stays in the box. While a budget is set, a count that cannot be read stops sending and does not let a request pass."
     notes:
       - "2026-11-12: the owner's decision of 12 Nov (a monthly budget that warns and then stops sending; the user can change it or turn it off). Calls made in building it, for the owner to confirm: off until an amount is set, the warning from 80 percent, and no 'continue past' for the month (the ceiling of one question has one). Not in the month's estimate, though a provider may charge for them: a request the user stopped, a request that failed on its way, the small request Test sends in Settings, and a request to a model without prices (those are counted as a number and shown; a server on this PC without prices is not counted at all). The manual says so."
+      - "2026-11-12, later: the message that holds a request back says where the budget is changed, and the panel covers that place. Under it there is now a button, 'Open the budget in Settings': it closes the panel and shows the monthly budget in Settings with its amount selected, from whichever page the panel was opened on. Wording and look were decided in building it."
     status: done
     evidence:
       - "src/features/ai-assist/core/budget.test.ts#names the calendar month of this PC, and a month starts on its first day"
@@ -3785,6 +3790,7 @@ requirements:
       - "artifacts/screens/assistant-estimates/08-request-close-to-budget.png"
       - "artifacts/screens/assistant-estimates/09-stopped-on-the-estimate.png"
       - "artifacts/screens/assistant-estimates/10-month-stopped.png"
+      - "artifacts/screens/assistant-estimates/11-budget-from-the-stop.png"
 
   - id: ASSIST-008
     title: Every dollar figure for an AI request is an estimate that says where its prices came from

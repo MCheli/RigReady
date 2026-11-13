@@ -277,6 +277,13 @@ async function openSettings(): Promise<void> {
   store.open = false;
   await router.push('/configure/settings');
 }
+
+/** From the budget's stop: the panel gets out of the way and Settings shows the monthly budget. */
+async function openBudget(): Promise<void> {
+  store.showBudget = true;
+  store.open = false;
+  await router.push('/configure/settings');
+}
 </script>
 
 <template>
@@ -744,6 +751,15 @@ async function openSettings(): Promise<void> {
           <v-icon icon="mdi-alert-circle-outline" size="15" />
           <span>{{ store.error }}</span>
         </p>
+        <div v-if="store.budgetStopped" class="asp-actions">
+          <v-btn
+            variant="tonal"
+            size="small"
+            data-testid="assistant-budget-settings"
+            @click="openBudget"
+            >Open the budget in Settings</v-btn
+          >
+        </div>
 
         <form class="asp-composer" @submit.prevent="submit">
           <!-- Files given as context would be listed here, right above the box, one chip each
