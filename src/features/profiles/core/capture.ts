@@ -1,13 +1,23 @@
 import { captureCandidates } from '../../../core/checks/engine';
 import type { CaptureCandidate } from '../../../core/checks/registry';
 import type { MainContext } from '../../../core/feature';
+import { playedWith } from '../../../core/gearKind';
 import { allPathVariables, collapsePath, expandPath } from '../../../core/pathVariables';
 import { BACKUP_EXTENSION, type TrackedItem } from '../../../core/tracked';
 import { slugify } from '../../../core/profile/schema';
-import type { GameKind } from '../../../shared/models';
-import type { CaptureGame, CaptureResult, CaptureTracked, NewProfile } from '../contract';
+import type { GameKind, VirtualPadKind, VirtualPadStatus } from '../../../shared/models';
+import type {
+  CaptureGame,
+  CaptureResult,
+  CaptureStep,
+  CaptureTracked,
+  NewProfile,
+} from '../contract';
+import { resolvePicker } from './paramPickers';
 
 type Ctx = Pick<MainContext, 'ports' | 'profiles' | 'checks' | 'games' | 'log' | 'backupSources'>;
+/** What reading the whole rig needs on top: the desk layout is a setting. */
+type RigCtx = Ctx & Pick<MainContext, 'settings'>;
 
 const sameName = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
 
@@ -23,6 +33,7 @@ export async function captureGames(ctx: Ctx): Promise<CaptureGame[]> {
         id: module.id,
         name: module.name,
         ...(module.kind ? { kind: module.kind } : {}),
+        uses: playedWith(module),
         running: (module.processes ?? []).some((image) =>
           running.some((p) => sameName(p.name, image))
         ),
@@ -178,15 +189,104 @@ export async function trackedSuggestions(ctx: Ctx): Promise<CaptureTracked[]> {
   return found;
 }
 
+/**
+ * How a virtual controller of each kind shows itself to Windows: the ids of the real
+ * controller it stands in for. The driver's choice, the same for every program that uses it.
+ */
+const PAD_IDS: Record<VirtualPadKind, { vendorId: string; productId: string }> = {
+  xbox360: { vendorId: '045E', productId: '028E' },
+  ds4: { vendorId: '054C', productId: '05C4' },
+};
+
+const reportedName = (candidate: CaptureCandidate): string =>
+  candidate.device?.model ?? candidate.title;
+const saysVirtual = (candidate: CaptureCandidate): boolean =>
+  /\bvirtual\b/i.test(reportedName(candidate));
+const isPad = (candidate: CaptureCandidate, kind: VirtualPadKind): boolean =>
+  candidate.device?.vendorId.toUpperCase() === PAD_IDS[kind].vendorId &&
+  candidate.device.productId.toUpperCase() === PAD_IDS[kind].productId;
+
+/**
+ * RigReady's own virtual controller is not part of the rig: it is there because a setup
+ * started it, and a setup that required it "connected" could never be made ready from
+ * cold. While one is plugged in, the device that is it is not offered at all: the one of
+ * its ids that calls itself virtual, else the only one of its ids. When several real
+ * controllers share its ids and none says which is virtual, all stay offered and none is
+ * ticked. A virtual controller of another program stays offered, not ticked.
+ */
+export function withoutOwnPad(
+  candidates: CaptureCandidate[],
+  pad: Pick<VirtualPadStatus, 'plugged' | 'kind'> | undefined
+): CaptureCandidate[] {
+  const kind = pad?.plugged ? (pad.kind ?? 'xbox360') : undefined;
+  const alike = kind ? candidates.filter((c) => isPad(c, kind)) : [];
+  const named = alike.filter(saysVirtual);
+  const own = new Set(named.length > 0 ? named : alike.length === 1 ? alike : []);
+  const unsure = new Set(own.size === 0 ? alike : []);
+  return candidates
+    .filter((c) => !own.has(c))
+    .map((c) =>
+      c.selectedByDefault && c.device && (unsure.has(c) || saysVirtual(c))
+        ? { ...c, selectedByDefault: false }
+        : c
+    );
+}
+
+/**
+ * The monitor arrangement the rig rests in (the desk layout, which Stand down puts back)
+ * is not something a new setup needs to demand: it is how the monitors are whenever no
+ * setup changed them. It stays offered, not ticked.
+ */
+export function withoutDeskLayout(
+  candidates: CaptureCandidate[],
+  deskLayoutId: string | undefined
+): CaptureCandidate[] {
+  if (!deskLayoutId) return candidates;
+  return candidates.map((c) =>
+    c.selectedByDefault && c.group === 'displays' && c.check.params['layoutId'] === deskLayoutId
+      ? { ...c, selectedByDefault: false }
+      : c
+  );
+}
+
+/**
+ * The steps before launch that give a game what it needs and the rig does not have by
+ * itself (a virtual controller for a game that reads a gamepad), each with what can be
+ * chosen for it right now.
+ */
+export async function captureSteps(
+  ctx: Pick<Ctx, 'checks' | 'ports' | 'log'>
+): Promise<CaptureStep[]> {
+  const steps: CaptureStep[] = [];
+  for (const type of ctx.checks.remediationTypes()) {
+    const definition = ctx.checks.remediation(type)!;
+    if (!definition.provides || !definition.picker) continue;
+    steps.push({
+      need: definition.provides,
+      type,
+      label: definition.label,
+      picker: await resolvePicker(definition.picker, ctx),
+    });
+  }
+  return steps;
+}
+
 /** Everything the capture screen shows: the rig as it is now, as proposals. */
-export async function captureRig(ctx: Ctx): Promise<CaptureResult> {
-  const { candidates, problems } = await captureCandidates(ctx.checks, ctx);
+export async function captureRig(ctx: RigCtx): Promise<CaptureResult> {
+  const found = await captureCandidates(ctx.checks, ctx);
+  const pad = await ctx.ports.pads.status();
+  const settings = await ctx.settings.get();
+  const candidates = withoutDeskLayout(
+    withoutOwnPad(found.candidates, pad.ok ? pad.value : undefined),
+    settings.ok ? settings.value.deskLayoutId : undefined
+  );
   const games = await captureGames(ctx);
   return {
     candidates,
-    problems,
+    problems: found.problems,
     games,
     tracked: await trackedSuggestions(ctx),
+    steps: await captureSteps(ctx),
     suggested: suggestGame(games, candidates),
   };
 }
