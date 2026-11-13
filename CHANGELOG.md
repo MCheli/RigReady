@@ -23,7 +23,7 @@ New since beta 4:
 - A wording pass for people who only race.
 - Fixes from a review of the night's work.
 
-What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). A draft for testing on the rig; it is not published.
+What it contains is the [2.0.0 section of the changelog](https://github.com/MCheli/RigReady/blob/main/CHANGELOG.md). A test build: 2.0.0 follows once the second look on the rig has passed.
 
 ## 2.0.0-beta.4 (2026-11-11)
 
