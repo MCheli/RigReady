@@ -66,7 +66,9 @@ function setup(ctx: MainContext) {
       ...trainerHandlers(ctx, service),
       overview: () => service.overview(),
       suggest: () => service.suggest(),
-      sheet: ({ game, aircraftId }) => service.sheet(game, aircraftId),
+      // What an assistant may read has no photos of the user's; RigReady's windows do.
+      sheet: ({ game, aircraftId }) => service.sheetToRead(game, aircraftId),
+      windowSheet: ({ game, aircraftId }) => service.sheet(game, aircraftId),
       setNote: ({ game, aircraftId, deviceKey, control, note }) =>
         service.setNote(game, aircraftId, deviceKey, control, note),
 
@@ -76,11 +78,13 @@ function setup(ctx: MainContext) {
       exportLayout: ({ layout }) => service.exportLayout(layout),
       importLayout: (device) => service.importLayout(device),
       pickBackground: () => service.pickBackground(),
+      pickPhoto: () => service.pickPhoto(),
 
       savePdf: (input) => service.savePdf(input),
 
       kneeboardStatus: ({ game, aircraftId }) => service.kneeboardStatus(game, aircraftId),
-      kneeboardPreview: (input) => service.kneeboardPreview(input),
+      kneeboardPreview: (input) => service.kneeboardPreview(input, false),
+      windowKneeboardPreview: (input) => service.kneeboardPreview(input),
       exportKneeboardPreview: ({ game, aircraftId, options }) =>
         service.exportKneeboardPreview(game, aircraftId, options),
       removeKneeboardPreview: ({ aircraftId }) => service.removeKneeboardPreview(aircraftId),

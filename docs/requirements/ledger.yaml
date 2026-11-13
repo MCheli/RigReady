@@ -3980,8 +3980,9 @@ requirements:
       - "The same picture is used on screen, in the pop-out, in the trainer, in the PDF and on the kneeboard pages; on a kneeboard or printed page the text is made as large as fits while the label columns end beside the drawing, in day and night styles."
       - "A layout of cards the user saved before keeps its places; a device with a shipped layout and no drawing is drawn as cards; a device nothing is known about is a list of its controls."
       - "Edit drawing: the user moves a control's anchor, chooses the side of its label, renames it, puts a photo in place of the silhouette, or goes back to cards; saved per device model in the data folder, discarded with Discard my layout."
-      - "User-supplied drawings: a drawing is made from a photo of the device (a dot per control to drag into place), or imported from a drawing file (rigready-device-drawing, documented in LAYOUT-FORMAT.md), checked like any import."
+      - "User-supplied drawings: a drawing is made from the user's own photos of the device (SHEET-023 to SHEET-027), or imported from a drawing file (rigready-device-drawing, documented in LAYOUT-FORMAT.md), checked like any import."
     notes:
+      - "2026-11-12: 'Make a drawing from a photo' used to set a dot per control out in a grid to drag into place. It now opens the photo route (press a control, click its place), which has its own entries: SHEET-023 to SHEET-027."
       - "2026-11-07: the owner asked for better drawings ('a little blobby', leader lines that do not make sense) and whether users can supply their own; the design and what is left are in docs/research/controller-drawings.md. The pedals, panels, UFC, ICP and Fanatec wheel are still drawn as cards."
       - "2026-11-12: the stick and throttle drawings were redrawn from the maker's number maps (SHEET-019), the owner's WinWing panels, UFC and ICP have drawings (SHEET-020), and a drawing ships only where it is known to match the device (SHEET-021). Still drawn as cards: the pedals, the Virpil control panel, the Fanatec wheel."
     status: done
@@ -4159,6 +4160,133 @@ requirements:
       - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: a press never lights nothing - a button no control is known to press still shows, and lights up"
       - "artifacts/screens/cheat-sheets-free-buttons/01-throttle-more-controls.png"
       - "artifacts/screens/cheat-sheets-free-buttons/02-throttle-button-45-pressed.png"
+
+  - id: SHEET-023
+    title: "My own photo: press a control, click its place"
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "'Use my photo' over the sheet of a device with no drawing (and 'Make a drawing from a photo' in the layout editor, 'Use my own photos' in the drawing editor) asks for a photo and opens it for placing. No button number is typed anywhere."
+      - "The user presses a control on the device and the page names it ('Button 5: click where it is on the photo.'); a click on the photo places it there. Moving an axis far enough does the same for the axis."
+      - "Undo takes back the last change, and the one before it, as often as wanted (button and Ctrl+Z)."
+      - "A control that is placed already can be moved (press it again and click its new place, or drag its dot, or nudge it with the arrow keys) and taken off the photo."
+      - "A placed control can be given a name of the user's own and a side for its label. What is typed in a name field stays there while the device reports a press or a moved axis."
+      - "A device that is not connected is placed from the list of its controls: click one under 'Not placed yet', then click its place. The page says that pressing does nothing while it is unplugged."
+    notes:
+      - "2026-11-12: the owner: 'we should invest some major effort in getting these right or making it really easy for the user to upload a photo of their stick for binding and then annotating.' The earlier route set a dot per control out in a grid to drag into place, which needs the user to know which number each control is."
+      - "2026-11-12: for a device that is not connected nothing reports what it has, so the list is what is bound on it in the chosen aircraft or car."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#starts from one photo, as wide as the drawing, with nothing placed and so not yet a drawing to save"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#is the button or axis that was pressed, or the whole hat for one way of it"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#is placed, moved, taken off, named and given a side, always on a photo"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: my own photos - press a control and click its place, undo, move and take off, a hat as one, two named photos, a half-done sheet"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: a device that is not connected is placed from the list of its controls"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: a file that is not a picture or is too large is refused with the reason, and a control known by name comes whole"
+      - "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: drawing editor - move a control, its side and name, a photo, a drawing of my own"
+      - "artifacts/screens/cheat-sheets-photo/01-nothing-placed.png"
+      - "artifacts/screens/cheat-sheets-photo/02-pressed-waits-for-its-place.png"
+      - "artifacts/screens/cheat-sheets-photo-unplugged/01-not-connected.png"
+      - "artifacts/screens/cheat-sheets-drawing-editor/03-photo-drawing.png"
+
+  - id: SHEET-024
+    title: Several photos of one device, each a named view
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "'Add another photo' adds a photo of the same device, up to six; each has a name the user gives it ('Top', 'Side'), and a tab that says how many controls are placed on it."
+      - "A control is on the photo it was placed on. Pressing a control that is placed already brings its photo to the front."
+      - "A photo can be replaced (its controls stay where they were) and removed (with the controls on it, after undo they are back)."
+      - "On the sheet the photos are one under the other, each with its name over it; a drawing with one picture made before is read as one photo."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#adds photos under the first, each with a name over it, and keeps every control on its photo"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#renames a photo, replaces one with its controls where they were, and removes one with what was on it"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#reads a drawing with one picture, as they were made before, as one photo"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: my own photos - press a control and click its place, undo, move and take off, a hat as one, two named photos, a half-done sheet"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: a device that is not connected is placed from the list of its controls"
+      - "artifacts/screens/cheat-sheets-photo/04-second-photo.png"
+      - "artifacts/screens/cheat-sheets-photo/06-sheet-half-done.png"
+
+  - id: SHEET-025
+    title: A hat is one control on a photo, with all its ways
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "A hat Windows reports as a hat comes whole with its first push: its four ways share one place and one label block."
+      - "'Place a hat' is for a hat that reports plain buttons: each way and the press are asked for in turn, a way the hat does not have is skipped, and the ways heard so far are shown. One click places them all as one control, shown as one group on the sheet."
+      - "A button that was placed alone and turns out to be a way of a hat is taken into the hat."
+      - "On a model RigReady knows the controls of by name, a press gives the whole control with its maker's name and every way of it ('MS mic switch', five ways; 'Throttles', both axes), and it counts once."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#groups the ways of a hat that reports buttons, and its press, into one control"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#names the next hat after the ones Windows reports and the ones already placed"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#takes a button placed alone into the hat it turns out to be a way of"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#is the whole control by its maker’s name on a model RigReady knows the controls of"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#counts a control with a name of its maker’s once, with all its ways"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: my own photos - press a control and click its place, undo, move and take off, a hat as one, two named photos, a half-done sheet"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: a file that is not a picture or is too large is refused with the reason, and a control known by name comes whole"
+      - "artifacts/screens/cheat-sheets-photo/03-hat-ways-in-turn.png"
+      - "artifacts/screens/cheat-sheets-photo-named/03-named-controls.png"
+      - "artifacts/screens/cheat-sheets-photo-named/04-sheet-named.png"
+
+  - id: SHEET-026
+    title: A half-done photo is a full sheet, wherever a drawing is used
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "While placing, the page says how many controls are placed of how many, and names what is not placed yet ('Buttons 1 to 4, Buttons 12 to 41'). A button, an axis and a hat each count once."
+      - "The photos can be saved as soon as one control is placed. The line over the sheet then says 'Your photos, 9 of 43 controls placed' and names what is left."
+      - "The user's photos are the picture of that device model on the cheat sheet, in the trainer and on the kneeboard page (preview and export, day and night), with a label block per placed control."
+      - "Everything not placed yet is in a list under the photos ('More controls · not placed on a photo yet'), so nothing bound is left off, and a press of a control that is not placed lights its row or cell there: on the sheet and in the trainer."
+      - "On a kneeboard page tall photos are made smaller so the labels stay at a size to read."
+    notes:
+      - "2026-11-12: known limit: several tall photos make a small picture on one kneeboard page. A page per photo is not built."
+      - "2026-11-12: the printed page and the Quick look use the same picture as the sheet (SHEET-016); no scenario plays them with photos."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#counts every button, axis and hat once and says what is left in words"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#is drawn like any drawing: each photo with its name, a label block per control, the ways of a hat in one block"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#never leaves out what is not placed yet: it is in the list under the photos, and a press of it lights"
+      - "src/features/cheat-sheets/core/drawings/photo.test.ts#makes tall photos smaller to fit a kneeboard page, the labels kept at a size to read"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: my own photos - press a control and click its place, undo, move and take off, a hat as one, two named photos, a half-done sheet"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: a half-done photo is the picture in the trainer and on the kneeboard page, and a press lights something there"
+      - "artifacts/screens/cheat-sheets-photo/05-half-done.png"
+      - "artifacts/screens/cheat-sheets-photo/06-sheet-half-done.png"
+      - "artifacts/screens/cheat-sheets-photo-used/01-trainer.png"
+      - "artifacts/screens/cheat-sheets-photo-used/02-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-photo-used/03-kneeboard-night-page.png"
+      - "artifacts/screens/cheat-sheets-photo-used/04-kneeboard-exported-page.png"
+
+  - id: SHEET-027
+    title: Photos stay on this PC, and a file that is not a photo is refused with the reason
+    job: configure
+    area: cheat-sheet
+    priority: p1
+    done_means:
+      - "The page says it where the photos are placed: 'Your photos stay on this PC, in RigReady's folder. Nothing is uploaded. They show only on sheets you print, export or share yourself.'"
+      - "A photo is kept in the layout file of the device model in RigReady's data folder, as RigReady's own smaller copy drawn again as a JPEG. Nothing is sent anywhere."
+      - "A chosen file is told by what it holds, not by its name: JPEG, PNG and WebP are taken; a file that is not a picture, an empty file, an HEIC photo and a file over 25 MB are refused, each with the reason and what to do, and nothing changes."
+      - "The photos show in RigReady's own windows and on the pages the user exports. What an AI assistant can read of a sheet or a kneeboard page has a plain grey box where each photo is, and everything else as it is; no assistant is offered the file dialog."
+      - "A layout that was read without its photos and is saved again keeps its photos."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/photoFile.test.ts#is told by its first bytes: JPEG, PNG and WebP are photos, HEIC is named, the rest is not a picture"
+      - "src/features/cheat-sheets/core/photoFile.test.ts#is refused in plain words when it is empty, too large, or not a picture RigReady can open"
+      - "src/features/cheat-sheets/core/photoFile.test.ts#takes a JPEG, PNG or WebP with its file name, and refuses the rest with the reason"
+      - "src/features/cheat-sheets/core/photoFile.test.ts#has a plain grey box where each photo was, and everything else as it was"
+      - "src/features/cheat-sheets/core/photoFile.test.ts#gets its photos back from the saved layout, each at its place, or says it cannot"
+      - "src/features/cheat-sheets/core/photoFile.test.ts#are in RigReady’s own windows and on the pages the user exports, and left out of what an assistant reads"
+      - "src/features/cheat-sheets/core/photoFile.test.ts#stay saved when a layout read without them is saved again, and a box with no photo behind it is refused"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: my own photos - press a control and click its place, undo, move and take off, a hat as one, two named photos, a half-done sheet"
+      - "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: a file that is not a picture or is too large is refused with the reason, and a control known by name comes whole"
+      - "artifacts/screens/cheat-sheets-photo/01-nothing-placed.png"
+      - "artifacts/screens/cheat-sheets-photo-named/01-refused-not-a-picture.png"
+      - "artifacts/screens/cheat-sheets-photo-named/02-refused-too-large.png"
 
   # ---------------------------------------------------------------------------
   # AI-ASSISTED BINDING GUIDANCE
