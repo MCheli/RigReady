@@ -64,7 +64,8 @@ export const warthogThrottle: KnownDeviceInput = {
       [6, 'Aft'],
       [2, 'Press'],
     ]),
-    pov('coolie', 'Coolie switch', 1, 4),
+    // Thrustmaster's manual lists the coolie as the throttle's 8-way hat.
+    pov('coolie', 'Coolie switch', 1),
     positions('spd', 'SPD speed brake', [
       [7, 'Fwd'],
       [8, 'Aft'],
@@ -151,4 +152,48 @@ export const t16000m: KnownDeviceInput = {
   ],
 };
 
-export const THRUSTMASTER: KnownDeviceInput[] = [warthogStick, warthogThrottle, t16000m];
+/**
+ * The TWCS throttle, numbered as Thrustmaster's manual draws it ("Mapping of the 14 buttons
+ * and 8 axes"): on one side of the handle the mini-stick (X, Y, its press 6), the wheel
+ * switch (4 up, 5 down), buttons 3 and 2, the antenna dial (the first slider) and the
+ * rocker (RZ); on the other side the 8-way POV hat, the hats 7 to 10 and 11 to 14, and
+ * button 1. The throttle is Z. TFRP pedals plugged into the throttle report through it:
+ * the rudder as the second slider, the toe brakes as RY (left) and RX (right).
+ */
+export const twcs: KnownDeviceInput = {
+  id: 'tm-twcs-throttle',
+  name: 'Thrustmaster TWCS throttle',
+  match: { vendorId: TM, productIds: ['B687'], names: ['TWCS Throttle'] },
+  shape: { buttons: 14, hats: 1, axes: ['X', 'Y', 'Z', 'RX', 'RY', 'RZ', 'SLIDER1', 'SLIDER2'] },
+  controls: [
+    axis('throttle', 'Throttle', 'Z'),
+    {
+      id: 'mini-stick',
+      name: 'Mini-stick',
+      inputs: [
+        { id: 'axis:X', tag: '↔' },
+        { id: 'axis:Y', tag: '↕' },
+        { id: 'button:6', tag: 'Press' },
+      ],
+    },
+    positions('wheel', 'Wheel switch', [
+      [4, '↑'],
+      [5, '↓'],
+    ]),
+    button('b3', 'Button by the wheel', 3),
+    button('b2', 'Button by the dial', 2),
+    axis('antenna', 'Antenna dial', 'SLIDER1'),
+    axis('rocker', 'Rocker', 'RZ'),
+    pov('pov', 'POV hat'),
+    hatButtons('middle-hat', 'Middle hat', { U: 7, R: 8, D: 9, L: 10 }),
+    hatButtons('lower-hat', 'Lower hat', { U: 11, R: 12, D: 13, L: 14 }),
+    button('b1', 'Bottom button', 1),
+    axes('pedals', 'TFRP pedals, plugged in', [
+      ['SLIDER2', 'Rudder'],
+      ['RY', 'Left brake'],
+      ['RX', 'Right brake'],
+    ]),
+  ],
+};
+
+export const THRUSTMASTER: KnownDeviceInput[] = [warthogStick, warthogThrottle, t16000m, twcs];
