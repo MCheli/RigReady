@@ -4277,6 +4277,24 @@ requirements:
       - "artifacts/screens/cheat-sheets-free-buttons/01-throttle-more-controls.png"
       - "artifacts/screens/cheat-sheets-free-buttons/02-throttle-button-45-pressed.png"
 
+  - id: SHEET-023
+    title: Save layout and Cancel stay in view in the cheat sheets layout editor
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "In the layout editor of a cheat sheet, 'Save layout' and Cancel are in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
+      - "The bar says 'Unsaved changes' once something was moved or renamed and 'No unsaved changes' with 'Save layout' off before that."
+      - "Cancel with a change asks first, and 'Keep editing' keeps the change; Cancel with nothing changed closes the editor without a question. Saving closes the editor and the bar with it."
+    status: done
+    evidence:
+      - test: "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: in the layout editor, Save layout and Cancel stay in the window from the top of the page to its end, and Cancel asks before it drops a change"
+      - "artifacts/screens/cheat-sheets-editor-save-bar/01-top-of-the-page.png"
+      - "artifacts/screens/cheat-sheets-editor-save-bar/02-end-of-the-page.png"
+      - "artifacts/screens/cheat-sheets-editor-save-bar/03-cancel-asks.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. The two buttons were in the editor's own row of buttons, which scrolls away with the drawing, and Cancel dropped a change without asking."
+
   # ---------------------------------------------------------------------------
   # OVERLAY — what you press, shown over the game (2D first; asked for on 2026-11-12)
   # ---------------------------------------------------------------------------
