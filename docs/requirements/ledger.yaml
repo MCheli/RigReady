@@ -3426,6 +3426,37 @@ requirements:
       - "artifacts/screens/bindings-overview/04-overview-huey.png"
       - "artifacts/screens/bindings-problems/04-huey-problems.png"
 
+  - id: BIND-DCS-025
+    title: Binding show or hide the kneeboard says its pages turn with two more actions
+    job: configure
+    area: dcs-bindings
+    priority: p1
+    done_means:
+      - "When the action in the bind dialog is the one that shows or hides the kneeboard (DCS: 'Kneeboard ON/OFF') and a page action ('Kneeboard Next Page', 'Kneeboard Previous Page') is on no controller, the dialog says that this action shows and hides the kneeboard, that its pages turn with the other actions, names each one that is on no controller and where it is now ('] on the keyboard', or 'Not bound'), and says to bind it to a button too."
+      - "It is said only when true: not for any other action (the glance view, the mark point, the shortcuts and the page actions included), not for an aircraft with no action that turns a page, and not once every page action is on a controller. A binding on a control the device does not have does not count."
+      - "Changes that wait to be saved count: a page action staged onto a button is not named, and one whose button is cleared, or given to another action in this very dialog, is."
+      - "'Add this and bind them next' stages the binding made and opens the dialog on the first page action, on the same device, then on the second ('After this one: Kneeboard Previous Page.'). Cancel ends it and keeps what is staged. A page action RigReady cannot write a binding for is not offered, and the note says to bind it in DCS's own controls screen."
+      - "Scenario mark-flight (dcs-bindings-hornet): binding 'Kneeboard ON/OFF' to Button 14 of the stick shows the note with both page actions on the keyboard; the offer leads through Button 33 and Button 35; three changes are saved to the stick's file; binding show or hide again shows no note (E2E)."
+    notes:
+      - "2026-11-12 sitting, finding 20: the owner bound show or hide to a stick button and found in the cockpit that nothing on his controllers turned the pages. KNEE-003 says it where the pages are exported; this says it where the button is bound."
+      - "The three actions are found by DCS's names for them, the way KNEE-003 does (cheat-sheets core/kneeboardKeys.ts). A feature does not import another, so the rule is written in both; change them together."
+    status: done
+    evidence:
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#reads the three from DCS's names, and takes the glance view, the mark point and the shortcuts for none"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#on the recorded Hornet, says the two page actions are on the keyboard and on no controller"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#says the same for the UH-1H, whose page actions are its own"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#says nothing for any other action, the glance view and the page actions included"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#counts a page action that waits to be saved as bound, and has nothing to say once both wait"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#is gone once both page actions are written to the stick, and back when the button of one is given to show or hide"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#does not count a binding on a control the device does not have"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#says a page action is bound to nothing when it is on no keyboard key either"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#offers only what RigReady can bind, and says where to bind the rest"
+      - "src/features/dcs-bindings/core/kneeboardPages.test.ts#has nothing to say for an aircraft with no action that turns a page"
+      - "tests/e2e/dcs-bindings.e2e.ts#bindings: binding show or hide the kneeboard says its pages turn with two more actions, and goes on to bind them"
+      - "artifacts/screens/bindings-kneeboard-pages/01-show-or-hide-needs-the-page-actions.png"
+      - "artifacts/screens/bindings-kneeboard-pages/02-next-page-then-previous-page.png"
+      - "artifacts/screens/bindings-kneeboard-pages/03-nothing-to-add-once-the-pages-turn.png"
+
   # ---------------------------------------------------------------------------
   # CHEAT SHEETS
   # ---------------------------------------------------------------------------
@@ -3785,7 +3816,7 @@ requirements:
       - "The offer opens the game's bindings page on that aircraft with the kneeboard's actions found. Once both are bound to a controller the note is gone and the dialog shows the buttons."
       - "Scenario mark-flight (cheat-sheets-hornet): the note shows; from the offer both page keys are bound to stick buttons by pressing them; back in the dialog it reads 'Button 33 on Stick' and 'Button 35 on Stick' and the note is gone (E2E)."
     notes:
-      - "2026-11-12 sitting, finding 20: the owner bound show or hide in DCS and found in the cockpit that nothing on his controllers turned the pages. The dialog is where pages are exported; the bindings page itself gives no such hint when show or hide is bound there, which is the bindings feature's to add."
+      - "2026-11-12 sitting, finding 20: the owner bound show or hide in DCS and found in the cockpit that nothing on his controllers turned the pages. The dialog is where pages are exported; the bind dialog of the bindings page says it where show or hide is bound (BIND-DCS-025)."
     status: done
     evidence:
       - "src/features/cheat-sheets/core/kneeboardKeys.test.ts#reads it from the game's name for the action"
