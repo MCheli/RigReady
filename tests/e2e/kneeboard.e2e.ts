@@ -44,11 +44,25 @@ async function openKneeboard(page: Page): Promise<void> {
   await expect(page.getByTestId('kneeboard-preview')).toHaveAttribute('data-busy', 'false');
 }
 
+/**
+ * How long a test waits for the real renderer to draw the pages of an export. Every page is
+ * drawn for the list of what will change, and every page again to be written: a hidden
+ * window, its first frame and a PNG each time, about a third of a second a page on a desk
+ * PC. The 31 pages of the long device names took 9.5 to 10.1 s each time, measured three
+ * times with no other test running beside it: right at the 10 s a test waits for the screen
+ * by default, where it failed now and then. The two waits get the 40 s that
+ * cheat-sheets.e2e.ts gives its 24 pages, a little over a second a page.
+ */
+const EXPORT_WAIT = 40_000;
+
 async function exportPages(page: Page): Promise<void> {
   await page.getByTestId('kneeboard-export').click();
   await expect(page.getByTestId('kneeboard-export-confirm')).toBeVisible();
+  // The pages are drawn for the list of changes; writing is offered once the list is there.
+  await expect(page.getByTestId('kneeboard-export-go')).toBeEnabled({ timeout: EXPORT_WAIT });
   await page.getByTestId('kneeboard-export-go').click();
-  await expect(page.getByTestId('kneeboard-done')).toBeVisible();
+  // They are drawn again to be written.
+  await expect(page.getByTestId('kneeboard-done')).toBeVisible({ timeout: EXPORT_WAIT });
 }
 
 function pngSize(bytes: Buffer): { width: number; height: number } {
