@@ -46,7 +46,7 @@ Setting up bindings for a rig full of controllers takes hours. RigReady helps yo
 - **Bindings.** For DCS: see the bindings in effect, edit them with a preview, clear the defaults DCS adds to every device, and copy controls between aircraft. For iRacing: every action and what it is bound to, for all cars and for each car with custom controls, and binding an action to a button or a key with a preview (axes and hat switches are still bound in iRacing). One Bindings page with a game picker. [DCS bindings](docs/manual/dcs/bindings.md), [iRacing bindings](docs/manual/games/iracing-bindings.md)
 - **Cheat sheets.** Each device drawn with what every control does, for DCS aircraft and the racing games, printable and exportable as DCS kneeboard pages. A controller with no drawing gets a sheet from your own photo of it. [Cheat sheets](docs/manual/controls/cheat-sheets.md)
 - **Learn them.** A trainer names an action and you press the control; twenty binding guides, from the F/A-18C, F-16C, A-10C and F-14 to the Ka-50, UH-1H and P-51D, walk through what to bind first, and you can write or import your own. iRacing has guides by car class, from GT3 and GT4 to formula, oval and dirt. [Trainer](docs/manual/controls/trainer.md), [Binding guide for iRacing](docs/manual/games/iracing-binding-guide.md)
-- **Overlay.** A small see-through list over the game of each button you press and what it does there, fading after a few seconds. Off until you turn it on. [The overlay](docs/manual/play/overlay.md)
+- **Overlay.** A small see-through list over the game of each button you press and what it does there, fading after a few seconds. Off until you turn it on; then each setup has its own switch, so it can be on in one game and off in another. [The overlay](docs/manual/play/overlay.md)
 - **Back up and restore.** One click backs up setups, game files and settings; a restore shows what will change before it does. [Backups](docs/manual/protect/backups.md), [moving to a new PC](docs/manual/protect/new-pc.md)
 - **Share it.** Share a setup as a file with personal details reviewed and removed, or make a picture of the rig to show people. [Sharing](docs/manual/protect/sharing.md)
 
@@ -102,7 +102,7 @@ RigReady reads your hardware and changes game files, so it should say exactly wh
 - Every change to a file outside RigReady's own data folder is backed up first, with a visible description of the change. Each one is listed on the Safety page, where it can be undone.
 - RigReady itself sends only two things off your PC: the update check to GitHub, and AI requests you send yourself, with your own key, to the one AI provider you chose. An assistant you connect over MCP (off by default) reads only what you allow, and sends it wherever that assistant runs. There is no account, no telemetry and no crash reporting.
 - A shared setup never carries scripts or launch commands, nothing from a setup is ever placed into a command line, and an imported file cannot write outside the game and document folders.
-- Updates come only from the project's GitHub releases and are checked against their published checksum before they install.
+- Updates come only from the project's GitHub releases and are checked against their published checksum and their code signature before they install.
 - A monitor layout you apply goes back by itself unless you keep it.
 - It never reports success for something that did not happen.
 

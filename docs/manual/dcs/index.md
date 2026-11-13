@@ -49,11 +49,11 @@ The aircraft folder names are DCS's input profile keys, for example `FA-18C_horn
 
 Nothing outside RigReady's own folder is written without a copy being kept first and the change being described. Every DCS file RigReady writes is listed under **Configure > Safety** ([The Safety page](../protect/safety-page.md)) with Undo, and before a write you see what will change, as a plain-language list and as the exact text. See [Backups](../protect/backups.md) for the whole-rig backup that includes the DCS files.
 
-## Not yet verified in the real game
+## Seen in DCS
 
-Two things have not yet been verified in the real game: they passed their tests on recorded data from one rig, but have not been looked at inside DCS itself. The [changelog](../../../CHANGELOG.md) lists them under known limitations.
+Two things were checked inside DCS itself on the rig RigReady was built on:
 
-- A binding written by RigReady has not been checked in DCS's own controls screen. See [DCS bindings](bindings.md).
-- The MFD displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not been looked at. See [MFD screens and the monitor setup](screens.md).
+- A binding written by RigReady was used in the cockpit. See [DCS bindings](bindings.md).
+- With SimAppPro closed, DCS drew the MFD displays from RigReady's monitor setup, each on its own screen. See [MFD screens and the monitor setup](screens.md).
 
-Both pages say what to look at the first time.
+Both pages say what to look at the first time on your own rig.

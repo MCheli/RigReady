@@ -14,7 +14,7 @@ Run the installer by double-clicking it.
 
 - It installs for your account only, under `%LOCALAPPDATA%\Programs\RigReady` unless you choose another folder. It never asks for administrator rights and never offers to install for all users.
 - It makes a Start menu entry and a desktop shortcut, and offers to start RigReady when it finishes.
-- The installer is not code signed, so Windows SmartScreen warns the first time it runs ("Windows protected your PC"). Choose **More info**, then **Run anyway**. Signing needs a certificate and is a separate decision; until then the warning is expected. See [Windows SmartScreen warns about the installer](../troubleshooting/smartscreen-warning.md).
+- The installer is code-signed with the publisher name Mark Cheli. Until it has earned a reputation with Microsoft, Windows SmartScreen may still warn the first time it runs ("Windows protected your PC"): choose **More info**, check that the publisher is Mark Cheli, then **Run anyway**. See [Windows SmartScreen warns about the installer](../troubleshooting/smartscreen-warning.md).
 
 ## Updates
 

@@ -122,7 +122,7 @@ A DCS setup can carry three checks about this; capturing a setup offers them. Se
 
 ## What to check in DCS
 
-The displays drawn by DCS from RigReady's monitor setup, with SimAppPro closed, have not yet been verified in the real game: they passed their tests on recorded data from one rig. The [changelog](../../../CHANGELOG.md) lists this under known limitations. The first time, with the MFD screens connected:
+On the rig RigReady was built on, with SimAppPro closed, DCS drew the F/A-18C's left DDI, right DDI and AMPCD from RigReady's monitor setup, each on its own MFD screen. The first time on your own rig, with the MFD screens connected:
 
 1. Close SimAppPro (its tray icon, then Exit) and keep it closed, because its MFD wizard rewrites options.lua.
 2. Under **Configure > Monitors**, apply the flying layout and keep it. Use **Identify** ([Identify and which way is up](../monitors-and-audio/identify.md)) to tell identical USB screens apart and to say which way is up on a sideways screen.

@@ -35,6 +35,6 @@ Problems found by a review or reported privately are tracked privately until a r
 
 ## How a fix reaches you
 
-An installed copy checks GitHub for a new version a few seconds after it starts and once a day, downloads it in the background, and installs it when you restart or quit RigReady, never while a game runs. A release whose title or notes start with `[security]` is shown on every screen with the install one click away. The download's SHA-512 is checked against the release feed, and a signed copy also checks the installer's Authenticode signature against the publisher name built into it. Release builds are signed since 2.0.0-beta.2, with the publisher "Mark Cheli". `docs/manual/app/updates.md` describes it for users; `docs/RELEASING.md` has the hotfix runbook.
+An installed copy checks GitHub for a new version a few seconds after it starts and once a day, downloads it in the background, and installs it when you restart or quit RigReady, never while a game runs. A release whose title or notes start with `[security]` is shown on every screen with the install one click away. The download's SHA-512 is checked against the release feed, and a signed copy also checks the installer's Authenticode signature against the publisher name built into it. Every 2.x release is signed, with the publisher "Mark Cheli". `docs/manual/app/updates.md` describes it for users; `docs/RELEASING.md` has the hotfix runbook.
 
 If automatic checks are off, nothing is checked: watch the releases page or press Check now in Settings.
