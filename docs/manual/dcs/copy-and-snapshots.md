@@ -4,7 +4,7 @@ description: Carry common controls from one aircraft to another; keep named snap
 order: 70
 ---
 
-Two tabs of **Configure > DCS bindings** work across aircraft and across time: **Copy** takes the controls you set up once to another aircraft, and **Snapshots** keeps named copies of the binding files.
+Two tabs of **Configure > Bindings** with **DCS** chosen work across aircraft and across time: **Copy** takes the controls you set up once to another aircraft, and **Snapshots** keeps named copies of the binding files.
 
 ## Copy
 

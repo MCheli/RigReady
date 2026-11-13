@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute, type RouteLocationNormalizedLoaded } from 'vue-router';
-import { navSections } from '../features';
+import BindingsGamePicker from '../components/BindingsGamePicker.vue';
+import { bindingsPages, navSections, places } from '../features';
+import { bindingsPageAt } from '../shell/bindings';
 import { ariaCurrent, currentEntry } from '../shell/nav';
 import { pageEpoch } from '../shell/shell';
 
@@ -14,11 +16,15 @@ const viewKey = (shown: RouteLocationNormalizedLoaded): string =>
 
 /**
  * The navigation says where you are on every page, also on one that has no entry of its
- * own: a setup's editor is under Setups, the trainer under Cheat sheets.
+ * own: a setup's editor is under Setups, the trainer under Cheat sheets, the DCS World page
+ * under Games and a game's bindings under Bindings.
  */
 const route = useRoute();
 const entries = navSections.flatMap((group) => group.entries.map((entry) => entry.to));
-const current = computed(() => currentEntry(entries, route.path));
+const current = computed(() => currentEntry(entries, route.path, places));
+
+/** On a game's bindings page, the game picker of Bindings stands above it. */
+const bindings = computed(() => bindingsPageAt(bindingsPages, route.path));
 </script>
 
 <template>
@@ -49,6 +55,7 @@ const current = computed(() => currentEntry(entries, route.path));
       </div>
     </nav>
     <div class="configure-content">
+      <BindingsGamePicker v-if="bindings" :pages="bindingsPages" :current="bindings" />
       <router-view v-slot="{ Component, route: shown }">
         <component :is="Component" :key="viewKey(shown)" />
       </router-view>
@@ -62,10 +69,12 @@ const current = computed(() => currentEntry(entries, route.path));
   min-height: calc(100vh - 56px);
 }
 /*
- * Five groups, twenty entries: sized so all of it is visible at the default window height
+ * Five groups, eighteen entries: sized so all of it is visible at the default window height
  * (tests/e2e/tour.e2e.ts checks that). The page is 821 high there, which leaves 765 for
- * this; twenty rows of 28 with five headings and what is between them take 739, so it is
- * full: one more entry does not fit. A smaller window scrolls, with a thin bar.
+ * this; eighteen rows of 28 with five headings and what is between them take 683, room for
+ * two more. A page about one game or a game's bindings takes no row: it is reached from
+ * Games or Bindings (gamePages and bindings in a manifest). A smaller window scrolls, with
+ * a thin bar.
  */
 .configure-nav {
   width: 208px;

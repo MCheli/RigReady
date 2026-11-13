@@ -6021,6 +6021,7 @@ requirements:
       - "On a PC without iRacing the page says so and shows no list; with iRacing but no controls.cfg yet it says there is no bindings file."
     notes:
       - "2026-11-12: the page is reached from the command palette ('iRacing bindings') and by its address, /configure/iracing-bindings. It has no menu entry: the Games menu and the game picker in Bindings are built on another branch and will replace this registration."
+      - "2026-11-12, later: the page joined the one Bindings entry of the menu (NAV-GAMES-002). Its manifest declares it as the bindings page of iRacing, so the game picker above every bindings page lists it beside DCS, and Bindings opens it when it was the game shown last or, on first use, when the setup in use is for iRacing. The palette command stays."
     status: done
     evidence:
       - "src/features/iracing-bindings/core/view.test.ts#lists every action, bound or not, with the device and input in plain words"
@@ -8209,6 +8210,111 @@ requirements:
       - "artifacts/screens/shell-palette/01-open.png"
       - "artifacts/screens/shell-palette/02-typed.png"
       - "artifacts/screens/shell-palette/04-recent.png"
+
+  - id: NAV-GAMES-001
+    title: The menu names no game - one Games entry, from which the pages about a game open
+    job: platform
+    area: shell
+    priority: p1
+    done_means:
+      - "The Games section of the Configure menu has one entry, Games. The DCS World page and the Racing page have no entry of their own; a feature declares such a page in its manifest (gamePages: title, icon, route, one line, the games it is about), and no feature imports another for it."
+      - "The Games page offers each such page with a card (its name and one line) when one of its games is found on this PC: DCS World and Racing on the owner's rig, neither on a PC without those games. Without the game, the game's own page still leads there ('Set up DCS World')."
+      - "Both pages keep their routes (/configure/dcs and its tabs, /configure/racing and its game pages), and the menu marks Games while one of them or a page below it is open; the Wheel page, inside the Racing page's address, keeps its own entry under Hardware."
+      - "A game that gets a page of its own, or a bindings page, adds no row to the menu (unit test with a third game)."
+    notes:
+      - "2026-11-12: the owner's decision 1A at the sitting ('It might be better to have something like a bindings menu and then have options for what games are supported there'). The menu went from twenty entries to eighteen. A card is shown only when one of its games is found, so that a PC without DCS is not offered a DCS page first; the owner judges that at the second look."
+    status: done
+    evidence:
+      - "src/shared/feature.test.ts#names no game: Games under Games, Bindings first under Controls"
+      - "src/shared/feature.test.ts#a game that gets a bindings page or a page of its own adds no entry"
+      - "src/shared/feature.test.ts#each game page under Games, each bindings page under Bindings, named as their entries were"
+      - "src/renderer/shell/nav.test.ts#NAV-GAMES-001: a page that stands under an entry belongs to it, and so do the pages below it"
+      - "tests/e2e/games-menu.e2e.ts#games menu: one Games entry, and DCS World and Racing open from their cards on Games"
+      - "tests/e2e/dcs-setup.e2e.ts#dcs-setup: on a PC without DCS every tab says so the same way, SimAppPro included"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: every Configure page renders an honest empty state, never an error"
+      - "tests/e2e/tour.e2e.ts#tour: every page on"
+      - "artifacts/screens/games-menu/01-games.png"
+      - "artifacts/screens/games-menu/02-dcs-world.png"
+      - "artifacts/screens/games-menu/03-racing.png"
+
+  - id: NAV-GAMES-002
+    title: One Bindings entry with a game picker
+    job: configure
+    area: shell
+    priority: p1
+    done_means:
+      - "The Controls section starts with one entry, Bindings, the shell's own. A feature declares its game's bindings page in its manifest (bindings: game, name, route, order); DCS and iRacing do, so the picker lists 'DCS' and 'iRacing'. A game without a bindings page is not listed."
+      - "A Game picker stands above every game's bindings page, and the menu marks Bindings on each; choosing another game opens its page. The pages keep their routes (/configure/dcs-bindings and its tabs, /configure/iracing-bindings)."
+      - "Bindings opens the game shown last, chosen in the picker or opened by a link, also after RigReady was closed and started again."
+      - "On first use it opens the game of the setup in use when that game has a bindings page (DCS on the flying rig, iRacing on the racing rig), and otherwise the first game of the picker."
+    status: done
+    evidence:
+      - "src/renderer/shell/bindings.test.ts#the game shown last, while it still has a page"
+      - "src/renderer/shell/bindings.test.ts#on first use the game of the setup in use, when it has a page"
+      - "src/renderer/shell/bindings.test.ts#asks about the setup only when no game has been shown yet"
+      - "src/renderer/shell/bindings.test.ts#comes from the first feature that knows"
+      - "tests/unit/paletteCommands.test.ts#NAV-GAMES-002: knows the game the setup in use is for, which Bindings opens on first use"
+      - "src/shared/feature.test.ts#the Bindings entry is the shell’s, and only there while a feature has a bindings page"
+      - "tests/e2e/games-menu.e2e.ts#bindings: one entry with a game picker; the setup’s game on first use, then the game chosen last"
+      - "tests/e2e/games-menu.e2e.ts#bindings: on the racing rig the first use opens iRacing, the game of its setup"
+      - "artifacts/screens/games-menu-bindings/01-dcs.png"
+      - "artifacts/screens/games-menu-bindings/02-picker-open.png"
+      - "artifacts/screens/games-menu-bindings/03-iracing.png"
+      - "artifacts/screens/games-menu-racing/01-first-use.png"
+
+  - id: NAV-GAMES-003
+    title: The command palette after the menu stopped naming games
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "The palette lists Bindings, and the pages that left the menu under the names their entries had ('DCS World', 'Racing', 'DCS bindings', 'iRacing bindings'), with the section as the hint, right after the entry they now stand under; the pages below them are still named after them ('DCS World: Screens')."
+      - "A feature's commands keep their heading ('DCS bindings') and its place; only Play's commands come first."
+      - "Choosing Bindings in the palette opens a game's bindings page, as the menu entry does."
+    status: done
+    evidence:
+      - "src/renderer/shell/registry.test.ts#keeps the names of the pages that left the menu, with the section they were in"
+      - "src/renderer/shell/registry.test.ts#orders them where their entries stood: under Games after Games, under Bindings after Bindings"
+      - "src/renderer/shell/registry.test.ts#a feature whose page left the menu keeps its heading and its place among the headings"
+      - "src/renderer/shell/registry.test.ts#only Play comes first, with the Bindings entry and the places in"
+      - "tests/e2e/games-menu.e2e.ts#palette and links: the pages that left the menu keep their names and their addresses"
+      - "tests/e2e/shell.e2e.ts#palette: Ctrl+K finds every page and the commands of the features, by keyboard alone"
+      - "artifacts/screens/games-menu-links/01-palette.png"
+
+  - id: NAV-GAMES-004
+    title: No link in the app leads nowhere
+    job: platform
+    area: shell
+    priority: p2
+    done_means:
+      - "Every fixed in-app address in the shipped sources (a page's link, a check's 'Open ...', a palette command, a button) opens a route a manifest declares or the shell's Bindings route; a unit test reads them all."
+      - "The Stream Deck findings about DCS-ExportScript and DCS-BIOS offer 'Open DCS World: Export.lua', which opens that tab (the link named a route that did not exist, /configure/dcs-setup, so the page hid it)."
+      - "The walks over every route (the tour, the crawl, the accessibility scan, the second generic PC) follow the Bindings address to the page it opens instead of failing on it."
+      - "Text that names a place in the menu says where it is now: 'Configure > Games > DCS World > Screens', 'Configure > Games > Racing', 'Configure > Bindings with DCS chosen', in the app and in the manual."
+    notes:
+      - "2026-11-12: one place keeps the old words on purpose: the comment at the top of the monitor setup file RigReady writes for DCS ('Change it in RigReady (Configure > DCS World > Screens)'). RigReady compares that file with what it would write, so new words would make every file written before differ and ask for a rewrite."
+    status: done
+    evidence:
+      - "tests/unit/routeLinks.test.ts#every fixed address written in the shipped sources opens a page"
+      - "tests/unit/routeLinks.test.ts#knows a dead address when it sees one"
+      - "src/features/stream-deck/core/health.test.ts"
+      - "tests/e2e/games-menu.e2e.ts#palette and links: the pages that left the menu keep their names and their addresses"
+      - "tests/e2e/nfr.e2e.ts#nfr: every route of every feature renders, and no visible control is a stub"
+      - "tests/e2e/generic-second-pc.e2e.ts#second generic PC: every Configure page renders; DCS, monitors and devices are this PC’s own"
+      - "artifacts/screens/games-menu-links/02-finding.png"
+      - "artifacts/screens/games-menu-links/03-export-lua.png"
+
+  - id: NAV-GAMES-005
+    title: With one game on the list, the Bindings picker still names it
+    job: configure
+    area: shell
+    priority: p3
+    done_means:
+      - "When only one game has a bindings page, the strip above the page says 'Game' and the game's name instead of a list with one choice."
+    notes:
+      - "2026-11-12: built (src/renderer/components/BindingsGamePicker.vue), not shown: every build has two games with a bindings page since the iRacing bindings were merged, and no scenario can take one away, so there is no picture of it and no test reaches it."
+    status: in_progress
+    evidence: []
 
   - id: WOW-UI-002
     title: Palette commands call their feature and a toast reports what really happened

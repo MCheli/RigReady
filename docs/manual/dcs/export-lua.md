@@ -4,7 +4,7 @@ description: One line per tool in Export.lua: add or remove WinWing, DCS-BIOS, S
 order: 30
 ---
 
-Every tool that reads data out of DCS while you fly adds one line to `Saved Games\DCS\Scripts\Export.lua`, which loads the tool's own script. The **Export.lua** tab of **Configure > DCS World** shows the file line by line, says which tool each line belongs to, and adds or removes one tool's line without touching anything else.
+Every tool that reads data out of DCS while you fly adds one line to `Saved Games\DCS\Scripts\Export.lua`, which loads the tool's own script. The **Export.lua** tab of **Configure > Games > DCS World** shows the file line by line, says which tool each line belongs to, and adds or removes one tool's line without touching anything else.
 
 ## The tools
 

@@ -453,3 +453,196 @@ describe('commands that depend on the machine', () => {
     );
   });
 });
+
+describe('NAV-GAMES-003 the palette after the menu stopped naming games', () => {
+  // The declarations of the real manifests since decision 1A, without their components.
+  const MENU: FeatureManifest[] = [
+    MANIFESTS[0]!,
+    {
+      id: 'games',
+      nav: [
+        { title: 'Games', icon: 'mdi-g', to: '/configure/games', order: 200, section: 'Games' },
+      ],
+      routes: [
+        { path: '/configure/games', component: blank },
+        { path: '/configure/games/:id', component: blank },
+      ],
+    },
+    {
+      id: 'dcs-setup',
+      gamePages: [
+        {
+          title: 'DCS World',
+          icon: 'mdi-airplane',
+          to: '/configure/dcs',
+          about: 'Screens, Export.lua and SimAppPro.',
+          games: ['dcs'],
+          order: 210,
+        },
+      ],
+      routes: [
+        {
+          path: '/configure/dcs',
+          component: blank,
+          children: [
+            { path: '', component: blank },
+            { path: 'screens', component: blank },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'racing',
+      nav: [
+        {
+          title: 'Wheel',
+          icon: 'mdi-w',
+          to: '/configure/racing/wheel',
+          order: 430,
+          section: 'Hardware',
+        },
+      ],
+      gamePages: [
+        {
+          title: 'Racing',
+          icon: 'mdi-steering',
+          to: '/configure/racing',
+          about: 'Your wheel and the racing games.',
+          games: ['iracing'],
+          order: 220,
+        },
+      ],
+      routes: [
+        { path: '/configure/racing', component: blank },
+        { path: '/configure/racing/lmu', component: blank },
+        { path: '/configure/racing/wheel', component: blank },
+      ],
+    },
+    {
+      id: 'dcs-bindings',
+      bindings: [{ game: 'dcs', name: 'DCS', to: '/configure/dcs-bindings', order: 10 }],
+      routes: [{ path: '/configure/dcs-bindings/:tab?', component: blank }],
+    },
+    {
+      id: 'iracing-bindings',
+      bindings: [
+        { game: 'iracing', name: 'iRacing', to: '/configure/iracing-bindings', order: 20 },
+      ],
+      routes: [{ path: '/configure/iracing-bindings', component: blank }],
+    },
+    MANIFESTS.find((m) => m.id === 'overlay')!,
+    MANIFESTS.find((m) => m.id === 'devices')!,
+  ];
+  const pages = pageCommands(MENU);
+  const page = (to: string) => pages.find((p) => p.to === to);
+
+  it('lists Bindings, the shell’s entry, under its own name', () => {
+    expect(page('/configure/bindings')).toMatchObject({
+      title: 'Bindings',
+      hint: 'Controls',
+      feature: 'shell',
+      group: GO_TO,
+    });
+  });
+
+  it('keeps the names of the pages that left the menu, with the section they were in', () => {
+    expect(page('/configure/dcs')).toMatchObject({
+      title: 'DCS World',
+      hint: 'Games',
+      feature: 'dcs-setup',
+    });
+    expect(page('/configure/dcs/screens')).toMatchObject({
+      title: 'DCS World: Screens',
+      hint: 'DCS World',
+    });
+    expect(page('/configure/racing')).toMatchObject({ title: 'Racing', hint: 'Games' });
+    expect(page('/configure/racing/lmu')).toMatchObject({ title: 'Racing: Lmu' });
+    expect(page('/configure/dcs-bindings')).toMatchObject({
+      title: 'DCS bindings',
+      hint: 'Controls',
+      feature: 'dcs-bindings',
+    });
+    expect(page('/configure/iracing-bindings')).toMatchObject({
+      title: 'iRacing bindings',
+      hint: 'Controls',
+    });
+    // Each once.
+    expect(pages.filter((p) => p.to === '/configure/dcs')).toHaveLength(1);
+    expect(pages.filter((p) => p.to === '/configure/dcs-bindings')).toHaveLength(1);
+  });
+
+  it('orders them where their entries stood: under Games after Games, under Bindings after Bindings', () => {
+    expect(pages.map((p) => p.to)).toEqual([
+      '/fly',
+      '/fly/compact',
+      '/configure/games',
+      '/configure/dcs',
+      '/configure/dcs/screens',
+      '/configure/racing',
+      '/configure/racing/lmu',
+      '/configure/bindings',
+      '/configure/dcs-bindings',
+      '/configure/iracing-bindings',
+      '/configure/overlay',
+      '/configure/devices',
+      '/configure/devices/test',
+      '/configure/devices/usb',
+      '/configure/racing/wheel',
+    ]);
+  });
+
+  it('a feature whose page left the menu keeps its heading and its place among the headings', () => {
+    const dcsSetup = MENU.find((m) => m.id === 'dcs-setup');
+    const dcsBindings = MENU.find((m) => m.id === 'dcs-bindings');
+    const devices = MENU.find((m) => m.id === 'devices');
+    expect(areaOf(dcsSetup, 'dcs-setup')).toMatchObject({ title: 'DCS World' });
+    expect(areaOf(dcsBindings, 'dcs-bindings')).toMatchObject({ title: 'DCS bindings' });
+    expect(areaOf(dcsBindings, 'dcs-bindings').order).toBeLessThan(
+      areaOf(devices, 'devices').order
+    );
+    // A page of the feature that already names its page gets no hint of the page's name.
+    const tab = listed(
+      { id: 'dcs-setup.screens', title: 'DCS World: Screens', to: '/configure/dcs/screens' },
+      'dcs-setup',
+      dcsSetup,
+      0
+    );
+    expect(tab).toMatchObject({ group: GO_TO, kind: 'page' });
+    expect(tab.hint).toBeUndefined();
+  });
+
+  it('a feature’s own name for its page becomes words it is found by; the page keeps its name', () => {
+    const all = staticCommands(MENU, [
+      {
+        feature: 'iracing-bindings',
+        commands: [
+          {
+            id: 'iracing-bindings.open',
+            title: 'iRacing bindings',
+            keywords: ['controls.cfg'],
+            to: '/configure/iracing-bindings',
+          },
+        ],
+      },
+    ]);
+    const found = all.filter((c) => c.to === '/configure/iracing-bindings');
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ title: 'iRacing bindings', hint: 'Controls' });
+    expect(found[0]!.keywords).toEqual(['iRacing bindings', 'controls.cfg']);
+  });
+
+  it('only Play comes first, with the Bindings entry and the places in', () => {
+    const all = staticCommands(MENU, [
+      {
+        feature: 'dcs-bindings',
+        commands: [{ id: 'dcs-bindings.clean', title: 'Clean up the defaults', run }],
+      },
+      { feature: 'about', commands: [{ id: 'about.copy', title: 'Copy the version', run }] },
+      { feature: 'fly', commands: [{ id: 'fly.recheck', title: 'Re-check', run }] },
+    ]);
+    expect(all[0]).toMatchObject({ id: 'fly.recheck', group: 'Play' });
+    expect([...new Set(all.map((c) => c.group))]).toEqual(['Play', 'DCS bindings', 'About', GO_TO]);
+    const routes = all.filter((c) => c.group === GO_TO).map((c) => c.to);
+    expect(routes.slice(0, 2)).toEqual(['/fly', '/fly/compact']);
+  });
+});

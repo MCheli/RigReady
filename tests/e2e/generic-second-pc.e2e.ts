@@ -47,14 +47,22 @@ const invokeIn = <T>(page: Page, channel: string, input?: unknown): Promise<T> =
       return result.value as T;
     });
 
-/** Every route the feature manifests registered, read from the running app's router. */
+/**
+ * Every route the feature manifests registered, read from the running app's router. A route
+ * that only sends on to another (Bindings opens a game's bindings page) is left out: the
+ * page it opens is in the list itself.
+ */
 const routesOf = (page: Page): Promise<string[]> =>
   page.evaluate(() => {
     const scope = globalThis as unknown as {
       document: {
         querySelector(selector: string): {
           __vue_app__: {
-            config: { globalProperties: { $router: { getRoutes(): { path: string }[] } } };
+            config: {
+              globalProperties: {
+                $router: { getRoutes(): { path: string; meta: Record<string, unknown> }[] };
+              };
+            };
           };
         };
       };
@@ -62,6 +70,7 @@ const routesOf = (page: Page): Promise<string[]> =>
     return scope.document
       .querySelector('#app')
       .__vue_app__.config.globalProperties.$router.getRoutes()
+      .filter((route) => route.meta['forwards'] !== true)
       .map((route) => route.path);
   });
 

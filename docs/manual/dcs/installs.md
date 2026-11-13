@@ -4,7 +4,7 @@ description: How RigReady finds the Steam and standalone editions of DCS World, 
 order: 10
 ---
 
-RigReady finds DCS World on its own. This page says where it looks, what the **Overview** tab of **Configure > DCS World** shows about the install, and how the aircraft list is made.
+RigReady finds DCS World on its own. This page says where it looks, what the **Overview** tab of **Configure > Games > DCS World** shows about the install, and how the aircraft list is made.
 
 ## Steam edition
 

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
+import { manifests } from '../../../renderer/features';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
+import { gamePagesOf } from '../../../shared/feature';
 import { gamesContract, type GameSummary } from '../contract';
 
 const api = useClient(gamesContract);
@@ -29,6 +31,16 @@ onBeforeUnmount(() => off?.());
 const found = computed(() => games.value.filter((g) => g.installs.length > 0));
 const missing = computed(() => games.value.filter((g) => g.installs.length === 0));
 
+/**
+ * The pages other features have about a game (DCS World, Racing), each offered with a card
+ * when one of its games is found here. Without the game, its own page below still leads there.
+ */
+const pages = computed(() =>
+  gamePagesOf(manifests).filter((page) =>
+    page.games.some((id) => found.value.some((g) => g.id === id))
+  )
+);
+
 const SOURCE: Record<string, string> = {
   steam: 'Steam',
   standalone: 'Standalone',
@@ -47,6 +59,23 @@ const sources = (g: GameSummary): string =>
     <PageSkeleton v-if="!loaded" label="Looking for games…" :rows="6" />
 
     <template v-if="loaded">
+      <div v-if="pages.length" class="game-pages mb-6">
+        <router-link
+          v-for="page in pages"
+          :key="page.to"
+          :to="page.to"
+          class="rr-panel rr-row game-page-card"
+          :data-testid="`game-card-${page.to.split('/').pop()}`"
+        >
+          <v-icon :icon="page.icon" class="rr-muted" />
+          <div class="rr-row-main">
+            <div class="rr-row-title">{{ page.title }}</div>
+            <div class="rr-row-sub">{{ page.about }}</div>
+          </div>
+          <v-icon icon="mdi-chevron-right" class="rr-muted" />
+        </router-link>
+      </div>
+
       <div v-if="found.length" class="rr-panel mb-6">
         <router-link
           v-for="game in found"
@@ -136,7 +165,17 @@ const sources = (g: GameSummary): string =>
   color: inherit;
   text-decoration: none;
 }
-.game-row:hover {
+.game-row:hover,
+.game-page-card:hover {
   background: var(--rr-surface-2);
+}
+.game-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.game-page-card {
+  color: inherit;
+  text-decoration: none;
 }
 </style>

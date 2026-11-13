@@ -93,7 +93,8 @@ test('racing: overview, iRacing bindings, and repairing a wheel with a new Windo
     'racing-iracing-repair'
   );
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   await expect(page.getByTestId('racing-wheel-summary')).toContainText('PC mode');
   const iracingCard = page.locator('[data-testid="racing-game-card"][data-game="iracing"]');
   await expect(iracingCard).toContainText('1 controller has a new Windows id');
@@ -159,7 +160,8 @@ test('racing: a setup cloned into a rim variant has its own binding backup; swit
 
   const openIracing = async (): Promise<void> => {
     await page.getByTestId('mode-configure').click();
-    await page.getByTestId('nav-racing').click();
+    await page.getByTestId('nav-games').click();
+    await page.getByTestId('game-card-racing').click();
     await page.locator('[data-testid="racing-game-card"][data-game="iracing"]').click();
     await expect(page.getByTestId('backups-iracing')).toBeVisible();
   };
@@ -296,7 +298,8 @@ test('racing: Le Mans Ultimate, BeamNG.drive and Assetto Corsa bindings, with a 
   const { page, shot, mutate } = await rig.launch('racing-fresh', 'racing-games');
   await mutate([{ op: 'setSteamBuild', appId: '2399420', stateFlags: 6 }]);
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   await page.locator('[data-testid="racing-game-card"][data-game="lmu"]').click();
   await expect(page.getByTestId('lmu-update')).toBeVisible();
   await expect(page.getByTestId('lmu-device')).toHaveAttribute('data-state', 'connected');
@@ -316,21 +319,24 @@ test('racing: Le Mans Ultimate, BeamNG.drive and Assetto Corsa bindings, with a 
   await expect(page.getByTestId('backup-message')).toContainText('Restored 3 files');
   await shot('restored');
 
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   await page.locator('[data-testid="racing-game-card"][data-game="beamng"]').click();
   await expect(page.getByTestId('beamng-map').first()).toContainText('Connected');
   await expect(page.getByTestId('beamng-bindings').first()).toContainText('Parking Brake');
   await expect(page.getByTestId('beamng-ffb')).toContainText('Soft-lock force');
   await shot('beamng');
 
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   await page.locator('[data-testid="racing-game-card"][data-game="assetto-corsa"]').click();
   await expect(page.getByTestId('ac-bindings')).toContainText('Shift up');
   await expect(page.getByTestId('ac-offline')).toHaveCount(0);
   await shot('assetto-corsa');
 
   // Unplugged wheel: flagged, with restore from backup offered instead of an id repair.
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   await page.locator('[data-testid="racing-game-card"][data-game="lmu"]').click();
   await mutate([{ op: 'unplugDevice', match: { vendorId: '0EB7' } }]);
   await expect(page.getByTestId('lmu-device')).toHaveAttribute('data-state', 'missing');
@@ -353,7 +359,8 @@ test('racing: Le Mans Ultimate bindings are pointed at a wheel base Windows rena
   expect(before).toContain('"product name": "Fanatec Podium DD2 Wheel Base"');
 
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   const card = page.locator('[data-testid="racing-game-card"][data-game="lmu"]');
   await expect(card).toContainText('1 controller has a new name');
   await shot('overview');
@@ -462,7 +469,8 @@ test('racing: BeamNG.drive older user folders, per-vehicle maps and a replaced w
   );
 
   await page.getByTestId('mode-configure').click();
-  await page.getByTestId('nav-racing').click();
+  await page.getByTestId('nav-games').click();
+  await page.getByTestId('game-card-racing').click();
   await page.locator('[data-testid="racing-game-card"][data-game="beamng"]').click();
   await expect(page.getByTestId('beamng-older')).toContainText('BeamNG.drive 0.31');
   const csw = page.locator('[data-testid="beamng-map"][data-file="00010eb7.diff"]');

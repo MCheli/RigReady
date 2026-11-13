@@ -6,7 +6,7 @@ order: 15
 
 The iRacing bindings page lists every action iRacing has, bound or not, and what is bound to it. It reads `controls.cfg` in `Documents\iRacing`, and the `controls.cfg` of each car that uses "Use custom controls for this car". It shows bindings. It does not change them.
 
-Open it with [the command palette](../app/command-palette.md): press **Ctrl+K** and type "iRacing bindings". The page has no menu entry in this build.
+Open it with **Configure > Bindings** and choose **iRacing** in the **Game** picker above the page, or with [the command palette](../app/command-palette.md): press **Ctrl+K** and type "iRacing bindings". Bindings opens the game you looked at last, so the next time it is iRacing straight away.
 
 ![The iRacing bindings page, with the bindings for all cars](../../../artifacts/screens/iracing-bindings-all-cars/01-all-cars.png)
 

@@ -14,7 +14,7 @@ With nothing typed:
 
 - **Recent**: the five commands you used last.
 - The actions, under the heading of the area they belong to (Play, Backups, Monitors, Devices and so on), six per heading; the rest are found by typing.
-- **Go to**: every page, in the order of the side navigation. A page reached from inside another is named after it, for example "DCS World: Screens". A page that is not in the side navigation comes last.
+- **Go to**: every page, in the order of the side navigation. A page reached from inside another is named after it, for example "DCS World: Screens". The pages that open from Games and from Bindings keep their own names, "DCS World", "Racing", "DCS bindings" and "iRacing bindings", and stand right after Games and Bindings. A page that is not in the side navigation comes last.
 
 Type, and the list becomes the matches, best first; letters you typed are highlighted in the names. A command you used recently gets a small head start in a near tie, never in a clear one. Pages are also found by other words: "undo" finds [Safety](../protect/safety-page.md), "restore" and "new pc" find Backups, "bug" finds the diagnostics report.
 
