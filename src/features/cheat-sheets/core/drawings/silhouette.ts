@@ -86,12 +86,18 @@ export const ControlInputSchema = z.object({
   tag: z.string().max(12).optional(),
   /**
    * The position the control rests in when nobody is using it: the middle of a three-way
-   * switch, a lever or handle let go, a throttle at its IDLE stop. The device reports this
-   * input as held while the control is there, so it reads as held before anything is
-   * pressed. A switch or knob that stays wherever it is put (a gear lever, a selector) has
-   * no one resting place, and none of its positions is marked.
+   * switch, a lever let go, a throttle at its IDLE stop, a handle in the place it normally
+   * sits (the wing fold handle at SPREAD). The device reports this input as held while the
+   * control is there, so it reads as held before anything is pressed. A switch or knob with
+   * no one normal place (a gear lever, a selector) has none of its positions marked.
    */
   rest: z.boolean().optional(),
+  /**
+   * Held only while it is pressed, on a control whose other positions stay put: the push
+   * of a handle, the press in the middle of a selector knob. It is not one of the control's
+   * positions, so the trainer waits for it to be let go like any button.
+   */
+  momentary: z.boolean().optional(),
 });
 export type ControlInput = z.infer<typeof ControlInputSchema>;
 

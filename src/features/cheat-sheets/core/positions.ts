@@ -19,8 +19,15 @@ import { pictureFor, type PictureDevice } from './picture';
 /** What is drawn this way springs back when it is let go. */
 const SPRINGS: readonly PhysicalControl['glyph'][] = ['hat', 'stick', 'lever', 'button', 'key'];
 
-const buttons = (inputs: readonly { id: string }[]): string[] =>
-  inputs.map((input) => input.id).filter((id) => id.startsWith('button:'));
+/**
+ * The buttons of a control that are its positions. A button the drawing marks `momentary`
+ * (the push of a handle whose other positions stay put) springs back, so it is not one.
+ */
+const buttons = (inputs: readonly { id: string; momentary?: boolean | undefined }[]): string[] =>
+  inputs
+    .filter((input) => !input.momentary)
+    .map((input) => input.id)
+    .filter((id) => id.startsWith('button:'));
 
 /**
  * For every button that shares its control with other buttons, those other buttons:
