@@ -3,8 +3,11 @@
  * The options of the recent presses on the Overlay page. Every change is sent as the whole
  * set of options; what comes back from the overlay is what the controls then show.
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, useId, watch } from 'vue';
 import { recentPresses, type RecentPressesOptions } from '../../core/widgets';
+
+/** The switch's own id, so that a click on its title switches it too. */
+const unboundId = `overlay-show-unbound-${useId()}`;
 
 const props = defineProps<{
   /** The options in effect, as overlay:state gives them. */
@@ -129,13 +132,14 @@ onBeforeUnmount(sendSeconds);
 
     <div class="rr-row">
       <div class="rr-row-main">
-        <div class="rr-row-title">Presses the game has nothing on</div>
+        <label class="rr-row-title" :for="unboundId">Presses the game has nothing on</label>
         <div class="rr-row-sub">
           Listed dimmed as “Not bound”, so you see that the press arrived and the game does nothing
           with it. Turned off, such a press is left out.
         </div>
       </div>
       <v-switch
+        :id="unboundId"
         :model-value="current.showUnbound"
         hide-details
         class="flex-grow-0"

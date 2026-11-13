@@ -29,7 +29,7 @@ Use `npm run dev:scenario -- <scenario>` to run the app while developing. It run
 
 ## Pull requests
 
-Keep them small. `npm run check` and `npm run test:e2e` must pass (CI runs both on Windows). Say what you tested and, for anything on screen, attach the screenshot the scenario run produced.
+Keep them small: one change each. `npm run check` and `npm run test:e2e` must pass (CI runs both on Windows). The pull request template asks for a short summary, the problem, the solution, how you tested it and what you would like the reviewer to look at. For anything on screen, attach the screenshot the scenario run produced.
 
 The maintainer reads every pull request before it is merged, against the rules above: writes go through `FileStore`, programs start with an argument array, the ledger entry and its evidence are in the same pull request. A green CI run is needed, not sufficient.
 
