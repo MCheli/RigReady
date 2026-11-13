@@ -290,7 +290,7 @@ Excerpt (the `Throttle` record, bound to Accelerator, axis 2 of the DD2):
 - **Action names are plain identifiers** and can be listed in plain language with a label map: `Throttle, Brake, Clutch, SteerLeft, SteerRight, ShiftUp, ShiftDown, GearReverse, GearNeutral, Gear1..Gear16, Ignition, Starter, PitSpeedLimiter, PushToPass, DRS, Handbrake, Reset, LookLeft/Right/Up/Down, BrakeBiasInc/Dec/Level, ABSInc/Dec, TractionControlInc/Dec, DashPageInc/Dec, WingFrontInc/Dec, DiffEntry…, MGUK…, AutoFFB, IncFFB, DecFFB, TChatInitiate, NextDrivingCam, BlackBox*, Rpy* (replay), Cam* (camera tool), VChat*, SPCC* (spotter), Pause`, and so on. The full list of 367 names comes from walking the file. Generate it from a fixture copy; do not hand-maintain it.
 - Existing community tools: an "iRacing Controls Editor" is referenced in `docs/archive/game-integration-reference.md` (https://github.com/jackhumbert/iracing-controls-editor-app). **[?]** That link has not been re-verified.
 
-**Edit safety.** Editing values in place (same length) is low-risk: the record size is fixed, and the `LRTC` length does not change. Adding or removing records is not supported; the game owns the set of action names. Back up first (rule 1) and only edit with the sim closed.
+**Edit safety.** Editing values in place (same length) is low-risk: the record size is fixed, and the `LRTC` length does not change. Adding or removing records is not supported; the game owns the set of action names. Back up first (rule 1) and only edit with the sim closed. **Update, 2026-11-12:** a closer reading of the file, the per-car files, and the reasons RigReady does not write bindings into it yet are in `docs/research/iracing-bindings.md`.
 
 ### 2.5 Device identity and repair (iRacing)
 

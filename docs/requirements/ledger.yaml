@@ -5708,6 +5708,160 @@ requirements:
     evidence: []
 
   # ---------------------------------------------------------------------------
+  # BINDINGS — iRacing (reading; see docs/research/iracing-bindings.md)
+  # ---------------------------------------------------------------------------
+
+  - id: BIND-IRACING-001
+    title: Read iRacing's controls.cfg without losing a byte
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "controls.cfg of the recorded rig is read into its header, its 367 records and its tail, and writing it back gives the same bytes."
+      - "Each record says whether every one of its 68 bytes is understood. A kind of binding not seen before is kept as it is and shown as 'A binding RigReady cannot read', never guessed."
+      - "A file that is not a controls.cfg, or is damaged or cut short, is refused with a plain message; damaged and random input never throws (fuzz)."
+      - "docs/research/iracing-bindings.md records the layout, what is and is not understood, how devices are identified, per-car files and the sources."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/controlsFile.test.ts#reading the real file and writing it back gives the same bytes"
+      - "src/features/iracing-bindings/core/controlsFile.test.ts#holds 367 actions, and the records fill the chunk exactly"
+      - "src/features/iracing-bindings/core/controlsFile.test.ts#every record is fully understood: its fields give back its 68 bytes"
+      - "src/features/iracing-bindings/core/controlsFile.test.ts#a kind of input never seen is kept byte for byte and marked as not understood"
+      - "src/features/iracing-bindings/core/controlsFile.test.ts#refuses other content with a plain message and never throws"
+      - "src/features/iracing-bindings/core/view.test.ts#counts a binding of an unknown kind and shows it as one it cannot read"
+      - "src/features/iracing-bindings/core/view.test.ts#refuses a damaged file with a plain message"
+      - "tests/unit/fuzzParsers.test.ts#iRacing controls.cfg, every action (binary)"
+      - "docs/research/iracing-bindings.md"
+
+  - id: BIND-IRACING-002
+    title: Every iRacing action and what it is bound to, for all cars
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "The iRacing bindings page lists every action of controls.cfg, bound or not (367 on the recorded rig: 183 bound, 184 not), in four groups, each with a plain name, iRacing's own id, the input in plain words and the device."
+      - "The list can be searched by action name, iRacing's id, input and device, narrowed to the actions that are not bound, and narrowed to one device; it says how many of the actions it is showing."
+      - "Axes are named from joyCalib.yaml; when that file cannot be read they are shown by number and the page says why."
+      - "On a PC without iRacing the page says so and shows no list; with iRacing but no controls.cfg yet it says there is no bindings file."
+    notes:
+      - "2026-11-12: the page is reached from the command palette ('iRacing bindings') and by its address, /configure/iracing-bindings. It has no menu entry: the Games menu and the game picker in Bindings are built on another branch and will replace this registration."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#lists every action, bound or not, with the device and input in plain words"
+      - "src/features/iracing-bindings/core/view.test.ts#shows axes by number when the calibration file cannot be read, and says why"
+      - "src/features/iracing-bindings/core/view.test.ts#says so when iRacing was never set up on this PC"
+      - "src/features/iracing-bindings/core/view.test.ts#has no sets while iRacing has not written a controls.cfg yet"
+      - "src/features/iracing-bindings/core/names.test.ts#gives every action of the recorded file a name that reads as words"
+      - "src/features/iracing-bindings/core/names.test.ts#puts every action in one of four groups"
+      - "src/features/iracing-bindings/core/calibration.test.ts#reads the wheel base and its four axes from the recorded file"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: every action for all cars, with search, filters and shared inputs"
+      - 'tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a PC without iRacing gets a plain "not found", and no list'
+      - "artifacts/screens/iracing-bindings-all-cars/01-all-cars.png"
+      - "artifacts/screens/iracing-bindings-all-cars/02-actions.png"
+      - "artifacts/screens/iracing-bindings-all-cars/04-search.png"
+      - "artifacts/screens/iracing-bindings-all-cars/05-not-bound.png"
+      - "artifacts/screens/iracing-bindings-all-cars/06-on-the-wheel.png"
+      - "artifacts/screens/iracing-bindings-not-here/01-not-on-this-pc.png"
+
+  - id: BIND-IRACING-003
+    title: Bindings of a car with custom controls, and what the car changes
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "A car is offered only when its folder under Documents/iRacing/setups has a controls.cfg of its own; the page says how many cars have a folder and how many have custom controls."
+      - "Choosing a car shows its own bindings, marks every action that differs from All cars, shows what All cars has for it, and can narrow the list to the differences."
+      - "The chosen car is kept in the page's address, and a set id never becomes a file path."
+      - "A controls.cfg that iRacing itself wrote for a car (recorded from a rig where one car has custom controls) is read the same way, with no binding RigReady cannot read."
+    notes:
+      - "2026-11-12: criteria 1 to 3 are met by the tests below. The fourth is open, and that is why the entry is not done: the owner's PC has 184 car folders and none has custom controls, so no per-car file written by iRacing has ever been read. The car file of the tests (fixtures/scenarios/data/iracing-bindings/controls-car.cfg) is made up: the recorded file with eight records changed, on the assumption that a per-car file is a whole copy in the same format (docs/research/iracing-bindings.md, 'Per-car bindings'). To close it, with iRacing closed afterwards: in iRacing tick 'Use custom controls for this car' for one car, change two bindings, quit; copy Documents/iRacing/setups/<car>/controls.cfg and joyCalib.yaml into the rig fixture; add a test that reads it with no unread binding. A file in another format is refused with a plain message, it is not shown wrongly."
+    status: in_progress
+    evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#lists a car only when it has a controls.cfg of its own"
+      - "src/features/iracing-bindings/core/view.test.ts#shows the car’s own bindings and where they differ from all cars"
+      - "src/features/iracing-bindings/core/view.test.ts#still shows the car when the set for all cars cannot be read, and says what is missing"
+      - "src/features/iracing-bindings/core/view.test.ts#never turns a set id into a path"
+      - "src/features/iracing-bindings/core/carFixture.test.ts#is the recorded file for all cars with exactly eight records changed"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with custom controls, and what it changes"
+      - "artifacts/screens/iracing-bindings-car/01-car.png"
+      - "artifacts/screens/iracing-bindings-car/02-car-differs.png"
+
+  - id: BIND-IRACING-004
+    title: Controllers in iRacing's bindings, matched to what is plugged in
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "Each controller a set names is listed with the number of actions bound on it and a name: the one the owner gave it, else iRacing's own from joyCalib.yaml, else the connected controller's, else its USB ids. The keyboard is listed with its count."
+      - "Each controller has a state in words with an icon, not colour alone: Connected, New Windows id, Not connected, or Cannot tell when Windows gave no list."
+      - "A controller with a new Windows id links to the id repair of the iRacing page; one that is not plugged in says how many bindings do nothing until it is."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#lists the devices the set names, matched to what is plugged in"
+      - "src/features/iracing-bindings/core/view.test.ts#uses the name the owner gave a controller"
+      - "src/features/iracing-bindings/core/view.test.ts#says whether a controller is plugged in, has a new Windows id, or is missing"
+      - "src/features/iracing-bindings/core/view.test.ts#says it cannot tell when Windows does not list the controllers"
+      - "src/features/iracing-bindings/core/view.test.ts#lists the car’s devices: the button box plugged in, the handbrake not"
+      - "src/features/iracing-bindings/core/view.test.ts#names a controller by its USB ids when nothing else knows it"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a wheel with a new Windows id, and the simulator running"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with custom controls, and what it changes"
+      - "artifacts/screens/iracing-bindings-moved-wheel/01-new-windows-id.png"
+      - "artifacts/screens/iracing-bindings-car/01-car.png"
+
+  - id: BIND-IRACING-005
+    title: iRacing inputs that do more than one thing
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "Every button, axis half or key (with its modifiers) that is bound to two or more actions in the shown set is listed with all of its actions, controller inputs first."
+      - "Inputs shared only with iRacing's camera editor, which is how iRacing's own default keys are, are counted in one line and shown on request, not presented as faults."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#lists the inputs that do more than one thing, the camera editor ones apart"
+      - "src/features/iracing-bindings/core/view.test.ts#puts the wheel button that does two things first among the shared inputs"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: every action for all cars, with search, filters and shared inputs"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with custom controls, and what it changes"
+      - "artifacts/screens/iracing-bindings-all-cars/07-shared-inputs.png"
+      - "artifacts/screens/iracing-bindings-car/03-car-shared.png"
+
+  - id: BIND-IRACING-006
+    title: iRacing bindings are shown, not changed, and the page says why
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "The page has no control that edits, clears, copies or saves a binding. The feature has two channels and both only read; using them leaves every file of the iRacing folder as it was."
+      - "The page says it does not change bindings and how to change one in iRacing, and gives the reasons on request."
+      - "While the simulator runs the page says that a binding changed in this session may not show yet; the launcher alone does not count."
+      - "The Cheat sheet button opens the cheat sheets for iRacing with the set being shown."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/view.test.ts#leaves every file of the iRacing folder as it was, byte for byte"
+      - "src/features/iracing-bindings/core/view.test.ts#has two channels, and both only read"
+      - "src/features/iracing-bindings/core/view.test.ts#knows the simulator from the launcher: only the simulator writes these files"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: every action for all cars, with search, filters and shared inputs"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a wheel with a new Windows id, and the simulator running"
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with custom controls, and what it changes"
+      - "artifacts/screens/iracing-bindings-all-cars/03-why-read-only.png"
+      - "artifacts/screens/iracing-bindings-moved-wheel/02-simulator-running.png"
+      - "artifacts/screens/iracing-bindings-car/04-car-cheat-sheet.png"
+
+  - id: BIND-IRACING-007
+    title: Change an iRacing binding from RigReady
+    job: configure
+    area: iracing-bindings
+    priority: p3
+    done_means:
+      - "A hat switch binding, a binding on a second controller and a per-car file, each written by iRacing itself, are recorded and read with no byte left unexplained that a write would have to set."
+      - "A controls.cfg in which RigReady changed one binding is accepted by iRacing: the binding shows in iRacing's Options > Controls, every other binding and setting is as before, and the file iRacing saves afterwards differs from RigReady's only where expected (rig evidence, owner present)."
+      - "A binding can be set and cleared for All cars and for a car, with a review of the change first, through FileStore with a backup and an undo, refused while iRacingSim64DX11.exe runs."
+    notes:
+      - "2026-11-12: not started, on purpose. The read and write round trip of the owner's real file is byte for byte identical (BIND-IRACING-001), but that only proves the reader loses nothing. The layout comes from one file from one rig with one bound controller; the header settings, the first field of each record, three bits of the mask and the last two bytes are not understood; a hat switch binding and a real per-car file have never been seen; and no file changed by RigReady has been opened by iRacing, because no game may be started on the rig in this round. iRacing's own advice for a file it does not like is to delete it and bind everything again. So the page shows bindings, says why it does not change them, and has no edit buttons. The steps that would make writing safe are in docs/research/iracing-bindings.md, 'Is writing safe?'."
+    status: todo
+    evidence: []
+
+  # ---------------------------------------------------------------------------
   # RACING — Le Mans Ultimate
   # ---------------------------------------------------------------------------
 
