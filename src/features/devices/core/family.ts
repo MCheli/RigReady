@@ -1,3 +1,4 @@
+import type { DeviceSaid } from '../../../core/names';
 import type { GameKind } from '../../../shared/models';
 
 /**
@@ -6,6 +7,9 @@ import type { GameKind } from '../../../shared/models';
  * about sim hardware, used only to decide what a new setup keeps by default: a wheel base
  * is not part of a setup for a flight sim just because it is plugged in. Unknown hardware
  * has no family and suits any setup.
+ *
+ * The lists here are a first guess. The user can say what a device is used for on the
+ * Devices page, and `familyOf` puts that answer first.
  *
  * The ids come from public lists; the sources for each are in docs/research/device-ids.md
  * (the Linux kernel's hid-ids.h, SDL's joystick lists, linux-usb.org's usb.ids,
@@ -153,4 +157,17 @@ export function simFamily(
   if (FLIGHT_VENDORS.has(vendor)) return 'flight';
   if (RACING_VENDORS.has(vendor)) return 'racing';
   return undefined;
+}
+
+/**
+ * The family a device counts as. What the user said it is used for comes first: flight
+ * or racing is that family, and "both" is no family, so it suits any setup. With nothing
+ * said it is what RigReady knows of the maker.
+ */
+export function familyOf(
+  device: { vendorId: string; productId: string; name?: string | undefined },
+  said?: Pick<DeviceSaid, 'usedFor'>
+): GameKind | undefined {
+  if (said?.usedFor === 'both') return undefined;
+  return said?.usedFor ?? simFamily(device.vendorId, device.productId, device.name);
 }

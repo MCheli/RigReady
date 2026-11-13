@@ -1,5 +1,7 @@
 import { runChecks } from '../../../core/checks/engine';
+import { cachedReads } from '../../../core/checks/readCache';
 import type { MainContext } from '../../../core/feature';
+import { deviceQueryOf } from '../../../core/names';
 import type { CheckItem, Profile } from '../../../core/profile/schema';
 import type { Suggestion } from '../contract';
 
@@ -9,7 +11,7 @@ import type { Suggestion } from '../contract';
  * It only offers: nothing is switched by itself.
  */
 
-type Ctx = Pick<MainContext, 'ports' | 'log' | 'checks' | 'profiles'>;
+type Ctx = Pick<MainContext, 'ports' | 'log' | 'checks' | 'profiles' | 'names'>;
 
 /** The device items that decide whether a setup's gear is here: required, switched on, and deciding readiness. */
 function requiredDevices(ctx: Ctx, profile: Profile): CheckItem[] {
@@ -50,9 +52,16 @@ export async function suggestSetup(
     ...active,
     checks: [...tagged(active, mine), ...others.flatMap((o) => tagged(o.setup, o.items))],
   };
-  const report = await runChecks(together, ctx.checks, ctx, {
-    ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
-  });
+  // The same answers for the checks and for what is asked after them (the telling device).
+  const ports = cachedReads(ctx.ports);
+  const report = await runChecks(
+    together,
+    ctx.checks,
+    { ...ctx, ports },
+    {
+      ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
+    }
+  );
   const here = new Set(report.results.filter((r) => r.status === 'pass').map((r) => r.itemId));
   const present = (setup: Profile, item: CheckItem): boolean => here.has(`${setup.id}/${item.id}`);
 
@@ -72,10 +81,17 @@ export async function suggestSetup(
   // The device that gives it away: part of that setup and not of this one.
   const known = new Set(mine.map(identity));
   const telling = best.items.find((item) => !known.has(identity(item))) ?? best.items[0]!;
+  // What the user said that device is comes before what its name says. Asked with the
+  // devices the checks already listed: still one look at the machine.
+  const device = deviceQueryOf(telling.params);
+  const connected = device ? await ports.devices.list() : undefined;
+  const names = connected?.ok ? await ctx.names.devices(connected.value) : undefined;
+  const kind = device ? names?.whatIs?.(device)?.kind : undefined;
   return {
     profileId: best.setup.id,
     name: best.setup.name,
     device: telling.title,
+    ...(kind ? { kind } : {}),
     missing: missing.length,
   };
 }

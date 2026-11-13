@@ -1,48 +1,12 @@
 /**
  * What kind of thing a device of a setup is: the picture and the word for it. The kinds,
- * and the rule that tells them from a name, live in core: setups made from the rig use
- * them too.
+ * the rule that tells them from a name, and the picture and the word for each live in
+ * core: setups made from the rig and the Devices page use them too.
  */
 
-import { deviceKind, type DeviceKind } from '../../../core/gearKind';
+import { deviceKind, KIND_ICON, KIND_NAME, type DeviceKind } from '../../../core/gearKind';
 
-export { deviceKind, type DeviceKind };
-
-/** The picture for each kind, from the bundled Material Design set. */
-export const KIND_ICON: Record<DeviceKind, string> = {
-  stick: 'mdi-controller',
-  yoke: 'mdi-airplane',
-  throttle: 'mdi-tune-vertical',
-  pedals: 'mdi-shoe-print',
-  wheel: 'mdi-steering',
-  shifter: 'mdi-car-shift-pattern',
-  tracker: 'mdi-webcam',
-  deck: 'mdi-view-grid',
-  display: 'mdi-monitor-dashboard',
-  panel: 'mdi-toggle-switch-outline',
-  headset: 'mdi-headset',
-  keyboard: 'mdi-keyboard-outline',
-  mouse: 'mdi-mouse',
-  other: 'mdi-usb',
-};
-
-/** The word for each kind, for a tooltip and a screen reader. */
-export const KIND_NAME: Record<DeviceKind, string> = {
-  stick: 'Stick',
-  yoke: 'Yoke',
-  throttle: 'Throttle',
-  pedals: 'Pedals',
-  wheel: 'Wheel',
-  shifter: 'Shifter',
-  tracker: 'Head tracker',
-  deck: 'Button deck',
-  display: 'Display unit',
-  panel: 'Panel',
-  headset: 'Headset',
-  keyboard: 'Keyboard',
-  mouse: 'Mouse',
-  other: 'Device',
-};
+export { deviceKind, KIND_ICON, KIND_NAME, type DeviceKind };
 
 /**
  * Names short enough for a row of chips: the word most of the devices begin with (their

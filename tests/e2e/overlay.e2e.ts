@@ -250,6 +250,58 @@ function pictures(flow: string): (page: Page, name: string, part?: Locator) => P
   };
 }
 
+/** What the random part of a run's temp folder is written as in a picture. */
+const RUN_FOLDER_IN_PICTURES = 'rigready-e2e-XXXXXX';
+
+/**
+ * A run keeps its folders in a temp folder with a random name ("rigready-e2e-Ab12Cd"), and
+ * the page names a damaged file by its whole path, as it should: that is how the file is
+ * found. So that a picture of it is the same on every run, the random name is written as
+ * six X while the picture is taken, and then put back. Nothing in the app is changed, and
+ * every check is made on the text as it really is. Answers how many texts held the name.
+ */
+async function withoutRandomRunFolder(
+  page: Page,
+  dataRoot: string,
+  take: () => Promise<void>
+): Promise<number> {
+  const real = path.basename(path.dirname(dataRoot));
+  expect(real).toMatch(/^rigready-e2e-.{6}$/);
+  const rewrite = (from: string, to: string): Promise<number> =>
+    page.evaluate(
+      ([was, now]) => {
+        // The page's own document: scenario files are compiled without the browser's types.
+        const { document, NodeFilter } = globalThis as unknown as {
+          document: {
+            body: unknown;
+            createTreeWalker(
+              root: unknown,
+              show: number
+            ): { nextNode(): { nodeValue: string | null } | null };
+          };
+          NodeFilter: { SHOW_TEXT: number };
+        };
+        const texts = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let changed = 0;
+        for (let node = texts.nextNode(); node; node = texts.nextNode()) {
+          const text = node.nodeValue ?? '';
+          if (!text.includes(was)) continue;
+          node.nodeValue = text.split(was).join(now);
+          changed++;
+        }
+        return changed;
+      },
+      [from, to] as [string, string]
+    );
+  const held = await rewrite(real, RUN_FOLDER_IN_PICTURES);
+  try {
+    await take();
+  } finally {
+    expect(await rewrite(RUN_FOLDER_IN_PICTURES, real)).toBe(held);
+  }
+  return held;
+}
+
 const accessible = async (page: Page): Promise<unknown[]> => [
   ...(await axeViolations(page)),
   ...(await colourOnlyStatus(page)),
@@ -975,7 +1027,19 @@ test('on a PC with no game the overlay lists presses without what they do, and a
   expect(await fs.readFile(settingsFile(run.dataRoot), 'utf8')).toBe(damaged);
   expect(await accessible(page)).toEqual([]);
   await page.getByRole('heading', { name: 'Overlay', exact: true }).scrollIntoViewIfNeeded();
-  await shot(page, 'damaged-settings');
+  // The file is named by its whole path, twice: in what the click answered and in the line
+  // that stays. The picture has the run's random folder name written as six X.
+  const fromTemp = path.relative(
+    path.resolve(run.dataRoot, '..', '..'),
+    settingsFile(run.dataRoot)
+  );
+  const said = `${fromTemp} is not valid JSON.`;
+  await expect(page.getByTestId('overlay-error')).toContainText(said);
+  await expect(page.getByTestId('overlay-settings-said')).toContainText(said);
+  expect(
+    await withoutRandomRunFolder(page, run.dataRoot, () => shot(page, 'damaged-settings'))
+  ).toBe(2);
+  await expect(page.getByTestId('overlay-settings-said')).toContainText(said);
 
   // ---- The file taken away: the overlay starts from its first settings and can be turned on ----
   await fs.rm(settingsFile(run.dataRoot));

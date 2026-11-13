@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { matchMonitors } from '../../../core/displays/identity';
 import type { MainContext } from '../../../core/feature';
+import type { DeviceKind } from '../../../core/gearKind';
+import { deviceQueryOf } from '../../../core/names';
 import type { Profile } from '../../../core/profile/schema';
 import { DisplayTargetSchema, type DisplayInfo, type DisplayTarget } from '../../../shared/models';
 import type { RigGlance } from '../contract';
@@ -9,6 +11,8 @@ import type { RigGlance } from '../contract';
  * The rig at a glance: the monitors as they are now, each with what is different from what
  * the setup expects of it. Read through the display port; the checklist row stays the word
  * on whether the arrangement is right, this only says where to look.
+ *
+ * And for the devices beside them: what the user said each one is, where they said.
  */
 
 type Ctx = Pick<MainContext, 'ports' | 'checks' | 'layouts' | 'names'>;
@@ -123,9 +127,32 @@ async function expectedOf(
   return undefined;
 }
 
+/**
+ * The kind of gear the user said each device of the setup is, by checklist item. A device
+ * nobody said anything about is not in it: the strip tells its picture from its name.
+ */
+async function saidKinds(
+  ctx: Ctx,
+  profile: Profile
+): Promise<Record<string, DeviceKind> | undefined> {
+  const names = await ctx.names.devices();
+  const kinds: Record<string, DeviceKind> = {};
+  for (const item of profile.checks) {
+    if (ctx.checks.check(item.type)?.group !== 'devices') continue;
+    const device = deviceQueryOf(item.params);
+    const kind = device ? names.whatIs?.(device)?.kind : undefined;
+    if (kind) kinds[item.id] = kind;
+  }
+  return Object.keys(kinds).length > 0 ? kinds : undefined;
+}
+
 export async function rigGlance(ctx: Ctx, profile: Profile): Promise<RigGlance> {
+  // The devices first: their pictures are worth having when the monitors cannot be read.
+  const kinds = await saidKinds(ctx, profile);
   const layout = await ctx.ports.displays.read();
-  if (!layout.ok) return { monitors: [], missing: [], error: layout.error.message };
+  if (!layout.ok) {
+    return { monitors: [], missing: [], error: layout.error.message, ...(kinds ? { kinds } : {}) };
+  }
   const given = await ctx.names.monitors();
   const expected = await expectedOf(ctx, profile);
   const own = monitorNames(layout.value.displays, given);
@@ -150,5 +177,6 @@ export async function rigGlance(ctx: Ctx, profile: Profile): Promise<RigGlance> 
     }),
     missing: compared.missing,
     ...(expected ? { itemId: expected.itemId } : {}),
+    ...(kinds ? { kinds } : {}),
   };
 }

@@ -6,13 +6,17 @@ import {
   DevicesDataSchema,
   deviceNames,
   deviceStores,
+  findEntry,
   findName,
   HistorySchema,
   lastSighting,
   recordSeen,
+  saidOf,
   updateHistory,
   withControllerName,
+  withControllerWhat,
   withName,
+  withWhat,
 } from './store';
 
 let rig: TestRig | undefined;
@@ -255,5 +259,125 @@ describe('device history', () => {
     expect(JSON.parse(await fs.readFile(stores.history.file, 'utf8')).seen.length).toBeGreaterThan(
       30
     );
+  });
+});
+
+describe('DEV-017: what the user said a device is', () => {
+  const WHEEL = { vendorId: '0EB7', productId: '0007' };
+  const MFD = { vendorId: '4098', productId: 'BEE0' };
+
+  it('is kept under the identity a name is kept under, and found by the same rules', () => {
+    const wheel = device({});
+    const left = device({
+      ...MFD,
+      name: 'WINWING MFD1',
+      instanceId: 'USB\\VID_4098&PID_BEE0\\7&1&0&1',
+    });
+    const right = device({
+      ...MFD,
+      name: 'WINWING MFD1',
+      instanceId: 'USB\\VID_4098&PID_BEE0\\7&1&0&2',
+    });
+    const present = [wheel, left, right];
+    let data = withWhat(empty, wheel, present, { kind: 'wheel', usedFor: 'racing' });
+    data = withWhat(data, right, present, { kind: 'display' });
+    expect(data.whatItIs).toEqual([
+      { ...WHEEL, instanceId: wheel.instanceId, kind: 'wheel', usedFor: 'racing' },
+      { ...MFD, instanceId: right.instanceId, kind: 'display' },
+    ]);
+    // An answer is not a name: the names are as they were.
+    expect(data.names).toEqual([]);
+
+    const names = deviceNames(data.names, present, [], data.whatItIs);
+    // The only one of its model: ids are enough, in any case of the letters.
+    expect(names.whatIs?.({ vendorId: '0eb7', productId: '0007' })).toEqual({
+      kind: 'wheel',
+      usedFor: 'racing',
+    });
+    expect(names.nameOf(WHEEL)).toBeUndefined();
+    // Identical devices: only the port tells them apart; without it there is no guess.
+    expect(names.whatIs?.(MFD)).toBeUndefined();
+    expect(names.whatIs?.({ ...MFD, instanceId: right.instanceId })).toEqual({ kind: 'display' });
+    expect(names.whatIs?.({ ...MFD, instanceId: left.instanceId })).toBeUndefined();
+    // A DirectInput GUID tells them apart when its controller says which USB device it is.
+    const byGuid = deviceNames(
+      [],
+      present,
+      [{ guid: 'CCCCCCCC-0000-0000-0000-000000000002', usbInstanceId: right.instanceId }],
+      data.whatItIs
+    );
+    expect(byGuid.whatIs?.({ ...MFD, guid: '{cccccccc-0000-0000-0000-000000000002}' })).toEqual({
+      kind: 'display',
+    });
+    expect(
+      byGuid.whatIs?.({ ...MFD, guid: '{dddddddd-0000-0000-0000-000000000009}' })
+    ).toBeUndefined();
+    // Unplugged: what was said of exactly that identity still stands.
+    const without = deviceNames([], [left, right], [], data.whatItIs);
+    expect(without.whatIs?.(WHEEL)).toEqual({ kind: 'wheel', usedFor: 'racing' });
+    // Moved to another port, and still the only one of its model.
+    const moved = device({ instanceId: 'USB\\VID_0EB7&PID_0007\\7&9a60daa&0&3' });
+    expect(saidOf(findEntry(data.whatItIs, moved, [moved]))).toEqual({
+      kind: 'wheel',
+      usedFor: 'racing',
+    });
+    // A second identical base: the answer pinned to a port is not handed to the other one.
+    const second = device({ instanceId: 'USB\\VID_0EB7&PID_0007\\7&1&0&1' });
+    expect(findEntry(data.whatItIs, second, [wheel, second])).toBeUndefined();
+    // Nothing said, nothing answered.
+    expect(deviceNames([], present).whatIs?.(WHEEL)).toBeUndefined();
+    expect(saidOf(undefined)).toBeUndefined();
+    expect(saidOf({})).toBeUndefined();
+  });
+
+  it('one part can be said without the other; a new answer replaces the old; nothing said removes it', () => {
+    const wheel = device({});
+    const at = { ...WHEEL, instanceId: wheel.instanceId };
+    let data = withWhat(empty, wheel, [wheel], { usedFor: 'both' });
+    expect(data.whatItIs).toEqual([{ ...at, usedFor: 'both' }]);
+    data = withWhat(data, wheel, [wheel], { kind: 'pedals' });
+    expect(data.whatItIs).toEqual([{ ...at, kind: 'pedals' }]);
+    data = withWhat(data, wheel, [wheel], {});
+    expect(data.whatItIs).toEqual([]);
+
+    // A name and an answer of the same device live side by side: taking one leaves the other.
+    let both = withName(empty, wheel, [wheel], 'Wheel base');
+    both = withWhat(both, wheel, [wheel], { kind: 'wheel' });
+    both = withName(both, wheel, [wheel], '');
+    expect(both.names).toEqual([]);
+    expect(both.whatItIs).toEqual([{ ...at, kind: 'wheel' }]);
+    both = withName(both, wheel, [wheel], 'Wheel base');
+    both = withWhat(both, wheel, [wheel], {});
+    expect(both.names.map((n) => n.name)).toEqual(['Wheel base']);
+    expect(both.whatItIs).toEqual([]);
+  });
+
+  it('a controller without a USB device of its own is answered for by its GUID', () => {
+    const pad = {
+      vendorId: '0000',
+      productId: '0000',
+      guid: 'AAAAAAAA-0000-0000-0000-000000000001',
+    };
+    let data = withControllerWhat(empty, pad, { kind: 'stick', usedFor: 'flight' });
+    // The same controller, in another spelling of its GUID: one answer, the newer one.
+    data = withControllerWhat(data, { ...pad, guid: pad.guid.toLowerCase() }, { kind: 'throttle' });
+    expect(data.whatItIs).toEqual([{ ...pad, guid: pad.guid.toLowerCase(), kind: 'throttle' }]);
+    const names = deviceNames([], [], [], data.whatItIs);
+    expect(names.whatIs?.({ vendorId: '0000', productId: '0000', guid: `{${pad.guid}}` })).toEqual({
+      kind: 'throttle',
+    });
+    expect(names.whatIs?.({ vendorId: '0000', productId: '0000' })).toBeUndefined();
+    expect(withControllerWhat(data, pad, {}).whatItIs).toEqual([]);
+  });
+
+  it('a file from before has no answers, and an answer outside the lists is not read', () => {
+    const before = DevicesDataSchema.parse({ names: [{ ...WHEEL, name: 'Wheel base' }] });
+    expect(before.whatItIs).toEqual([]);
+    expect(before.names).toHaveLength(1);
+    const refused = (entry: Record<string, unknown>): boolean =>
+      !DevicesDataSchema.safeParse({ whatItIs: [{ ...WHEEL, ...entry }] }).success;
+    expect(refused({ kind: 'spaceship' })).toBe(true);
+    expect(refused({ usedFor: 'trucks' })).toBe(true);
+    expect(refused({ kind: 'wheel', usedFor: 'both' })).toBe(false);
   });
 });

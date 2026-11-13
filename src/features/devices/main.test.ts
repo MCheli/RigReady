@@ -453,3 +453,110 @@ describe('devices: USB map', () => {
     expect(map.nodes.filter((n) => n.kind === 'device')).toHaveLength(31);
   });
 });
+
+describe('DEV-017: what is this device?', () => {
+  const PEDALS = { vendorId: '044F', productId: 'B68F' };
+
+  it('keeps what the user says a device is beside what RigReady reads, part by part, and it survives a restart', async () => {
+    app = await wiredApp('devices-rig', { files: [] });
+    const pedals = async (): Promise<Overview['devices'][number]> =>
+      (await app!.invoke<Overview>('devices:overview')).devices.find(
+        (d) => d.productName === 'T-Pendular-Rudder'
+      )!;
+    const first = await pedals();
+    expect(first.said).toBeUndefined();
+    expect(first.reads).toEqual({ kind: 'pedals', usedFor: 'flight' });
+
+    expect(
+      await app.invoke('devices:setWhatItIs', { key: first.key, kind: null, usedFor: 'both' })
+    ).toEqual({ usedFor: 'both' });
+    expect((await pedals()).said).toEqual({ usedFor: 'both' });
+    expect(
+      await app.invoke('devices:setWhatItIs', { key: first.key, kind: 'shifter', usedFor: 'both' })
+    ).toEqual({ kind: 'shifter', usedFor: 'both' });
+    // What RigReady reads by itself stays on show: it is what "from its name" goes back to.
+    expect(await pedals()).toMatchObject({
+      said: { kind: 'shifter', usedFor: 'both' },
+      reads: { kind: 'pedals', usedFor: 'flight' },
+      name: 'T-Pendular-Rudder',
+    });
+
+    // A restart: the features are wired again on the same machine and data folder.
+    const again = wireFeatures({
+      features: discoverFeatures(),
+      ports: app.ports,
+      log: nullLogger,
+      send: () => {},
+    });
+    const envelope = await again.handlers.get('devices:overview')!(undefined);
+    if (!envelope.ok) throw new Error('overview');
+    expect(
+      (envelope.value as Overview).devices.find((d) => d.productName === 'T-Pendular-Rudder')!.said
+    ).toEqual({ kind: 'shifter', usedFor: 'both' });
+    expect((await again.context.names.devices()).whatIs?.(PEDALS)).toEqual({
+      kind: 'shifter',
+      usedFor: 'both',
+    });
+    for (const feature of again.features) await feature.dispose?.();
+
+    // Taken back: nothing is said, and other features are told nothing.
+    expect(
+      await app.invoke('devices:setWhatItIs', { key: first.key, kind: null, usedFor: null })
+    ).toEqual({});
+    expect((await pedals()).said).toBeUndefined();
+    expect((await app.wiring.context.names.devices()).whatIs?.(PEDALS)).toBeUndefined();
+  });
+
+  it('answers for a controller without a USB device by its GUID, and refuses what it cannot keep', async () => {
+    app = await wiredApp('devices-rig', { files: [] });
+    app.ports.state.input.push({
+      index: 12,
+      name: 'vJoy Device',
+      guid: 'AAAA0000-0000-0000-0000-444553540000',
+      productGuid: '',
+      vendorId: '',
+      productId: '',
+      numAxes: 8,
+      numButtons: 32,
+      numHats: 0,
+      axisNames: [],
+    });
+    const key = 'guid:AAAA0000-0000-0000-0000-444553540000';
+    await app.invoke('devices:overview');
+    expect(
+      await app.invoke('devices:setWhatItIs', { key, kind: 'stick', usedFor: 'flight' })
+    ).toEqual({ kind: 'stick', usedFor: 'flight' });
+    const overview = await app.invoke<Overview>('devices:overview');
+    expect(overview.devices.find((d) => d.key === key)!.said).toEqual({
+      kind: 'stick',
+      usedFor: 'flight',
+    });
+    // As a game spells the GUID.
+    expect(
+      (await app.wiring.context.names.devices()).whatIs?.({
+        vendorId: '0000',
+        productId: '0000',
+        guid: '{aaaa0000-0000-0000-0000-444553540000}',
+      })
+    ).toEqual({ kind: 'stick', usedFor: 'flight' });
+    expect(await app.invoke('devices:setWhatItIs', { key, kind: null, usedFor: null })).toEqual({});
+
+    // A device or a controller that went away is said so, and nothing is stored for it.
+    const stick = { kind: 'stick', usedFor: null };
+    await expect(app.invoke('devices:setWhatItIs', { key: 'USB\\GONE', ...stick })).rejects.toThrow(
+      /no longer connected/
+    );
+    await expect(app.invoke('devices:setWhatItIs', { key: 'guid:GONE', ...stick })).rejects.toThrow(
+      /no longer connected/
+    );
+    // Only the kinds and uses of the lists are taken.
+    await expect(
+      app.invoke('devices:setWhatItIs', { key, kind: 'spaceship', usedFor: null })
+    ).rejects.toThrow();
+    await expect(
+      app.invoke('devices:setWhatItIs', { key, kind: null, usedFor: 'trucks' })
+    ).rejects.toThrow();
+    const after = await app.invoke<Overview>('devices:overview');
+    expect(after.devices.every((d) => d.said === undefined)).toBe(true);
+  });
+});

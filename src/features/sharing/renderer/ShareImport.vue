@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { errorText, useClient } from '../../../renderer/ipc';
+import SaveBar from '../../../renderer/components/SaveBar.vue';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import { sharingContract, type ImportReportView, type ImportResultView } from '../contract';
 
@@ -404,22 +405,23 @@ const when = (iso: string): string => {
         </v-radio-group>
       </div>
 
-      <div class="rr-panel footer">
-        <div class="rr-row-main rr-row-sub">
-          Everything is written through RigReady's safety journal as one action you can undo.
-        </div>
-        <v-btn variant="text" @click="report = undefined">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          prepend-icon="mdi-import"
-          :disabled="chosen.length === 0"
-          :loading="importing"
-          data-testid="import-apply"
-          @click="runImport"
-        >
-          Import
-        </v-btn>
-      </div>
+      <!--
+        Import and Cancel stay in view however long the file's list is. Nothing here is a
+        change of the user's that leaving would lose, so the bar never says "unsaved".
+      -->
+      <SaveBar
+        :dirty="false"
+        :saving="importing"
+        :blocked="chosen.length === 0 ? 'Tick at least one thing to import.' : undefined"
+        :error="error"
+        save-label="Import"
+        back-label="Cancel"
+        save-testid="import-apply"
+        back-testid="import-cancel"
+        clean-label="Everything is written through RigReady's safety journal as one action you can undo."
+        @save="runImport"
+        @back="report = undefined"
+      />
     </template>
   </div>
 </template>
@@ -472,13 +474,6 @@ const when = (iso: string): string => {
 }
 .conflict {
   margin-top: 14px;
-}
-.footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  margin-top: 20px;
 }
 .done {
   padding: 16px 20px;

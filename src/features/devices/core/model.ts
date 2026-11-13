@@ -1,11 +1,21 @@
 import { z } from 'zod';
-import { InputDeviceSchema } from '../../../shared/models';
+import { DEVICE_KINDS, DEVICE_USES } from '../../../core/gearKind';
+import { GameKindSchema, InputDeviceSchema } from '../../../shared/models';
 import { DeviceIdentitySchema } from './identity';
 
 /** What the Devices screens show. Shared by main (which builds it) and the renderer. */
 
 export const NotificationModeSchema = z.enum(['off', 'required', 'controllers', 'all']);
 export type NotificationMode = z.infer<typeof NotificationModeSchema>;
+
+/**
+ * What the user said a device is: the kind of gear, and what it is used for. Either part
+ * can be left unsaid. (core/names has the same shape as `DeviceSaid`, for other features.)
+ */
+export const DeviceSaidSchema = z.object({
+  kind: z.enum(DEVICE_KINDS).optional(),
+  usedFor: z.enum(DEVICE_USES).optional(),
+});
 
 export const LocationSchema = z.object({
   text: z.string(),
@@ -30,6 +40,14 @@ export const RigDeviceSchema = z.object({
   /** givenName, else productName. */
   name: z.string(),
   kind: z.enum(['controller', 'other']),
+  /** What the user said this device is, when they said anything. It wins over `reads`. */
+  said: DeviceSaidSchema.optional(),
+  /**
+   * What RigReady makes of it without being told: the kind of gear from the name it
+   * reports ('other' when the name says nothing), and the family from its maker (absent
+   * when the maker is not known, and the device then suits any setup).
+   */
+  reads: z.object({ kind: z.enum(DEVICE_KINDS), usedFor: GameKindSchema.optional() }),
   /** The DirectInput controllers (as games list them) that belong to this device. */
   controllers: z.array(InputDeviceSchema),
   /**

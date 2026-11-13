@@ -1,4 +1,5 @@
 import { bind, defineFeatureMain, type MainContext } from '../../core/feature';
+import type { DeviceSaid } from '../../core/names';
 import { privacyContext, Scanner } from '../../core/privacy';
 import type { Profile } from '../../core/profile/schema';
 import { err, ok, type Result } from '../../core/result';
@@ -21,11 +22,15 @@ import { buildOverview, requirements } from './core/overview';
 import {
   deviceNames,
   deviceStores,
+  findEntry,
   findName,
   HistorySchema,
+  saidOf,
   updateHistory,
   withControllerName,
+  withControllerWhat,
   withName,
+  withWhat,
   type DevicesData,
 } from './core/store';
 import { buildUsbMap } from './core/usbMap';
@@ -58,15 +63,18 @@ function setupDevices(ctx: MainContext) {
   const startInput = (): Promise<Result<InputDevice[]>> => ports.input.start();
 
   // The names the owner gave devices, for every other feature (ctx.names.devices()).
-  ctx.names.provideDevices(async () => {
-    const [listed, data] = await Promise.all([ports.devices.list(), stores.data.read()]);
+  ctx.names.provideDevices(async (present) => {
+    const data = await stores.data.read();
+    const names = data.ok ? data.value.names : [];
+    // What the user said each device is, for the same askers (`whatIs`).
+    const what = data.ok ? data.value.whatItIs : [];
+    // Nothing named and nothing said: there is nothing to find, so the machine is not asked.
+    if (names.length === 0 && what.length === 0) return deviceNames([], []);
+    // The asker's own list when it has one: the devices are never listed twice for one answer.
+    const listed = present ? ok(present) : await ports.devices.list();
     // The controllers as the shared reader has them now (never started from here): they
     // say which of several identical devices a DirectInput GUID is.
-    return deviceNames(
-      data.ok ? data.value.names : [],
-      listed.ok ? listed.value : [],
-      ports.input.devices()
-    );
+    return deviceNames(names, listed.ok ? listed.value : [], ports.input.devices(), what);
   });
 
   /** The setup Fly shows: the one used last, else the first. */
@@ -245,7 +253,13 @@ function setupDevices(ctx: MainContext) {
     present: DeviceInfo[];
     required: (d: DeviceInfo) => boolean;
   } = {
-    data: { schemaVersion: 1, names: [], switches: [], notifications: 'controllers' },
+    data: {
+      schemaVersion: 1,
+      names: [],
+      whatItIs: [],
+      switches: [],
+      notifications: 'controllers',
+    },
     present: [],
     required: () => false,
   };
@@ -394,6 +408,44 @@ function setupDevices(ctx: MainContext) {
         return err('devices.rename', 'The name could not be stored for this device.');
       }
       return ok({ name: found });
+    },
+    setWhatItIs: async ({ key, kind, usedFor }) => {
+      const listed = await ports.devices.list();
+      if (!listed.ok) return listed;
+      const present = listed.value.filter((d) => !d.isHub);
+      const said = { ...(kind ? { kind } : {}), ...(usedFor ? { usedFor } : {}) };
+      const same = (found: DeviceSaid | undefined): boolean =>
+        found?.kind === said.kind && found?.usedFor === said.usedFor;
+      const notStored = (): Result<never> =>
+        err('devices.whatItIs', 'The answer could not be stored for this device.');
+      if (key.startsWith('guid:')) {
+        const guid = key.slice(5);
+        const controller = ports.input.devices().find((c) => c.guid === guid);
+        if (!controller) return err('devices.gone', 'That controller is no longer connected.');
+        const saved = await stores.data.update((data) =>
+          withControllerWhat(
+            data,
+            {
+              vendorId: controller.vendorId || '0000',
+              productId: controller.productId || '0000',
+              guid,
+            },
+            said
+          )
+        );
+        if (!saved.ok) return saved;
+        const found = saidOf(
+          saved.value.whatItIs.find((e) => e.guid?.toUpperCase() === guid.toUpperCase())
+        );
+        return same(found) ? ok(found ?? {}) : notStored();
+      }
+      const device = present.find((d) => d.instanceId === key);
+      if (!device) return err('devices.gone', 'That device is no longer connected.');
+      const saved = await stores.data.update((data) => withWhat(data, device, present, said));
+      if (!saved.ok) return saved;
+      // Read it back: the answer must now be found for this device.
+      const found = saidOf(findEntry(saved.value.whatItIs, device, present));
+      return same(found) ? ok(found ?? {}) : notStored();
     },
     inputDevices: async () => {
       const started = await startInput();

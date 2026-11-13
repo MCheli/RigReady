@@ -37,6 +37,38 @@ export function setupsByPadProfile(setups: readonly Profile[]): Map<string, Setu
   return out;
 }
 
+/**
+ * The setup with a renamed profile's name brought up to date. A step or a fix that starts a
+ * profile keeps the profile's name beside its id, and the Play page reads the name there:
+ * without this a renamed profile keeps its old name in every setup that starts it. A step
+ * that stores no name is left as it is (its name is looked up when it is shown).
+ * Undefined when nothing in the setup says another name.
+ */
+export function withPadProfileName(
+  setup: Profile,
+  profileId: string,
+  name: string
+): Profile | undefined {
+  let changed = false;
+  const named = <T extends { type: string; params: Record<string, unknown> }>(ref: T): T => {
+    if (ref.type !== START_TYPE || ref.params['profile'] !== profileId) return ref;
+    const stored = ref.params['profileName'];
+    if (stored === undefined || stored === name) return ref;
+    changed = true;
+    return { ...ref, params: { ...ref.params, profileName: name } };
+  };
+  const checks = setup.checks.map((check) =>
+    check.remediation ? { ...check, remediation: named(check.remediation) } : check
+  );
+  const actions = setup.actions && {
+    preLaunch: setup.actions.preLaunch.map(named),
+    postLaunch: setup.actions.postLaunch.map(named),
+    standDown: setup.actions.standDown.map(named),
+  };
+  if (!changed) return undefined;
+  return { ...setup, checks, ...(actions ? { actions } : {}) };
+}
+
 /** "Ace Combat 8", "A and B", "A, B and C": setup names in a sentence. */
 export function setupNames(setups: readonly SetupRef[]): string {
   const names = setups.map((s) => `"${s.name}"`);

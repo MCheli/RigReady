@@ -19,6 +19,7 @@ Between the two, **Needed by a setup, not connected** lists devices that some se
 Opening a row shows its details:
 
 - **Name**, with **Name it** or **Rename**. A name is shown everywhere in RigReady: on the [Play screen](../play/index.md), in the [bindings pages](../dcs/bindings.md), on the USB map, on the [racing pages](../games/index.md) and in the [health check](health-check.md). Leave it empty to use the name the device reports.
+- **What it is** and **Used for**: the kind of gear, and whether you use it for flight, racing or both. Each list starts with what RigReady reads by itself. See [Say what a device is](#say-what-a-device-is).
 - **Reports itself as**, the manufacturer, **Vendor : product**, the **Serial number** or "none", the **Instance path** Windows uses.
 - **Recognised by**: vendor and product ID; the serial number when there are identical devices; the USB port when identical devices have no usable serial (moving it to another port then changes its identity); or the DirectInput instance ID for a controller with no USB device of its own.
 - **Plugged into**, with how many hubs deep it is. At four hubs the row warns that it is one short of the USB limit; at five, that it may stop working.
@@ -33,6 +34,24 @@ Under the details: **Test inputs** opens the [input tester](input-tester.md) on 
 **Find a device** at the top of the page listens to every game controller. Press any button, move a hat, or move an axis a long way (small wobbles are ignored) on the device you want to find. The banner says "That was <name>", the row is highlighted and scrolled into view, and when the device has just one unit the name field opens so you can name it on the spot. **Find another** repeats; **Cancel** stops listening.
 
 The same thing is in the [command palette](../app/command-palette.md) (Ctrl+K, "Find a device"), from any screen: it listens for 20 seconds, names the device, and opens it on the Devices page.
+
+## Say what a device is
+
+RigReady reads the kind of gear from a device's name, and whether it is flight or racing gear from its maker. A home-built controller, a board that reports only the name of its chip, or gear from a maker RigReady does not know tells it neither. Some names say too little as well: a stick that is not called a stick. Open the device's row and choose:
+
+- **What it is**: stick, yoke, throttle, pedals, wheel, shifter, head tracker, button deck, display unit, panel, headset, keyboard, mouse or something else.
+- **Used for**: flight, racing or both.
+
+The first line of each list is what RigReady reads by itself, with where it comes from ("Keyboard, from its name", "Flight, from its maker"), or "Not known". A choice is stored at once. Choose the first line again to take your answer back.
+
+What you choose decides two things:
+
+- The picture beside the device: on this page, on the [Play screen](../play/index.md) and in [a picture of your rig](../protect/rig-picture.md).
+- What [a new setup](../setups/capture.md) ticks. A wheel, or anything used for racing, is ticked for a racing game and left for you to tick for a flight sim. Gear used for both is ticked for either. A device you say is sim gear is proposed even when Windows does not list it as a game controller. One you say is a keyboard, a mouse or something else is listed with the other USB devices and not ticked.
+
+Setups you already have do not change. Your answer is kept in RigReady's own data folder, for the same device a name is kept for (see [Identical devices](#identical-devices)). It stays on this PC: a [shared setup](../protect/sharing.md) does not carry it.
+
+![A home-built wheel that reports itself as a board, said to be a wheel used for racing](../../../artifacts/screens/devices-what-is/04-said-wheel-for-racing.png)
 
 ## Identical devices
 

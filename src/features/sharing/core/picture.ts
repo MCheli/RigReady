@@ -2,6 +2,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import type { MainContext } from '../../../core/feature';
 import { sha256 } from '../../../core/files/fileStore';
+import type { DeviceKind as SaidKind } from '../../../core/gearKind';
 import { setupGameName } from '../../../core/games';
 import type { Profile } from '../../../core/profile/schema';
 import { err, ok, type Result } from '../../../core/result';
@@ -80,6 +81,28 @@ const KINDS: [DeviceKind, RegExp][] = [
   ],
 ];
 
+/**
+ * The drawing for each kind the owner can say a device is, on the Devices page. The
+ * picture has fewer drawings than there are kinds: a yoke is drawn as a stick, a display
+ * unit as a screen, and what has no drawing of its own as a plain device.
+ */
+const DRAWN_AS: Record<SaidKind, DeviceKind> = {
+  stick: 'stick',
+  yoke: 'stick',
+  throttle: 'throttle',
+  pedals: 'pedals',
+  wheel: 'wheel',
+  shifter: 'other',
+  tracker: 'tracker',
+  deck: 'deck',
+  display: 'screen',
+  panel: 'panel',
+  headset: 'other',
+  keyboard: 'other',
+  mouse: 'other',
+  other: 'other',
+};
+
 /** What kind of gear a device is, from what it is called. */
 export function deviceKind(...names: (string | undefined)[]): DeviceKind {
   const text = names.filter(Boolean).join(' ');
@@ -131,19 +154,23 @@ export async function pictureModel(ctx: PictureCtx, profile: Profile): Promise<P
     const instanceId = text(check.params['instanceId']);
     // The name of this very unit when the registry can tell, else the model's (the
     // registry says nothing when several identical devices have different names).
-    const given =
-      names.nameOf({
-        vendorId,
-        productId,
-        ...(serial ? { serial } : {}),
-        ...(instanceId ? { instanceId } : {}),
-      }) ?? names.nameOf({ vendorId, productId });
+    const unit = {
+      vendorId,
+      productId,
+      ...(serial ? { serial } : {}),
+      ...(instanceId ? { instanceId } : {}),
+    };
+    const given = names.nameOf(unit) ?? names.nameOf({ vendorId, productId });
+    // What the owner said this device is. Only the drawing it chooses goes into the
+    // picture; the answer itself stays on this PC.
+    const said = (names.whatIs?.(unit) ?? names.whatIs?.({ vendorId, productId }))?.kind;
     return [
       {
         model: `${vendorId}:${productId}`,
         unit: serial ?? instanceId,
         title: check.title,
         given,
+        said,
         optional: !check.required,
       },
     ];
@@ -166,7 +193,7 @@ export async function pictureModel(ctx: PictureCtx, profile: Profile): Promise<P
     devices.push({
       name: name || 'Controller',
       ...(model ? { model } : {}),
-      kind: deviceKind(d.given, title, d.title),
+      kind: d.said ? DRAWN_AS[d.said] : deviceKind(d.given, title, d.title),
       optional: d.optional,
     });
   }

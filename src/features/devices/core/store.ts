@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { z } from 'zod';
 import { JsonStore } from '../../../core/jsonStore';
-import type { DeviceNameQuery, DeviceNames } from '../../../core/names';
+import type { DeviceNameQuery, DeviceNames, DeviceSaid } from '../../../core/names';
 import type { Clock, FileStore, KnownFolders } from '../../../core/ports';
 import { ok, type Result } from '../../../core/result';
 import type { DeviceInfo, InputDevice } from '../../../shared/models';
@@ -13,16 +13,25 @@ import {
   serialIsUnique,
   type DeviceIdentity,
 } from './identity';
-import { NotificationModeSchema } from './model';
+import { DeviceSaidSchema, NotificationModeSchema } from './model';
 
 /**
  * The feature's own data under the data root:
- *   devices.json          names the user gave, switches marked as "on is normal", notification choice
+ *   devices.json          names the user gave, what the user said a device is, switches
+ *                         marked as "on is normal", notification choice
  *   devices-history.json  where and when each device was last seen
  */
 
 export const NameEntrySchema = DeviceIdentitySchema.extend({ name: z.string().min(1).max(80) });
 export type NameEntry = z.infer<typeof NameEntrySchema>;
+
+/**
+ * What the user said a device is ("This is a: wheel", "Used for: racing"), for a device
+ * RigReady cannot tell from its name and maker, or has wrong. Kept under the same identity
+ * as a name and found by the same rules. It stays in this file: nothing sends it anywhere.
+ */
+export const WhatEntrySchema = DeviceIdentitySchema.extend(DeviceSaidSchema.shape);
+export type WhatEntry = z.infer<typeof WhatEntrySchema>;
 
 export const SwitchEntrySchema = z.object({
   /** inputKeyFor(): which controller, stable across restarts. */
@@ -35,6 +44,8 @@ export type SwitchEntry = z.infer<typeof SwitchEntrySchema>;
 export const DevicesDataSchema = z.object({
   schemaVersion: z.literal(1).default(1),
   names: z.array(NameEntrySchema).default([]),
+  /** Absent in a file written before 2026-11: nothing was said yet. */
+  whatItIs: z.array(WhatEntrySchema).default([]),
   switches: z.array(SwitchEntrySchema).default([]),
   notifications: NotificationModeSchema.default('controllers'),
 });
@@ -81,17 +92,17 @@ const eq = (a: string | undefined, b: string | undefined): boolean =>
   a !== undefined && b !== undefined && a.toUpperCase() === b.toUpperCase();
 
 /**
- * The name the user gave this device, if any:
+ * What is stored for this device, if anything (its name, or what the user said it is):
  * 1. same model and a serial that no other present unit shares;
  * 2. same model and the same USB port (instance path);
- * 3. the only unit of this model present, and the only name stored for the model, as long
- *    as that name is not pinned to a port another present unit is on (the device moved port).
+ * 3. the only unit of this model present, and the only entry stored for the model, as long
+ *    as that entry is not pinned to a port another present unit is on (the device moved port).
  */
-export function findName(
-  entries: NameEntry[],
+export function findEntry<E extends DeviceIdentity>(
+  entries: E[],
   device: DeviceInfo,
   present: DeviceInfo[]
-): NameEntry | undefined {
+): E | undefined {
   const model = entries.filter((e) => e.guid === undefined && sameModel(device, e));
   if (model.length === 0) return undefined;
   if (serialIsUnique(device, present)) {
@@ -110,6 +121,26 @@ export function findName(
   return undefined;
 }
 
+/** The name the user gave this device, if any (the rules of findEntry). */
+export function findName(
+  entries: NameEntry[],
+  device: DeviceInfo,
+  present: DeviceInfo[]
+): NameEntry | undefined {
+  return findEntry(entries, device, present);
+}
+
+/** The answer in an entry without its identity; undefined when nothing is said. */
+export function saidOf(
+  entry: { kind?: DeviceSaid['kind']; usedFor?: DeviceSaid['usedFor'] } | undefined
+): DeviceSaid | undefined {
+  if (!entry || (!entry.kind && !entry.usedFor)) return undefined;
+  return {
+    ...(entry.kind ? { kind: entry.kind } : {}),
+    ...(entry.usedFor ? { usedFor: entry.usedFor } : {}),
+  };
+}
+
 /**
  * The names as other features ask for them (`ctx.names.devices()`): the same rules as
  * findName, for a device described by what the asker knows about it.
@@ -120,11 +151,14 @@ export function findName(
  *   them apart when the controller of that GUID reports the USB device it belongs to.
  * - A device that is not connected has the name stored for exactly that identity.
  * The name is only ever something to show; what a check matches on stays the identity.
+ *
+ * What the user said a device is (`what`, answered by `whatIs`) is found the same way.
  */
 export function deviceNames(
   entries: NameEntry[],
   devices: DeviceInfo[],
-  controllers: Pick<InputDevice, 'guid' | 'usbInstanceId'>[] = []
+  controllers: Pick<InputDevice, 'guid' | 'usbInstanceId'>[] = [],
+  what: WhatEntry[] = []
 ): DeviceNames {
   const present = devices.filter((d) => !d.isHub);
   const narrowed = <T extends { serial?: string | undefined; instanceId?: string | undefined }>(
@@ -136,44 +170,51 @@ export function deviceNames(
         (query.serial === undefined || d.serial === query.serial) &&
         (query.instanceId === undefined || eq(d.instanceId, query.instanceId))
     );
+  /** The entry of a list for the device a query describes, by the rules above. */
+  const lookup = <E extends DeviceIdentity>(list: E[], query: DeviceNameQuery): E | undefined => {
+    if (query.guid !== undefined) {
+      const guid = query.guid.replace(/[{}]/g, '');
+      const byGuid = list.find((e) => eq(e.guid, guid));
+      if (byGuid) return byGuid;
+    }
+    const connected = narrowed(
+      present.filter((d) => sameModel(d, query)),
+      query
+    );
+    if (connected.length === 1) return findEntry(list, connected[0]!, present);
+    if (connected.length > 1) {
+      // Identical devices: the DirectInput GUID says which one, but only when Windows
+      // told us which USB device that controller is. Otherwise no name, never a guess.
+      const guid = query.guid?.replace(/[{}]/g, '');
+      const unit = controllers.find((c) => eq(c.guid, guid))?.usbInstanceId;
+      const owner = unit ? connected.filter((d) => eq(d.instanceId, unit)) : [];
+      return owner.length === 1 ? findEntry(list, owner[0]!, present) : undefined;
+    }
+    const stored = narrowed(
+      list.filter((e) => e.guid === undefined && sameModel(e, query)),
+      query
+    );
+    return stored.length === 1 ? stored[0] : undefined;
+  };
   return {
-    nameOf(query) {
-      if (query.guid !== undefined) {
-        const guid = query.guid.replace(/[{}]/g, '');
-        const byGuid = entries.find((e) => eq(e.guid, guid));
-        if (byGuid) return byGuid.name;
-      }
-      const connected = narrowed(
-        present.filter((d) => sameModel(d, query)),
-        query
-      );
-      if (connected.length === 1) return findName(entries, connected[0]!, present)?.name;
-      if (connected.length > 1) {
-        // Identical devices: the DirectInput GUID says which one, but only when Windows
-        // told us which USB device that controller is. Otherwise no name, never a guess.
-        const guid = query.guid?.replace(/[{}]/g, '');
-        const unit = controllers.find((c) => eq(c.guid, guid))?.usbInstanceId;
-        const owner = unit ? connected.filter((d) => eq(d.instanceId, unit)) : [];
-        return owner.length === 1 ? findName(entries, owner[0]!, present)?.name : undefined;
-      }
-      const stored = narrowed(
-        entries.filter((e) => e.guid === undefined && sameModel(e, query)),
-        query
-      );
-      return stored.length === 1 ? stored[0]!.name : undefined;
-    },
+    nameOf: (query) => lookup(entries, query)?.name,
+    whatIs: (query) => saidOf(lookup(what, query)),
   };
 }
 
-/** What is stored when the user names a device: the model, a unique serial, and the port as a hint. */
-export function nameEntryFor(device: DeviceInfo, present: DeviceInfo[], name: string): NameEntry {
+/** What an entry is stored under: the model, a unique serial, and the port as a hint. */
+function entryIdentity(device: DeviceInfo, present: DeviceInfo[]): DeviceIdentity {
   return {
     vendorId: device.vendorId,
     productId: device.productId,
     ...(serialIsUnique(device, present) ? { serial: device.serial! } : {}),
     instanceId: device.instanceId,
-    name,
   };
+}
+
+/** What is stored when the user names a device. */
+export function nameEntryFor(device: DeviceInfo, present: DeviceInfo[], name: string): NameEntry {
+  return { ...entryIdentity(device, present), name };
 }
 
 /** Replaces (or with an empty name, removes) the name of a USB device. */
@@ -200,6 +241,32 @@ export function withControllerName(
   const trimmed = name.trim();
   if (trimmed) names.push({ ...identity, name: trimmed });
   return { ...data, names };
+}
+
+/** Replaces (or, with nothing said, removes) what the user said a USB device is. */
+export function withWhat(
+  data: DevicesData,
+  device: DeviceInfo,
+  present: DeviceInfo[],
+  said: DeviceSaid
+): DevicesData {
+  const current = findEntry(data.whatItIs, device, present);
+  const whatItIs = data.whatItIs.filter((e) => e !== current);
+  const answer = saidOf(said);
+  if (answer) whatItIs.push({ ...entryIdentity(device, present), ...answer });
+  return { ...data, whatItIs };
+}
+
+/** The same for a controller that has no USB device of its own. */
+export function withControllerWhat(
+  data: DevicesData,
+  identity: DeviceIdentity & { guid: string },
+  said: DeviceSaid
+): DevicesData {
+  const whatItIs = data.whatItIs.filter((e) => !eq(e.guid, identity.guid));
+  const answer = saidOf(said);
+  if (answer) whatItIs.push({ ...identity, ...answer });
+  return { ...data, whatItIs };
 }
 
 /**

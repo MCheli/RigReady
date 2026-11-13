@@ -408,6 +408,31 @@ describe('capture: what the rig says it is for', () => {
   });
 });
 
+describe('DEV-017: what the rig is for, with what the user said', () => {
+  it('gear the user said is for racing counts for the family, whatever Windows lists it as', async () => {
+    app = await wiredApp('devices-unknown-controller', { files: [] });
+    const family = async (): Promise<string | undefined> =>
+      rigKind((await capture()).candidates as CaptureCandidate[]);
+    // One flight stick by its maker's list, and a controller nobody knows.
+    expect(await family()).toBe('flight');
+    const listed = await app.ports.devices.list();
+    if (!listed.ok) throw new Error('list');
+    const key = (productId: string): string =>
+      listed.value.find((d) => d.productId === productId)!.instanceId;
+
+    await app.invoke('devices:setWhatItIs', { key: key('8036'), kind: 'wheel', usedFor: 'racing' });
+    // One of each family now: a tie says nothing.
+    expect(await family()).toBeUndefined();
+    // A keyboard to Windows; the user says it is used for racing (a button box, say).
+    await app.invoke('devices:setWhatItIs', { key: key('C31C'), kind: null, usedFor: 'racing' });
+    expect(await family()).toBe('racing');
+    expect((await capture()).suggested.kind).toBe('racing');
+    // Said to be a mouse: no sim gear, so it says no family.
+    await app.invoke('devices:setWhatItIs', { key: key('8036'), kind: 'mouse', usedFor: 'racing' });
+    expect(await family()).toBeUndefined();
+  });
+});
+
 describe('capture: one click through', () => {
   const ready = async (id: string): Promise<ChecklistReport> =>
     app.invoke<ChecklistReport>('fly:check', { profileId: id });

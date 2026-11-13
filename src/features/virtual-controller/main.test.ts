@@ -190,6 +190,118 @@ describe('virtual controller feature', () => {
     });
   });
 
+  it('after a profile is renamed, a setup that starts it says the new name: on the Play page, in the list of its step, beside a check it fixes and in the setup itself', async () => {
+    app = await wiredApp('virtual-controller-ready');
+    type Ref = { type: string; params: Record<string, unknown> };
+    type Setup = {
+      checks: { id: string; remediation?: Ref }[];
+      actions: { preLaunch: ({ id: string } & Ref)[] };
+    };
+    const SETUP = { id: 'virtual-controller-ace-combat' };
+    const stored = { profile: 'my-ace-combat-stick', profileName: 'My Ace Combat stick' };
+    // Chosen in the setup editor while the profile was still called "My Ace Combat stick":
+    // a step before launch and the fix of a check, each keeping that name beside the id.
+    // The scenario's own step (a1) keeps the id alone.
+    const setup = await app.invoke<Setup>('profiles:get', SETUP);
+    const save = (checkParams: Record<string, unknown>): Promise<unknown> =>
+      app!.invoke('profiles:save', {
+        ...setup,
+        actions: {
+          preLaunch: [
+            ...setup.actions.preLaunch,
+            { id: 'a2', title: 'Second gamepad', type: 'virtual-controller.start', params: stored },
+          ],
+        },
+        checks: [
+          ...setup.checks,
+          {
+            id: 'c9',
+            type: 'process.running',
+            title: 'Gamepad tester',
+            required: false,
+            params: { name: 'GamepadTester.exe' },
+            remediation: { type: 'virtual-controller.start', params: checkParams },
+          },
+        ],
+      });
+    await save(stored);
+    const fixOf = async (): Promise<string | undefined> => {
+      const report = await app!.invoke<{ results: { itemId: string; fix?: string }[] }>(
+        'fly:check',
+        { profileId: SETUP.id }
+      );
+      return report.results.find((r) => r.itemId === 'c9')!.fix;
+    };
+    /** What the Play page is told each step was set to. */
+    const choices = async (): Promise<(string | undefined)[][]> => {
+      const view = await app!.invoke<{ actions: { id: string; choice?: string }[] }>('fly:view', {
+        profileId: SETUP.id,
+      });
+      return view.actions.map((a) => [a.id, a.choice]);
+    };
+    expect(await fixOf()).toBe('Start the virtual controller "My Ace Combat stick"');
+    expect(await choices()).toEqual([
+      ['a1', 'My Ace Combat stick'],
+      ['a2', 'My Ace Combat stick'],
+    ]);
+
+    const profile = await app.invoke<Record<string, unknown>>('virtual-controller:profile', {
+      id: 'my-ace-combat-stick',
+    });
+    await app.invoke('virtual-controller:save', {
+      profile: { ...profile, name: 'Viper stick for Ace Combat' },
+    });
+
+    // The setup itself: the name it keeps is the new one, and a step that kept none still does.
+    const after = await app.invoke<Setup>('profiles:get', SETUP);
+    expect(after.actions.preLaunch.map((a) => [a.id, a.params['profileName']])).toEqual([
+      ['a1', undefined],
+      ['a2', 'Viper stick for Ace Combat'],
+    ]);
+    expect(after.checks.find((c) => c.id === 'c9')!.remediation!.params).toEqual({
+      profile: 'my-ace-combat-stick',
+      profileName: 'Viper stick for Ace Combat',
+    });
+    // The Play page: "Before launch: ..." names each step's controller as it is called now.
+    expect(await choices()).toEqual([
+      ['a1', 'Viper stick for Ace Combat'],
+      ['a2', 'Viper stick for Ace Combat'],
+    ]);
+
+    // The list the setup editor chooses from: the same id, under the name it has now.
+    const types = await app.invoke<{
+      remediations: {
+        type: string;
+        pickers?: { param: string; choices: { value: string; label: string }[] }[];
+      }[];
+    }>('profiles:types');
+    const list = types.remediations
+      .find((t) => t.type === 'virtual-controller.start')!
+      .pickers!.find((p) => p.param === 'profile')!;
+    expect(list.choices).toEqual([
+      expect.objectContaining({
+        value: 'my-ace-combat-stick',
+        label: 'Viper stick for Ace Combat',
+        fill: { profileName: 'Viper stick for Ace Combat' },
+      }),
+    ]);
+    expect(await fixOf()).toBe('Start the virtual controller "Viper stick for Ace Combat"');
+
+    // A setup that says another name all the same (written by hand, or brought in from
+    // another PC): the fix says the name the profile has, not the one the setup keeps.
+    await save({ ...stored, profileName: 'A name typed by hand' });
+    expect(await fixOf()).toBe('Start the virtual controller "Viper stick for Ace Combat"');
+
+    // A profile that is gone: the fix says the name the setup kept, as before.
+    expect(
+      await app.invoke('virtual-controller:remove', {
+        id: 'my-ace-combat-stick',
+        evenIfUsed: true,
+      })
+    ).toEqual({ removed: true });
+    expect(await fixOf()).toBe('Start the virtual controller "A name typed by hand"');
+  });
+
   it('does not delete a profile a setup starts until it is told to all the same', async () => {
     app = await wiredApp('virtual-controller-same-names');
     const ids = async (): Promise<string[]> =>

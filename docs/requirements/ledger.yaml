@@ -1431,8 +1431,10 @@ requirements:
       - "The profile editor changes name, description, game, install choice, launch target (executable, arguments list, working directory). The monitor layout a setup uses is its Monitors check, edited like any other check; the desk layout Stand down returns to is an app setting (Settings)."
       - "Changes are saved only on Save; Cancel leaves the file byte-identical (unit test compares file hashes)."
       - "Renaming a profile keeps its id stable, so last-used and backups still reference it."
+      - "Save takes the user to the list of setups only while they are still in the editor: a save that answers after they went on to another page (Play) leaves them there, and that page follows the saved setup (scenario with the save slowed by slowFiles)."
     notes:
       - "2026-10-03: the layout sentence corrected to the architecture: a setup has no layout field of its own; its layout is the display.layout check item (by layout name), and the desk layout is settings.deskLayoutId."
+      - "2026-11-12: a save that answered after the user had opened Play took them back to the Setups list. On GitHub's slower runners this failed integration.e2e.ts (install choice) now and then, always with the Setups list on screen. ProfileEditPage now moves only a user still in the editor, and the scenario slows the save on purpose."
     status: done
     evidence:
       - "tests/e2e/profiles.e2e.ts#setups: name, notes, install, and what Launch starts are edited; Cancel leaves the file as it was; a rename keeps the id"
@@ -2275,6 +2277,24 @@ requirements:
     status: in_progress
     evidence: []
 
+  - id: DISP-020
+    title: Save layout stays in view in the monitor layout editor
+    job: configure
+    area: displays
+    priority: p2
+    done_means:
+      - "In the dialog that edits a monitor layout by hand, only the rows of monitors scroll: the title and the buttons Cancel and 'Save layout' stay inside the window, also in the smallest window RigReady allows, which is too low for all the rows."
+      - "A layout that is refused says why between the rows and the buttons, in view without scrolling."
+    status: done
+    evidence:
+      - test: "tests/e2e/displays.e2e.ts#monitors: in a window too low for the layout editor, its rows scroll and Save layout stays in view"
+      - test: "tests/e2e/displays.e2e.ts#monitors: edit a layout by hand; overlapping monitors are refused with a reason"
+      - "artifacts/screens/display-edit-low-window/01-top-of-the-rows.png"
+      - "artifacts/screens/display-edit-low-window/02-last-row.png"
+      - "artifacts/screens/display-edit/01-overlap-refused.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. Before, a dialog taller than the window scrolled as a whole, the buttons with the rows, and the reason for a refusal was under the last row, where it scrolled away with them. A dialog keeps its own buttons; it does not use the shared Save bar."
+
   # ---------------------------------------------------------------------------
   # DEVICES AND TROUBLESHOOTING
   # ---------------------------------------------------------------------------
@@ -2598,6 +2618,54 @@ requirements:
       - "tests/e2e/devices-wheel.e2e.ts#devices: the input tester draws a wheel base as a wheel and pedals, with the names the Wheel page uses"
       - "artifacts/screens/devices-tester-wheel/01-wheel-view.png"
       - "artifacts/screens/devices-tester-wheel/02-wheel-view-raw.png"
+
+  - id: DEV-017
+    title: The user can say what a device is and what it is used for, and every page that reads either goes by it
+    job: configure
+    area: devices
+    priority: p2
+    done_means:
+      - "On the Devices page an open row has two lists: 'What it is' (stick, yoke, throttle, pedals, wheel, shifter, head tracker, button deck, display unit, panel, headset, keyboard, mouse, something else) and 'Used for' (flight, racing, both). The first line of each is RigReady's own reading with where it comes from ('Keyboard, from its name', 'Flight, from its maker') or 'Not known'; choosing it takes the answer back. A choice is stored at once and the row shows what is stored."
+      - "The answer is kept in RigReady's data folder (devices.json), under the identity a name is kept under and found by the same rules: the model, a unique serial or the port, a controller without a USB device by its GUID, and never a guess between identical devices. A file from before reads as no answers. No setup and no shared bundle carries it."
+      - "Any feature asks through core: (await ctx.names.devices()).whatIs(query). The Play page's rig strip and suggestion, a new setup's defaults and the picture of a setup put the user's answer before the reading from the name or the maker."
+      - "A new setup: gear said to be for racing is ticked for a racing game and not for a flight sim, and the other way round; 'both' is ticked for either. A device said to be sim gear is proposed even when Windows does not list it as a game controller; one said to be a keyboard, a mouse or something else is listed with the other USB devices and not ticked. Setups that exist do not change."
+      - "With nothing said everything reads as before. Asking costs the Play page's suggestion no second look at the machine."
+      - "For a device or a controller that is no longer connected the page gets an error in words and nothing is stored. A kind or a use outside the lists is refused."
+    notes:
+      - "2026-11-12: items 11 and 12 of the fixed-lists audit. The scenario's controller (an Arduino Leonardo board, 2341:8036) is written by hand, not recorded. Not tried on the real rig."
+      - "2026-11-12: the Devices row and the picture of a setup each still read a name by rules of their own. Both now put the user's answer first; with nothing said they can still differ from the Play page for some names."
+    status: done
+    evidence:
+      - "src/features/devices/core/store.test.ts#is kept under the identity a name is kept under, and found by the same rules"
+      - "src/features/devices/core/store.test.ts#one part can be said without the other; a new answer replaces the old; nothing said removes it"
+      - "src/features/devices/core/store.test.ts#a controller without a USB device of its own is answered for by its GUID"
+      - "src/features/devices/core/store.test.ts#a file from before has no answers, and an answer outside the lists is not read"
+      - 'src/features/devices/core/family.test.ts#comes before what RigReady knows of the maker; "both" is no family; nothing said is the maker'
+      - "src/features/devices/core/deviceCheck.test.ts#proposes what the user said is sim gear, whatever Windows lists it as, with its picture and its family"
+      - "src/features/devices/core/overview.test.ts#says what RigReady reads of each device by itself, and what the user said beside it"
+      - "src/features/devices/main.test.ts#keeps what the user says a device is beside what RigReady reads, part by part, and it survives a restart"
+      - "src/features/devices/main.test.ts#answers for a controller without a USB device by its GUID, and refuses what it cannot keep"
+      - "src/features/fly/core/rig.test.ts#says the kind by checklist item, only for the devices something was said about, monitors or not"
+      - "src/features/fly/core/suggest.test.ts#goes along with the offer, and asking for it is no second look at the machine"
+      - "src/core/captureDefaults.test.ts#the kind the user said comes before the kind the name says"
+      - "src/core/captureDefaults.test.ts#a device said to be a wheel is kept for a racing sim and left unticked for a flight sim"
+      - "src/features/profiles/core/capture.test.ts#gear the user said is for racing counts for the family, whatever Windows lists it as"
+      - "src/features/sharing/core/picture.test.ts#draws the device as what the owner said, with the nearest drawing the picture has"
+      - "src/core/gearKind.test.ts#every kind has a picture and a word of its own, and every kind of sim gear is one of them"
+      - "src/core/names.test.ts#hands the devices the asker has just read to the source, so they are not listed twice"
+      - "src/core/names.test.ts#with no source, a source that only knows names, or one that fails, nothing is known and nothing breaks"
+      - "tests/unit/deviceWhatItIs.test.ts#a controller no list knows is offered to a flight and a racing setup alike, with no picture of its own"
+      - "tests/unit/deviceWhatItIs.test.ts#once the user says it is a wheel for racing, the names port, a new setup, the rig strip and the picture all go by that"
+      - "tests/unit/deviceWhatItIs.test.ts#a device said to be for both is kept for either family; one said to be a mouse is left for the user to tick"
+      - "tests/e2e/devices-what-is.e2e.ts#devices: the user says what an unknown controller is, and new setups and the Play page go by it"
+      - "artifacts/screens/devices-what-is/01-not-known.png"
+      - "artifacts/screens/devices-what-is/02-read-by-rigready.png"
+      - "artifacts/screens/devices-what-is/03-choices.png"
+      - "artifacts/screens/devices-what-is/04-said-wheel-for-racing.png"
+      - "artifacts/screens/devices-what-is/05-new-racing-setup.png"
+      - "artifacts/screens/devices-what-is/06-new-flight-setup.png"
+      - "artifacts/screens/devices-what-is/07-play-page.png"
+      - "artifacts/screens/devices-what-is/08-taken-back.png"
 
   # ---------------------------------------------------------------------------
   # THE FINAL PASS — the tools: troubleshooting and learning the rig
@@ -3225,6 +3293,24 @@ requirements:
       - "artifacts/screens/dcs-screens-by-name/02-name-refused.png"
       - "artifacts/screens/dcs-screens-by-name/03-display-added-by-name.png"
       - "artifacts/screens/dcs-screens-by-name/04-aircraft-added-by-name.png"
+
+  - id: DCS-MON-012
+    title: The button that puts a screen setup to use in DCS stays in view on the Screens tab
+    job: configure
+    area: dcs-monitors
+    priority: p2
+    done_means:
+      - "On the Screens tab, 'Use in DCS' is in the shared bar on the bottom edge of the window, in view at the top of the tab and at its end, at the usual window size."
+      - "The bar says 'Not in DCS yet' while what is shown differs from what DCS uses, and 'DCS uses this setup' with the button reading 'In use' and off when it does not. What stops the button is said in words beside it, and after a press the bar says what was done."
+      - "Leaving the tab asks nothing: what the tab shows is RigReady's proposal until it is put to use."
+    status: done
+    evidence:
+      - test: 'tests/e2e/dcs-screens.e2e.ts#dcs-screens: "Use in DCS" stays in the window from the top of the tab to its end, with what stops it and what it did beside it'
+      - "artifacts/screens/dcs-screens-save-bar/01-top-of-the-page.png"
+      - "artifacts/screens/dcs-screens-save-bar/02-end-of-the-page.png"
+      - "artifacts/screens/dcs-screens-save-bar/03-used-in-dcs.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. The button was at the end of the editor, above the list of files, and scrolled out of view. Edits that are not yet used in DCS are dropped when the tab is left, as before; the bar does not ask about them."
 
   - id: DCS-EXPORT-001
     title: Read Export.lua and list each tool's lines
@@ -4484,6 +4570,30 @@ requirements:
       - "artifacts/screens/cheat-sheets-known-devices/14-twcs-throttle-kneeboard-day-page.png"
       - "artifacts/screens/cheat-sheets-known-devices/15-twcs-throttle-kneeboard-night-page.png"
 
+  - id: SHEET-030
+    title: Save layout and Cancel stay in view in the cheat sheets layout editor
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "In the layout editor of a cheat sheet, 'Save layout' and Cancel are in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
+      - "The bar says 'Unsaved changes' once something was moved or renamed and 'No unsaved changes' with 'Save layout' off before that."
+      - "Cancel with a change asks first, and 'Keep editing' keeps the change; Cancel with nothing changed closes the editor without a question. Saving closes the editor and the bar with it."
+      - "The same bar is under a drawing made from the user's own photos. With nothing placed on the photo yet, 'Save layout' is off and the bar says 'You can save once one control is placed.' beside it."
+    status: done
+    evidence:
+      - test: "tests/e2e/cheat-sheets.e2e.ts#cheat sheets: in the layout editor, Save layout and Cancel stay in the window from the top of the page to its end, and Cancel asks before it drops a change"
+      - test: "tests/e2e/cheat-sheets-photo.e2e.ts#cheat sheets: my own photos - Save layout and Cancel stay in the window from the top of the page to its end, and the bar says why nothing can be saved yet"
+      - "artifacts/screens/cheat-sheets-editor-save-bar/01-top-of-the-page.png"
+      - "artifacts/screens/cheat-sheets-editor-save-bar/02-end-of-the-page.png"
+      - "artifacts/screens/cheat-sheets-editor-save-bar/03-cancel-asks.png"
+      - "artifacts/screens/cheat-sheets-photo-save-bar/01-top-of-the-page.png"
+      - "artifacts/screens/cheat-sheets-photo-save-bar/02-end-of-the-page.png"
+      - "artifacts/screens/cheat-sheets-photo-save-bar/03-one-placed-can-be-saved.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. The two buttons were in the editor's own row of buttons, which scrolls away with the drawing, and Cancel dropped a change without asking."
+      - "2026-11-12: written as SHEET-023 on its branch, then SHEET-028; the photo drawings took 023 to 027 on main first and the Thrustmaster throttles 028 and 029, so it is 030 here."
+
   # ---------------------------------------------------------------------------
   # OVERLAY — what you press, shown over the game (2D first; asked for on 2026-11-12)
   # ---------------------------------------------------------------------------
@@ -4502,6 +4612,7 @@ requirements:
       - "2026-11-12: done. Built and unit-tested on the fake machine, then run in the app with the isolated launch once the sitting was over: tests/e2e/overlay.e2e.ts, its four tests, and only that file, because others were testing on the same PC. What the runs found, fixed in the same commit: after a change that was refused (a damaged settings file) the switch stayed on while the overlay was off, so the page now draws its controls again from what is in effect; with the overlay on and no screen on, the Place row said to turn the overlay on first. So that the page's words for controllers that cannot be read could be seen, the recorded rig's input reader can now be made not to start (the failProvider and hangProvider mutations take the port 'input'; tests/unit/providerFailure.test.ts). A window that Windows refuses is the same line of the page as 'no screen is on' and its words are from the unit tests; a refusal by Windows itself has not been seen. Not run with this feature in at the time (run since, see the note of the same day below): tests/e2e/generic-rig.e2e.ts (it has the 'overlay' page in its list), tests/e2e/tour.e2e.ts, tests/e2e/look.e2e.ts and tests/e2e/a11y.e2e.ts. The tour visits one page more with this one: its pictures after Cheat sheets are renumbered by its first run, so site/screens.json has to follow in the same commit. The navigation had no room for a twentieth entry at the default window size, so its rows went from 30 to 28 px high in src/renderer/layouts/ConfigureLayout.vue: the overlay's first test checks that the navigation does not scroll, and every older picture that shows the navigation is 2 px a row out of date until the whole suite is run. The rule for status colours in tests/e2e/a11y.ts now takes the name of the button an icon is in (the Close of an alert), which the alert about a damaged settings file needed."
       - "2026-11-12, later, two wordings on the page. With the overlay on and the controllers not read, the page now says first what the palette says, 'The overlay is on, but the controllers are not being read', and under it the reader's own message; both take the sentence from one place (NOT_READ in src/features/overlay/core/model.ts). The alert about a damaged settings file now ends with what to do about it, as the manual does: repair the file or delete it, and once it is deleted the overlay starts again from its first settings, turned off. Seen in the app: tests/e2e/overlay.e2e.ts, its third and fourth test, with the pictures overlay-no-game/04-damaged-settings.png and overlay-not-read/01-controllers-not-read.png taken again."
       - "2026-11-12: the four scenario files the shared changes can reach were run one at a time with the feature in, after the merges of main up to a6767a8, and all pass: tests/e2e/a11y.e2e.ts (3 tests), tests/e2e/generic-rig.e2e.ts (3 tests, with one more picture at the end of its flow, artifacts/screens/generic-configure/36-overlay.png), tests/e2e/tour.e2e.ts (4 tests) and tests/e2e/look.e2e.ts (5 tests). The tour walks the navigation in order, so the Overlay page is picture 11 on each of its four rigs (artifacts/screens/tour-flying/11-overlay.png) and the pictures after it carry new numbers; the tour had not been run since the virtual controller joined the navigation, so its two pages are new there too (18 and 36). All four tour folders were taken again and site/screens.json follows the new numbers of the wheel and the monitors. After the merge of the wheel fix the scenario files that read src/features/devices were run as well: tests/e2e/devices.e2e.ts (10 tests), tests/e2e/devices-bindings.e2e.ts (7 tests) and tests/e2e/devices-wheel.e2e.ts (2 tests), all passing. Pictures of other features that differ only by the new navigation entry were left as they are on main."
+      - "2026-11-12, the picture of the damaged settings file: it changed on every run, because the page names the file by its whole path and a run keeps its folders in a temp folder with a random name. The page is left as it is: the whole path is how the file is found, and on a user's PC it is short (the data folder, then overlay\\settings.json). The scenario now checks the true text, in what the click answered and in the line that stays, and writes the random folder name as 'rigready-e2e-XXXXXX' only while the picture is taken, then puts it back and checks the text again. Run twice: the picture came out the same both times."
     status: done
     evidence:
       - "src/features/overlay/core/service.test.ts#is off until the user turns it on: no window, and nothing is listened to"
@@ -5898,6 +6009,23 @@ requirements:
       - "artifacts/screens/share-import/03-choose.png"
       - "artifacts/screens/share-import/04-imported.png"
 
+  - id: SHARE-009
+    title: Import and Cancel stay in view under what a shared file holds
+    job: configure
+    area: sharing
+    priority: p2
+    done_means:
+      - "On the page that shows what a .rigready file holds, Import and Cancel are in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
+      - "With nothing ticked, Import is off and the bar says 'Tick at least one thing to import.' The bar never says 'unsaved', and leaving the page asks nothing."
+    status: done
+    evidence:
+      - test: "tests/e2e/share-selective.e2e.ts#share: Import and Cancel stay in the window from the top of what a file holds to its end, and Import says why it is off when nothing is ticked"
+      - "artifacts/screens/share-import-bar/01-top-of-the-page.png"
+      - "artifacts/screens/share-import-bar/02-end-of-the-page.png"
+      - "artifacts/screens/share-import-bar/03-nothing-ticked.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. The two buttons were in a panel at the end of the page. An import that fails is said in the bar and, as before, at the top of the page; no scenario makes an import fail, so that is not in a picture."
+
   # ---------------------------------------------------------------------------
   # RACING — iRacing
   # ---------------------------------------------------------------------------
@@ -6537,6 +6665,25 @@ requirements:
       - "artifacts/screens/racing-rim-variant/05-gt3-setup-sees-other-bindings.png"
       - "artifacts/screens/racing-rim-variant/07-formula-variant-ready.png"
 
+  - id: RACE-FANATEC-006
+    title: Save presets stays in view on the Wheel page, and unsaved presets are said
+    job: configure
+    area: fanatec
+    priority: p2
+    done_means:
+      - "On the Wheel page, 'Save presets' is in the shared bar on the bottom edge of the window, in view at the top of the page and at its end."
+      - "The bar says 'Tuning presets not saved yet' when a preset was changed and 'Tuning presets: nothing to save' with the button off when not; after a save it says what was saved."
+      - "Leaving the page with presets that are not saved asks first, and staying keeps what was typed."
+    status: done
+    evidence:
+      - test: 'tests/e2e/racing.e2e.ts#racing: "Save presets" stays in the window from the top of the wheel page to its end, and leaving with presets that are not saved asks first'
+      - "artifacts/screens/racing-wheel-save-bar/01-top-of-the-page.png"
+      - "artifacts/screens/racing-wheel-save-bar/02-end-of-the-page.png"
+      - "artifacts/screens/racing-wheel-save-bar/03-leaving-asks.png"
+      - "artifacts/screens/racing-wheel-save-bar/04-saved.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. The button was in the heading of 'Your tuning presets', far down the page, and leaving dropped what was typed without a word. A save that fails is still said only at the top of the page."
+
   - id: RACE-WHEEL-001
     title: The Wheel page and its checks for every major wheelbase brand
     job: troubleshoot
@@ -7019,6 +7166,7 @@ requirements:
       - "artifacts/screens/virtual-controller-editor/10-wide-window.png"
     notes:
       - "2026-11-12: the owner's finding 38. Only the virtual controller's editor uses the bar so far. The other pages with a Save button are not changed here; the setup editor has a footer of its own that can move to this bar."
+      - "2026-11-12, later: the bar is now on every page where the button that keeps a change could scroll out of view: the DCS Screens tab, the import of a shared setup, the tuning presets of the Wheel page and the cheat sheets layout editor, each with a requirement of its own. For them the bar takes its own words for the two states, the page's own test ids for the buttons, a Back that closes a panel, and can be told not to ask before leaving. The setup editor, the new setup page, the export and the restore of a backup keep their own footers, which are pinned already."
 
   - id: VPAD-008
     title: A live picture of the virtual controller, in the running panel and in the editor
@@ -7086,6 +7234,25 @@ requirements:
       - "artifacts/screens/virtual-controller-editor/03-editor.png"
     notes:
       - "2026-11-12: the owner's findings 36 and 40. Done here is what the app offers. Whether the game takes it that way is not known: nobody has flown this layout or read the game's controls screen, and that is kept open in VPAD-005."
+
+  - id: VPAD-011
+    title: A renamed virtual controller profile has its new name in every setup that starts it
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "After a profile is renamed and saved, the Play page of a setup that starts it ('Before launch'), the list of the step in the setup editor and the line of the fix beside a check all say the new name."
+      - "RigReady writes the new name into every step and fix that kept the old one, through the setup store. A step that kept no name is left as it is, and so is everything else in the setup."
+      - "The line of the fix says the name the profile has now even when the setup holds another, and the name the setup holds when the profile is gone."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/main.test.ts#after a profile is renamed, a setup that starts it says the new name: on the Play page, in the list of its step, beside a check it fixes and in the setup itself"
+      - "src/features/virtual-controller/core/usedBy.test.ts#gives a setup the new name of a renamed profile wherever it keeps the old one, and nothing else"
+      - test: "tests/e2e/virtual-controller.e2e.ts#virtual controller: a renamed profile has its new name on the Play page of the setup that starts it"
+      - "artifacts/screens/virtual-controller-renamed/01-renamed.png"
+      - "artifacts/screens/virtual-controller-renamed/02-play-says-the-new-name.png"
+    notes:
+      - "2026-11-12: a setup keeps the profile's name beside its id, and the Play page reads the name there (FLY-029), so a renamed profile kept its old name on Play. A setup that cannot be written keeps the old name until its step is chosen again; that is logged, and the rename itself stands."
 
   # ---------------------------------------------------------------------------
   # STREAM DECK

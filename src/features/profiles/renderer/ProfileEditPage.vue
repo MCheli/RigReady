@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   CHECK_GROUPS,
@@ -54,6 +54,9 @@ const leaving = ref(false);
 const fileMessage = ref<string>();
 /** The setup as it was last saved: its desktop shortcut is made from that, not from the draft. */
 const saved = ref<{ name: string; launches: boolean }>();
+/** Set when this page goes away. A save that answers later must not move the user. */
+let gone = false;
+onBeforeUnmount(() => (gone = true));
 
 const PHASES = [
   { key: 'preLaunch', title: 'Before launch', sub: 'Run in order before the game starts.' },
@@ -449,6 +452,7 @@ async function save(): Promise<void> {
   saving.value = true;
   error.value = undefined;
   problems.value = [];
+  const from = router.currentRoute.value.fullPath;
   const result = await api.save(next);
   saving.value = false;
   if (!result.ok) {
@@ -462,7 +466,11 @@ async function save(): Promise<void> {
     return;
   }
   original.value = snapshot();
-  await router.push('/configure/profiles');
+  // A save can answer after the user has gone on to another page (Play, on a slow or busy
+  // PC). They stay where they went: only a user still on this editor is taken to the list.
+  if (!gone && router.currentRoute.value.fullPath === from) {
+    await router.push('/configure/profiles');
+  }
 }
 
 function cancel(): void {

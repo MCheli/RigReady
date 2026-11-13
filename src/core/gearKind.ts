@@ -4,23 +4,76 @@ import type { GameKind } from '../shared/models';
  * What kind of thing a piece of a rig is, told from its name: enough to draw the right
  * picture beside it, and to say what a game is played with. General knowledge about sim
  * hardware names; a name nobody recognises is simply a device.
+ *
+ * The rules here are a first guess. The user can say what a device is on the Devices page,
+ * and their answer wins wherever a kind is read: ask for it through the names port
+ * (`ctx.names.devices()`, then `whatIs`; see core/names) before falling back on
+ * `deviceKind(name)`.
  */
 
-export type DeviceKind =
-  | 'stick'
-  | 'yoke'
-  | 'throttle'
-  | 'pedals'
-  | 'wheel'
-  | 'shifter'
-  | 'tracker'
-  | 'deck'
-  | 'display'
-  | 'panel'
-  | 'headset'
-  | 'keyboard'
-  | 'mouse'
-  | 'other';
+/** Every kind, in the order a list offers them. 'other' is a device of no kind here. */
+export const DEVICE_KINDS = [
+  'stick',
+  'yoke',
+  'throttle',
+  'pedals',
+  'wheel',
+  'shifter',
+  'tracker',
+  'deck',
+  'display',
+  'panel',
+  'headset',
+  'keyboard',
+  'mouse',
+  'other',
+] as const;
+export type DeviceKind = (typeof DEVICE_KINDS)[number];
+
+/** The picture for each kind, from the bundled Material Design set. */
+export const KIND_ICON: Record<DeviceKind, string> = {
+  stick: 'mdi-controller',
+  yoke: 'mdi-airplane',
+  throttle: 'mdi-tune-vertical',
+  pedals: 'mdi-shoe-print',
+  wheel: 'mdi-steering',
+  shifter: 'mdi-car-shift-pattern',
+  tracker: 'mdi-webcam',
+  deck: 'mdi-view-grid',
+  display: 'mdi-monitor-dashboard',
+  panel: 'mdi-toggle-switch-outline',
+  headset: 'mdi-headset',
+  keyboard: 'mdi-keyboard-outline',
+  mouse: 'mdi-mouse',
+  other: 'mdi-usb',
+};
+
+/** The word for each kind, for a list, a tooltip and a screen reader. */
+export const KIND_NAME: Record<DeviceKind, string> = {
+  stick: 'Stick',
+  yoke: 'Yoke',
+  throttle: 'Throttle',
+  pedals: 'Pedals',
+  wheel: 'Wheel',
+  shifter: 'Shifter',
+  tracker: 'Head tracker',
+  deck: 'Button deck',
+  display: 'Display unit',
+  panel: 'Panel',
+  headset: 'Headset',
+  keyboard: 'Keyboard',
+  mouse: 'Mouse',
+  other: 'Device',
+};
+
+/**
+ * What a device can be said to be used for: the family of sims it is gear for. "Both" is
+ * an answer too: a button box or a headset is used in either.
+ */
+export const DEVICE_USES = ['flight', 'racing', 'both'] as const satisfies readonly (
+  GameKind | 'both'
+)[];
+export type DeviceUse = (typeof DEVICE_USES)[number];
 
 /**
  * In order: the first that matches wins, so "Throttle Base" is a throttle and "Wheel Base"
