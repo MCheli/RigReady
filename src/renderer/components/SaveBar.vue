@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue';
 import { onBeforeRouteLeave, useRouter, type RouteLocationRaw } from 'vue-router';
 
 /**
@@ -69,6 +69,8 @@ const props = withDefaults(
 const emit = defineEmits<{ save: [] }>();
 
 const router = useRouter();
+/** The status line says why Save is off (nothing to save, or the reason); it describes the button. */
+const stateId = `rr-save-bar-state-${useId()}`;
 const hasBack = computed(() => props.backTo !== undefined || props.onBack !== undefined);
 /** What the two buttons are, for a screen reader: "Save or go back", "Import or cancel". */
 const label = computed(() => {
@@ -142,7 +144,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="bar" class="rr-save-bar" role="group" :aria-label="label" data-testid="save-bar">
-    <div class="rr-save-bar-state" role="status" data-testid="save-bar-state">
+    <div :id="stateId" class="rr-save-bar-state" role="status" data-testid="save-bar-state">
       <span v-if="error" class="rr-bad" data-testid="save-bar-error">
         <v-icon icon="mdi-close-circle" size="16" /> {{ error }}
       </span>
@@ -162,6 +164,7 @@ onBeforeUnmount(() => {
       color="primary"
       variant="flat"
       :disabled="disabled || blocked !== undefined"
+      :aria-describedby="stateId"
       :loading="saving"
       :data-testid="saveTestid"
       @click="emit('save')"
