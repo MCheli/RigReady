@@ -63,7 +63,7 @@ Risks: the hat numbering of the WinWing grips is still assumed (as the shipped l
 The owner chose to ship the drawings in 2.0. What changed against the prototype, and why:
 
 - **One place decides the picture.** `core/picture.ts` (`pictureFor`, `renderPictureSvg`) is used by the sheet on screen, the pop-out, the trainer, the PDF and the kneeboard pages. A device with a shipped drawing is drawn from it. A device whose owner saved a layout of cards keeps it exactly (a layout without the new `drawing` field is drawn as cards, so every layout saved in 1.x keeps the places its owner gave the cards). A device with a shipped layout but no drawing yet is drawn as cards. A device with neither (the old generated grid) is now a **list**: one block per group of controls (the axes, each hat, buttons in runs of eight; a run with nothing bound is one line), in two columns, with no picture to point into. It is shorter and reads better than rows of empty cards.
-- **Drawings shipped:** the Orion 2 stick with the F-16EX grip, the Orion sticks with the F/A-18 grip (base 1 and base 2; matched by the name the grip reports, "F18 GRIP", since its product id is not in our fixtures), the Orion throttle with the F-15EX handles, the MFD1 frames. The F/A-18 grip is numbered as WinWing's own DCS profile numbers it (the `.diff.lua` templates DCS ships), so its labels carry no "?". The F-16 grip's CMS now carries 31 to 35 (press, forward, right, aft, left), as WinWing's profile puts the Hornet's sensor switch there; the owner's radar elevation (32, 34) is now on it instead of in "More controls". Still drawn as cards: the TPR pedals, the Virpil panel, the UFC1 with HUD1, the ICP, the F-18 startup and takeoff panels and the Fanatec base. They are the next ones to draw; each is data in `core/drawings/builtin.ts`.
+- **Drawings shipped:** the Orion 2 stick with the F-16EX grip, the Orion sticks with the F/A-18 grip (base 1 and base 2; matched by the name the grip reports, "F18 GRIP", since its product id is not in our fixtures), the Orion throttle with the F-15EX handles, the MFD1 frames. The F/A-18 grip is numbered as WinWing's own DCS profile numbers it (the `.diff.lua` templates DCS ships), so its labels carry no "?". The F-16 grip's CMS now carries 31 to 35 (press, forward, right, aft, left), as WinWing's profile puts the Hornet's sensor switch there; the owner's radar elevation (32, 34) is now on it instead of in "More controls". Still drawn as cards: the TPR pedals, the Virpil panel, the UFC1 with HUD1, the ICP, the F-18 startup and takeoff panels and the Fanatec base. They are the next ones to draw; each is data in `core/drawings/builtin.ts`. **This bullet is the state of early November. The owner's sitting of 12 November found the stick and throttle drawings wrong; section 8 says what replaced them and what else is drawn now.**
 - **Text as large as the page allows.** A kneeboard page and a printed page try text sizes from large to small (kneeboard 1.12 to 1.55, print 1.0 to 1.3), each with the drawing grown to the page and at its own size, and take the largest whose label columns end about level with the drawing. Columns that run on far below the drawing are what made leaders long and steep; this keeps them short. The stick's kneeboard text is now about 15 px on a 768 px page (it was 11.4 px).
 - **Rows above and below** (the MFD's keys, the throttle's base switches) sit as close under their control as their neighbours allow and are never wider than a column, so a lone block sits by its control.
 - **No crossings, also in rows.** Columns and rows both trade blocks until no two leaders cross. The unit tests check the owner's Hornet sheet (stick, F/A-18 grip, throttle, MFD) with empty controls shown and hidden, at the app's size and as laid out for a kneeboard page.
@@ -78,11 +78,13 @@ The owner chose to ship the drawings in 2.0. What changed against the prototype,
 ### Left for later
 
 - An **SVG with ids** (`id="button:20"` on an element at each control, drawn in Inkscape) as an import format: a converter like the Joystick Diagrams one, about half a day.
-- **Drawing the remaining shipped devices** (pedals, panels, UFC, ICP, Fanatec): about a day each for a credible silhouette.
+- **Drawing the remaining shipped devices** (pedals, the Virpil panel, the Fanatec base): about a day each for a credible silhouette. The panels, the UFC and the ICP are drawn since 12 November (section 8).
 - A **community page** for drawings on the website.
-- The F-16 grip's TMS and DMS numbers are still assumed (labels show "?"), as they were in the layouts. Only pressing the buttons settles them; the editor's "press a control to find it" is the way.
+- What is still assumed on a shipped drawing is listed in section 8; nothing else carries a "?".
 
 ## 7. Drawings of the popular Thrustmaster and Saitek controllers (2026-11-11)
+
+**Reviewed on 12 November (section 8): the Warthog stick and the T.16000M keep their drawing; the Warthog throttle's and the X52 Pro's were withdrawn, and those two devices show as their named list again.** The text below is the record of what was drawn on the 11th.
 
 Thrustmaster is the biggest flight brand in the market research, and the HOTAS Warthog, the T.16000M and the Saitek (Logitech) X52 Pro are the most common sticks there. Each already had a named map (`core/known/`, `device-control-names.md`); now each has a drawing in the same flat schematic style as the WinWing ones, in `core/drawings/thrustmaster.ts` and `core/drawings/saitek.ts`, CC0 and drawn from scratch (no vendor artwork, no photos).
 
@@ -98,3 +100,64 @@ Thrustmaster is the biggest flight brand in the market research, and the HOTAS W
 **Layout.** A dense panel (the Warthog throttle's) made the right column run on far below the drawing, and the pairwise trading in the column planner could not untangle the steep leaders. `placeColumn` now also tries ordering a column as if the controls slid onto it along a slope (anchor y plus a multiple of the distance to the column) and keeps the first order with no crossing. The WinWing drawings are laid out exactly as before (the first order tried is the old one).
 
 **Evidence.** `drawings.test.ts` ("the drawings of the popular Thrustmaster and Saitek controllers"): every named control is anchored with the map's name and inputs, on a drawn surface; for DCS's Hornet defaults (the scenario `cheat-sheets-known-devices`) and for every input bound, with empty controls shown and hidden, at the app's size and filled for a kneeboard page, no two leaders cross and every block is on the page; the user's changes and a layout of cards still win. The e2e `cheat-sheets-known-devices.e2e.ts` shows each on the sheet and on its kneeboard page by day and by night. Before and after pictures (the named list, the drawing, the kneeboard pages): `rigready-ops/drawings/compare-warthog-stick.png`, `compare-warthog-throttle.png`, `compare-t16000m.png`, `compare-x52-pro.png`, written by the test with `RIGREADY_DRAWINGS_OUT` set.
+
+## 8. Every drawing checked against a real map (2026-11-12)
+
+At the rig on 12 November the owner could not find controls on his own stick and throttle from their drawings: controls were in the wrong places and some were not on the drawing at all. Three rules came out of it.
+
+1. **A device has a drawing only where the drawing is known to match the real device.** Anything else falls back to cards or to a list that claims no places.
+2. **The makers' pictures are looked at, never copied.** Every outline is RigReady's own, in RigReady's flat style, CC0. Which number is which control is a fact and may be used; a maker's line art, photo or screen picture is theirs and is not in this repository.
+3. **`assumed` (the "?" on a label) is for exactly the controls whose numbers or directions no real source settles.** It is not a general hedge.
+
+### Sources
+
+- **The maker's number map.** WinWing's own configuration program has a test screen for each device: a picture of the device on which the number that the device reports lights at the control that sends it. That gives both the number and the place.
+- **The game's default profiles.** DCS ships an input profile per aircraft for each device its maker supports (`Mods/aircraft/<aircraft>/Input/<aircraft>/joystick/<device name>.diff.lua` in the game's folder). A profile says what a number does in the aircraft, which names the control ("TDC forward" is the forward push of the cursor control).
+- **The owner's own bindings and presses.** The bindings on the recorded rig, and what the owner pressed and said at the rig on 12 November.
+- **The DCS A-10C flight manual** (shipped with the game), whose figures 69 and 70 show the grip and the throttle the Warthog copies.
+
+### What each drawing was checked against
+
+| Device | Checked against | What changed | Still assumed |
+|---|---|---|---|
+| WinWing Orion 2 stick with the ViperAce (F-16EX) grip, 4098:BEA8 | The maker's test screen for the grip, the game's default profiles for the grip, the owner's bindings and presses | Drawn again from nothing. Every input the stick reports is on it (42 buttons, the hat, six axes), each control in its own place. The old drawing had 12 controls, nearly all marked assumed and named for what they do in one aircraft, with those names on the wrong hats (its "TMS" was the right hat, its "CMS" the centre hat, its "DMS" the left side hat). The top left hat, the right side hat and the buttons of the top front lever were not on it. | Which way is which on the right side hat (14 to 18) |
+| WinWing Orion throttle with the F-15EX handles, 4098:BD26 | The maker's test screens for the base and for each handle, the owner's bindings and presses | Drawn again from nothing, in four views (front of the left handle, the base from above, the thumb side of the right handle, the front of the right handle), because no single view shows every control. Every input is on it except buttons 45 to 49. The old drawing was one view from above with 27 of the 62 buttons on it, handle controls drawn on the base ("Base switches", "Base knobs") and names taken from one aircraft. | Left and right on the two front hats (51 to 55, and 28, 29, 32 to 34) |
+| WinWing Orion stick (base 1 and base 2) with the F/A-18 grip | The maker's number map for the grip, the game's Hornet profiles for both bases | Drawn again. The old one had button 1 as the trigger's first stage (it is the press of the trim hat; the trigger is 9 and 10), showed the small switch under the trim hat as one button (8 on the first base, 21 on the second) where it has five (8 and 18 to 21), left out button 15, and named controls for what they do in the Hornet. One drawing is now right on both bases. Not on the owner's rig, so nobody has pressed it for RigReady. | Nothing |
+| WinWing MFD1 frames, 4098:BEE0, BEE1, BEE2 | The maker's test screen for the frame, the game's Hornet and F-16C profiles for it | The key numbers were right. Two rockers had the wrong name (43 and 44 are DAY / NGT, not GAIN; 10 and 11 are GAIN, not BRT); the knob's press (48) and the switch on the right side edge (45 to 47) were not on it. The 16 numbers between the keys belong to no key. | Nothing |
+| WinWing UFC1 with HUD1, 4098:BEDE | The maker's test screens for both parts, the game's Hornet profile | New drawing (was cards). One drawing, as the two report as one device. 60 of its 128 buttons belong to a control; the rest, and one slider axis, to none that any source shows. | Nothing |
+| WinWing ICP, 4098:BF06 | The maker's test screen (the game ships no profile for it) | New drawing (was cards). Every input is on it. The cards had the four-way switch and the DRIFT C/O switch numbered one too low (21 is the press of the four-way switch, its ways are 22 to 25; DRIFT C/O is 26 to 28); both are corrected in the cards too. | Nothing |
+| WinWing F/A-18 startup panel, 4098:BE03 | The maker's test screen, the game's Hornet profile | New drawing (was cards). Every input is on it. The two ends of the GEN TIE switch are named by place (up, down), because the panel and the game word them differently. | Nothing |
+| WinWing F/A-18 take-off panel 2, 4098:BF05 | The maker's test screen (the game's profile is for the first take-off panel, whose numbers differ) | New drawing (was cards). 41 of its 64 buttons belong to a control. The cards showed the PROBE switch as an unnamed three-way switch; it is named in the cards too. | Which move of the brake handle gives which of 38 to 41 |
+| Thrustmaster HOTAS Warthog joystick, 044F:0402 | The game's A-10C profile for the stick (every number), figure 69 of the A-10C manual (every place) | Nothing: it matches. | Nothing |
+| Thrustmaster T.16000M, 044F:B10A | The game's profile for the stick (16 buttons, one hat, four axes), Thrustmaster's manual | Nothing. The drawing claims only the two banks of the base and the group of head buttons, not which key is which. | Nothing |
+| Thrustmaster HOTAS Warthog throttle, 044F:0404 | The game's A-10C profile for the throttle (every number agrees), figure 70 of the A-10C manual | **Drawing withdrawn.** It had the mic switch, speed brake, boat switch and china hat on the left handle; the figure shows that thumb cluster on the right handle. The places of the panel switches were approximate, and which handle carries the slew control and the coolie hat could not be settled here. The device shows as its named list. | Not drawn |
+| Saitek / Logitech X52 Pro, 06A3:0762 | The game's A-10C profile for it (every number it binds agrees) | **Drawing withdrawn.** Its places came from product photos and were called approximate on the sheet; no source on this PC confirms them, and the rotaries, the slider, the mouse buttons and the MFD keys were not on it. The device shows as its named list. | Not drawn |
+
+Withdrawing a drawing loses nothing a user can rely on: the named list keeps every name and number, which are confirmed, and drops only the places, which were not. Both drawings are in the history of this repository for whoever redraws them from the makers' manuals.
+
+### A press never lights nothing
+
+A drawing shows the controls its sources place. A device can report more buttons than that (the throttle's 45 to 49; 68 of the UFC's 128). With "Unbound controls" on, every input the device reports that is neither on the drawing nor bound gets a small cell with its number under the drawing ("More controls · not on the drawing"). The cell is a control like any other to the page: it lights when pressed and can be selected. So whatever the owner presses, something on the sheet answers, and a number that turns out to belong to a real control is found by pressing it.
+
+### Names
+
+A drawn device names its controls from the drawing, everywhere: the label blocks, the "by action" index and the selected control's detail. A control is named by where it is and what it is ("Left side hat", "Top front lever"), with the short name the real aircraft's grip gives it in brackets where owners know it by that (TMS, DMS and CMS on the F-16 grip). A name does not say what the control does, because that depends on the aircraft: the grip's red button is "Red button", not "Pickle".
+
+### What is left to settle by pressing
+
+One press each at the rig settles these; none blocks a user, since a "?" label says to press and see which row lights up.
+
+- The directions of 14 to 18 on the ViperAce grip's right side hat.
+- Left and right on the F-15EX throttle's two front hats.
+- What, if anything, presses the throttle's buttons 45 to 49.
+- Which end of the throttle's left handle knob gives 60 and which 62 (the labels say "one end" and "other end").
+- That the throttle's wheel gives 25 when rolled up and 27 when rolled down. The maker's screen shows 25 above 27, and the owner has radar elevation up on 25, so the drawing says so without a "?".
+- Which move of the take-off panel's brake handle gives which of 38 to 41.
+
+### What a set of common controllers would take
+
+Section 7's estimate holds: about a day for one device, most of it finding a source that settles every place. The honest order is the source first, the drawing second: a maker's manual with a numbered diagram of every face (Thrustmaster publishes one for the Warthog and the T.16000M; Logitech for the X52 and X56; VKB and Virpil for their grips), checked against the game's default profile for the numbers. A device with no such diagram stays a named list. The first two to redraw are the ones withdrawn here.
+
+### What a photo with annotations would take
+
+It exists in a small form (section 6): "Make a drawing from a photo" puts the user's photo in place of the outline with a dot per control to drag into place, and the labels place themselves round it. What it lacks to be the easy road for a device RigReady has not drawn: a way to place a dot by pressing the control (press, then click where it is on the photo) instead of dragging dots from a grid; several photos for one device (a grip has a back, a front and sides); grouping the four ways of a hat into one control while placing; and a way to share the result without sharing the photo's background.

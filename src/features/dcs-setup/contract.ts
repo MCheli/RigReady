@@ -131,6 +131,12 @@ export const ScreensStateSchema = z.object({
   }),
   /** Every installed aircraft with exportable displays (read from its cockpit scripts), or the built-in list. */
   catalog: CatalogSchema,
+  /**
+   * The installed aircraft that list leaves out: no exportable display was found in their
+   * files. The scan can miss one, so the editor offers these too and a display can be added
+   * by name.
+   */
+  noDisplaysFound: z.array(z.object({ unit: z.string(), label: z.string() })),
   /** The unit of the aircraft the setup in use is for, when its name says: the editor starts on it. */
   aircraftInUse: z.string().optional(),
   simAppProPlan: z.boolean(),

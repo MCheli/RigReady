@@ -353,7 +353,9 @@ export function colourOnlyStatus(page: Page): Promise<ColourOnlyFinding[]> {
           el.getAttribute('aria-label') ??
           el.getAttribute('title') ??
           el.parentElement?.getAttribute('aria-label') ??
-          el.parentElement?.getAttribute('title');
+          el.parentElement?.getAttribute('title') ??
+          // The icon that is all a button shows (an alert's Close) has the button's name.
+          el.closest('button, [role="button"]')?.getAttribute('aria-label');
         if (!named && words(context(el)).length === 0) {
           findings.push({ problem: 'no words', text: '', html: html(el) });
         }

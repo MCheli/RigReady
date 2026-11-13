@@ -23,6 +23,8 @@ import type {
   LoginItem,
   Notifications,
   OpenDialogOptions,
+  OverlayPanel,
+  OverlayPanelPlace,
   Overlays,
   Registry,
   PanelWindow,
@@ -41,6 +43,7 @@ import type {
 } from '../../core/ports';
 import { isOpenableLink } from '../../core/links';
 import { loginEntryEnabled, RUN_KEY, STARTUP_APPROVED_KEY } from '../../core/loginItem';
+import { panelAt, panelBox, screenOf } from '../../core/overlayPlace';
 import { err, ok, type Result } from '../../core/result';
 import { placeOnScreens, type WindowPlace } from '../../core/windowPlace';
 import { joinWindowsArgs, splitWindowsArgs } from '../../core/windowsArgs';
@@ -853,9 +856,135 @@ export class ElectronAppWindow implements AppWindow {
   }
 }
 
+/** How an overlay panel gets the app. Without it only the labels can be shown. */
+export interface OverlayHost {
+  /** The preload script and a loader for a route. */
+  preload: string;
+  load(window: BrowserWindow, route: string): void;
+}
+
 export class ElectronOverlays implements Overlays {
   private windows: BrowserWindow[] = [];
   private timer: ReturnType<typeof setTimeout> | undefined;
+  private readonly panelWindows = new Map<string, { window: BrowserWindow; route: string }>();
+
+  constructor(private readonly host?: OverlayHost) {}
+
+  /** The overlay panels that are up, so events reach them like the main window. */
+  panels(): BrowserWindow[] {
+    return [...this.panelWindows.values()]
+      .map((shown) => shown.window)
+      .filter((window) => !window.isDestroyed());
+  }
+
+  /**
+   * Takes every panel away. The main process calls it when the app's main window is closed
+   * for good (in the tray it is hidden, not closed): a panel never outlives the app.
+   */
+  closePanels(): void {
+    for (const window of this.panels()) window.destroy();
+    this.panelWindows.clear();
+  }
+
+  private panel(id: string): { window: BrowserWindow; route: string } | undefined {
+    const shown = this.panelWindows.get(id);
+    return shown && !shown.window.isDestroyed() ? shown : undefined;
+  }
+
+  /** Where a panel is: the display most of it is on, and its place there. */
+  private placeOf(window: BrowserWindow): OverlayPanelPlace {
+    const box = window.getBounds();
+    const area = screen.getDisplayMatching(box).bounds;
+    // Electron's scaled units back to desktop pixels, which is what the port speaks.
+    return { screen: screen.dipToScreenRect(null, area), at: panelAt(area, box) };
+  }
+
+  async showPanel(panel: OverlayPanel): Promise<Result<OverlayPanelPlace>> {
+    const host = this.host;
+    if (!host) return err('overlay.panel', 'The overlay is not available here.');
+    if (!panel.route.startsWith('/')) {
+      return err('overlay.panel', 'An overlay needs an in-app route.');
+    }
+    try {
+      // The monitor asked for, from desktop pixels to Electron's units. A monitor that is
+      // off (another layout is in use) has no display here: the main screen takes its place.
+      const wanted = screen.screenToDipRect(null, panel.screen);
+      const areas = screen.getAllDisplays().map((display) => display.bounds);
+      const area = screenOf(areas, wanted) ?? screen.getPrimaryDisplay().bounds;
+      const box = panelBox(area, panel, panel.at);
+      let shown = this.panel(panel.id);
+      if (!shown) {
+        const window = new BrowserWindow({
+          ...box,
+          frame: false,
+          transparent: true,
+          resizable: false,
+          maximizable: false,
+          minimizable: false,
+          fullscreenable: false,
+          focusable: false,
+          skipTaskbar: true,
+          hasShadow: false,
+          alwaysOnTop: true,
+          show: false,
+          webPreferences: {
+            preload: host.preload,
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: true,
+          },
+        });
+        window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+        window.webContents.on('will-navigate', (event) => event.preventDefault());
+        const id = panel.id;
+        window.on('closed', () => {
+          if (this.panelWindows.get(id)?.window === window) this.panelWindows.delete(id);
+        });
+        shown = { window, route: '' };
+        this.panelWindows.set(id, shown);
+      }
+      const { window } = shown;
+      window.setBounds(box);
+      // Moved to a display with another scaling, Windows may size it by the old one.
+      const placed = window.getBounds();
+      if (placed.width !== box.width || placed.height !== box.height) window.setBounds(box);
+      // In normal use the mouse goes through it and it can never have the keyboard. While
+      // it is being placed it is an ordinary window, so that Windows moves it under the
+      // pointer as it is dragged.
+      window.setIgnoreMouseEvents(!panel.movable);
+      window.setFocusable(panel.movable);
+      if (!panel.movable && window.isFocused()) window.blur();
+      window.setAlwaysOnTop(true, 'screen-saver');
+      if (shown.route !== panel.route) {
+        host.load(window, panel.route);
+        shown.route = panel.route;
+      }
+      if (!window.isVisible()) window.showInactive();
+      return ok(this.placeOf(window));
+    } catch (e) {
+      return err('overlay.panel', 'Could not show the overlay.', String(e));
+    }
+  }
+
+  async panelPlace(id: string): Promise<Result<OverlayPanelPlace | undefined>> {
+    try {
+      const shown = this.panel(id);
+      return ok(shown ? this.placeOf(shown.window) : undefined);
+    } catch (e) {
+      return err('overlay.panel', 'Could not read where the overlay is.', String(e));
+    }
+  }
+
+  async hidePanel(id: string): Promise<Result<void>> {
+    try {
+      // Destroyed, not hidden: an overlay that is off keeps no page in memory.
+      this.panel(id)?.window.destroy();
+      this.panelWindows.delete(id);
+      return ok(undefined);
+    } catch (e) {
+      return err('overlay.panel', 'Could not take the overlay away.', String(e));
+    }
+  }
 
   private clear(): void {
     clearTimeout(this.timer);

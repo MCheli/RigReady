@@ -1,4 +1,4 @@
-import { t16000m, warthogStick, warthogThrottle } from '../known/thrustmaster';
+import { t16000m, warthogStick } from '../known/thrustmaster';
 import { circle, placeKnown, roundedRect } from './shapes';
 import { DRAWING_FORMAT, DRAWING_VERSION, type DeviceDrawingInput } from './silhouette';
 
@@ -8,18 +8,16 @@ import { DRAWING_FORMAT, DRAWING_VERSION, type DeviceDrawingInput } from './silh
  * their input numbers are the known-device maps in `../known/thrustmaster.ts`; only where
  * each one is on the device is decided here. Where the places come from is in
  * docs/research/controller-drawings.md (section 7).
+ *
+ * A device is drawn here only where its picture is known to match the real thing. The
+ * Warthog throttle is not: its first drawing had the thumb switches on the left handle,
+ * and the game's own figure of the throttle shows them on the right one. Until it is
+ * redrawn from a source that settles every place, the throttle shows as its named list,
+ * which claims no places (see ../picture.ts).
  */
 
 const TM = '044F';
 const CC0 = 'CC0-1.0';
-
-/** A toggle switch seen from above or behind: the round base and its bat. */
-function toggle(x: number, y: number): { d: string; role: 'key' | 'line' }[] {
-  return [
-    { d: circle(x, y, 9), role: 'key' },
-    { d: `M ${x} ${y} L ${x} ${y - 15}`, role: 'line' },
-  ];
-}
 
 /**
  * The HOTAS Warthog stick, seen from behind as the pilot sees it, placed as the A-10C
@@ -96,105 +94,6 @@ export const WARTHOG_STICK: DeviceDrawingInput = {
     stick: { at: { x: 180, y: 772 }, side: 'right', glyph: 'axes' },
   }),
   columnWidth: 300,
-};
-
-/**
- * The HOTAS Warthog throttle, seen from above with the pilot at the bottom: the two
- * handles in their slot (the left one the A-10's, the right one the F-15E's), the idle
- * detents under them, the friction lever on the left of the base, and the switch panel
- * on the right of the base (its switches in two columns, approximately where they are). The handle switches are placed as figure 70 of the DCS
- * A-10C flight manual shows them: mic switch, speed brake and boat switch down the
- * inboard side of the left handle under the thumb, the china hat at its front, the
- * pinky switch at its back and the left throttle button on its outboard side; the slew
- * control and the coolie hat on the inboard side of the right handle.
- */
-export const WARTHOG_THROTTLE: DeviceDrawingInput = {
-  format: DRAWING_FORMAT,
-  version: DRAWING_VERSION,
-  name: 'Thrustmaster HOTAS Warthog throttle',
-  match: { vendorId: TM, productIds: ['0404'], names: ['Throttle - HOTAS Warthog'] },
-  author: 'RigReady',
-  license: CC0,
-  view: 'From above, the pilot at the bottom',
-  notes:
-    'Numbered as Windows reports the throttle without a TARGET profile. The places of the panel switches are approximate: drag a dot in Edit drawing if one is off.',
-  size: { width: 470, height: 700 },
-  paths: [
-    { d: roundedRect(0, 0, 470, 700, 24), role: 'body' },
-    // The slot the handles travel in.
-    { d: roundedRect(30, 40, 210, 460, 14), role: 'screen' },
-    // Left handle: the A-10's, with its switches down the inboard side.
-    {
-      d: 'M 54 110 C 54 82 70 70 94 70 L 106 70 C 126 70 134 84 132 110 L 130 200 L 128 420 C 128 436 120 444 106 444 L 80 444 C 66 444 58 436 58 420 L 56 200 Z',
-      role: 'panel',
-    },
-    {
-      d: 'M 132 110 L 130 200 L 128 420 C 128 436 120 444 106 444 L 118 444 C 128 440 134 430 134 420 L 136 200 Z',
-      role: 'shade',
-    },
-    // Right handle: the F-15E's, the slew and the coolie at its inboard top.
-    {
-      d: 'M 150 110 C 148 84 156 70 176 70 L 188 70 C 212 70 228 82 228 110 L 226 200 L 224 420 C 224 436 216 444 202 444 L 176 444 C 162 444 154 436 154 420 L 152 200 Z',
-      role: 'panel',
-    },
-    {
-      d: 'M 228 110 L 226 200 L 224 420 C 224 436 216 444 202 444 L 214 444 C 224 440 230 430 230 420 L 232 200 Z',
-      role: 'shade',
-    },
-    // The idle detents under the handles.
-    { d: roundedRect(60, 456, 160, 24, 6), role: 'shade' },
-    // The friction lever on the left of the base.
-    { d: roundedRect(8, 540, 24, 80, 8), role: 'key' },
-    // The switch panel on the right of the base.
-    { d: roundedRect(262, 40, 190, 620, 14), role: 'panel' },
-    ...toggle(286, 124),
-    ...toggle(318, 124),
-    ...toggle(386, 116),
-    ...toggle(424, 108),
-    ...toggle(302, 236),
-    { d: circle(408, 226, 11), role: 'key' },
-    { d: roundedRect(290, 322, 22, 44, 6), role: 'key' },
-    ...toggle(408, 336),
-    ...toggle(302, 456),
-    { d: circle(392, 448, 12), role: 'key' },
-    { d: roundedRect(418, 420, 22, 50, 8), role: 'key' },
-  ],
-  texts: [
-    { x: 93, y: 424, text: 'L', size: 18 },
-    { x: 189, y: 424, text: 'R', size: 18 },
-    { x: 302, y: 80, text: 'EFL', size: 10 },
-    { x: 405, y: 72, text: 'ENG OPER', size: 10 },
-    { x: 302, y: 194, text: 'APU', size: 10 },
-    { x: 408, y: 194, text: 'L/G WRN', size: 10 },
-    { x: 301, y: 310, text: 'FLAPS', size: 10 },
-    { x: 408, y: 304, text: 'EAC', size: 10 },
-    { x: 302, y: 414, text: 'RDR ALTM', size: 10 },
-    { x: 410, y: 406, text: 'AUTOPILOT', size: 10 },
-    { x: 357, y: 620, text: 'HOTAS WARTHOG', size: 11 },
-  ],
-  controls: placeKnown(warthogThrottle, {
-    ch: { at: { x: 86, y: 76 }, side: 'left', glyph: 'rocker' },
-    ms: { at: { x: 116, y: 112 }, side: 'left', glyph: 'switch' },
-    ltb: { at: { x: 62, y: 150 }, side: 'left', glyph: 'button' },
-    spd: { at: { x: 124, y: 176 }, side: 'left', glyph: 'rocker' },
-    bs: { at: { x: 124, y: 236 }, side: 'left', glyph: 'rocker' },
-    throttles: { at: { x: 140, y: 320 }, side: 'left', glyph: 'slide' },
-    ps: { at: { x: 62, y: 392 }, side: 'left', glyph: 'rocker' },
-    idle: { at: { x: 140, y: 468 }, side: 'left', glyph: 'none' },
-    friction: { at: { x: 20, y: 580 }, side: 'left', glyph: 'none' },
-    sc: { at: { x: 168, y: 100 }, side: 'right', glyph: 'stick' },
-    coolie: { at: { x: 170, y: 160 }, side: 'right', glyph: 'hat' },
-    efl: { at: { x: 302, y: 124 }, side: 'right', glyph: 'none' },
-    eol: { at: { x: 386, y: 116 }, side: 'right', glyph: 'none' },
-    eor: { at: { x: 424, y: 108 }, side: 'right', glyph: 'none' },
-    apu: { at: { x: 302, y: 236 }, side: 'right', glyph: 'none' },
-    ldgh: { at: { x: 408, y: 226 }, side: 'right', glyph: 'none' },
-    flaps: { at: { x: 301, y: 344 }, side: 'right', glyph: 'none' },
-    eac: { at: { x: 408, y: 336 }, side: 'right', glyph: 'none' },
-    rdr: { at: { x: 302, y: 456 }, side: 'right', glyph: 'none' },
-    ap: { at: { x: 406, y: 448 }, side: 'right', glyph: 'none' },
-  }),
-  columnWidth: 260,
 };
 
 /** Six base keys in two rows of three, centred on (x, y). */
@@ -277,8 +176,4 @@ export const T16000M: DeviceDrawingInput = {
   columnWidth: 300,
 };
 
-export const THRUSTMASTER_DRAWINGS: DeviceDrawingInput[] = [
-  WARTHOG_STICK,
-  WARTHOG_THROTTLE,
-  T16000M,
-];
+export const THRUSTMASTER_DRAWINGS: DeviceDrawingInput[] = [WARTHOG_STICK, T16000M];

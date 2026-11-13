@@ -55,10 +55,14 @@ interface FlatRoute {
 const text = (value: unknown): string | undefined =>
   typeof value === 'string' && value !== '' ? value : undefined;
 
-/** Every route a link can open as it is: children resolved, optional parameters left out. */
+/**
+ * Every route a link can open as it is: children resolved, optional parameters left out.
+ * A bare page (a window of its own, such as an overlay over a game) is not a place to go.
+ */
 function flatten(routes: RouteRecordRaw[], parent = ''): FlatRoute[] {
   const out: FlatRoute[] = [];
   for (const route of routes) {
+    if (route.meta?.['bare'] === true) continue;
     const joined = route.path.startsWith('/')
       ? route.path
       : route.path === ''

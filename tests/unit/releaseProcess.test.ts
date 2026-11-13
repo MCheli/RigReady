@@ -57,7 +57,13 @@ describe('continuous integration', () => {
       commands.set(name, runs(job.steps));
     }
     const all = [...commands.values()].flat();
-    expect(all).toContain('npm run check');
+    // `npm run check` runs as its parts, the unit tests on several runners (gates.test.ts
+    // holds CI to every part of the command, and to the coverage limits).
+    for (const part of ['typecheck', 'lint', 'format:check', 'ledger:check']) {
+      expect(all, part).toContain(`npm run ${part}`);
+    }
+    expect(all.some((command) => command.startsWith('npm run test:coverage:shard '))).toBe(true);
+    expect(all).toContain('npm run test:coverage:merge');
     expect(all).toContain('npm run test:e2e');
     // The packaged smoke needs the sidecar's runtime first, and is a job of its own: when it fails, CI fails.
     const packaged = commands.get('packaged')!;
@@ -65,10 +71,14 @@ describe('continuous integration', () => {
     expect(packaged.indexOf('npm run smoke:packaged')).toBeGreaterThan(
       packaged.indexOf('npm run setup:python')
     );
-    // Nothing waits for the check job: the jobs take the time of the longest, not the sum
-    // (the check job, then the end-to-end suite after it, was 25 to 33 minutes).
+    // Nothing waits for the check: the jobs take the time of the longest, not the sum (the
+    // check job, then the end-to-end suite after it, was 25 to 33 minutes). Only the check's
+    // own jobs wait for one another: the coverage limits for the unit test shards, and the
+    // job that sums them up for all of them.
+    const own = ['check', ...needs(ci.jobs['check']!)];
     for (const [name, job] of Object.entries(ci.jobs)) {
-      expect(needs(job), name).not.toContain('check');
+      if (own.includes(name)) continue;
+      for (const id of own) expect(needs(job), name).not.toContain(id);
     }
   });
 
@@ -77,8 +87,10 @@ describe('continuous integration', () => {
     const [shardId, shards] = Object.entries(ci.jobs).find(([, job]) =>
       runs(job.steps).includes('npm run test:e2e')
     )!;
-    // Three shards: 238 flows on one runner took 16 to 18 minutes; a third of them takes about
-    // six. The Playwright config reads which third from E2E_SHARD; the command is unchanged.
+    // Shards: 238 flows on one runner took 16 to 18 minutes. As three jobs they took seven to
+    // ten each, which made them the longest thing in a run once the unit tests were on several
+    // runners too, so there are four. The Playwright config reads which part from E2E_SHARD;
+    // the command is unchanged.
     const total = shards.strategy?.matrix?.['shard']?.length ?? 0;
     expect(total).toBeGreaterThanOrEqual(2);
     const run = shards.steps!.find((step) => step.run === 'npm run test:e2e')!;

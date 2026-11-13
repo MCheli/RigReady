@@ -285,6 +285,17 @@ const PAGES: ConfigurePage[] = [
     says: ['Not installed', 'No profiles of your own yet', 'Install the ViGEmBus driver'],
     never: ['WINWING'],
   },
+  {
+    name: 'overlay',
+    route: '/configure/overlay',
+    testId: 'overlay-page',
+    says: [
+      'Off. Nothing is put over the game',
+      'No game whose bindings RigReady can read was found on this PC',
+      'It does not show inside a VR headset',
+    ],
+    never: ['WINWING', 'F/A-18C'],
+  },
   // Last, so that the numbered screenshots of the pages above keep their names.
   {
     name: 'iracing-bindings',
@@ -322,7 +333,7 @@ test('generic rig: every Configure page renders an honest empty state, never an 
   await page.getByTestId('mode-configure').click();
   // Every page the navigation offers is in the list above.
   const links = page.getByTestId('configure-nav').locator('a');
-  await expect(links).toHaveCount(19);
+  await expect(links).toHaveCount(20);
   const offered = await links.evaluateAll((all) =>
     all.map((a) => (a.getAttribute('href') ?? '').replace(/^#/, ''))
   );

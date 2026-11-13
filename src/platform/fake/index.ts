@@ -24,6 +24,8 @@ import type {
   LoginItem,
   Notifications,
   OpenDialogOptions,
+  OverlayPanel,
+  OverlayPanelPlace,
   Overlays,
   PanelWindow,
   Ports,
@@ -48,7 +50,8 @@ import type {
   VirtualPads,
 } from '../../core/ports';
 import { isOpenableLink } from '../../core/links';
-import { err, ok, type Result } from '../../core/result';
+import { panelAt, panelBox, screenOf } from '../../core/overlayPlace';
+import { err, ok, type Result, type RigError } from '../../core/result';
 import { findSteamLibraries } from '../../core/steam';
 import { joinWindowsArgs, splitWindowsArgs } from '../../core/windowsArgs';
 import type {
@@ -388,6 +391,10 @@ export class FakeInputProvider implements InputProvider {
   private latest = new Map<number, InputState>();
   constructor(private readonly state: RigState) {}
   async start(): Promise<Result<InputDevice[]>> {
+    // A reader that does not come up: it never answers, or it answers that it could not start.
+    if (isHung(this.state, 'input')) return never();
+    const failed = providerFailure(this.state, 'input');
+    if (failed) return failed;
     return ok(this.devices());
   }
   async stop(): Promise<void> {}
@@ -984,11 +991,67 @@ export class FakeLoginItem implements LoginItem {
 }
 
 export class FakeOverlays implements Overlays {
+  /** The enabled monitors of the fake machine: where a panel can be. */
+  constructor(private readonly state?: Pick<RigState, 'displays'>) {}
+
   /** Every showLabels() call, for assertions. */
   readonly shown: { labels: ScreenLabel[]; durationMs: number }[] = [];
   async showLabels(labels: ScreenLabel[], durationMs: number): Promise<Result<void>> {
     this.shown.push({ labels: structuredClone(labels), durationMs });
     return ok(undefined);
+  }
+
+  /** The overlay panels that are up now, by id: what was asked for, and the box each is at. */
+  readonly panels = new Map<string, { panel: OverlayPanel; box: ScreenArea }>();
+  /** Every showPanel() call, oldest first, for assertions. */
+  readonly panelCalls: OverlayPanel[] = [];
+  /** Test hook: showing a panel fails with this, as when Windows refuses the window. */
+  panelFailure: RigError | undefined;
+
+  private screens(): ScreenArea[] {
+    const on = (this.state?.displays ?? []).filter((d) => d.enabled && d.width > 0);
+    const first = [...on.filter((d) => d.primary), ...on.filter((d) => !d.primary)];
+    return first.map(({ x, y, width, height }) => ({ x, y, width, height }));
+  }
+
+  private placeOf(box: ScreenArea): OverlayPanelPlace | undefined {
+    const screens = this.screens();
+    const screen = screenOf(screens, box) ?? screens[0];
+    return screen ? { screen, at: panelAt(screen, box) } : undefined;
+  }
+
+  async showPanel(panel: OverlayPanel): Promise<Result<OverlayPanelPlace>> {
+    this.panelCalls.push(structuredClone(panel));
+    if (this.panelFailure) return { ok: false, error: this.panelFailure };
+    const screens = this.screens();
+    // The screen asked for while one is still there; the main screen when it is gone.
+    const screen = screenOf(screens, panel.screen) ?? screens[0];
+    if (!screen) return err('overlay.screen', 'No monitor is on to show the overlay on.');
+    const box = panelBox(screen, panel, panel.at);
+    this.panels.set(panel.id, { panel: structuredClone(panel), box });
+    return ok({ screen, at: panelAt(screen, box) });
+  }
+
+  async panelPlace(id: string): Promise<Result<OverlayPanelPlace | undefined>> {
+    const shown = this.panels.get(id);
+    return ok(shown ? this.placeOf(shown.box) : undefined);
+  }
+
+  async hidePanel(id: string): Promise<Result<void>> {
+    this.panels.delete(id);
+    return ok(undefined);
+  }
+
+  /**
+   * Test hook: the user drags a panel so that its top left corner is at this desktop
+   * point. Like the real window, only a panel that is being placed can be dragged; false
+   * when it is not shown or not movable.
+   */
+  drag(id: string, to: { x: number; y: number }): boolean {
+    const shown = this.panels.get(id);
+    if (!shown?.panel.movable) return false;
+    shown.box = { ...shown.box, x: to.x, y: to.y };
+    return true;
   }
 }
 
@@ -1234,7 +1297,7 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     notifications: new FakeNotifications(),
     clipboard: new FakeClipboard(),
     loginItem: new FakeLoginItem(),
-    overlays: new FakeOverlays(),
+    overlays: new FakeOverlays(state),
     window: new FakeAppWindow(),
     updates: new FakeUpdateFeed(path.join(options.homeDir, UPDATE_FEED_FILE)),
     shortcuts: new FakeShortcuts(folders),

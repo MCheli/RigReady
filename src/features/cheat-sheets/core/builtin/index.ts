@@ -291,8 +291,12 @@ function icp(): LayoutBuilder {
     [19, '▲'],
     [20, '▼'],
   ]);
-  b.cross('DCS switch', { U: 21, R: 22, D: 23, L: 24 }, 684, 106, 290, 196);
-  b.stack('DRIFT C/O', 546, 250, 130, [[25], [26], [27]]);
+  b.cross('RTN / SEQ switch', { U: 22, R: 23, D: 24, L: 25, C: 21 }, 684, 106, 290, 196);
+  b.stack('DRIFT C/O', 546, 250, 130, [
+    [26, 'DRIFT C/O'],
+    [27, 'NORM'],
+    [28, 'WARN RESET'],
+  ]);
   b.group('Thumbwheels', 28, 318, 510, 150);
   b.axis('X', 36, 342, 244, 56).axis('Y', 286, 342, 244, 56);
   b.axis('RX', 36, 404, 244, 56).axis('RY', 286, 404, 244, 56);
@@ -474,7 +478,11 @@ function takeoff(): LayoutBuilder {
   b.stack('HOOK', x(4), y, w, [[32, 'UP'], [33], [34, 'DOWN']]);
   b.stack('LDG GEAR', x(5), y, w, [[35, 'UP'], [36], [37, 'DOWN']]);
   b.stack('JETT', x(4), 388, w, [[22, 'Push']]);
-  b.stack('3-WAY 14–16', x(5), 388, w, [[14], [15], [16]]);
+  b.stack('PROBE', x(5), 388, w, [
+    [14, 'EXTEND'],
+    [15, 'RETRACT'],
+    [16, 'EMERG EXTD'],
+  ]);
   b.rest('Other buttons', 574, 64);
   return b;
 }
