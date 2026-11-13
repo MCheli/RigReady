@@ -1,6 +1,7 @@
 import path from 'node:path';
 import type { HoldingProgram } from './backupSources';
 import type { MainContext } from './feature';
+import { protectedProgramReason } from './guards';
 import { isWithin } from './paths';
 import { allPathVariables, expandPath } from './pathVariables';
 import { closeTogether, stillRunningText } from './processes';
@@ -58,7 +59,10 @@ async function holders(ctx: HoldersContext): Promise<Holder[]> {
   const variables = await allPathVariables(ctx, ctx.games);
   const out: Holder[] = [];
   for (const module of ctx.games.all()) {
-    const processes = module.closeBeforeRestore?.processes ?? module.processes ?? [];
+    // Never part of Windows or RigReady itself, whatever a game the user added names.
+    const processes = (module.closeBeforeRestore?.processes ?? module.processes ?? []).filter(
+      (name) => protectedProgramReason(name) === undefined
+    );
     if (processes.length === 0) continue;
     const roots: string[] = [];
     try {
