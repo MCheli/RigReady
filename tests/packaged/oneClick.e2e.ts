@@ -21,6 +21,7 @@ import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { _electron, type ElectronApplication, type Page } from '@playwright/test';
+import { windowsPowerShellEnv } from '../../scripts/lib/windowsPowerShell';
 import { isWithin } from '../../src/core/paths';
 import { expect, isolatedEnv, repoRoot, screensDir, test, type IsolatedEnv } from '../e2e/harness';
 
@@ -192,11 +193,16 @@ async function realSetup(
 
 /** Ends every copy of the fake game that was started from this test's own folder. */
 async function endFakeGames(game: string): Promise<void> {
-  await promisify(execFile)('powershell', [
-    '-NoProfile',
-    '-Command',
-    `Get-Process ${GAME.replace(/\.exe$/, '')} -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq '${game}' } | Stop-Process -Force`,
-  ]).catch(() => undefined);
+  // Without PowerShell 7's module path, which Windows PowerShell cannot load (scripts/lib/windowsPowerShell.ts).
+  await promisify(execFile)(
+    'powershell',
+    [
+      '-NoProfile',
+      '-Command',
+      `Get-Process ${GAME.replace(/\.exe$/, '')} -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq '${game}' } | Stop-Process -Force`,
+    ],
+    { env: windowsPowerShellEnv() }
+  ).catch(() => undefined);
 }
 
 test('packaged, real Windows: the desktop shortcut the app makes is a .lnk Windows reads, and starting it flies the setup', async () => {
