@@ -1,12 +1,12 @@
 ---
 title: Cheat sheets
 description: A drawing of each device with what every control does: press a control to light it, Quick look, your own photos, edit drawings and layouts, Print or PDF.
-order: 80
+order: 10
 ---
 
-**Configure > Cheat sheets** draws every controller with what each control does in the aircraft you choose. For DCS the labels come from the same effective bindings as the [bindings page](bindings.md), with the plain-language names of the [binding guide](binding-guide-and-ai.md) where it has one. The same page serves the [racing games](../games/index.md); this page is about using it for DCS.
+**Configure > Cheat sheets** draws every controller with what each control does in the aircraft or car you choose. It works for every game whose bindings RigReady reads: DCS World, iRacing, Le Mans Ultimate, BeamNG.drive and Assetto Corsa. For DCS the labels come from the same effective bindings as the [DCS bindings page](../dcs/bindings.md), with the plain-language names of the [binding guide](../dcs/binding-guide-and-ai.md) where it has one; for a racing game they come from the bindings its own page reads (see [the other games](../games/index.md)).
 
-Choose the aircraft under **Aircraft or car**. The page opens on the game of the [setup in use](../play/switching-setups.md).
+Choose the aircraft or car under **Aircraft or car**. The page opens on the game of the [setup in use](../play/switching-setups.md).
 
 ## By device
 
@@ -29,7 +29,7 @@ The devices are listed on the left, with the name you gave each one on the [Devi
 
 Every label reads what the control does, with the plain name where the binding guide has one; the colour says the kind of action, and the legend under the picture names the kinds and filters by one. A control that fires several actions on one press is outlined in amber, **×2** marks an action that is also somewhere else, and a dashed block or card has nothing bound; **Unbound controls** hides those. Bound controls a drawing has no place for are listed under it, so nothing you bound is ever left off.
 
-Press a control on the device and its label lights up and is selected. Clicking a label does the same. The panel on the right shows every binding on it: the plain name, what DCS calls it, modifiers, category, whether it is yours or a default, and where else the action is. **Your note** keeps up to 120 characters of your own words for that control, for example "hold for weapon release"; notes live in [RigReady's folder](../app/index.md) and appear on the printed and kneeboard pages. **Bindings** opens the bindings page on that device.
+Press a control on the device and its label lights up and is selected. Clicking a label does the same. The panel on the right shows every binding on it: the plain name, what the game calls it, modifiers, category, whether it is yours or a default, and where else the action is. **Your note** keeps up to 120 characters of your own words for that control, for example "hold for weapon release"; notes live in [RigReady's folder](../app/index.md) and appear on the printed pages and on DCS kneeboard pages. **Bindings** opens the bindings page on that device.
 
 Controls the device reports that are not on the picture are counted, and bindings on inputs that have no place on a controller picture are listed under the picture. On a drawing, a button, hat direction or axis the device reports that the drawing has no place for and nothing is bound to gets a small cell with its number under the drawing ("More controls · not on the drawing", or "not placed on a photo yet" under your own photos), so a press always lights something; **Unbound controls** hides those cells with the other empty controls. The search box finds a control by action, label or note, and shows how many matches each device has.
 
@@ -43,7 +43,7 @@ Controls the device reports that are not on the picture are counted, and binding
 
 ## Quick look
 
-**Quick look** is just the sheet, filling the window, for a glance while flying: a device dropdown, a search box that answers "which control does…" with the places that match, **Follow my hands** to switch to whatever device you touch, and a line with the last control pressed and what it does. **Pop out** opens it as a small window that stays on top, for a second monitor. **Full page** goes back.
+**Quick look** is just the sheet, filling the window, for a glance while you fly or drive: a device dropdown, a search box that answers "which control does…" with the places that match, **Follow my hands** to switch to whatever device you touch, and a line with the last control pressed and what it does. **Pop out** opens it as a small window that stays on top, for a second monitor. **Full page** goes back.
 
 ![Quick look](../../../artifacts/screens/cheat-sheets-quick/01-quick-look.png)
 
@@ -70,9 +70,9 @@ The panel on the right says how far you are ("9 of 43 controls placed") and what
 
 ![The sheet of a half-done photo: the rest is listed under the photos](../../../artifacts/screens/cheat-sheets-photo/06-sheet-half-done.png)
 
-From then on your photos are the picture of that device model everywhere a RigReady drawing is used: on this page, in Quick look, in [Learn your controls](trainer.md), on printed pages and on [kneeboard pages](kneeboard.md).
+From then on your photos are the picture of that device model everywhere a RigReady drawing is used: on this page, in Quick look, in [Learn your controls](trainer.md), on printed pages and on DCS [kneeboard pages](../dcs/kneeboard.md).
 
-**Your photos stay on this PC.** They are kept in [RigReady's folder](../app/index.md) and nothing is uploaded. They leave it only when you say so: on a page you print or save as PDF, on kneeboard pages you export (those are written to the game's kneeboard folder), and in the file **Share as file…** makes, which holds the photos so that someone with the same device can import them. RigReady keeps its own smaller copy of each photo, drawn again as a JPEG, so where and when the photo was taken is not kept with it.
+**Your photos stay on this PC.** They are kept in [RigReady's folder](../app/index.md) and nothing is uploaded. They leave it only when you say so: on a page you print or save as PDF, on DCS kneeboard pages you export (those are written to the game's kneeboard folder), and in the file **Share as file…** makes, which holds the photos so that someone with the same device can import them. RigReady keeps its own smaller copy of each photo, drawn again as a JPEG, so where and when the photo was taken is not kept with it.
 
 RigReady takes JPEG, PNG and WebP photos of up to 25 MB. A file that is not a picture, or is too large, is refused with the reason, and nothing changes. An iPhone's HEIC photo has to be saved or sent as a JPEG first.
 
@@ -109,6 +109,6 @@ Nothing is stored until **Save layout**, in either editor.
 
 ## Print or PDF
 
-**Print / PDF** makes one page per chosen device, on white, with the aircraft and device name on top, and a summary of the most important actions when ticked, on A4 or US Letter. The summary takes a second page when one does not hold every action; nothing is left out to make it fit. **Print…** uses the system print dialog; **Save as PDF…** writes a file and says where.
+**Print / PDF** makes one page per chosen device, on white, with the aircraft or car and the device name on top, and a summary of the most important actions when ticked, on A4 or US Letter. The summary takes a second page when one does not hold every action; nothing is left out to make it fit. **Print…** uses the system print dialog; **Save as PDF…** writes a file and says where.
 
-The **Kneeboard** button is described on [Kneeboard pages](kneeboard.md), and **Learn** on [Learn your controls](trainer.md).
+The **Kneeboard** button, shown for a DCS aircraft, is described on [Kneeboard pages](../dcs/kneeboard.md), and **Learn** on [Learn your controls](trainer.md).

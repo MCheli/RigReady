@@ -18,7 +18,7 @@ A test build of 2.0.0, for checking the installer and the app on a real rig befo
 
 ## 2.0.0 (not released)
 
-A rebuild from the ground up. Nothing of 1.1.0's code or update channel carries over. The setup files version 1 left in `~/.rigready` are left as they are: they are listed apart on the Setups page, where one can be brought over as a new setup from the parts that convert exactly, or deleted. Version 2.0.0 has not been published; there is no installer to download yet.
+A rebuild from the ground up. Nothing of 1.1.0's code or update channel carries over. The setup files version 1 left in `~/.rigready` are left as they are: they are listed apart on the Setups page, where one can be brought over as a new setup from the parts that convert exactly, or deleted. RigReady 1 also left "Keep in the tray" switched off in the settings file, behind a switch nobody could use; this version ignores that value, so closing the window keeps RigReady in the tray. A 2.0 beta (up to beta 4) that saved the settings kept the off value as a choice: if closing the window quits RigReady, turn on **Keep RigReady in the tray when you close the window** once in Configure > Settings. Version 2.0.0 has not been published; there is no installer to download yet.
 
 ### What it contains
 

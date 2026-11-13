@@ -69,7 +69,7 @@ Nothing is suggested for "Another game". Add the game's settings folder or files
 
 For a game you added and for "Another game" alike:
 
-- No **Bindings and controllers** page, no [cheat sheet](../dcs/cheat-sheets.md), no device ID repair. RigReady does not know the game's binding format.
+- No **Bindings and controllers** page, no [cheat sheet](../controls/cheat-sheets.md), no device ID repair. RigReady does not know the game's binding format.
 - No version: "updated since you last verified" is offered only for a game you added with a Steam app id, from Steam's build number.
 
 For "Another game" only:

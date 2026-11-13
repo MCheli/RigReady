@@ -16,6 +16,7 @@ import ManualLink from './components/ManualLink.vue';
 import { manualPageOfRoute, openManual } from './shell/manual';
 import {
   aboutOpen,
+  followFoundGames,
   followRigKind,
   pageEpoch,
   paletteOpen,
@@ -101,8 +102,10 @@ onMounted(async () => {
     notices.value = info.value.notices;
   }
   // What the features offer the shell is not needed to draw the first screen: fetched once
-  // it is up, for the palette and for the accent that follows the setup's kind of game.
-  stopFollowing = await followRigKind(router);
+  // it is up, for the palette, for the accent that follows the setup's kind of game, and for
+  // the games found here, by which the menu and the palette offer the pages about a game.
+  const stops = await Promise.all([followRigKind(router), followFoundGames(router)]);
+  stopFollowing = () => stops.forEach((stop) => stop());
 });
 onBeforeUnmount(() => {
   off();

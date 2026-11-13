@@ -5,7 +5,7 @@ description: Twenty binding guides for DCS aircraft, guides of your own, the wal
 order: 110
 ---
 
-**Configure > Binding guide** explains, for an aircraft you do not know yet, what the important controls do, when you use them and where they belong, and walks you through binding them. Everything on the Walkthrough and Priorities tabs works without any key. AI help is optional and needs your own key from Anthropic, OpenAI, Google Gemini, OpenRouter or Mistral, or a model on your own PC.
+**Configure > Binding guide** explains, for an aircraft you do not know yet, what the important controls do, when you use them and where they belong, and walks you through binding them. It works on DCS's own files, so the menu has it only when DCS World is found on this PC; a link to it still opens the page, which then says that DCS World was not found. Everything on the Walkthrough and Priorities tabs works without any key. AI help is optional and needs your own key from Anthropic, OpenAI, Google Gemini, OpenRouter or Mistral, or a model on your own PC.
 
 Choose the aircraft at the top right; each one says **Guide included**, **Your own guide**, **Guide drafted by AI** or **No guide yet**.
 
@@ -29,7 +29,7 @@ A guide is a plain data file in RigReady's source (`packs/`, one file per aircra
 
 The guides were written from general knowledge of the aircraft and of how their switches work in DCS. They have not been reviewed by a pilot and are not affiliated with Eagle Dynamics. What is checked, by a test, is that every action name in a guide exists in DCS's own input files for the aircraft, so a DCS update that renames an action is caught. **Where this guide comes from** at the bottom of the Priorities tab says the same.
 
-The plain labels from the guide are also what the [bindings page](bindings.md) and the [cheat sheets](cheat-sheets.md) show first, with DCS's name beside them.
+The plain labels from the guide are also what the [bindings page](bindings.md) and the [cheat sheets](../controls/cheat-sheets.md) show first, with DCS's name beside them.
 
 ## A guide of your own
 

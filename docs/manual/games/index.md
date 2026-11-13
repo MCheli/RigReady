@@ -24,7 +24,7 @@ This section covers every game other than DCS World, which has [its own section]
 | [Ace Combat 8](ace-combat-8.md) | Detection, launch through Steam, files to back up, and a starting profile for flying it with your own stick through a [virtual controller](../hardware/virtual-controller.md). |
 | [Any other game](other-games.md) | **Add a game** on the Games page: its program, settings folders and kind, and it is found, launched, offered in new setups and backed up like the others. Or a setup for "Another game" with a launch target you give. |
 
-The four racing games with a bindings page also supply their bindings to the [cheat sheets](../dcs/cheat-sheets.md), the [trainer](../dcs/trainer.md) and the [input tester](../hardware/input-tester.md), so a cheat sheet can show what every button of a wheel does in iRacing or in BeamNG.drive. The wheel is drawn for the Fanatec bases RigReady has layouts for; any other wheel gets a labelled list of its controls.
+The four racing games with a bindings page also supply their bindings to the [cheat sheets](../controls/cheat-sheets.md), the [trainer](../controls/trainer.md) and the [input tester](../hardware/input-tester.md), so a cheat sheet can show what every button of a wheel does in iRacing or in BeamNG.drive. The wheel is drawn for the Fanatec bases RigReady has layouts for; any other wheel gets a labelled list of its controls.
 
 ## How a game is found
 

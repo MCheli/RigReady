@@ -4,7 +4,7 @@ description: "A small see-through list over the game that shows each button you 
 order: 70
 ---
 
-**Configure > Overlay** puts a small see-through list over the game. Each button or hat you press on a controller appears in it at once, with what the game does on it for the aircraft or car you are in, and fades away a few seconds later. It is for learning the controls while you fly or drive, and for seeing why a press did nothing. It goes with the [trainer](../dcs/trainer.md), which asks you the same controls at the desk.
+**Configure > Overlay** puts a small see-through list over the game. Each button or hat you press on a controller appears in it at once, with what the game does on it for the aircraft or car you are in, and fades away a few seconds later. It is for learning the controls while you fly or drive, and for seeing why a press did nothing. It goes with the [trainer](../controls/trainer.md), which asks you the same controls at the desk.
 
 Clicks go through the overlay to the game, and it never takes the keyboard. While nothing is pressed there is nothing on the screen.
 
