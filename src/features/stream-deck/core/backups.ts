@@ -19,6 +19,9 @@ import {
 } from './inventory';
 import {
   BackupManifestSchema,
+  CANNOT_CLOSE,
+  END_AND_RESTORE_LABEL,
+  STILL_RUNNING,
   type Backup,
   type BackupKind,
   type BackupManifest,
@@ -574,7 +577,24 @@ export class StreamDeckBackups {
         );
       }
       const closed = await closeApp(this.ports, { force: options.force ?? false });
-      if (!closed.ok) return closed;
+      if (!closed.ok) {
+        // The reason, then what can be done about it here. Force is named only when it
+        // can help, by the name its button has in the restore dialog.
+        const { code, message } = closed.error;
+        if (code === STILL_RUNNING) {
+          return err(
+            code,
+            `${message} Quit it from its tray icon (right-click, then Quit Stream Deck), or choose "${END_AND_RESTORE_LABEL}". Nothing was restored.`
+          );
+        }
+        if (code === CANNOT_CLOSE) {
+          return err(
+            code,
+            `${message} Close it yourself, then restore again. Nothing was restored.`
+          );
+        }
+        return closed;
+      }
       closedApp = closed.value.closed;
     }
 

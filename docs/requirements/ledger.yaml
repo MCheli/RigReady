@@ -712,6 +712,7 @@ requirements:
       - "Every setup has its own switch 'Stand down when the game closes' (on by default) and its own countdown length (one minute by default; the editor offers 10 seconds to 10 minutes, the setup file takes 5 to 3600 seconds). Both are in the setup editor under 'When the game closes' and in the setup file under extensions.fly (standDownOnClose, standDownAfterSeconds). A setup saved before this existed gets the defaults, and so does a value a hand edit got wrong."
       - "When the game the setup started has closed and the switch is on, a countdown starts. It is visible wherever the user is: a notice at the bottom right of every page of the main window ('Stand down in 42 seconds', one sentence that says what will happen, Cancel, and 'Change this for the setup'), the Welcome back line of the Play screen, and the session line of the compact view with its own Cancel. When nobody is at a RigReady window, Windows says 'Stand down starts in <length>. Open RigReady to cancel.' and the window is brought back on screen."
       - "The notice lies over the bottom right corner of the page, where a page may have buttons of its own (the setup editor's Save and Cancel). While it counts it can be moved to the top bar: the countdown, as a clock that is never cut short ('Stand down in 4:05'), and its Cancel are then in the bar on every page and cover nothing, and pressing the countdown there brings the notice back. What Stand down did is always said in the notice."
+      - "An editor with the shared Save bar along the bottom of the window (the virtual controller's) is never covered: the notice stands above that bar in every state, counting, standing down or showing the result, so Save and Back can always be pressed."
       - "When the time is up the same Stand down the button runs is run, once. The notice and the Welcome back line then say what it did: 'Stood down' with its summary only when every step worked; 'Stand down ran, but N step(s) need(s) attention' with each step that did not work; 'Stand down did not finish' with the reason when it could not run. The result stays until the user presses OK. With nobody at a window the same is a Windows notification."
       - "Cancel ends the countdown: nothing is closed, the screen says 'Stand down was cancelled. Nothing was closed.', and Stand down stays the primary action. Cancel pressed after Stand down has started changes nothing, and the answer says so."
       - "The game running again during the countdown ends the countdown, closes nothing, and is a new session. Every program name known for the game is watched, so a launcher that exits while the real game runs does not end the session."
@@ -778,6 +779,8 @@ requirements:
       - "artifacts/screens/fly-stand-down-top-bar/01-over-the-setup-editor.png"
       - "artifacts/screens/fly-stand-down-top-bar/02-in-the-top-bar.png"
       - "artifacts/screens/fly-stand-down-top-bar/03-cancelled-from-the-top-bar.png"
+      - "tests/e2e/fly-stand-down-on-close.e2e.ts#stand down on close: on a page with the Save bar along the bottom, the notice stands above the bar and Save and Back can be pressed"
+      - "artifacts/screens/fly-stand-down-save-bar/01-above-the-save-bar.png"
       - "artifacts/screens/fly-stand-down-compact/01-compact-countdown.png"
       - "artifacts/screens/fly-stand-down-compact/02-compact-cancelled.png"
       - "artifacts/screens/fly-compact/04-welcome-back.png"
@@ -7607,6 +7610,63 @@ requirements:
       - "artifacts/screens/a11y-keyboard/03-keep-layout-focus.png"
       - "artifacts/screens/a11y-keyboard/04-focus-on-launch.png"
       - "artifacts/screens/a11y-keyboard/05-launched.png"
+
+  - id: NFR-012
+    title: Every place that asks a program to close asks all of it together and says why it stayed open
+    job: platform
+    area: nfr
+    priority: p1
+    done_means:
+      - "One rule in src/core/processes.ts for every place that closes a program: the processes of one program are asked together and the process list afterwards decides, so a helper without a window that is listed first, or one that is gone by its turn, is no failure. It holds for Stand down of the app checks (processes, Stream Deck app, TrackIR), for 'Ask them to close for me' of the backup restore, for the Stream Deck profile restore and for the wheel software restore."
+      - "A program that is still running afterwards is named with the reason, in the words Stand down uses: it was asked to close and stayed open (some apps only go to the tray); it has no window to ask; Windows did not let RigReady close it. Where the PC gives no reason, none is made up."
+      - "Where the user can let RigReady end the program, that is named as it is on screen, and only where it can still help (not after Windows refused, not when it was already used). Stand down of the Stream Deck app names the setup switch 'Force it closed if it does not close': a new setting of that check, off by default, also in a setup made before it existed. The Stream Deck restore names its button 'End Stream Deck and restore'. Every check that can be told to force keeps the switch under the one name forceClose."
+      - "Where nothing can be switched, nothing is pointed at. TrackIR is always ended after the wait, so a TrackIR that is still running is named with the reason and 'Close it yourself.'. The backup restore and the wheel software restore never force: they say 'Close it yourself, then restore again. Nothing was restored.' and restore nothing."
+      - "The wheel software restore names the program that is open (the Fanatec App, Logitech G HUB) and shows the reason inside the question, which stays open. After a program stayed open, the button of that question and of the Stream Deck one reads 'Restore again' where RigReady cannot end the program, instead of promising again to close it."
+    notes:
+      - "2026-11-12: follows FLY-023, which fixed this for the processes check after the sitting. These closers still asked processes of one name one after another, stopped at the first that stayed, and dropped the reason."
+      - "2026-11-12: not changed. When a later program of a backup restore stays open, the tools already closed for that restore are not started again."
+    status: done
+    evidence:
+      - "src/core/processes.test.ts#offers force only where it can still help"
+      - "src/core/processes.test.ts#has nothing to say when nothing of the app is running, and asks nobody"
+      - "src/core/processes.test.ts#closes an app of several processes as one, helper without a window first"
+      - "src/core/processes.test.ts#says when the app had to be forced"
+      - "src/core/processes.test.ts#names the app, says why it is still running, and names the Force switch"
+      - "src/core/processes.test.ts#does not name the switch where it cannot help: already on, or Windows refused"
+      - "src/core/processes.test.ts#passes on another failure as it is"
+      - "src/features/backup/core/sources.test.ts#a tool of several processes is closed as one: a helper without a window, listed first, does not stop the restore"
+      - "src/features/backup/core/sources.test.ts#a program that stays open is named with the reason, is never forced, and nothing is restored"
+      - "src/features/racing/core/backups.test.ts#a Fanatec App that stays open is named with the reason, is never forced, and nothing is restored"
+      - "src/features/racing/core/backups.test.ts#G HUB is two processes and one program: its agent has no window, comes first, and goes with the window"
+      - "src/features/stream-deck/core/backups.test.ts#asks before ending a Stream Deck that will not quit, and says why it is still running"
+      - "src/features/stream-deck/core/backups.test.ts#does not offer to end a Stream Deck that Windows will not let RigReady close"
+      - "src/features/stream-deck/core/checks.test.ts#on Stand down, a Stream Deck that stays open says why and names the Force switch"
+      - "src/features/stream-deck/core/checks.test.ts#the Force switch is off unless the setup switches it on, also in a setup made before it existed"
+      - "src/features/stream-deck/core/checks.test.ts#asks every Stream Deck process together: a helper without a window goes with the window"
+      - "src/features/stream-deck/core/checks.test.ts#says whether ending Stream Deck can still help, by the code of the error"
+      - "src/features/stream-deck/core/checks.test.ts#passes on other close failures as they are"
+      - "src/features/trackir/core/trackir.test.ts#on Stand down, a TrackIR that only goes to the tray is ended, and said so"
+      - "src/features/trackir/core/trackir.test.ts#on Stand down, a TrackIR that is still running is named with the reason, and no switch is pointed at"
+      - "src/features/trackir/core/trackir.test.ts#asks every TrackIR process together: one that is gone by its turn is no failure"
+      - "tests/unit/crossFeature.test.ts#every check that can be told to force keeps the switch under that one name, off until switched on"
+      - "tests/e2e/close-programs-together.e2e.ts#close together: Stand down says why the Stream Deck app is still running and names the Force switch, which the setup editor shows"
+      - "tests/e2e/close-programs-together.e2e.ts#close together: Stand down says why TrackIR is still running when Windows will not let RigReady close it"
+      - "tests/e2e/close-programs-together.e2e.ts#close together: the Stream Deck restore says why the app is still running, and offers to end it only where that can help"
+      - "tests/e2e/close-programs-together.e2e.ts#close together: restoring the wheel software settings names the app that is open and says why it stayed open"
+      - "tests/e2e/close-programs-together.e2e.ts#close together: restoring a backup says why a program it was asked to close is still running, and restores nothing"
+      - "artifacts/screens/close-together-stream-deck-stand-down/01-the-switch-in-the-setup.png"
+      - "artifacts/screens/close-together-stream-deck-stand-down/02-still-running.png"
+      - "artifacts/screens/close-together-stream-deck-stand-down/03-forced.png"
+      - "artifacts/screens/close-together-trackir-stand-down/01-still-running.png"
+      - "artifacts/screens/close-together-trackir-stand-down/02-forced.png"
+      - "artifacts/screens/close-together-stream-deck-restore/01-windows-does-not-allow-it.png"
+      - "artifacts/screens/close-together-stream-deck-restore/02-went-to-the-tray.png"
+      - "artifacts/screens/close-together-stream-deck-restore/03-ended-and-restored.png"
+      - "artifacts/screens/close-together-wheel-software-restore/01-the-app-is-open.png"
+      - "artifacts/screens/close-together-wheel-software-restore/02-still-running.png"
+      - "artifacts/screens/close-together-wheel-software-restore/03-restored.png"
+      - "artifacts/screens/close-together-backup-restore/01-still-running.png"
+      - "artifacts/screens/close-together-backup-restore/02-restored.png"
 
   # ---------------------------------------------------------------------------
   # THE FINAL PASS: HOW THE WHOLE APPLICATION LOOKS, MOVES AND IS NAVIGATED

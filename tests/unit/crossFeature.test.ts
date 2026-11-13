@@ -17,8 +17,12 @@ import {
   type Profile,
 } from '../../src/core/profile/schema';
 import { Fly } from '../../src/features/fly/core/fly';
-import { FORCE_CLOSE_LABEL } from '../../src/features/processes/core/processCheck';
+import {
+  FORCE_CLOSE_LABEL,
+  ProcessParamsSchema,
+} from '../../src/features/processes/core/processCheck';
 import { humanize } from '../../src/features/profiles/renderer/schemaForm';
+import { RunningParamsSchema as StreamDeckRunningSchema } from '../../src/features/stream-deck/core/checks';
 import { applyMutations } from '../../src/platform/fake/scenario';
 import {
   batchArgumentProblem,
@@ -809,5 +813,12 @@ describe('a hint that points at a switch names it as the setup editor does', () 
     // The check that closes a program tells the user to switch this on; the editor is in
     // another feature, so the two are held together here.
     expect(humanize('forceClose')).toBe(FORCE_CLOSE_LABEL);
+  });
+
+  it('every check that can be told to force keeps the switch under that one name, off until switched on', () => {
+    // The hint is worded once, in src/core/processes.ts, for all of them.
+    for (const schema of [ProcessParamsSchema, StreamDeckRunningSchema]) {
+      expect(schema.shape.forceClose.parse(undefined)).toBe(false);
+    }
   });
 });
