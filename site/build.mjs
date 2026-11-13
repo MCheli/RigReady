@@ -8,6 +8,8 @@
 //   /download/        site/pages/download.html: the newest release, how to run from source until
 //                     there is one, and CHANGELOG.md
 //   /download/latest/ a redirect to the newest installer (or to /download/ before there is one)
+//   /docs/<old address>/  a redirect for a page of the manual that moved (MOVED_PAGES in
+//                     lib/manual.mjs), so older links still land on it
 //   /docs/            the manual's landing page (docs/manual/index.md) and a card per section
 //   /docs/<section>/  a section's landing page (docs/manual/<section>/index.md) and a card per page
 //   /docs/<section>/<page>/  one page of the manual (docs/manual/<section>/<page>.md)
@@ -38,6 +40,8 @@ import {
   MANUAL_URL,
   breadcrumbs,
   buildManual,
+  movedPages,
+  redirectPage,
   repoPath,
   searchIndex,
   sidebarTree,
@@ -526,6 +530,13 @@ const search = [
 await writeFile(path.join(OUT, 'docs', 'search.json'), JSON.stringify(search));
 await mkdir(path.join(OUT, 'download', 'latest'), { recursive: true });
 await writeFile(path.join(OUT, 'download', 'latest', 'index.html'), redirect);
+// The old address of each page of the manual that moved sends the reader on to it.
+const moved = movedPages(manual);
+for (const page of moved) {
+  const dir = path.join(OUT, ...page.path.split('/').filter(Boolean));
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, 'index.html'), redirectPage(page.to, page.title, DOMAIN));
+}
 await writeFile(path.join(OUT, 'CNAME'), `${DOMAIN}\n`);
 await writeFile(
   path.join(OUT, 'robots.txt'),

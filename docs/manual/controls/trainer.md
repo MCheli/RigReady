@@ -1,14 +1,14 @@
 ---
 title: Learn your controls (the trainer)
 description: The trainer names an action and you press its control on the device: rounds of ten, right or wrong on a tap or a hold, missed cards come back, progress kept.
-order: 100
+order: 20
 ---
 
 **Learn** on the [Cheat sheets](cheat-sheets.md) page opens **Learn your controls**: RigReady names an action, you press the control for it on the real device, and it says whether that was it, with the control lit on the picture of the device. What you miss comes back until you have it.
 
 ## What is asked
 
-A card is one action that a button or a hat direction of a connected controller ([Devices](../hardware/devices.md)) does when pressed on its own. Axes are not pressed, a control that needs a modifier is two things to learn at once, and keyboard keys are not on a controller, so none of those make cards. When you have bindings of your own for the aircraft, only those are asked; what DCS binds by default on every device is not what anyone flies with. Each card shows the plain-language name from the [binding guide](binding-guide-and-ai.md) where there is one, and what DCS calls it.
+A card is one action that a button or a hat direction of a connected controller ([Devices](../hardware/devices.md)) does when pressed on its own. Axes are not pressed, a control that needs a modifier is two things to learn at once, and keyboard keys are not on a controller, so none of those make cards. When you have bindings of your own for the aircraft or car, only those are asked; what the game binds by default on every device is not what anyone plays with. Each card shows what the game calls the action, and for a DCS aircraft the plain-language name from the [binding guide](../dcs/binding-guide-and-ai.md) where there is one.
 
 An action that is bound in more than one place is still one card. Every place is named and lit on the picture, as in "Button 25 or Button 28 on Throttle", and any of them is right. When the places are on two devices, both pictures are shown. In a wide window, about 1500 pixels or more, they are side by side, so that you see what is lit without scrolling while your hands are on the controls. In a narrower window they are one below the other.
 
