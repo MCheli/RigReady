@@ -128,7 +128,7 @@ describe('record plan', () => {
   });
 
   it('removes Steam account ids and player names from recorded text', () => {
-    expect(sanitizeIdentifiers('\t"LastOwner"\t\t"76561197992831494"\n')).toBe(
+    expect(sanitizeIdentifiers('\t"LastOwner"\t\t"76561190000000000"\n')).toBe(
       `\t"LastOwner"\t\t"${NEUTRAL_STEAM_ID}"\n`
     );
     expect(sanitizeIdentifiers('    "Player Name": "Jane Doe",\n    "Player Nick":"JD",')).toBe(

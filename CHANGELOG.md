@@ -45,11 +45,11 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 **DCS World**
 - Installs across Steam libraries and standalone; update waiting; aircraft list.
-- MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one; without SimAppPro, for the aircraft listed in the manual.
+- MFD screen setup written to RigReady's own MonitorSetup file, starting from SimAppPro's plan when there is one; without SimAppPro, for every installed aircraft that can export a display, read from the aircraft's own files.
 - Export.lua managed one tool at a time; overwrites by other programs are noticed.
 - Bindings for every DCS aircraft: effective bindings (defaults plus your changes), editing with a preview, clean-up of unwanted defaults, device ID repair, copy between aircraft, snapshots. Binding guides and curated priority lists exist for the aircraft listed in the manual.
 - Cheat sheets of what every control does, print and PDF, DCS kneeboard pages in day and night styles, and a trainer that names an action and has you press the control.
-- Simple outline drawings of the WinWing Orion stick (F-16EX and F/A-18 grips), the Orion throttle with the F-15EX handles and the MFD frames, with a label block and leader line per control placed so that no two lines cross. A drawing can be corrected or shown over a photo of the device; for any device, a drawing can be made from a photo of your own hardware or imported from a file. The outlines are schematic and cover only these devices so far; a photo gives a picture that looks like your own.
+- Simple outline drawings of the WinWing Orion stick (F-16EX and F/A-18 grips), the Orion throttle with the F-15EX handles, the MFD frames, the Thrustmaster HOTAS Warthog stick and throttle, the T.16000M and the Saitek X52 Pro, with a label block and leader line per control placed so that no two lines cross. A drawing can be corrected or shown over a photo of the device; for any device, a drawing can be made from a photo of your own hardware or imported from a file. The outlines are schematic and cover only these devices so far; a photo gives a picture that looks like your own.
 - Twenty binding guides, covering the F/A-18C, F-16C, A-10C II and A-10C, A-10A, F-14 (pilot and RIO), F-15E (pilot and WSO), F-15C, MiG-29, Su-27 and J-11A, Su-33, Su-25T, Su-25, Ka-50 III and Ka-50, UH-1H, P-51D, TF-51D, F-86F and Christen Eagle II. For any other aircraft, optional AI help drafts one.
 - Optional AI help with your own key from Anthropic (the default), OpenAI, or any OpenAI-compatible service: presets for Google Gemini, OpenRouter, Mistral, and Ollama and LM Studio on your own PC. Each provider keeps its own encrypted key, gets a Test button and a model you can type, and only its one host is contacted (https, or http to this PC only).
 
@@ -66,7 +66,7 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 **Racing and other games**
 - iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa: detection, bindings as the game's files have them, cheat sheets, backup and restore. Wheel-mode and game-specific checks for iRacing, Le Mans Ultimate and BeamNG.drive; Assetto Corsa gets the common racing checks.
 - Assetto Corsa controller repair: when Windows lists the controllers in another order than when `controls.ini` was saved (a USB port change, a controller added), the page shows which controller each binding really acts on now and renumbers the file after a preview, with a backup and Undo. Identical controllers are asked for, never guessed.
-- Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally, ACE COMBAT 8: detection, launch, files to back up.
+- Microsoft Flight Simulator 2024 and 2020, X-Plane 12 and 11, IL-2 Sturmovik: Great Battles, Falcon BMS, Assetto Corsa EVO, Assetto Corsa Rally, Assetto Corsa Competizione, rFactor 2, Automobilista 2, EA SPORTS WRC, F1 25 and F1 24, DiRT Rally 2.0, RaceRoom, ACE COMBAT 8: detection, launch, files to back up.
 - A virtual controller for games and emulators that read only a gamepad: a virtual Xbox 360 controller or DualShock 4 driven by a stick, wheel, pedals or throttle, with deadzones, curves, a steering range and a throttle split over both triggers, started by hand or by a setup, optionally hiding the real controllers with HidHide. Needs the ViGEmBus driver, which you install yourself.
 - A Wheel page for every major wheelbase brand (Fanatec, Moza, Logitech, Simagic, Thrustmaster, Simucube, Asetek SimSports, Cammus): base, pedals and axes, the PC mode where the USB ID shows it, the maker's software with a "running" check that starts it, backups of profile files where they are plain files, and the maker's own per-game settings where it publishes any. Any other game works generically.
 
@@ -110,4 +110,4 @@ A rebuild from the ground up. Nothing from 1.1.0 carries over: not the code, not
 
 ## 1.1.0 and earlier
 
-The first version of the app (January and February 2026). Superseded; its documents are in `docs/archive/`.
+The first version of the app (January and February 2026). Superseded: 2.0.0 does not read its setups, and 1.1.0 does not update itself to 2.0.0. Its installer stays on the Releases page, and its documents are in `docs/archive/`.
