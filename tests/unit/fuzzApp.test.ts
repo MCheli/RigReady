@@ -86,6 +86,8 @@ const WITH_INPUT: [string, unknown][] = [
   ['dcs-bindings:aircraft', { id: 'UH-1H' }],
   ['dcs-bindings:cleanupOps', { aircraft: [] }],
   ['devices:boundInputs', { game: 'dcs', aircraftId: 'FA-18C_hornet' }],
+  ['overlay:setupDefault', { game: 'dcs' }],
+  ['overlay:setupDefault', { game: 'iracing' }],
   ['iracing-bindings:set', { id: 'all' }],
   ['iracing-bindings:goneDevices', { set: 'all' }],
   ['racing:backups', { game: 'iracing' }],
