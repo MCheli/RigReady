@@ -1,14 +1,15 @@
 # RigReady
 
-**Get the rig ready, keep your controls, find what is wrong.**
+**Less time on rig chores. More time flying and racing.**
 
-RigReady is a free Windows app for flight and racing sim rigs. It checks the rig before you launch and fixes what it can, helps you set up, save and bring back your bindings, and shows what every controller is doing when something is off. It does three jobs:
+RigReady is a free Windows app for flight and racing sim rigs. It does the work around the game: setting up your controls and screens, learning what every button does, getting everything running before you launch, and putting your desk back after.
 
 | | |
 |---|---|
-| **Ready to launch** *(before a session)* | Checks the rig for the setup you are about to use, fixes what is off, and starts the game. |
-| **Controls, set up and saved** *(setting up)* | Bindings, cheat sheets and backups, so a new aircraft or a new PC does not start from nothing. |
-| **See what the rig is doing** *(when something is off)* | Every button, axis and USB port the way a game sees them, so a fault has a name. |
+| **Set it up** *(once, and for each new aircraft or car)* | Bind your controls for DCS and iRacing, with a preview first and Undo after, helped by binding guides for DCS aircraft and iRacing car classes. It also sets up monitor layouts, DCS's MFD screens and Export.lua without SimAppPro, and iRacing's control profiles. |
+| **Learn it** *(before and during a session)* | Cheat sheets show what every control on your stick, throttle, wheel or button box does, on paper or as DCS kneeboard pages. The trainer names an action and you press its control. The overlay lists each button you press and what it does in that aircraft or car. |
+| **Launch** *(before each session)* | One check before the session covers the stick and throttle or wheel and pedals, helper apps, monitors and MFD screens, audio and game files. Make ready fixes what is off, in order, and starts the game. When a control acts up, the input tester, health check and USB map help find out why. |
+| **Put it away** *(after the session)* | After the session, Stand down closes the helper apps and puts your monitors back in the desk layout. It can run by itself when the game closes, after a countdown you can cancel. |
 
 Website: [rigready.io](https://rigready.io) · Manual: [rigready.io/docs](https://rigready.io/docs/) · License: MIT
 
@@ -42,9 +43,9 @@ A setup records how the rig looks when it works. Before each session RigReady ch
 Setting up bindings for a rig full of controllers takes hours. RigReady helps you get them right, shows what every control does, and keeps a copy so a reinstall or a new PC does not mean starting again.
 
 - **Capture a setup.** Record the controllers, apps, layout and audio as they are now, then edit. [Capture](docs/manual/setups/capture.md)
-- **Bindings.** For DCS: see the bindings in effect, edit them with a preview, clear the defaults DCS adds to every device, and copy controls between aircraft. For iRacing: every action and what it is bound to, for all cars and for each car with custom controls, read only. One Bindings page with a game picker. [DCS bindings](docs/manual/dcs/bindings.md), [iRacing bindings](docs/manual/games/iracing-bindings.md)
+- **Bindings.** For DCS: see the bindings in effect, edit them with a preview, clear the defaults DCS adds to every device, and copy controls between aircraft. For iRacing: every action and what it is bound to, for all cars and for each car with custom controls, and binding an action to a button or a key with a preview (axes and hat switches are still bound in iRacing). One Bindings page with a game picker. [DCS bindings](docs/manual/dcs/bindings.md), [iRacing bindings](docs/manual/games/iracing-bindings.md)
 - **Cheat sheets.** Each device drawn with what every control does, for DCS aircraft and the racing games, printable and exportable as DCS kneeboard pages. A controller with no drawing gets a sheet from your own photo of it. [Cheat sheets](docs/manual/controls/cheat-sheets.md)
-- **Learn them.** A trainer names an action and you press the control; twenty binding guides, from the F/A-18C, F-16C, A-10C and F-14 to the Ka-50, UH-1H and P-51D, walk through what to bind first, and you can write or import your own. [Trainer](docs/manual/controls/trainer.md)
+- **Learn them.** A trainer names an action and you press the control; twenty binding guides, from the F/A-18C, F-16C, A-10C and F-14 to the Ka-50, UH-1H and P-51D, walk through what to bind first, and you can write or import your own. iRacing has guides by car class, from GT3 and GT4 to formula, oval and dirt. [Trainer](docs/manual/controls/trainer.md), [Binding guide for iRacing](docs/manual/games/iracing-binding-guide.md)
 - **Overlay.** A small see-through list over the game of each button you press and what it does there, fading after a few seconds. Off until you turn it on. [The overlay](docs/manual/play/overlay.md)
 - **Back up and restore.** One click backs up setups, game files and settings; a restore shows what will change before it does. [Backups](docs/manual/protect/backups.md), [moving to a new PC](docs/manual/protect/new-pc.md)
 - **Share it.** Share a setup as a file with personal details reviewed and removed, or make a picture of the rig to show people. [Sharing](docs/manual/protect/sharing.md)
@@ -84,7 +85,7 @@ Any game works with a checklist, launch, tracked files and backups. These get mo
 | | Support |
 |---|---|
 | DCS World | The deepest: installs (Steam and standalone), MFD screen setup (MonitorSetup), Export.lua, options, bindings (view, edit, clean up, device ID repair, copy between aircraft, snapshots), cheat sheets, kneeboard pages, twenty binding guides (F/A-18C, F-16C, A-10C, F-14, F-15E, Ka-50, UH-1H, the Flaming Cliffs jets, warbirds and more). |
-| iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa | A page per game with its bindings and controllers as the game's files have them, cheat sheets and the trainer, backup and restore, and checks for a racing setup. iRacing also has a bindings page with every action, for all cars and per car, read only. |
+| iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa | A page per game with its bindings and controllers as the game's files have them, cheat sheets and the trainer, backup and restore, and checks for a racing setup. iRacing also has a bindings page with every action, for all cars and per car, where a button or key can be bound with a preview, and binding guides by car class. |
 | Microsoft Flight Simulator 2024 and 2020, X-Plane 12 and 11, IL-2 Sturmovik: Great Battles, Falcon BMS | A game module: detection, config locations, backup suggestions, launch. |
 | Assetto Corsa EVO, Assetto Corsa Rally, Assetto Corsa Competizione, rFactor 2, Automobilista 2, EA SPORTS WRC, F1 25 and F1 24, DiRT Rally 2.0, RaceRoom | The same game module: detection, config locations, backup suggestions, launch. |
 | ACE COMBAT 8, and other games that read only a gamepad | A game module for ACE COMBAT 8, and a [virtual controller](docs/manual/hardware/virtual-controller.md): a virtual Xbox 360 controller or DualShock 4 driven by your stick, wheel, pedals or throttle. It needs the ViGEmBus driver, which you install yourself. |
