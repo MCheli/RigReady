@@ -334,10 +334,8 @@ test('iRacing bindings: an iRacing with control profiles shows the profile it us
 test('iRacing bindings: a car with a control profile of its own, named as iRacing names it', async ({
   rig,
 }) => {
-  const { page, shot } = await rig.launch(
-    'iracing-bindings-profile-car',
-    'iracing-bindings-profile-car'
-  );
+  const run = await rig.launch('iracing-bindings-profile-car', 'iracing-bindings-profile-car');
+  const { page, shot } = run;
   await page.getByTestId('mode-configure').click();
   await go(page, ROUTE);
   // The car has no folder under Documents: its line in app.ini is all there is.
@@ -365,4 +363,24 @@ test('iRacing bindings: a car with a control profile of its own, named as iRacin
   await page.getByTestId('iracing-bindings-editing').scrollIntoViewIfNeeded();
   await shot('car-profile');
   expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);
+
+  // app.ini names a profile for all cars that is not there, and the car's own still is:
+  // the page says it cannot tell which bindings iRacing uses, and shows no list at all.
+  await run.mutate([
+    {
+      op: 'writeFile',
+      path: 'Documents/iRacing/app.ini',
+      content:
+        '[ControlProfiles]\r\ncadillacctsvr=Test Profile CTSV\r\nGlobal=Gone\r\n\r\n[Drive Screen]\r\nblackBox=2\r\n',
+    },
+  ]);
+  await go(page, '/configure/games/iracing');
+  await go(page, ROUTE);
+  await expect(page.getByTestId('iracing-bindings-source-problem')).toContainText(
+    'iRacing uses the control profile “Gone” for all cars, but RigReady found no controls.cfg in it.'
+  );
+  await expect(page.getByTestId('iracing-bindings-table')).toHaveCount(0);
+  await expect(page.getByTestId('iracing-bindings-set')).toHaveCount(0);
+  await expect(page.getByTestId('iracing-bindings-change')).toHaveCount(0);
+  await shot('profile-not-found');
 });

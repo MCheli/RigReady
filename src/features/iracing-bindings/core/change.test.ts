@@ -308,7 +308,7 @@ describe('changing an iRacing binding: the write', () => {
     );
     const answer = await call(a, 'change', { ...FLASH_ON_7, seen: shown.seen });
     expect(answer.ok ? '' : answer.error.message).toBe(
-      'controls.cfg changed after the change was shown, so nothing was written. Look at the change again.'
+      'controls.cfg, or which file or cars it is for, changed after the change was shown, so nothing was written. Look at the change again.'
     );
     expect(equal(await bytesOf(allCars(a)), before)).toBe(true);
     expect(await journal(a)).toHaveLength(entries);
@@ -433,6 +433,144 @@ describe('changing an iRacing binding: the write', () => {
     expect(equal(await bytesOf(allCars(a)), older)).toBe(true);
     expect((await journal(a)).map((e) => e.path)).toEqual([profile, profile]);
     expect(await bindingOf(a, 'all', 'BlackBoxShowNext')).toMatchObject({ input: 'Shift+J' });
+  });
+});
+
+/** The rig of 12:27 on 13 Nov 2026: Baseline for all cars, and the CTS-V's own profile. */
+async function startCarProfile(): Promise<WiredApp> {
+  return (app = await wiredApp('iracing-bindings-profile-car', {
+    files: ['Documents/iRacing/**'],
+  }));
+}
+const profileOf = (a: WiredApp, name: string): string =>
+  path.join(iracingDir(a), 'profiles', 'controls', name, 'controls.cfg');
+const writeIni = (a: WiredApp, lines: string): Promise<void> =>
+  mutate(a, [
+    {
+      op: 'writeFile',
+      path: 'Documents/iRacing/app.ini',
+      content: `[Audio]\r\nvolume=1\r\n\r\n[ControlProfiles]\r\n${lines}\r\n[Drive Screen]\r\nblackBox=2\r\n`,
+    },
+  ]);
+const CTSV = 'car:cadillacctsvr';
+const FLASH_ON_WHEEL_8: ChangeRequest = {
+  set: CTSV,
+  action: 'HeadlightFlash',
+  binding: { kind: 'button', device: WHEEL, button: 8 },
+};
+
+describe('changing an iRacing binding: a car’s own control profile', () => {
+  it('previews, backs up and writes the car’s profile, and nothing else', async () => {
+    const a = await startCarProfile();
+    const car = profileOf(a, 'Test Profile CTSV');
+    const baseline = profileOf(a, 'Baseline');
+    const before = await bytesOf(car);
+    const baselineBefore = await bytesOf(baseline);
+    const older = await bytesOf(allCars(a));
+
+    const shown = await review(a, FLASH_ON_WHEEL_8);
+    expect(shown.set).toMatchObject({ id: CTSV, file: car, profile: 'Test Profile CTSV' });
+    expect(shown.set.sharedWith).toBeUndefined();
+    expect(shown.preview.files.map((f) => f.path)).toEqual([car]);
+    expect(equal(await bytesOf(car), before)).toBe(true);
+
+    const result = await change(a, { ...FLASH_ON_WHEEL_8, seen: shown.seen });
+    expect(result).toEqual({
+      changed: true,
+      message:
+        'Saved in iRacing’s file for cadillacctsvr: Flash headlights is now bound to Button 8 on FANATEC Podium Wheel Base DD2. Undo is on the Safety page.',
+      file: car,
+    });
+    expectOnlyThatRecord(before, await bytesOf(car), 'HeadlightFlash');
+    // The profile for all cars and the older file beside the profiles are left as they were.
+    expect(equal(await bytesOf(baseline), baselineBefore)).toBe(true);
+    expect(equal(await bytesOf(allCars(a)), older)).toBe(true);
+    const entries = await journal(a);
+    expect(entries.map((e) => [e.path, e.groupReason])).toEqual([
+      [
+        car,
+        'iRacing bindings for cadillacctsvr: Flash headlights bound to Button 8 on FANATEC Podium Wheel Base DD2',
+      ],
+    ]);
+    expect(equal(await bytesOf(entries[0]!.backupPath!), before)).toBe(true);
+    expect((await a.ports.files.undoGroup(entries[0]!.groupId!)).ok).toBe(true);
+    expect(equal(await bytesOf(car), before)).toBe(true);
+  });
+
+  it('names every car that shares the profile, before saving and after', async () => {
+    const a = await startCarProfile();
+    // Two cars on one profile: a change for one is a change for both.
+    await writeIni(
+      a,
+      'cadillacctsvr=Test Profile CTSV\r\nbmwm4gt3=Test Profile CTSV\r\nGlobal=Baseline'
+    );
+    const sets = (await a.invoke<Overview>('iracing-bindings:overview')).sets;
+    expect(sets.map((s) => [s.id, s.sharedWith])).toEqual([
+      ['all', undefined],
+      ['car:bmwm4gt3', ['cadillacctsvr']],
+      [CTSV, ['bmwm4gt3']],
+    ]);
+    const shown = await review(a, FLASH_ON_WHEEL_8);
+    expect(shown.set.sharedWith).toEqual(['bmwm4gt3']);
+    const result = await change(a, { ...FLASH_ON_WHEEL_8, seen: shown.seen });
+    const scope = 'cadillacctsvr and bmwm4gt3, which share the profile “Test Profile CTSV”';
+    expect(result.message).toBe(
+      `Saved in iRacing’s file for ${scope}: Flash headlights is now bound to Button 8 on FANATEC Podium Wheel Base DD2. Undo is on the Safety page.`
+    );
+    expect((await journal(a)).map((e) => e.groupReason)).toEqual([
+      `iRacing bindings for ${scope}: Flash headlights bound to Button 8 on FANATEC Podium Wheel Base DD2`,
+    ]);
+    // The other car has the change too, as the message said.
+    expect(await bindingOf(a, 'car:bmwm4gt3', 'HeadlightFlash')).toMatchObject({
+      input: 'Button 8',
+    });
+  });
+
+  it('writes nothing when another car joined the profile after the preview', async () => {
+    const a = await startCarProfile();
+    const car = profileOf(a, 'Test Profile CTSV');
+    const shown = await review(a, FLASH_ON_WHEEL_8);
+    await writeIni(
+      a,
+      'cadillacctsvr=Test Profile CTSV\r\nbmwm4gt3=Test Profile CTSV\r\nGlobal=Baseline'
+    );
+    const before = await bytesOf(car);
+    expect(await refused(a, 'change', { ...FLASH_ON_WHEEL_8, seen: shown.seen })).toBe(
+      'iracing-bindings.edit.changed'
+    );
+    expect(equal(await bytesOf(car), before)).toBe(true);
+    expect(await journal(a)).toEqual([]);
+  });
+
+  it('writes nothing when app.ini points All cars at another profile with the same bytes', async () => {
+    const a = await startCarProfile();
+    const baseline = profileOf(a, 'Baseline');
+    const copy = profileOf(a, 'Copy');
+    await mutate(a, [
+      {
+        op: 'writeFile',
+        path: 'Documents/iRacing/profiles/controls/Copy/controls.cfg',
+        from: baseline,
+      },
+    ]);
+    expect(equal(await bytesOf(copy), await bytesOf(baseline))).toBe(true);
+    const request: ChangeRequest = {
+      set: 'all',
+      action: 'HeadlightFlash',
+      binding: { kind: 'button', device: WHEEL, button: 8 },
+    };
+    const shown = await review(a, request);
+    expect(shown.set.file).toBe(baseline);
+    // iRacing now uses the copy for all cars: the same content, another file.
+    await writeIni(a, 'cadillacctsvr=Test Profile CTSV\r\nGlobal=Copy');
+    const copyBefore = await bytesOf(copy);
+    const baselineBefore = await bytesOf(baseline);
+    expect(await refused(a, 'change', { ...request, seen: shown.seen })).toBe(
+      'iracing-bindings.edit.changed'
+    );
+    expect(equal(await bytesOf(copy), copyBefore)).toBe(true);
+    expect(equal(await bytesOf(baseline), baselineBefore)).toBe(true);
+    expect(await journal(a)).toEqual([]);
   });
 });
 

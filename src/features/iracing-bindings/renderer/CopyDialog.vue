@@ -293,6 +293,7 @@ async function copy(): Promise<void> {
           {{ review.clears === 1 ? 'clears a binding' : 'clear bindings' }} there</template
         >. It changes those actions and nothing else in the file.
       </p>
+      <p data-testid="iracing-copy-used-by">{{ review.usedBy }}</p>
       <div v-if="review.blocked" class="ic-blocked" data-testid="iracing-copy-save-blocked">
         <v-icon icon="mdi-alert" class="rr-warn" size="18" />
         <span>{{ review.blocked }}</span>

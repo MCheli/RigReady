@@ -13,7 +13,7 @@ import {
   type WantedBinding,
 } from '../contract';
 import { iracingKeyOf } from '../core/keys';
-import { inWords } from '../core/names';
+import { inWords, listed } from '../core/names';
 
 /**
  * Changes one binding of one set: press the button or the key, or clear it. What would
@@ -189,11 +189,21 @@ async function save(): Promise<void> {
   emit('saved', result.value);
 }
 
-/** "A", "A and B", "A, B and C". */
-const listed = (names: string[]): string =>
-  names.length <= 1
-    ? (names[0] ?? '')
-    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+/** Where the change lands, in the box: every car it reaches, never fewer. */
+const setLine = (s: BindingSet): string =>
+  s.general
+    ? 'In the bindings for all cars'
+    : s.sharedWith?.length
+      ? `In the profile “${s.profile ?? ''}”, for ${listed([s.name, ...s.sharedWith])}`
+      : `In the custom controls of ${s.name}`;
+
+/** "For" in the review: the cars a save changes. */
+const forWhom = (s: BindingSet): string =>
+  s.general
+    ? 'All cars'
+    : s.sharedWith?.length
+      ? `${listed([s.name, ...s.sharedWith])}: they share the profile “${s.profile ?? ''}”`
+      : `${s.name} only`;
 
 const clearing = computed(() => request.value?.binding === null);
 const title = computed(() => {
@@ -226,9 +236,7 @@ onBeforeUnmount(() => void stopListening());
       <v-card-text>
         <div class="rr-row-title" data-testid="iracing-edit-action">{{ action.name }}</div>
         <div class="rr-row-sub" data-testid="iracing-edit-set">
-          {{
-            set.general ? 'In the bindings for all cars' : `In the custom controls of ${set.name}`
-          }}
+          {{ setLine(set) }}
         </div>
         <div class="rr-row-sub mb-4" data-testid="iracing-edit-now">
           Now: {{ inWords(action.binding) }}
@@ -305,7 +313,7 @@ onBeforeUnmount(() => void stopListening());
         <dd data-testid="iracing-save-after">{{ review.after }}</dd>
         <dt>For</dt>
         <dd data-testid="iracing-save-set">
-          {{ review.set.general ? 'All cars' : `${review.set.name} only` }}
+          {{ forWhom(review.set) }}
         </dd>
       </dl>
       <v-alert

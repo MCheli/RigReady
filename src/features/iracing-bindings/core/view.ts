@@ -185,6 +185,14 @@ async function locateSets(ctx: BindingsContext, folder: string, cars: string[]):
       });
     }
   }
+  // Cars that name the same profile share one file: a change for one is a change for all.
+  for (const set of sets) {
+    if (set.general) continue;
+    const others = sets
+      .filter((s) => !s.general && s !== set && s.file.toLowerCase() === set.file.toLowerCase())
+      .map((s) => s.name);
+    if (others.length) set.sharedWith = others;
+  }
   return {
     sets,
     source: {

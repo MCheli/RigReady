@@ -468,3 +468,67 @@ test('iRacing bindings: a change goes into the control profile iRacing uses', as
   // The older file beside the profile is never written.
   expect((await fs.readFile(generalFile(run))).equals(older)).toBe(true);
 });
+
+test('iRacing bindings: a change in a car’s own control profile, and a profile two cars share', async ({
+  rig,
+}) => {
+  const run = await rig.launch('iracing-bindings-profile-car', 'iracing-bindings-edit-car-profile');
+  const { page, shot } = run;
+  const profiles = path.join(run.home, 'Documents', 'iRacing', 'profiles', 'controls');
+  const car = path.join(profiles, 'Test Profile CTSV', 'controls.cfg');
+  const baseline = path.join(profiles, 'Baseline', 'controls.cfg');
+  const carBefore = await fs.readFile(car);
+  const baselineBefore = await fs.readFile(baseline);
+  const older = await fs.readFile(generalFile(run));
+  const confirm = page.getByTestId('iracing-save-confirm');
+  const save = page.getByTestId('iracing-save-go');
+  const saved = page.getByTestId('iracing-bindings-saved');
+  const carRoute = `${ROUTE}?set=${encodeURIComponent('car:cadillacctsvr')}`;
+  await page.getByTestId('mode-configure').click();
+  await go(page, carRoute);
+  await expect(counts(page)).toContainText('2 differ from All cars');
+
+  await listenFor(page, 'HeadlightFlash');
+  await expect(page.getByTestId('iracing-edit-set')).toHaveText(
+    'In the custom controls of cadillacctsvr'
+  );
+  await page.keyboard.press('Shift+H');
+  await expect(confirm).toContainText('Bind Flash headlights to Shift+H on the keyboard?');
+  await expect(page.getByTestId('iracing-save-set')).toHaveText('cadillacctsvr only');
+  await expect(confirm).toContainText('profiles\\controls\\Test Profile CTSV\\controls.cfg');
+  await shot('car-profile-review');
+  await save.click();
+  await expect(saved).toHaveText(
+    'Saved in iRacing’s file for cadillacctsvr: Flash headlights is now bound to Shift+H on the keyboard. Undo is on the Safety page.'
+  );
+  expectOnlyRecordChanged(carBefore, await fs.readFile(car), 'HeadlightFlash');
+  // The profile for all cars and the older file are not written.
+  expect((await fs.readFile(baseline)).equals(baselineBefore)).toBe(true);
+  expect((await fs.readFile(generalFile(run))).equals(older)).toBe(true);
+
+  // A second car on the same profile: the box and the review name both cars.
+  await run.mutate([
+    {
+      op: 'writeFile',
+      path: 'Documents/iRacing/app.ini',
+      content:
+        '[ControlProfiles]\r\ncadillacctsvr=Test Profile CTSV\r\nbmwm4gt3=Test Profile CTSV\r\nGlobal=Baseline\r\n\r\n[Drive Screen]\r\nblackBox=2\r\n',
+    },
+  ]);
+  await go(page, '/configure/games/iracing');
+  await go(page, carRoute);
+  await expect(counts(page)).toContainText('differ from All cars');
+  await listenFor(page, 'LookLeft');
+  await expect(page.getByTestId('iracing-edit-set')).toHaveText(
+    'In the profile “Test Profile CTSV”, for cadillacctsvr and bmwm4gt3'
+  );
+  await page.keyboard.press('Shift+K');
+  await expect(page.getByTestId('iracing-save-set')).toHaveText(
+    'cadillacctsvr and bmwm4gt3: they share the profile “Test Profile CTSV”'
+  );
+  await shot('shared-profile-review');
+  await save.click();
+  await expect(saved).toHaveText(
+    'Saved in iRacing’s file for cadillacctsvr and bmwm4gt3, which share the profile “Test Profile CTSV”: Look left is now bound to Shift+K on the keyboard. Undo is on the Safety page.'
+  );
+});

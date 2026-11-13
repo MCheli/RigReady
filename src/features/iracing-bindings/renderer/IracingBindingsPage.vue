@@ -17,6 +17,7 @@ import {
 } from '../contract';
 import DeviceState from './DeviceState.vue';
 import EditDialog from './EditDialog.vue';
+import { listed } from '../core/names';
 import ProfilesSection from './ProfilesSection.vue';
 import { shownActions } from './rows';
 
@@ -71,7 +72,9 @@ async function load(): Promise<void> {
   error.value = undefined;
   overview.value = result.value;
   const sets = result.value.sets;
-  if (sets.length === 0) {
+  // When RigReady cannot tell which profile iRacing uses for all cars, it shows no list at
+  // all, not even a car's own profile: the page says why instead.
+  if (sets.length === 0 || result.value.source.problem) {
     view.value = undefined;
     setError.value = undefined;
     return;
@@ -103,7 +106,9 @@ const setItems = computed(() =>
     title: s.general
       ? s.name
       : s.profile
-        ? `${s.name} (profile “${s.profile}”)`
+        ? s.sharedWith?.length
+          ? `${s.name} (profile “${s.profile}”, also ${listed(s.sharedWith)})`
+          : `${s.name} (profile “${s.profile}”)`
         : `${s.name} (custom controls)`,
   }))
 );
@@ -271,15 +276,22 @@ const cheatSheet = computed(() => ({
         :looked="['every Steam library', 'the usual install folders', 'Documents\\iRacing']"
         game-page="/configure/games/iracing"
       />
-      <v-alert
-        v-else-if="overview.sets.length === 0 && overview.source.problem"
-        type="warning"
-        variant="tonal"
-        class="mb-4"
-        data-testid="iracing-bindings-source-problem"
-        >{{ overview.source.problem }} iRacing shows its bindings in Options, then
-        Controls.</v-alert
-      >
+      <template v-else-if="overview.source.problem">
+        <v-alert
+          type="warning"
+          variant="tonal"
+          class="mb-4"
+          data-testid="iracing-bindings-source-problem"
+          >{{ overview.source.problem }} iRacing shows its bindings in Options, then
+          Controls.</v-alert
+        >
+        <!-- Which profiles there are helps to see what app.ini names that is not there. -->
+        <ProfilesSection
+          v-if="overview.profiles"
+          :profiles="overview.profiles"
+          @copied="onCopied"
+        />
+      </template>
       <EmptyState
         v-else-if="overview.sets.length === 0"
         art="file"

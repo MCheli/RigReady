@@ -20,6 +20,11 @@ export const BindingSetSchema = z.object({
   file: z.string(),
   /** The iRacing control profile the file belongs to; absent on an iRacing without them. */
   profile: z.string().optional(),
+  /**
+   * For a car: the other cars whose app.ini line names the same profile. A change to this
+   * set changes their bindings too, and the page says so before and after saving.
+   */
+  sharedWith: z.array(z.string()).optional(),
 });
 export type BindingSet = z.infer<typeof BindingSetSchema>;
 
@@ -324,6 +329,8 @@ export const CopyReviewSchema = z.object({
   count: z.number().int(),
   /** Of them, how many are cleared. */
   clears: z.number().int(),
+  /** Which cars use the profile copied into, in words: the copy changes their bindings. */
+  usedBy: z.string(),
   preview: ChangePreviewSchema,
   /** The target file as this was worked out from (its SHA-256): hand it to copy as `seen`. */
   seen: z.string(),

@@ -183,7 +183,13 @@ describe('copying bindings from one control profile into another', () => {
       actions: ['LookUp', 'ToggleUIVisibleDrive'],
     };
     const review = await a.invoke<CopyReview>('iracing-bindings:copyPreview', request);
-    expect(review).toMatchObject({ from: TEST, to: BASELINE, count: 2, clears: 0 });
+    expect(review).toMatchObject({
+      from: TEST,
+      to: BASELINE,
+      count: 2,
+      clears: 0,
+      usedBy: `iRacing uses “${BASELINE}” for all cars.`,
+    });
     expect(review.preview.files).toEqual([
       expect.objectContaining({ path: fileOf(a, BASELINE), change: 'modified' }),
     ]);

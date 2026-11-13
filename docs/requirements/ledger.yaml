@@ -6636,8 +6636,16 @@ requirements:
       - "2026-11-13, retest on the rig (sitting log 12:10 to 12:18; a test build of feat/iracing-edit-on at a621fc2a with the switch on, the owner's real profile): the page read profile 'Baseline', 369 actions. In a test drive the owner's chosen rim button and Shift+J first did nothing. RigReady then bound Look up (LookUp, first field 0) to Button 10 on the FANATEC Podium Wheel Base DD2 and Hide or show the driving UI (ToggleUIVisibleDrive, first field 1) to Shift+J, both written to profiles/controls/Baseline/controls.cfg. In iRacing 2026.11.02.01, in a test drive, holding the button tilted the view up and Shift+J hid the driving UI. Point 5 holds for a button and a key. At 12:27 iRacing copied Baseline, with both records unchanged, into a new car profile (BIND-IRACING-003; carFixture.test.ts shows RigReady's writer gives that file byte for byte)."
       - "2026-11-13, retest, finding IR3: the Look up change seemed to save straight after the press, while the notice said RigReady shows what will change first. The code cannot do that: a press only calls changePreview, which writes nothing, and change is called from the review's Save alone. The journal has the two writes at 12:16:15 and 12:16:58 and nothing that tells who pressed Save; the review was most likely confirmed without being noticed. The scenario test now presses the wheel button, holds and presses it again with the review open, checks the file is unchanged, and only then saves. The notice and the review now say 'writes nothing until you press Save'."
       - "2026-11-13, done: the switch RIGREADY_IRACING_EDIT is gone; changing is on as RigReady ships. Point 6 is rewritten to what holds: a car's own profile written by iRacing is read byte for byte and gets the same writer; a change RigReady made in a car's profile has not itself been driven in that car. A clear has not been tried in iRacing either; it writes what iRacing has for an action that was never bound. Both are noted in docs/research/iracing-bindings.md."
+      - "2026-11-13, Copilot review of PR 121: (1) the preview's 'seen' now covers which file and which cars the set is for as well as its bytes, so a save after app.ini pointed All cars at another profile with the same bytes, or after another car joined the profile, writes nothing; (2) when several cars name one profile, the edit box, the review's For, the saved message and the Safety page name every one of them ('cadillacctsvr and bmwm4gt3, which share the profile …'), never fewer; (4) a save into a car's own profile (Test Profile CTSV) is tested through changePreview and change and in a scenario: previewed, backed up, only that record written, Baseline and the older file unchanged, Undo restores it. A save into a car's own profile has not itself been tried in iRacing; it is the same writer on the same kind of file as the Baseline save that was."
     status: done
     evidence:
+      - "src/features/iracing-bindings/core/change.test.ts#previews, backs up and writes the car’s profile, and nothing else"
+      - "src/features/iracing-bindings/core/change.test.ts#names every car that shares the profile, before saving and after"
+      - "src/features/iracing-bindings/core/change.test.ts#writes nothing when another car joined the profile after the preview"
+      - "src/features/iracing-bindings/core/change.test.ts#writes nothing when app.ini points All cars at another profile with the same bytes"
+      - "tests/e2e/iracing-bindings-edit.e2e.ts#iRacing bindings: a change in a car’s own control profile, and a profile two cars share"
+      - "artifacts/screens/iracing-bindings-edit-car-profile/01-car-profile-review.png"
+      - "artifacts/screens/iracing-bindings-edit-car-profile/02-shared-profile-review.png"
       - "src/features/iracing-bindings/core/change.test.ts#needs no switch: with nothing in the environment every channel of it answers"
       - "src/features/iracing-bindings/core/change.test.ts#turns nothing off when the old switch is set to anything"
       - "src/features/iracing-bindings/core/change.test.ts#writes the control profile iRacing uses, never the older controls.cfg beside it"
@@ -6702,13 +6710,16 @@ requirements:
     done_means:
       - "On an iRacing with control profiles (Documents/iRacing/profiles/controls exists, iRacing 2026 Season 3 and later), the set for all cars is the controls.cfg of the profile that app.ini [ControlProfiles] Global names, with the calibration names of the joyCalib.yaml beside it. The older Documents/iRacing/controls.cfg is not shown."
       - "The page says which profile it reads and, when the older controls.cfg is there, that iRacing does not read it any more; the path of the file shown is at the bottom of the page."
-      - "When app.ini cannot be read, names no profile for all cars, or names one without a controls.cfg, the page says it cannot tell which bindings iRacing uses and shows no list. It never shows the older file in their place. A profile name that is not one plain folder name never becomes a path."
+      - "When app.ini cannot be read, names no profile for all cars, or names one without a controls.cfg, the page says it cannot tell which bindings iRacing uses and shows no list, not even a car's own profile that is there. It never shows the older file in their place. A profile name that is not one plain folder name never becomes a path."
       - "Without a profiles folder (an iRacing from before control profiles) the older files are read as before."
       - "The control profile iRacing 2026.11 wrote on the owner's rig (369 actions: the 367 of the older file unchanged and two new ones, no bytes after the last record) is read byte for byte with every record understood, and the actions it added are listed."
     notes:
       - "2026-11-13: found at the rig test of BIND-IRACING-007. iRacing updated itself to 2026.11.02.01 that morning; on its first run (10:45) it copied the older controls.cfg into profiles/controls/Baseline, added PitSummaryToggle and ToggleUIVisibleDrive, and wrote [ControlProfiles] Global=Baseline into app.ini. From then on it read the profile, and RigReady's page showed the older file. The real files were read read-only and the reader was run on copies of them (the page reads Baseline: 369 actions, 183 bound, every record understood). The scenario's profile is the owner's real one with the recorded rig's made-up wheel id. Not in this requirement: the racing feature's iRacing reader (iRacing page, id repair, cheat sheets) still reads only the older files."
+      - "2026-11-13, Copilot review of PR 121: with app.ini naming a missing profile for all cars and an existing car profile, the page hid the warning and showed the car's table. It now shows the warning whenever the profile for all cars cannot be found, and no list (the scenario test below)."
     status: done
     evidence:
+      - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: a car with a control profile of its own, named as iRacing names it"
+      - "artifacts/screens/iracing-bindings-profile-car/02-profile-not-found.png"
       - "src/features/iracing-bindings/core/view.test.ts#reads the profile app.ini names for all cars, not the older controls.cfg"
       - "src/features/iracing-bindings/core/view.test.ts#shows what the profile has when the older file says something else"
       - "src/features/iracing-bindings/core/view.test.ts#names the wheel and its axes from the calibration file of the profile"
@@ -6732,7 +6743,7 @@ requirements:
     priority: p1
     done_means:
       - "On an iRacing with control profiles, the iRacing bindings page lists every folder under Documents/iRacing/profiles/controls, marks the one app.ini [ControlProfiles] Global names as for all cars, and gives each profile the cars whose own line names it (the first line of a car counts, case ignored). A profile without controls.cfg says so; a line naming a profile with no folder is listed as not on this PC."
-      - "The lines are read with the shared lookup in src/core/iracingControls.ts. Reading changes nothing. Without a profiles folder (an iRacing from before them) the list is not shown."
+      - "The lines are read with the shared lookup in src/core/iracingControls.ts. Reading changes nothing. Without a profiles folder (an iRacing from before them) the list is not shown. When app.ini names a profile for all cars that is not there, the page shows no bindings but still lists the profiles, beside the name that is not there."
     notes:
       - "2026-11-13: built on the 12:27 shape from the owner's rig (cadillacctsvr=Test Profile CTSV before Global=Baseline), in the scenario iracing-bindings-profile-car. The list comes with the overview channel, which is read only; no new channel."
     status: done
@@ -6742,6 +6753,7 @@ requirements:
       - "src/features/iracing-bindings/core/copy.test.ts#says nothing about profiles on an iRacing from before them"
       - "tests/e2e/iracing-bindings-profile-manager.e2e.ts#iRacing bindings: the control profiles, and copying bindings from one into another"
       - "artifacts/screens/iracing-profiles-copy/01-profiles.png"
+      - "artifacts/screens/iracing-profiles-copy/06-profile-not-there.png"
 
   - id: BIND-IRACING-PROFILE-002
     title: Copy bindings from one iRacing control profile into another

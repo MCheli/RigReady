@@ -22,7 +22,7 @@ RigReady reads the profile `app.ini` names, and says so beside **Bindings for**:
 
 **Bindings for** chooses the set. **All cars** is the file every car uses unless it has its own.
 
-- On an iRacing with control profiles, a car is in the list when you gave it a profile of its own in iRacing's Options. `app.ini` names the car only by iRacing's short name for it, so that is what the list shows, with the profile: for example "cadillacctsvr (profile “Test Profile CTSV”)" for the Cadillac CTS-V.
+- On an iRacing with control profiles, a car is in the list when you gave it a profile of its own in iRacing's Options. `app.ini` names the car only by iRacing's short name for it, so that is what the list shows, with the profile: for example "cadillacctsvr (profile “Test Profile CTSV”)" for the Cadillac CTS-V. When two or more cars use the same profile, each is listed with the others named, because a change for one of them is a change for all of them; the review before saving and the message after it name every car it reaches.
 - On an older iRacing, a car is in the list when its folder under `Documents\iRacing\setups` holds a `controls.cfg`, which iRacing writes when you tick "Use custom controls for this car". Such a car shows as its folder name with "(custom controls)", for example "mx5 mx52016 (custom controls)".
 
 ![A car with a control profile of its own](../../../artifacts/screens/iracing-bindings-profile-car/01-car-profile.png)
@@ -140,7 +140,7 @@ The other change RigReady makes to these files is the repair of a wheel with a n
 
 - On a PC without iRacing the page says "iRacing was not found on this PC" and links to the iRacing game page.
 - When iRacing is installed but has not written a `controls.cfg` yet, the page says "iRacing has no bindings file yet". Set up your controls in iRacing once, and the page fills in.
-- When iRacing keeps control profiles but `app.ini` names none for all cars, or names one that has no `controls.cfg`, the page says it cannot tell which bindings iRacing uses and shows no list. It never shows the older `controls.cfg` in their place, because iRacing does not read it.
+- When iRacing keeps control profiles but `app.ini` names none for all cars, or names one that has no `controls.cfg`, the page says it cannot tell which bindings iRacing uses and shows no list, not even a car's own profile. It never shows the older `controls.cfg` in their place, because iRacing does not read it.
 - A file that is damaged or cut short is refused with a plain message, and nothing of it is shown.
 
 ![A PC without iRacing](../../../artifacts/screens/iracing-bindings-not-here/01-not-on-this-pc.png)

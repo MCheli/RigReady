@@ -47,6 +47,8 @@ import type { BindingsContext } from './view';
 
 interface Loaded {
   name: string;
+  /** Which cars use the profile, in words. */
+  usedBy: string;
   file: string;
   bytes: Uint8Array;
   parsed: ControlsFile;
@@ -82,6 +84,11 @@ async function loadProfile(ctx: BindingsContext, name: string): Promise<Result<L
     : undefined;
   return ok({
     name: profile.name,
+    usedBy: profile.forAllCars
+      ? `iRacing uses “${profile.name}” for all cars.`
+      : profile.cars.length
+        ? `“${profile.name}” is the profile of ${profile.cars.join(', ')}.`
+        : `No car uses “${profile.name}” now.`,
     file,
     bytes: bytes.value,
     parsed: parsed.value,
@@ -341,6 +348,7 @@ export async function reviewCopy(
     to: to.name,
     count: copied.length,
     clears,
+    usedBy: to.usedBy,
     preview: preview.value,
     seen: sha256(to.bytes),
     ...(blocked ? { blocked } : {}),

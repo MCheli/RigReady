@@ -121,6 +121,9 @@ test('iRacing bindings: the control profiles, and copying bindings from one into
   await expect(page.getByTestId('iracing-copy-what')).toContainText(
     'It changes those actions and nothing else in the file.'
   );
+  await expect(page.getByTestId('iracing-copy-used-by')).toHaveText(
+    `iRacing uses “${BASELINE}” for all cars.`
+  );
   // Looking is not writing.
   expect((await fs.readFile(profileFile(run, BASELINE))).equals(baseline)).toBe(true);
   await shot('copy-review');
@@ -161,6 +164,23 @@ test('iRacing bindings: the control profiles, and copying bindings from one into
   await shot('iracing-running');
   await page.getByTestId('iracing-copy-save-cancel').click();
   expect((await fs.readFile(profileFile(run, BASELINE))).equals(after)).toBe(true);
+  await page.getByTestId('iracing-copy-cancel').click();
+
+  // app.ini names a profile for all cars that is not there: no list of bindings, but the
+  // profiles that are there, beside the name that is not.
+  const ini = iracing(run, 'app.ini');
+  await fs.writeFile(
+    ini,
+    (await fs.readFile(ini, 'latin1')).replace('Global=Baseline', 'Global=Gone'),
+    'latin1'
+  );
+  await go(page, '/configure/games/iracing');
+  await expect(page.getByTestId('iracing-bindings-page')).toHaveCount(0);
+  await go(page, ROUTE);
+  await expect(page.getByTestId('iracing-bindings-source-problem')).toBeVisible();
+  await expect(page.getByTestId('iracing-profile')).toHaveCount(2);
+  await expect(page.getByTestId('iracing-profile-missing')).toContainText('Not on this PC: “Gone”');
+  await shot('profile-not-there');
 });
 
 test('iRacing bindings: a row just saved stays in sight under “Not bound”', async ({ rig }) => {
