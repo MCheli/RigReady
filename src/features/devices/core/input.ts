@@ -1,4 +1,5 @@
 import type { InputDevice, InputState } from '../../../shared/models';
+import { wheelAxisName } from './wheelAxes';
 
 /**
  * How controller input is shown and described, the way a game sees it. The sidecar
@@ -17,16 +18,26 @@ export const AXIS_LABELS: Record<string, string> = {
   SLIDER2: 'Slider 2',
 };
 
-export function axisLabel(device: Pick<InputDevice, 'axisNames'> | undefined, i: number): string {
+/** What an axis is named from: the controller's axes, and its ids where they are known. */
+export type AxisSource = Pick<InputDevice, 'axisNames'> &
+  Partial<Pick<InputDevice, 'vendorId' | 'productId'>>;
+
+/** The axis as Windows and games name it: "X axis", "Slider 1". */
+export function axisWindowsLabel(device: AxisSource | undefined, i: number): string {
   const name = device?.axisNames[i];
   return name ? (AXIS_LABELS[name] ?? name) : `Axis ${i + 1}`;
 }
 
+/**
+ * What to call an axis: on a wheel base whose axes a source names, what the maker calls it
+ * ("Wheel", "Brake"; ./wheelAxes.ts), and the Windows name everywhere else.
+ */
+export function axisLabel(device: AxisSource | undefined, i: number): string {
+  return wheelAxisName(device, device?.axisNames[i]) ?? axisWindowsLabel(device, i);
+}
+
 /** The name DCS gives the axis (JOY_X, JOY_RZ, JOY_SLIDER1). */
-export function axisGameName(
-  device: Pick<InputDevice, 'axisNames'> | undefined,
-  i: number
-): string {
+export function axisGameName(device: AxisSource | undefined, i: number): string {
   const name = device?.axisNames[i];
   return name ? `JOY_${name}` : `JOY_AXIS${i + 1}`;
 }
@@ -94,7 +105,7 @@ export interface InputChange {
 
 /** What changed between two states of one controller. Axis changes below `axisStep` are ignored. */
 export function diffStates(
-  device: Pick<InputDevice, 'axisNames'> | undefined,
+  device: AxisSource | undefined,
   previous: InputState | undefined,
   next: InputState,
   axisStep = 0
@@ -145,7 +156,7 @@ const HAT_CODES: Record<string, string> = {
 
 /** The name games give the control a change is about: JOY_BTN12, JOY_BTN_POV1_U, JOY_Z. */
 export function changeGameName(
-  device: Pick<InputDevice, 'axisNames'> | undefined,
+  device: AxisSource | undefined,
   change: InputChange
 ): string | undefined {
   if (change.kind === 'button') return buttonGameName(change.index);
@@ -175,10 +186,14 @@ function movedText(label: string, from: number, to: number): string {
     : `${label} moved ${percentText(from)} → ${percentText(to)}`;
 }
 
+/** The number of a log line whose controller is gone or was replaced at its number. */
+export const NO_CONTROLLER = -1;
+
 export interface LogEntry {
   id: number;
   /** Milliseconds since the epoch of the latest update to this line. */
   time: number;
+  /** The controller's number in the list, or NO_CONTROLLER once it left that number. */
   deviceIndex: number;
   device: string;
   kind: InputChange['kind'];
@@ -225,7 +240,7 @@ export class ActivityLog {
    * happened: a button or hat line before an axis line.
    */
   record(
-    device: Pick<InputDevice, 'axisNames'> | undefined,
+    device: AxisSource | undefined,
     deviceName: string,
     previous: InputState | undefined,
     next: InputState,
@@ -286,6 +301,24 @@ export class ActivityLog {
     this.lastControl = undefined;
     this.moving.clear();
   }
+
+  /**
+   * The controller that had this number is gone, or another one has the number now. Its
+   * lines stay as the record they are, under the name they were written with, but belong
+   * to no number any more: they never show as the lines of whoever has the number next.
+   */
+  vacate(index: number): void {
+    for (const entry of this.entries) {
+      if (entry.deviceIndex === index) entry.deviceIndex = NO_CONTROLLER;
+    }
+    for (const key of [...this.moving.keys()]) {
+      if (key.startsWith(`${index}:`)) this.moving.delete(key);
+    }
+    for (const key of [...this.settled.keys()]) {
+      if (key.startsWith(`${index}:`)) this.settled.delete(key);
+    }
+    if (this.lastControl?.deviceIndex === index) this.lastControl = undefined;
+  }
 }
 
 /** An axis must move this far from where it was (in -1..1 units, 0.3 = 15% of travel) to identify a device. */
@@ -303,7 +336,7 @@ export interface IdentifyHit {
  * so a jittery axis or a drifting knob does not.
  */
 export function detectIdentify(
-  device: Pick<InputDevice, 'axisNames'> | undefined,
+  device: AxisSource | undefined,
   baseline: InputState | undefined,
   state: InputState
 ): IdentifyHit | undefined {

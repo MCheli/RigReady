@@ -4,6 +4,7 @@ import { errorText, useClient } from '../../../renderer/ipc';
 import type { InputDevice, InputState } from '../../../shared/models';
 import { devicesContract } from '../contract';
 import type { BindingSource, BoundInputs } from '../../../core/boundInputs';
+import { controllerChanges, ownerOf } from '../core/controllers';
 import type { DeviceIdentity } from '../core/identity';
 import { ActivityLog, widen, type AxisRange } from '../core/input';
 import type { NotificationMode, Overview, RigDevice } from '../core/model';
@@ -64,18 +65,27 @@ export const useDevicesStore = defineStore('devices', () => {
       : { ok: false, message: errorText(result.error) };
   }
 
-  /** The device a DirectInput controller belongs to. */
-  function deviceOfController(index: number): RigDevice | undefined {
-    return overview.value?.devices.find((d) => d.controllers.some((c) => c.index === index));
+  /**
+   * The device a DirectInput controller belongs to. Found by the controller itself (its
+   * GUID), never by its number alone: after a plug or unplug another controller can have
+   * the number, and the list here may be from before.
+   */
+  function deviceOfController(
+    controller: Pick<InputDevice, 'index' | 'guid' | 'name'>
+  ): RigDevice | undefined {
+    return ownerOf(overview.value?.devices ?? [], controller)?.device;
   }
 
-  /** What to call a controller: the device's name, with the collection when it has several. */
-  function controllerName(controller: Pick<InputDevice, 'index' | 'name'>): string {
-    const device = deviceOfController(controller.index);
-    if (!device) return controller.name.trim();
+  /**
+   * What to call a controller: the device's name, with the collection when it has several.
+   * A controller the list does not have (yet) goes by its own DirectInput name.
+   */
+  function controllerName(controller: Pick<InputDevice, 'index' | 'guid' | 'name'>): string {
+    const owner = ownerOf(overview.value?.devices ?? [], controller);
+    if (!owner) return controller.name.trim();
+    const { device, position } = owner;
     if (device.controllers.length > 1 && !device.controllersShared) {
-      const position = device.controllers.findIndex((c) => c.index === controller.index) + 1;
-      return `${device.name} (controller ${position} of ${device.controllers.length})`;
+      return `${device.name} (controller ${position + 1} of ${device.controllers.length})`;
     }
     return device.name;
   }
@@ -115,6 +125,8 @@ export const useInputStore = defineStore('devices-input', () => {
   const extra = shallowRef<InputDevice[]>([]);
   const lastActivity = new Map<number, number>();
   const ranges = new Map<string, AxisRange>();
+  /** Per controller and axis: the first value read, which is where a pedal rests. */
+  const rests = new Map<string, number>();
   /** Per controller: the last few seconds of its axes, for the traces and the stick plot. */
   const histories = new Map<number, AxisHistory>();
   /** Per controller: the buttons (zero-based) seen pressed since the tester was opened. */
@@ -140,6 +152,7 @@ export const useInputStore = defineStore('devices-input', () => {
   const client = `tester-${Math.random().toString(36).slice(2)}`;
   let users = 0;
   let off: (() => void) | undefined;
+  let offControllers: (() => void) | undefined;
   let dirty = new Set<number>();
   let logged = false;
   let names: (d: InputDevice) => string = (d) => d.name.trim();
@@ -189,6 +202,7 @@ export const useInputStore = defineStore('devices-input', () => {
       state.axes.forEach((v, i) => {
         const key = `${state.index}:${i}`;
         ranges.set(key, widen(ranges.get(key), v));
+        if (!rests.has(key)) rests.set(key, v);
       });
       let history = histories.get(state.index);
       if (!history || history.axes !== state.axes.length) {
@@ -225,11 +239,47 @@ export const useInputStore = defineStore('devices-input', () => {
     if (logged || dirty.size > 0) schedule();
   }
 
+  /** Drops what was learnt about the controller that had this number. */
+  function forget(index: number): void {
+    states.delete(index);
+    lastActivity.delete(index);
+    for (const key of [...ranges.keys()]) if (key.startsWith(`${index}:`)) ranges.delete(key);
+    for (const key of [...rests.keys()]) if (key.startsWith(`${index}:`)) rests.delete(key);
+    histories.delete(index);
+    tried.delete(index);
+    lastByIndex.delete(index);
+    lastControlByIndex.delete(index);
+    delete pairs[index];
+    if (lastInput.value?.index === index) lastInput.value = undefined;
+    if (lastControl.value?.index === index) lastControl.value = undefined;
+    log.vacate(index);
+    revisions.set(index, (revisions.get(index) ?? 0) + 1);
+    versions[index] = (versions[index] ?? 0) + 1;
+  }
+
+  /**
+   * Takes the list of controllers as it is now. Where another controller has a number, or
+   * none any more, what was learnt about the one before is dropped: its picture, its ranges
+   * and its lines never pass to the next. The names come from the Devices overview, which
+   * is read again whenever the list changed.
+   */
+  function setControllers(list: InputDevice[]): void {
+    const { changed, vacated } = controllerChanges(reported.value, list);
+    for (const index of vacated) forget(index);
+    const known = ready.value;
+    reported.value = list;
+    extra.value = extra.value.filter((e) => !list.some((d) => d.index === e.index));
+    if (vacated.length > 0) {
+      logVersion.value++;
+      schedule();
+    }
+    if (changed && known) void useDevicesStore().load();
+  }
+
   async function loadDevices(): Promise<void> {
     const result = await api.inputDevices();
     if (result.ok) {
-      reported.value = result.value;
-      extra.value = extra.value.filter((e) => !result.value.some((d) => d.index === e.index));
+      setControllers(result.value);
       error.value = undefined;
     } else {
       error.value = errorText(result.error);
@@ -242,6 +292,8 @@ export const useInputStore = defineStore('devices-input', () => {
     users++;
     if (users > 1) return;
     off = api.on('input', ({ states: incoming }) => receive(incoming));
+    // Main says so when a controller comes, goes or gets another number while we watch.
+    offControllers = api.on('controllers', ({ devices: now }) => setControllers(now));
     await loadDevices();
     const watched = await api.watchInput({ client, on: true });
     if (watched.ok) watching.value = users > 0;
@@ -253,6 +305,8 @@ export const useInputStore = defineStore('devices-input', () => {
     if (users > 0) return;
     off?.();
     off = undefined;
+    offControllers?.();
+    offControllers = undefined;
     watching.value = false;
     await api.watchInput({ client, on: false });
   }
@@ -307,8 +361,12 @@ export const useInputStore = defineStore('devices-input', () => {
    */
   function startAgain(index: number): void {
     for (const key of [...ranges.keys()]) if (key.startsWith(`${index}:`)) ranges.delete(key);
+    for (const key of [...rests.keys()]) if (key.startsWith(`${index}:`)) rests.delete(key);
     const state = states.get(index);
-    state?.axes.forEach((v, i) => ranges.set(`${index}:${i}`, widen(undefined, v)));
+    state?.axes.forEach((v, i) => {
+      ranges.set(`${index}:${i}`, widen(undefined, v));
+      rests.set(`${index}:${i}`, v);
+    });
     tried.set(index, new Set(state?.buttons.flatMap((b, i) => (b ? [i] : [])) ?? []));
     revisions.set(index, (revisions.get(index) ?? 0) + 1);
     versions[index] = (versions[index] ?? 0) + 1;
@@ -337,6 +395,7 @@ export const useInputStore = defineStore('devices-input', () => {
     versions,
     lastActivity,
     ranges,
+    rests,
     histories,
     tried,
     revisions,

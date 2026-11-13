@@ -21,8 +21,19 @@ const selected = computed<number | undefined>(() => {
   const value = route.query['controller'];
   return typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : undefined;
 });
-const current = computed(() =>
+const atNumber = computed(() =>
   selected.value === undefined ? undefined : input.devices.find((d) => d.index === selected.value)
+);
+/**
+ * The controller whose own view is open, by its GUID. The number in the address is a place in
+ * a list: after a plug or unplug it can belong to another controller, and the open view never
+ * passes to that one by itself.
+ */
+const chosen = ref<string>();
+const current = computed(() =>
+  atNumber.value && (chosen.value === undefined || atNumber.value.guid === chosen.value)
+    ? atNumber.value
+    : undefined
 );
 const name = (index: number): string => {
   const device = input.deviceFor(index);
@@ -30,8 +41,29 @@ const name = (index: number): string => {
 };
 
 function select(index: number | undefined): void {
+  chosen.value =
+    index === undefined ? undefined : input.devices.find((d) => d.index === index)?.guid;
   void router.replace({ query: index === undefined ? {} : { controller: String(index) } });
 }
+watch(
+  [selected, () => input.devices],
+  ([index], was) => {
+    if (index === undefined) {
+      chosen.value = undefined;
+      return;
+    }
+    // Opened on a controller, or another one was chosen: remember which controller it is.
+    if (chosen.value === undefined || index !== was?.[0]) {
+      chosen.value = atNumber.value?.guid;
+      return;
+    }
+    // The list changed under an open view: follow the controller to the number it has now.
+    const moved = input.devices.find((d) => d.guid === chosen.value);
+    if (moved && moved.index !== index)
+      void router.replace({ query: { controller: String(moved.index) } });
+  },
+  { immediate: true }
+);
 
 const RECENT_MS = 900;
 const recent = (index: number): boolean =>
@@ -40,13 +72,15 @@ const recent = (index: number): boolean =>
 const entries = computed(() => {
   void input.logVersion;
   const list = input.log.entries;
-  return (
-    selected.value === undefined ? list : list.filter((e) => e.deviceIndex === selected.value)
-  ).slice(0, 80);
+  if (selected.value === undefined) return list.slice(0, 80);
+  // The open view's own lines. With its controller gone, the lines of whichever controller
+  // has the number now are not shown as if they were its own.
+  return current.value ? list.filter((e) => e.deviceIndex === selected.value).slice(0, 80) : [];
 });
 const lastInput = computed(() => {
   void input.logVersion;
-  if (selected.value !== undefined) return input.lastByIndex.get(selected.value);
+  if (selected.value !== undefined)
+    return current.value ? input.lastByIndex.get(selected.value) : undefined;
   const last = input.lastInput;
   return last ? `${name(last.index)}: ${last.text}` : undefined;
 });
@@ -69,7 +103,7 @@ const lastBound = computed(() => {
   const last =
     selected.value === undefined
       ? input.lastControl
-      : input.lastControlByIndex.has(selected.value)
+      : current.value && input.lastControlByIndex.has(selected.value)
         ? { index: selected.value, input: input.lastControlByIndex.get(selected.value)! }
         : undefined;
   if (!last) return { aircraft: bound.aircraft.name, gameName: bound.gameName };
@@ -102,7 +136,8 @@ onMounted(async () => {
     void input.loadDevices();
     void devicesStore.load();
   });
-  if (!devicesStore.overview) void devicesStore.load();
+  // Always read again: a list kept from an earlier visit can be from before a plug or unplug.
+  void devicesStore.load();
   void input.loadSources();
   // Bindings may have been edited since this page was last open.
   if (input.boundChoice) void input.chooseBound(input.boundChoice);
@@ -153,7 +188,7 @@ watch(selected, () => (now.value = Date.now()));
         >
         <v-chip
           v-for="d in input.devices"
-          :key="d.index"
+          :key="d.guid"
           :value="d.index"
           variant="outlined"
           :class="{ 'tester-chip-live': recent(d.index) }"
@@ -268,7 +303,7 @@ watch(selected, () => (now.value = Date.now()));
               >All controllers</v-btn
             >
           </div>
-          <ControllerView :device="current" :raw="raw" />
+          <ControllerView :key="current.guid" :device="current" :raw="raw" />
         </div>
         <div v-else-if="selected !== undefined" class="rr-panel rr-empty">
           That controller is not connected any more.
@@ -277,7 +312,7 @@ watch(selected, () => (now.value = Date.now()));
         <div v-else class="tester-cards" data-testid="tester-all-list">
           <CompactController
             v-for="d in input.devices"
-            :key="d.index"
+            :key="d.guid"
             :device="d"
             :name="name(d.index)"
             :recent="recent(d.index)"

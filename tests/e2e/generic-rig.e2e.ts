@@ -136,7 +136,7 @@ const PAGES: ConfigurePage[] = [
     name: 'racing',
     route: '/configure/racing',
     testId: 'racing-page',
-    says: ['No wheel base on this PC', 'Not found on this PC'],
+    says: ['No wheel base RigReady knows is connected', 'Not found on this PC'],
     never: ['presets you recorded'],
   },
   {
@@ -172,7 +172,10 @@ const PAGES: ConfigurePage[] = [
     name: 'wheel',
     route: '/configure/racing/wheel',
     testId: 'wheel-page',
-    says: ['No wheel base on this PC', 'No wheel software is installed'],
+    says: [
+      'No wheel base RigReady knows is connected',
+      'No wheel software RigReady knows is installed',
+    ],
   },
   {
     name: 'devices',

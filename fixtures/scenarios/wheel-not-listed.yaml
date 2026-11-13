@@ -1,0 +1,30 @@
+description: A wheel base of a model RigReady does not know, on a generic PC
+rig: generic-rig
+extends: generic-fresh.yaml
+# Synthetic, not recorded. The base stands for any model that is not in RigReady's table of
+# wheel bases (src/features/racing/core/wheelbases/products.ts): it reports a name, USB ids
+# and one game controller, and RigReady knows nothing else about it. The USB id is the one
+# docs/research/device-ids.md lists for the VRS DirectForce Pro. The name, the GUIDs, the
+# instance path and the controller's axes and buttons are made up, not read from a real base.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_0483&PID_A355\7&1c2d3e4f&0&6'
+      vendorId: '0483'
+      productId: 'A355'
+      name: 'VRS DirectForce Pro Wheel Base'
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+    controller:
+      name: 'VRS DirectForce Pro Wheel Base'
+      guid: 4A7B2C10-9C41-11F0-8002-444553540000
+      productGuid: A3550483-0000-0000-0000-504944564944
+      vendorId: '0483'
+      productId: 'A355'
+      numAxes: 3
+      numButtons: 12
+      numHats: 0
+      axisNames: [X, Y, Z]
