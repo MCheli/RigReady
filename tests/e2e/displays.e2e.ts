@@ -829,7 +829,7 @@ test('monitors: a layout card names every screen in desk order, and says which c
     {
       op: 'plugDisplay',
       display: {
-        id: '\\\\?\\display#tv00001#5&1509d400&0&uid4361#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
+        id: '\\\\?\\display#tv00001#5&8816e581&0&uid4361#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
         name: 'TV',
         edid: 'TV00001',
         serial: 'TV0000001',

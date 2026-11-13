@@ -39,6 +39,7 @@ import {
 } from './lib/recordPlan';
 import {
   identityReplacements,
+  madeUpGuidsIn,
   replaceIdentity,
   replaceIdentityBytes,
   sanitizeDeep,
@@ -391,6 +392,7 @@ async function main(): Promise<void> {
   }
 
   // Stream Deck: two profiles' manifests (settings emptied) and the plugin manifests. No images.
+  // The profile, page and action ids in their names and text are made up (madeUpGuidsIn).
   const streamDeck = path.join(ports.folders.appData(), 'Elgato', 'StreamDeck');
   const profilesDir = path.join(streamDeck, 'ProfilesV3');
   if (await exists(profilesDir)) {
@@ -408,9 +410,15 @@ async function main(): Promise<void> {
       for (const manifest of manifests) {
         await put(
           rec,
-          path.join('AppData\\Roaming\\Elgato\\StreamDeck\\ProfilesV3', profile, manifest.relative),
+          madeUpGuidsIn(
+            path.join(
+              'AppData\\Roaming\\Elgato\\StreamDeck\\ProfilesV3',
+              profile,
+              manifest.relative
+            )
+          ),
           await fs.readFile(manifest.full),
-          redactStreamDeckManifest
+          (text) => madeUpGuidsIn(redactStreamDeckManifest(text))
         );
       }
     }

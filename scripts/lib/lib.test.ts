@@ -8,6 +8,8 @@ import {
   identityReplacements,
   isPlaceholderSerial,
   madeUpGuid,
+  madeUpGuidsIn,
+  madeUpParentPrefix,
   madeUpSerial,
   replaceIdentity,
   replaceIdentityBytes,
@@ -91,10 +93,49 @@ describe('device identity: stable made-up serials and GUIDs', () => {
     expect(() => madeUpGuid('not-a-guid')).toThrow();
   });
 
+  it('a parent id prefix gets made-up hex digits and keeps its level and its shape', () => {
+    for (const prefix of ['7&1a2b3c4d', 'a&9e8d7c6b', '5&cc3f94', '4&2f']) {
+      const made = madeUpParentPrefix(prefix);
+      expect(made).not.toBe(prefix);
+      expect(shape(made)).toBe(shape(prefix));
+      expect(made.split('&')[0]).toBe(prefix.split('&')[0]);
+      expect(made).toMatch(/^[0-9a-f]{1,2}&[1-9a-f][0-9a-f]*$/);
+      expect(madeUpParentPrefix(prefix)).toBe(made);
+    }
+    // Made up from the hex digits: ids that shared a prefix still share one.
+    expect(madeUpParentPrefix('8&1a2b3c4d').slice(2)).toBe(
+      madeUpParentPrefix('7&1a2b3c4d').slice(2)
+    );
+    expect(() => madeUpParentPrefix('USB\\VID_1234')).toThrow();
+  });
+
+  it('every GUID of a Stream Deck profile is made up, the same way in its names and its text', () => {
+    const profile = '1A2B3C4D-5E6F-4A7B-8C9D-0E1F2A3B4C5D';
+    const page = '6E7F8A9B-0C1D-4E2F-9A3B-4C5D6E7F8A9B';
+    const file = `ProfilesV3\\${profile}.sdProfile\\Profiles\\${page}\\manifest.json`;
+    const text = `{"Pages":{"Current":"${page.toLowerCase()}","Pages":["${page}"]},"Name":"DCS World","Model":"20GAT9902"}`;
+    const madeProfile = madeUpGuid(profile);
+    const madePage = madeUpGuid(page);
+    expect(madeUpGuidsIn(file)).toBe(
+      `ProfilesV3\\${madeProfile}.sdProfile\\Profiles\\${madePage}\\manifest.json`
+    );
+    expect(madeUpGuidsIn(text)).toBe(
+      `{"Pages":{"Current":"${madePage.toLowerCase()}","Pages":["${madePage}"]},"Name":"DCS World","Model":"20GAT9902"}`
+    );
+    // Only whole GUIDs: one inside a longer run of hex is left alone.
+    expect(madeUpGuidsIn(`0${profile}`)).toBe(`0${profile}`);
+  });
+
   it('finds every serial and instance GUID of a recording, placeholders aside', () => {
     const map = identityReplacements({
       devices: [{ serial: 'K7Q2XW93P1LM' }, { serial: 'FF' }, {}],
-      displays: [{ serial: '1' }, { serial: 'MON1234567', usbSerial: 'QZ20231115083000' }],
+      displays: [
+        {
+          serial: '1',
+          id: '\\\\?\\display#abc0001#7&1a2b3c4d&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
+        },
+        { serial: 'MON1234567', usbSerial: 'QZ20231115083000' },
+      ],
       input: [{ guid: '1A2B3C40-5D6E-11F0-8007-444553540000' }],
       audio: { devices: [{ id: '{0.0.0.00000000}.{0a1b2c3d-4e5f-4a6b-9c7d-8e9f0a1b2c3d}' }] },
       registry: {
@@ -112,6 +153,7 @@ describe('device identity: stable made-up serials and GUIDs', () => {
       [
         '0A1B2C3D-4E5F-4A6B-9C7D-8E9F0A1B2C3D',
         '1A2B3C40-5D6E-11F0-8007-444553540000',
+        '7&1a2b3c4d',
         '9F8E7D60-5C4B-11EE-8001-444553540000',
         'K7Q2XW93P1LM',
         'MON1234567',
@@ -125,6 +167,7 @@ describe('device identity: stable made-up serials and GUIDs', () => {
     const map = new Map([
       [guid, madeUpGuid(guid)],
       ['K7Q2XW93P1LM', madeUpSerial('K7Q2XW93P1LM')],
+      ['7&1a2b3c4d', madeUpParentPrefix('7&1a2b3c4d')],
     ]);
     const made = map.get(guid)!;
     const dcs = (g: string): string =>
@@ -135,6 +178,7 @@ describe('device identity: stable made-up serials and GUIDs', () => {
       `"value": "${guidRegistryBytes(guid).toLowerCase()}"`,
       `\\\\?\\usb#vid_1234&pid_5678#k7q2xw93p1lm#{a5dcbf10-6530-11d2-901f-00c04fb951ed}`,
       `USB\\VID_1234&PID_5678\\K7Q2XW93P1LM and XK7Q2XW93P1LM and K7Q2XW93P1LM0`,
+      `"id": "\\\\\\\\?\\\\display#abc0001#7&1a2b3c4d&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}"`,
     ].join('\n');
     const out = replaceIdentity(text, map).split('\n');
     expect(out[0]).toBe(`"guid": "${made}",`);
@@ -145,6 +189,10 @@ describe('device identity: stable made-up serials and GUIDs', () => {
     );
     expect(out[4]).toBe(
       `USB\\VID_1234&PID_5678\\${map.get('K7Q2XW93P1LM')} and XK7Q2XW93P1LM and K7Q2XW93P1LM0`
+    );
+    // A monitor's instance id, as the recorded JSON holds it: only the parent id prefix changes.
+    expect(out[5]).toBe(
+      `"id": "\\\\\\\\?\\\\display#abc0001#${map.get('7&1a2b3c4d')}&0&uid256#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}"`
     );
     expect(replaceIdentity(text, new Map())).toBe(text);
   });
@@ -253,6 +301,72 @@ ${extra}`;
     );
     expect(validateLedger(file, dir).problems).toEqual([
       'FLY-001: done needs at least one automated test as evidence',
+    ]);
+  });
+
+  it('checks a scenario test’s title in its file, as it does a unit test’s', async () => {
+    await fs.mkdir(path.join(dir, 'tests', 'e2e'), { recursive: true });
+    await fs.writeFile(
+      path.join(dir, 'tests', 'e2e', 'fly.e2e.ts'),
+      [
+        "test('fly: Make ready turns every check green', async ({ rig }) => {});",
+        "test('fly: the page says \\'Starting\\' with the game\\'s name', async ({ rig }) => {});",
+        'test("fly: a \\"quoted\\" title", async ({ rig }) => {});',
+      ].join('\n')
+    );
+    await fs.writeFile(
+      file,
+      entry(`    status: done
+    evidence:
+      - "tests/e2e/fly.e2e.ts#fly: Make ready turns every check green"
+      - "tests/e2e/fly.e2e.ts > fly: the page says 'Starting' with the game's name"
+      - 'tests/e2e/fly.e2e.ts::fly: a "quoted" title'
+      - artifacts/screens/fly/ready.png`)
+    );
+    // A scenario test is a test: it is enough on its own for done.
+    expect(validateLedger(file, dir)).toMatchObject({ counts: { done: 1 }, problems: [] });
+
+    await fs.writeFile(
+      file,
+      entry(`    status: done
+    evidence:
+      - "tests/e2e/fly.e2e.ts#fly: a test that was renamed"
+      - "tests/e2e/gone.e2e.ts#fly: Make ready turns every check green"`)
+    );
+    expect(validateLedger(file, dir).problems).toEqual([
+      'FLY-001: test "fly: a test that was renamed" not found in tests/e2e/fly.e2e.ts',
+      'FLY-001: evidence does not exist: tests/e2e/gone.e2e.ts',
+    ]);
+  });
+
+  it('checks the evidence of entries that are not done yet, without asking them for any', async () => {
+    await fs.writeFile(
+      file,
+      `requirements:
+  - id: FLY-001
+    title: A
+    job: fly
+    done_means: [x]
+    status: in_progress
+    evidence:
+      - tests/a.test.ts#opens on the last profile
+      - tests/a.test.ts#a test that was renamed
+      - artifacts/screens/fly/nope.png
+  - id: FLY-002
+    title: B
+    job: fly
+    done_means: [x]
+    status: todo
+  - id: FLY-003
+    title: C
+    job: fly
+    done_means: [x]
+    status: todo
+    evidence: [artifacts/screens/fly/ready.png]`
+    );
+    expect(validateLedger(file, dir).problems).toEqual([
+      'FLY-001: test "a test that was renamed" not found in tests/a.test.ts',
+      'FLY-001: evidence does not exist: artifacts/screens/fly/nope.png',
     ]);
   });
 

@@ -118,13 +118,15 @@ test('diagnostics: an unexpected error in main or in the window is logged and sh
   // An exception nobody caught, in the main process.
   await app.evaluate(() => {
     setTimeout(() => {
-      throw new Error('tray icon handler exploded');
+      throw new Error('The tray icon could not be shown.');
     }, 0);
   });
   const notice = page.getByTestId('error-notice');
   await expect(notice).toBeVisible();
   await expect(notice.getByTestId('error-notice-title')).toHaveText('Something went wrong');
-  await expect(notice.getByTestId('error-notice-message')).toHaveText('tray icon handler exploded');
+  await expect(notice.getByTestId('error-notice-message')).toHaveText(
+    'The tray icon could not be shown.'
+  );
   await shot('main-error');
   // Not blocking: the screen behind it still works.
   await page.getByTestId('group-toggle-devices').click();
@@ -135,7 +137,7 @@ test('diagnostics: an unexpected error in main or in the window is logged and sh
   const details = (await clipboard(app)).at(-1)!;
   expect(details).toMatch(/^RigReady \S+ on Windows/);
   expect(details).toContain('unexpected error in main');
-  expect(details).toContain('Error: tray icon handler exploded\n    at ');
+  expect(details).toContain('Error: The tray icon could not be shown.\n    at ');
   await shot('copied-details');
 
   // A rejected promise nobody handled, also in main: the notice counts up.
@@ -172,7 +174,7 @@ test('diagnostics: an unexpected error in main or in the window is logged and sh
   const errors = root.locator('[data-testid="log-entry"][data-level="error"]');
   await expect(errors).toHaveCount(4);
   await expect(
-    errors.filter({ hasText: 'unexpected error in main: tray icon handler exploded' })
+    errors.filter({ hasText: 'unexpected error in main: The tray icon could not be shown.' })
   ).toHaveCount(1);
   await expect(
     errors.filter({ hasText: 'unexpected error in window: fetch of the layout rejected' })

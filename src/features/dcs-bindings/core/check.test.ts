@@ -65,7 +65,7 @@ describe('the Fly check for bindings', () => {
     const current = (await fs.readdir(dir)).find((f) => f.startsWith('WINWING UFC1'))!;
     await fs.rename(
       path.join(dir, current),
-      path.join(dir, 'WINWING UFC1 + HUD1 {4F2206B0-9AA7-11ee-8023-444553540000}.diff.lua')
+      path.join(dir, 'WINWING UFC1 + HUD1 {1D7541E7-1CD1-16fa-8023-444553540000}.diff.lua')
     );
     let report = await app.invoke<ChecklistReport>('fly:check', { profileId });
     // Optional by default: a warning, and the setup is still Ready.
@@ -84,7 +84,7 @@ describe('the Fly check for bindings', () => {
       summary: 'Bindings for 10 devices belong to old device IDs',
     });
     expect(report.results[0]!.details).toContain(
-      'Bindings for WINWING UFC1 + HUD1 belong to an old device ID (4F2206B0-9AA7-11ee-8023-444553540000)'
+      'Bindings for WINWING UFC1 + HUD1 belong to an old device ID (1D7541E7-1CD1-16fa-8023-444553540000)'
     );
 
     // Make ready never leaves the Play screen for it: the item is listed under "Needs you"
@@ -117,7 +117,7 @@ describe('the Fly check for bindings', () => {
     expect(app.events).toContainEqual({ channel: 'dcs-bindings:event:openMigration', payload: {} });
     expect(made.report.results[0]!.status).toBe('warn');
     expect(await fs.readdir(dir)).toContain(
-      'WINWING UFC1 + HUD1 {4F2206B0-9AA7-11ee-8023-444553540000}.diff.lua'
+      'WINWING UFC1 + HUD1 {1D7541E7-1CD1-16fa-8023-444553540000}.diff.lua'
     );
 
     // After migrating through the screen's own channel the check is green again.

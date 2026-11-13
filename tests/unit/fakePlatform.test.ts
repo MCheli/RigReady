@@ -111,7 +111,7 @@ describe('mutations', () => {
   it('plugDisplay connects a monitor the rig does not have; the same id twice is an error', async () => {
     const base = await markFull();
     const tv = {
-      id: '\\\\?\\DISPLAY#TV00001#5&1509d400&0&UID4361#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
+      id: '\\\\?\\DISPLAY#TV00001#5&8816e581&0&UID4361#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
       name: 'TV',
       enabled: true,
       primary: false,

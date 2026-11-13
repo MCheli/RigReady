@@ -80,7 +80,7 @@ export function connectorName(outputTechnology: number): string {
   }
 }
 
-/** `\\?\display#reg0319#a&2c1ac5a9&0&uid256#{...}` to the device instance id `DISPLAY\REG0319\A&2C1AC5A9&0&UID256`. */
+/** `\\?\display#reg0319#a&5a2ab1a5&0&uid256#{...}` to the device instance id `DISPLAY\REG0319\A&5A2AB1A5&0&UID256`. */
 export function monitorInstanceId(devicePath: string): string | undefined {
   const parts = devicePath.replace(/^\\\\\?\\/, '').split('#');
   if (parts.length < 3 || parts[0]!.toLowerCase() !== 'display') return undefined;

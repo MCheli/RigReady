@@ -620,7 +620,7 @@ Add your own file, prefixed with your feature (`audio-wrong-default.yaml`); do n
 
 - **Programs are empty files.** `DCS.exe`, `iRacingUI.exe`, `TrackIR5.exe`, `HidHideCLI.exe`, `StreamDeck.exe`, `SimAppPro.exe` and so on exist with zero bytes so `files.exists()` detection works. There is nothing to run and no file version to read.
 - **Recorded paths are re-pointed.** In registry values and in the recorded text files, `C:\Users\User`, `C:\Program Files`, `C:\Program Files (x86)` and `C:\ProgramData` become the matching folder under the fake home, in `\`, `\\` and `/` spellings. Process paths in `processes.json` are left as recorded (`C:\Program Files (x86)\TrackIR5\TrackIR5.exe`).
-- Never recorded: `%APPDATA%\SimAppPro\config.json` (account credentials), DCS `network.vault` and `steam_authdata.bin`, images, binaries. Steam ids and the LMU player name are replaced. Device serial numbers and instance GUIDs (controllers, audio endpoints) are stable made-up values of the same shape, made by `scripts/lib/sanitize.ts`: the same device always gets the same value, so tests may name them.
+- Never recorded: `%APPDATA%\SimAppPro\config.json` (account credentials), DCS `network.vault` and `steam_authdata.bin`, images, binaries. Steam ids and the LMU player name are replaced. Device serial numbers, instance GUIDs (controllers, audio endpoints), the parent id prefix in monitors' instance ids and the ids in Stream Deck's profiles are stable made-up values of the same shape, made by `scripts/lib/sanitize.ts`: the same device always gets the same value, so tests may name them. Scenario data copied from elsewhere (the old-ids binding files) uses the same rule.
 
 ### The generic rig (`generic-rig`)
 
@@ -692,7 +692,7 @@ In `docs/requirements/ledger.yaml`, set `status: done` only with evidence, in th
       - "artifacts/screens/audio-wrong-default/02-fixed.png"
 ```
 
-A test is `<file>#<test title>`; the file must exist and contain that title (quote the line: titles often contain `:`). A screenshot or other file is a path from the repository root and must exist (commit `artifacts/screens/<flow>/`). `done` needs at least one test. `npm run ledger:check` (part of `npm run check`) enforces this. Where an entry says `mark-flight`, use `mark-full` with mutations (`flying-fresh` and the scenarios that extend it); `mark-racing` is the scenario `mark-racing` (or `mark-racing-tv` when the entry needs the TV or SimHub); `generic-rig` is `fixtures/rigs/generic-rig` through the `generic-*` scenarios (section 9). Edit only your own entries, and only their `status` and `evidence` lines, so parallel branches merge cleanly.
+A test is `<file>#<test title>`, a unit test or an e2e test; the file must exist and contain that title (quote the line: titles often contain `:`). A screenshot or other file is a path from the repository root and must exist (commit `artifacts/screens/<flow>/`). `done` needs at least one test. Evidence on an entry that is not done yet is checked the same way. `npm run ledger:check` (part of `npm run check`) enforces this. Where an entry says `mark-flight`, use `mark-full` with mutations (`flying-fresh` and the scenarios that extend it); `mark-racing` is the scenario `mark-racing` (or `mark-racing-tv` when the entry needs the TV or SimHub); `generic-rig` is `fixtures/rigs/generic-rig` through the `generic-*` scenarios (section 9). Edit only your own entries, and only their `status` and `evidence` lines, so parallel branches merge cleanly.
 
 ## 13. Before you commit
 

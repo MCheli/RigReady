@@ -240,7 +240,7 @@ describe('binding snapshots', () => {
     await useOldBindings(rig.home, HORNET);
     await useOldBindings(rig.home, HUEY);
     const oldStick =
-      'WINWING Orion Joystick Base 2 + JGRIP-F16 {D3437B70-A035-11EE-8001-444553540000}';
+      'WINWING Orion Joystick Base 2 + JGRIP-F16 {B5401E72-C482-10DA-8001-444553540000}';
     const newStick =
       'WINWING Orion Joystick Base 2 + JGRIP-F16 {480FAD44-D166-18c0-8023-444553540000}';
     await fs.writeFile(
@@ -262,14 +262,14 @@ describe('binding snapshots', () => {
     ]);
     expect(plan.value.files).toHaveLength(21);
     expect(plan.value.files.every((f) => f.action === 'create')).toBe(true);
-    expect(plan.value.files.some((f) => f.path.includes('D3437B70'))).toBe(false);
+    expect(plan.value.files.some((f) => f.path.includes('B5401E72'))).toBe(false);
 
     // The user can ask for the snapshot's own ids; then it warns that DCS will not find them.
     const literal = await planRestore(bindings, created.value.id, false);
     expect(literal.ok && literal.value.notes[0]).toMatch(
       /^10 devices have a different device ID now.*restored under the old IDs, where DCS will not find them/
     );
-    expect(literal.ok && literal.value.files.some((f) => f.path.includes('D3437B70'))).toBe(true);
+    expect(literal.ok && literal.value.files.some((f) => f.path.includes('B5401E72'))).toBe(true);
 
     expect((await applyRestore(bindings, created.value.id, true)).ok).toBe(true);
     for (const aircraft of [HORNET, HUEY]) {

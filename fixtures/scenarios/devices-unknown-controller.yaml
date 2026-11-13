@@ -11,7 +11,7 @@ extends: generic-more-sims.yaml
 mutations:
   - op: plugDevice
     device:
-      instanceId: 'USB\VID_2341&PID_8036\6&2b1c0d9e&0&3'
+      instanceId: 'USB\VID_2341&PID_8036\6&6b4a0b2e&0&3'
       vendorId: '2341'
       productId: '8036'
       name: 'Arduino Leonardo'
@@ -22,7 +22,7 @@ mutations:
         - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
     controller:
       name: 'Arduino Leonardo'
-      guid: 7C5D3E20-9C41-11F0-8003-444553540000
+      guid: 4B8C3A89-4D36-19F2-8003-444553540000
       productGuid: 80362341-0000-0000-0000-504944564944
       vendorId: '2341'
       productId: '8036'

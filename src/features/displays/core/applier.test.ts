@@ -193,7 +193,7 @@ describe('a layout applied by Make ready or Stand down', () => {
     const dell = rig.ports.state.displays.find((d) => d.name === 'DELL G3223D')!;
     rig.ports.state.displays.push({
       ...structuredClone(dell),
-      id: '\\\\?\\display#tv00001#5&1509d400&0&uid4999#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
+      id: '\\\\?\\display#tv00001#5&8816e581&0&uid4999#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}',
       name: 'TV',
       enabled: false,
       primary: false,

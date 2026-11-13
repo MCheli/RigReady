@@ -85,8 +85,8 @@ describe('EDID', () => {
       'Other',
       'Other',
     ]);
-    expect(monitorInstanceId(id('reg0319', 'a&2c1ac5a9&0&uid256'))).toBe(
-      'DISPLAY\\REG0319\\A&2C1AC5A9&0&UID256'
+    expect(monitorInstanceId(id('reg0319', 'a&5a2ab1a5&0&uid256'))).toBe(
+      'DISPLAY\\REG0319\\A&5A2AB1A5&0&UID256'
     );
     expect(monitorInstanceId('nonsense')).toBeUndefined();
     expect(usbIdentity('USB\\VID_17E9&PID_FF00\\PBOC22104847830214489')).toEqual({
@@ -103,16 +103,16 @@ describe('EDID', () => {
 });
 
 describe('telling monitors apart', () => {
-  const ultrawide = monitor('sam7053', '5&1509d400&0&uid4357', 0, { serial: 'O8HO530811' });
-  const left = monitor('reg0319', 'a&2c1ac5a9&0&uid256', 5120, {
+  const ultrawide = monitor('sam7053', '5&8816e581&0&uid4357', 0, { serial: 'O8HO530811' });
+  const left = monitor('reg0319', 'a&5a2ab1a5&0&uid256', 5120, {
     serial: '1',
     usbSerial: 'WWIN-A',
   });
-  const centre = monitor('reg0319', 'a&270816bc&0&uid256', 5888, {
+  const centre = monitor('reg0319', 'a&618400bb&0&uid256', 5888, {
     serial: '1',
     usbSerial: 'WWIN-B',
   });
-  const right = monitor('reg0319', 'a&2f291759&0&uid256', 6656, {
+  const right = monitor('reg0319', 'a&7e437000&0&uid256', 6656, {
     serial: '1',
     usbSerial: 'WWIN-C',
   });
@@ -166,9 +166,9 @@ describe('telling monitors apart', () => {
   });
 
   it('follows a monitor to another connector by its EDID serial, or by being the only one of its model', () => {
-    const dell = monitor('deld139', '5&1509d400&0&uid4355', 0, { serial: '25PGII6' });
-    const dellMoved = { ...dell, id: id('deld139', '5&1509d400&0&uid4999') };
-    const twin = { ...dell, id: id('deld139', '5&1509d400&0&uid5000'), serial: 'OTHER' };
+    const dell = monitor('deld139', '5&8816e581&0&uid4355', 0, { serial: '25PGII6' });
+    const dellMoved = { ...dell, id: id('deld139', '5&8816e581&0&uid4999') };
+    const twin = { ...dell, id: id('deld139', '5&8816e581&0&uid5000'), serial: 'OTHER' };
     expect(matchMonitors([target(dell)], [twin, dellMoved])[0]).toMatchObject({
       how: 'serial',
       actual: { id: dellMoved.id },

@@ -118,7 +118,7 @@ Every window (the main one and panels opened with `openPanel`) is created with c
 
 ## Requirements ledger
 
-`docs/requirements/ledger.yaml`: one entry per requirement with `id`, `title`, `job` (fly / configure / troubleshoot / platform), `done_means` (observable acceptance criteria), `status` (`todo` / `in_progress` / `done`), and `evidence` (test ids and screenshot paths). `npm run ledger:check` fails if a `done` entry has no evidence or its evidence does not exist. The ledger is updated in the same commit as the work.
+`docs/requirements/ledger.yaml`: one entry per requirement with `id`, `title`, `job` (fly / configure / troubleshoot / platform), `done_means` (observable acceptance criteria), `status` (`todo` / `in_progress` / `done`), and `evidence` (test ids and screenshot paths). `npm run ledger:check` fails if a `done` entry has no evidence or no test among it, or if any entry names evidence that does not exist: a file that is not there, or a test title (unit or e2e) that is not in its file. The ledger is updated in the same commit as the work.
 
 ## Safety
 

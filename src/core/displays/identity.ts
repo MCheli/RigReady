@@ -6,7 +6,7 @@ import type { DisplayInfo, DisplayTarget } from '../../shared/models';
  * they all agree on which screen is which.
  *
  * A monitor's id is its device interface path, e.g.
- * `\\?\display#reg0319#a&2c1ac5a9&0&uid256#{e6f07b5f-...}`: the EDID model code
+ * `\\?\display#reg0319#a&5a2ab1a5&0&uid256#{e6f07b5f-...}`: the EDID model code
  * (`reg0319`) plus the instance of the connector it is plugged into. Windows' own
  * numbering (\\.\DISPLAY5, "monitor 2") changes whenever monitors are turned on or off;
  * the id does not, but it can change when the cable moves to another connector.
