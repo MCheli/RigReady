@@ -85,7 +85,7 @@ describe('input as a game sees it', () => {
   it('calls the axes of a wheel base what its maker calls them, with the Windows name at hand', () => {
     expect(dd2.axisNames.map((_, i) => axisLabel(dd2, i))).toEqual([
       'Wheel',
-      'Combined pedals',
+      'Clutch or combined pedals',
       'Accelerator',
       'X rotation',
       'Y rotation',
@@ -196,6 +196,12 @@ describe('activity log', () => {
     );
     // What a game would be told is unchanged.
     expect(log.lastControl).toEqual({ deviceIndex: 0, input: 'JOY_RZ' });
+    // The clutch pedal on Y, with the pedals separate: never called "Combined pedals" alone.
+    const clutch = wheel([0.5, -1, -1, 0, 0, 1, -1, 0]);
+    expect(log.record(dd2, 'Wheel base', braking, clutch, 4000)?.text).toBe(
+      'Clutch or combined pedals moved 50% → 0%'
+    );
+    expect(log.lastControl).toEqual({ deviceIndex: 0, input: 'JOY_Y' });
   });
 
   it('never passes the lines of one controller on to the next one with its number', () => {

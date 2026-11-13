@@ -1,4 +1,10 @@
-import { TrainerSession, type Press, type TrainerCard, type Verdict } from './trainer';
+import {
+  TrainerSession,
+  type Press,
+  type TrainerAnswer,
+  type TrainerCard,
+  type Verdict,
+} from './trainer';
 
 /**
  * A round of the trainer played on live input: which of the things the controllers report
@@ -26,6 +32,14 @@ import { TrainerSession, type Press, type TrainerCard, type Verdict } from './tr
  *     to rest happens before the card, not on it. A slow way back would otherwise end on
  *     the next card, and answer it if that card asks for the place the switch rests in.
  *     A switch that is left where it was put holds the next card back for MAX_REST_MS.
+ *  5. A switch position or a throttle stop is not let go: it is where the control stays. A
+ *     position is taken for one when it, or another position the device's drawing gives
+ *     the same control (`otherPositions`), was held while nobody touched the controls: when
+ *     the round or a card began. An answer in such a position counts once it is held for a
+ *     moment, like any other, and the next card comes with it still there, without waiting
+ *     for the other positions of its control. A card that asks for the position its
+ *     control is already in is answered by moving it away and back (rule 1); on the way,
+ *     the other positions of that control are not a wrong answer.
  *
  * Time is passed in, so a recorded sequence plays back the same way every time.
  */
@@ -200,8 +214,10 @@ export class TrainerRound {
 
   /** The control being weighed as the answer, and when it will have been held long enough. */
   get weighing(): { press: Press; since: number; until: number } | undefined {
-    const w = this.weighed[0];
-    if (!w || this.session.phase !== 'asking') return undefined;
+    if (this.session.phase !== 'asking') return undefined;
+    // A position the card's control was moved away to is no answer: nothing is weighed.
+    const w = this.weighed.find((x) => !this.makingWay(x));
+    if (!w) return undefined;
     return {
       press: { guid: w.guid, control: w.control },
       since: w.since,
@@ -227,11 +243,65 @@ export class TrainerRound {
       .map((a) => ({ guid: a.guid, control: a.control }));
   }
 
+  /**
+   * The controls the card asks for that were in place when it came up and have been moved
+   * away since. Moved back, one of them answers: the user is told, so that the way away
+   * does not look like the end of it.
+   */
+  get movedAway(): Press[] {
+    const { card, phase } = this.session;
+    if (!card || (phase !== 'asking' && phase !== 'wrong' && phase !== 'shown')) return [];
+    return card.answers
+      .filter((a) => this.wasHome(a) && !this.isHeld(a))
+      .map((a) => ({ guid: a.guid, control: a.control }));
+  }
+
   /** Whether the control that answered the card is still held. */
   get holding(): boolean {
     const answered = this.session.answered;
-    return (
-      answered !== undefined && (this.known.get(answered.guid)?.held.has(answered.control) ?? false)
+    return answered !== undefined && this.isHeld(answered);
+  }
+
+  /**
+   * The control that answered is held in a position it stays in (rule 5): the next card
+   * comes with it there, so it is not to be let go.
+   */
+  get staysPut(): boolean {
+    const answered = this.session.answered;
+    return answered !== undefined && this.isHeld(answered) && this.stays(answered);
+  }
+
+  private isHeld(press: Press): boolean {
+    return this.known.get(press.guid.toUpperCase())?.held.has(press.control) ?? false;
+  }
+
+  /** It was held when the card on screen came up. */
+  private wasHome(press: Press): boolean {
+    const guid = press.guid.toUpperCase();
+    return this.home.some((h) => h.guid === guid && h.control === press.control);
+  }
+
+  /**
+   * A position its control stays in without a hand (rule 5): it, or another position of the
+   * same control, was held when the round or a card began, while nothing was touched.
+   */
+  private stays(answer: TrainerAnswer): boolean {
+    const guid = answer.guid.toUpperCase();
+    return [answer.control, ...(answer.otherPositions ?? [])].some((control) =>
+      this.rested.has(key(guid, control))
+    );
+  }
+
+  /**
+   * Another position of a control the card asks for, where that control was when the card
+   * came up: it was moved away to be moved back, as the card says, and is no answer.
+   */
+  private makingWay(w: Weighed): boolean {
+    return (this.session.card?.answers ?? []).some(
+      (a) =>
+        a.guid.toUpperCase() === w.guid &&
+        (a.otherPositions ?? []).includes(w.control) &&
+        this.wasHome(a)
     );
   }
 
@@ -329,6 +399,8 @@ export class TrainerRound {
     const right = this.isRight(w);
     const press: Press = { guid: w.guid, control: w.control };
     if (phase === 'asking' && !right) {
+      // On the way away and back, as the card asks: nothing to say, nothing missed.
+      if (this.makingWay(w)) return;
       const why = this.excused(w);
       if (why) {
         // Excused once for the card before: pressed again on the card after this one, it
@@ -364,14 +436,17 @@ export class TrainerRound {
   }
 
   /**
-   * When the card on screen is done with and the answering control let go: from then on
-   * the next card waits only for the controllers to be still and back where they were.
+   * When the card on screen is done with and the answering control let go, or left in a
+   * position it stays in: from then on the next card waits only for the controllers to be
+   * still and back where they were.
    */
   private freeAt(): number | undefined {
     const { phase, answered } = this.session;
     if ((phase !== 'right' && phase !== 'corrected') || !answered) return undefined;
-    const known = this.known.get(answered.guid);
-    if (known?.held.has(answered.control)) return undefined;
+    const known = this.known.get(answered.guid.toUpperCase());
+    if (known?.held.has(answered.control)) {
+      return this.stays(answered) ? this.verdictAt + SHOW_MS : undefined;
+    }
     return Math.max(this.verdictAt + SHOW_MS, known?.changed.get(answered.control) ?? -Infinity);
   }
 
@@ -379,14 +454,20 @@ export class TrainerRound {
    * A switch of the round that was in its place when the card came up is not there now: it
    * is on its way back, or it was left where it was put. A way back that ended on the next
    * card would answer it, if that card asks for the place the switch rests in. The control
-   * that answered is not waited for: letting go of it is what brings the next card.
+   * that answered is not waited for: letting go of it is what brings the next card. Nor,
+   * while it is held, are the other positions of its control: it cannot be in two at once.
    */
   private away(): boolean {
     const answered = this.session.answered;
+    const own = new Set<string>();
+    if (answered) {
+      own.add(answered.control);
+      if (this.isHeld(answered)) for (const p of answered.otherPositions ?? []) own.add(p);
+    }
     return this.home.some(
       ({ guid, control }) =>
         (!this.devices || this.devices.has(guid)) &&
-        !(answered?.guid === guid && answered.control === control) &&
+        !(answered?.guid.toUpperCase() === guid && own.has(control)) &&
         !(this.known.get(guid)?.held.has(control) ?? false)
     );
   }

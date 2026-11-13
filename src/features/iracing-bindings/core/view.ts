@@ -16,7 +16,7 @@ import {
   type SetView,
   type SharedInput,
 } from '../contract';
-import { readCalibration, type CalibratedDevice } from './calibration';
+import { readCalibration, shownAxisName, type CalibratedDevice } from './calibration';
 import { parseControlsFile, usbIdsOf, type ControlRecord, type ControlsFile } from './controlsFile';
 import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './names';
 
@@ -206,7 +206,7 @@ function resolve(
   const name = deviceName(b.instanceGuid);
   if (b.kind === 'axis') {
     const named = calibration.find((c) => c.instanceGuid === b.instanceGuid)?.axes.get(b.axis);
-    const axis = named ?? `Axis ${b.axis}`;
+    const axis = named ? shownAxisName(named, usbIdsOf(b.productGuid)) : `Axis ${b.axis}`;
     // Steering is one axis in two halves: each action has one way of turning.
     const half = /^Steer(Left|Right)\d?$/.exec(record.action)?.[1];
     // The last field is 1 on the second half of the steering axis. What another value

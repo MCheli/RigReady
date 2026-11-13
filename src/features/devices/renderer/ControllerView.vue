@@ -317,6 +317,11 @@ const position = computed(() => {
 .with-wheel .axis {
   grid-template-columns: 112px minmax(0, 1fr) 76px;
 }
+/* "Clutch or combined pedals" is said in full, on two lines, rather than cut short. */
+.with-wheel .axis-name {
+  white-space: normal;
+  line-height: 1.25;
+}
 .raw-wide .with-wheel .axis {
   grid-template-columns: 112px minmax(0, 1fr) 118px;
 }

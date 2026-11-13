@@ -177,7 +177,9 @@ const face = (now: TrainerRound): string =>
     now.note?.press.control,
     now.weighing?.since,
     now.holding,
+    now.staysPut,
     now.inPlace.length,
+    now.movedAway.length,
   ].join('|');
 
 /** Plays the round on: `play` is one step of it. */
@@ -248,18 +250,29 @@ const places = computed(() => {
 });
 /** The answering control is still held: letting go of it brings the next card. */
 const holding = computed(() => round.value?.holding ?? false);
+/** It is held in a position it stays in, a switch or a throttle stop: the next card comes with it there. */
+const staysPut = computed(() => round.value?.staysPut ?? false);
 /** What follows "Right": where it was pressed, where else it is, and what brings the next card. */
 const afterAnswer = computed(() =>
   answered.value
     ? [
         `${place(answered.value)}.`,
         also.value,
-        holding.value ? 'Let go of it for the next card.' : '',
+        staysPut.value
+          ? 'Leave it there for the next card.'
+          : holding.value
+            ? 'Let go of it for the next card.'
+            : '',
       ]
         .filter(Boolean)
         .join(' ')
     : ''
 );
+/** The card on screen was missed earlier in this round: it is back at the end of it. */
+const askedAgain = computed(() => {
+  void asks.value;
+  return round.value?.session.again ?? false;
+});
 /** A control that is held and being weighed as the answer. */
 const weighing = computed(() => round.value?.weighing?.press.control ?? '');
 /**
@@ -269,9 +282,13 @@ const weighing = computed(() => round.value?.weighing?.press.control ?? '');
 const inPlace = computed(() => {
   if (!round.value?.inPlace.length || phase.value === 'done') return '';
   const which =
-    answers.value.length > 1 ? 'One of the controls for it is' : 'The control for it is';
-  return `${which} already in place. Move it away and straight back.`;
+    answers.value.length > 1 ? 'One of the controls for it is already there' : 'Already there';
+  return `${which}: move it away and back to answer.`;
 });
+/** That control has been moved away since: moved back, it answers. */
+const movedAway = computed(() =>
+  round.value?.movedAway.length && phase.value !== 'done' ? 'Now move it back.' : ''
+);
 
 const deviceOf = (guid: string): SheetDevice | undefined =>
   store.sheet?.devices.find((d) => d.guid?.toUpperCase() === guid);
@@ -566,7 +583,9 @@ onBeforeUnmount(() => {
           <div class="rr-row-sub">
             A round asks {{ Math.min(ROUND, pool.length) }} of them, the ones you know least first.
             Keep your hands on the controls: tap or hold the one you mean, and letting go of the
-            right one brings the next card. A control you only pass on the way is not counted.
+            right one brings the next card. A switch or a throttle stop that stays where you put it
+            counts once it has been there a moment, and can stay there. A control you only pass on
+            the way is not counted.
             <template v-if="deck.unplugged.length">
               {{ deck.unplugged.join(', ') }}
               {{ deck.unplugged.length === 1 ? 'is' : 'are' }} not connected and left out.
@@ -591,6 +610,7 @@ onBeforeUnmount(() => {
           data-testid="trainer-card"
           :data-card-id="card.id"
           :data-ask="asks"
+          :data-again="askedAgain"
         >
           <div class="trainer-card-head">
             <span class="trainer-kind">
@@ -608,6 +628,11 @@ onBeforeUnmount(() => {
             :aria-label="`${settledCount} of ${total} cards done`"
           >
             <div :style="{ width: `${percent(settledCount, total)}%` }" />
+          </div>
+          <!-- A missed card comes back at the end of the round: it is said, so it does not look like the round starting over. -->
+          <div v-if="askedAgain" class="trainer-asked-again" data-testid="trainer-asked-again">
+            <v-icon icon="mdi-replay" size="15" />
+            Asked again: you missed it earlier in this round.
           </div>
 
           <div class="trainer-action" data-testid="trainer-action">
@@ -661,7 +686,7 @@ onBeforeUnmount(() => {
                 <span>
                   That is it: {{ afterAnswer }}
                   <template v-if="round?.session.comesBack">
-                    This one comes back later in the round.</template
+                    This one comes back at the end of the round.</template
                   >
                 </span>
               </template>
@@ -670,6 +695,16 @@ onBeforeUnmount(() => {
             <div v-if="inPlace" class="trainer-note" role="status" data-testid="trainer-in-place">
               <v-icon icon="mdi-information-outline" size="18" />
               <span>{{ inPlace }}</span>
+            </div>
+            <!-- It has been moved away, as the line above asked: said, or the way away looks like the end of it. -->
+            <div
+              v-else-if="movedAway"
+              class="trainer-note"
+              role="status"
+              data-testid="trainer-move-back"
+            >
+              <v-icon icon="mdi-information-outline" size="18" />
+              <span>{{ movedAway }}</span>
             </div>
             <!-- A press that was not taken as an answer, and why. A position that was only passed is not a press and is not said. -->
             <div
@@ -887,6 +922,17 @@ onBeforeUnmount(() => {
   border-radius: 3px;
 }
 .trainer-round {
+  margin-top: 8px;
+}
+.trainer-asked-again {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--rr-text-2);
+  font-size: 13px;
+}
+.trainer-asked-again + .trainer-action {
   margin-top: 8px;
 }
 .trainer-action {

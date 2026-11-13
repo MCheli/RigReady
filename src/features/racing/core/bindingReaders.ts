@@ -15,7 +15,7 @@ import { AC_AXES, acActionLabel, parseIni } from './assettoCorsa';
 import { beamngView } from './beamng/beamng';
 import { racingCategory, type RacingCategory } from './categories';
 import { cleanGuid, liveControllers, locationOf, type RacingContext } from './context';
-import { axisName, vidPidFromProductGuid } from './devices';
+import { axisName, driverAxisOf, gameAxisName, vidPidFromProductGuid } from './devices';
 import { readFiles as readIracingFiles } from './iracing/iracing';
 import { iracingActionGroup, iracingActionLabel, iracingKeyLabel } from './iracing/labels';
 import { readLmuFiles } from './lmu/lmu';
@@ -167,7 +167,10 @@ async function quietly(ctx: RacingContext, game: string, check: () => Promise<bo
 
 // ---- iRacing ----
 
-/** iRacing names axes in joyCalib.yaml ("Wheel Axis", "Brake"); DirectInput calls them X, RZ. */
+/**
+ * iRacing names axes in joyCalib.yaml with the driver's names ("Wheel Axis", "Combined
+ * Pedals", "Brake"); DirectInput calls them X, Y, RZ.
+ */
 export function axisFromName(
   name: string,
   vendorId?: string,
@@ -180,6 +183,8 @@ export function axisFromName(
       .trim();
   const wanted = plain(name);
   if (!wanted) return undefined;
+  const driver = driverAxisOf(name, vendorId, productId);
+  if (driver) return neutralAxis(driver);
   for (const ids of [
     [vendorId, productId],
     [undefined, undefined],
@@ -318,7 +323,9 @@ export function iracingReader(ctx: RacingContext): BindingReader {
             : undefined;
           device.drafts.push(
             binding(`axis ${b.axis}`, axis ? { kind: 'axis', axis } : undefined, action, {
-              label: named || `Axis ${b.axis}`,
+              label: named
+                ? gameAxisName(named, device.vendorId, device.productId)
+                : `Axis ${b.axis}`,
               ...(half ? { half } : {}),
             })
           );

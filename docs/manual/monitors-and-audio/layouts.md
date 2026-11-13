@@ -54,7 +54,7 @@ To have a layout switch a monitor off, make the layout while that monitor is con
 
 - **Rename**.
 - **Edit arrangement**: see [Edit a layout by hand](rotation-and-position.md).
-- **Replace with the monitors as they are now**: the layout keeps its name and takes the arrangement the monitors have at this moment. It keeps its entries for monitors that are not connected right now, such as a TV. RigReady asks first and lists how the monitors differ from the layout, because the arrangement the layout held is gone once you confirm. **Undo last change** puts the monitors back, not a saved layout. The monitors themselves are not changed.
+- **Replace with the monitors as they are now**: the layout keeps its name and takes the arrangement the monitors have at this moment. It keeps its entries for monitors that are not connected right now, such as a TV. RigReady asks first and lists how the monitors differ from the layout, because the arrangement the layout held is gone once you confirm. **Undo last change** puts the monitors back, not a saved layout. The monitors themselves are not changed. Since you are looking at the arrangement you keep, it counts as kept with the monitors connected now ([When RigReady asks, and when it does not](#when-rigready-asks-and-when-it-does-not)).
 - **Use as desk layout**.
 - **Delete**. Deleting a layout does not change the monitors; a setup that used it keeps checking against its own copy.
 
@@ -109,7 +109,9 @@ A layout counts as known to work on this PC only when all of this is true:
 3. You pressed **Keep it** in RigReady's window. A countdown that ran out does not count, and neither does an answer given by an AI assistant, which cannot see your screens.
 4. RigReady read the monitors back right after and found them as the layout says.
 
-When any of it is in doubt, the question is asked. So you are asked once more after you edit or replace a layout, after you add or remove a monitor, and after you move one to another connector (a USB screen that RigReady tells apart by its USB device can change ports freely). A layout kept by hand on the Monitors page counts too. The fact is stored in `displays\proven.json` in [the data folder](../app/index.md); deleting that file makes RigReady ask about every layout once more.
+**Replace with the monitors as they are now** counts the same as **Keep it**, for the monitors connected at that moment. Nothing is applied: the layout takes the arrangement you are looking at, in RigReady's window, so the four points hold as they do for a layout you kept. RigReady reads the monitors again after saving and counts it only when they are still exactly as the layout now says. A Replace asked for by an AI assistant does not count, and neither does one made while **Keep this monitor layout?** is still open.
+
+When any of it is in doubt, the question is asked. So you are asked once more after you edit a layout, after you add or remove a monitor, and after you move one to another connector (a USB screen that RigReady tells apart by its USB device can change ports freely). A layout kept by hand on the Monitors page counts too. A layout kept or replaced with some monitors connected is still asked about with others: replaced while the MFD screens were plugged in, the desk layout is asked about the first time Stand down runs without them. Before a [Stand down by itself](../play/stand-down.md#stand-down-when-the-game-closes), the countdown says so, so that you know to stay and press **Keep it**. The fact is stored in `displays\proven.json` in [the data folder](../app/index.md); deleting that file makes RigReady ask about every layout once more.
 
 A layout applied without the question is still read back. If Windows refuses it, the step fails with what Windows said, and the earlier arrangement is put back. If Windows accepts it but the monitors are not as the layout says, RigReady asks the question after all, and asks again the next time.
 

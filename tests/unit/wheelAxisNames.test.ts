@@ -1,13 +1,16 @@
 /**
- * The input tester (devices) and the Wheel page (racing) call the axes of a wheel base by
- * the same names. No feature imports another, so each keeps its own table
- * (devices/core/wheelAxes.ts, racing/core/wheelbases/brands.ts) and this test holds them
- * together: a name or a base added on one side fails here until the other side follows.
+ * The input tester (devices), the Wheel page (racing) and the two iRacing pages (racing and
+ * iracing-bindings) call the axes of a wheel base by the same names. No feature imports
+ * another, so each keeps its own table (devices/core/wheelAxes.ts,
+ * racing/core/wheelbases/brands.ts, iracing-bindings/core/calibration.ts) and this test
+ * holds them together: a name or a base added on one side fails here until the others follow.
  */
 import { describe, expect, it } from 'vitest';
 import { axisLabel } from '../../src/features/devices/core/input';
 import { wheelAxes } from '../../src/features/devices/core/wheelAxes';
-import { axisName, neutralAxisName } from '../../src/features/racing/core/devices';
+import { shownAxisName } from '../../src/features/iracing-bindings/core/calibration';
+import { axisFromName } from '../../src/features/racing/core/bindingReaders';
+import { axisName, gameAxisName, neutralAxisName } from '../../src/features/racing/core/devices';
 import { brandOf } from '../../src/features/racing/core/wheelbases/brands';
 import { WHEEL_PRODUCTS } from '../../src/features/racing/core/wheelbases/products';
 
@@ -46,6 +49,43 @@ describe('one name for each axis of a wheel base', () => {
       if (sourced !== drawn) wrong.push(`${id}: axes sourced ${sourced}, wheel drawn ${drawn}`);
     }
     expect(wrong).toEqual([]);
+  });
+
+  it('an axis name iRacing copied from the driver is shown on both iRacing pages as the tester names the axis', () => {
+    // The names the Fanatec driver gives (docs/research/racing.md, "Axis names on COL01").
+    // iRacing writes them into joyCalib.yaml; RigReady calls Y otherwise.
+    const DRIVER: Record<string, string> = {
+      X: 'Wheel Axis',
+      Y: 'Combined Pedals',
+      Z: 'Accelerator',
+      RZ: 'Brake',
+      SLIDER1: 'Clutch',
+      SLIDER2: 'Dial',
+    };
+    const differences: string[] = [];
+    for (const { id, vendorId, productId } of products) {
+      for (const [axis, driverName] of Object.entries(DRIVER)) {
+        const tester = axisLabel({ vendorId, productId, axisNames: [axis] }, 0);
+        const sourced = wheelAxes({ vendorId, productId, axisNames: ['X', axis] }) !== undefined;
+        // Where the tester has the maker's names, a driver name that differs only by "Axis"
+        // stays as iRacing has it; one that says something else is shown as the tester says it.
+        const plain = (s: string): string => s.toLowerCase().replace(/\s+axis$/, '');
+        const expected = sourced && plain(tester) !== plain(driverName) ? tester : driverName;
+        const iracingBindings = shownAxisName(driverName, { vendorId, productId });
+        const racingIracing = gameAxisName(driverName, vendorId, productId);
+        if (iracingBindings !== expected || racingIracing !== expected)
+          differences.push(
+            `${id} ${axis} "${driverName}": iRacing bindings "${iracingBindings}", Racing iRacing "${racingIracing}", tester "${expected}"`
+          );
+        // And the binding is still matched to its axis by the driver's name.
+        if (sourced && axisFromName(driverName, vendorId, productId) !== axis)
+          differences.push(`${id} ${axis} "${driverName}": not matched to its axis`);
+      }
+    }
+    expect(differences).toEqual([]);
+    expect(shownAxisName('Combined Pedals', { vendorId: '0EB7', productId: '0007' })).toBe(
+      'Clutch or combined pedals'
+    );
   });
 
   it('a controller that is no wheel product keeps the names Windows gives its axes', () => {

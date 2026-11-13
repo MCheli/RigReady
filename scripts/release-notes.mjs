@@ -5,7 +5,8 @@
 // The Release workflow runs it for the tag it was given, so a release's notes are what the
 // changelog says about the version, not GitHub's list of merged pull requests (for 2.0.0 that
 // list would be five unrelated pull requests, the rebuild having been committed directly).
-// It fails when the section is missing, empty, or its heading still says "(not released)":
+// The section is copied as written, paragraphs, blank lines and bullets included, with its line
+// ends made "\n"; only the blank lines around it are dropped. It fails when the section is missing, empty, or its heading still says "(not released)":
 // the changelog is dated in the same change as the version bump, and a tag on an undated
 // changelog is a mistake that should stop the release before its forty minutes of tests.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
