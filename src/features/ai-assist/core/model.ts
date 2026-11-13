@@ -70,7 +70,8 @@ export const GuideViewSchema = z.object({
   aircraftName: z.string(),
   guide: z
     .object({
-      kind: z.enum(['shipped', 'drafted']),
+      /** shipped with RigReady, drafted by AI, or the user's own (imported or written by hand). */
+      kind: z.enum(['shipped', 'drafted', 'own']),
       summary: z.string(),
       sources: z.array(z.string()),
       drafted: z.object({ by: z.string(), at: z.string() }).optional(),
@@ -84,6 +85,11 @@ export const GuideViewSchema = z.object({
       ),
     })
     .nullable(),
+  /**
+   * The guide file kept for this aircraft in RigReady's data folder, when there is one: a
+   * draft or the user's own. `problem` says what is wrong with a file that cannot be used.
+   */
+  stored: z.object({ problem: z.string().optional() }).nullable(),
   tiers: z.array(
     z.object({ tier: z.enum(TIERS), title: z.string(), items: z.array(ItemViewSchema) })
   ),
@@ -102,7 +108,7 @@ export const AircraftListSchema = z.object({
       id: z.string(),
       name: z.string(),
       hasUserBindings: z.boolean(),
-      guide: z.enum(['shipped', 'drafted']).nullable(),
+      guide: z.enum(['shipped', 'drafted', 'own']).nullable(),
     })
   ),
 });

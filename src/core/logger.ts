@@ -36,12 +36,25 @@ const SECRETS: [RegExp, string][] = [
   // Anthropic keys (sk-ant-api03-...), and anything else in the same "sk-" family.
   [/\bsk-ant-[A-Za-z0-9_-]{4,}/g, 'sk-ant-***'],
   [/\bsk-[A-Za-z0-9_-]{20,}/g, 'sk-***'],
+  // A pairing or bridge token of RigReady's own MCP server, wherever it stands in a text:
+  // whole, or the piece a length limit left of one.
+  [/rr_[0-9a-f]{16,}/gi, 'rr_***'],
   // Credentials in request headers and JSON bodies.
   [
     /((?:x-api-key|authorization|api[-_]?key|password|token)\\?["']?\s*[:=]\s*\\?["']?)(?:Bearer\s+)?[^\s"'\\,;}]{4,}/gi,
     '$1***',
   ],
 ];
+
+/**
+ * A text with every secret masked and nothing else changed: for what a window shows or an
+ * assistant reads back, where a path has to stay as it is.
+ */
+export function maskSecrets(text: string): string {
+  let out = text;
+  for (const [pattern, replacement] of SECRETS) out = out.replace(pattern, replacement);
+  return out;
+}
 
 const escapeRegex = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -57,7 +70,8 @@ function folderPattern(folder: string): string {
 /**
  * What every log line and every diagnostics text goes through:
  *
- * - secrets (the Anthropic key, authorization headers, passwords) are masked whatever the caller passed;
+ * - secrets (the Anthropic key, authorization headers, passwords, a pairing token of the MCP
+ *   server) are masked whatever the caller passed;
  * - the user's home folder is written as `~`, and any other `X:\Users\<name>` folder as `X:\Users\~`,
  *   so the Windows user name is not in the log while the rest of the path, which is what
  *   support needs, stays;
@@ -71,8 +85,7 @@ export function createRedactor(homes: string[] = []): (text: string) => string {
   const anyUser =
     /\b([A-Za-z]:(?:\\{1,2}|\/)Users(?:\\{1,2}|\/))(?!Public\b|Default\b|~)(?:[^\\/"'\s:*?<>|]+(?: [^\\/"'\s:*?<>|]+)+(?=[\\/])|[^\\/"'\s:*?<>|]+)/gi;
   return (text) => {
-    let out = text;
-    for (const [pattern, replacement] of SECRETS) out = out.replace(pattern, replacement);
+    let out = maskSecrets(text);
     for (const home of known) out = out.replace(home, '~');
     return out.replace(anyUser, '$1~');
   };

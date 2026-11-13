@@ -74,16 +74,19 @@ claude mcp add --transport stdio --scope user rigready -- "C:\Users\you\AppData\
 
 ## Assistants that connect to the address
 
-Some assistants connect to an address instead of starting a program. Such an assistant needs a token of its own:
+Most assistants need none of this: **Connect** and the texts under **Set it up by hand** that start `RigReady.exe --mcp` use no token you ever see, type or paste, and they come first in the list. Pair only an assistant that has to connect to an address instead of starting a program. Such an assistant needs a token of its own:
 
 1. Turn on **Let AI assistants use RigReady**. The line under it says where it listens, for example `http://127.0.0.1:29170/mcp`.
 2. Under **Assistants that connect over HTTP**, type a name for it ("Claude Code", "My laptop's Cursor") and press **Pair**.
-3. The token is shown once, and the text under **Set it up by hand** now carries it (choose **Claude Code, over HTTP**, **Cursor, over HTTP** or **Any other client**). Copy it now: RigReady keeps only a fingerprint of the token, so it cannot show it again.
-4. The pairing is listed with its last call. **Forget** stops its token from working at once.
+3. Under **Set it up by hand**, choose **Claude Code, by address (needs a token)**, **Cursor, by address (needs a token)** or **Any other client, by address (needs a token)**. The text now carries the token, drawn as `<token hidden>`. **Copy with the token** puts the whole text on the clipboard, where it stays until you copy something else. **Show the token** draws it on the page and **Hide the token** hides it again.
+4. Paste the text into the assistant's settings before you leave the page: RigReady keeps only a fingerprint of the token, so it cannot show it again. **Done, take it off this page** removes it from the page.
+5. The pairing is listed with its last call. **Forget** stops its token from working at once.
 
 ![The AI assistants section of Settings with the server on and an assistant paired](../../../artifacts/screens/mcp-settings/03-paired.png)
 
 Everything that assistant does is recorded under the name you gave it.
+
+Treat the token like a password: whoever holds it can use RigReady from this PC under that name, and it sits in that assistant's settings in plain text. RigReady itself never writes a token to its log, to a [diagnostics](../app/diagnostics.md) export or into a notice on screen; where a line would carry one it says `rr_***`.
 
 ## Turning it off
 

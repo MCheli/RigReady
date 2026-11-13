@@ -183,7 +183,7 @@ const selectedCount = computed(() => store.selected.size);
       </div>
     </div>
 
-    <template v-if="!guide.guide || guide.guide.drafted">
+    <template v-if="(!guide.guide && !guide.stored) || guide.guide?.drafted">
       <div class="rr-section-title">A guide for this aircraft</div>
       <div class="rr-panel ai-block">
         <div class="ai-block-head">
