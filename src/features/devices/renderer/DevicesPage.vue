@@ -61,8 +61,8 @@ async function stopIdentify(): Promise<void> {
 
 async function identified(index: number, what: string): Promise<void> {
   await stopIdentify();
-  const device = store.deviceOfController(index);
   const controller = input.deviceFor(index);
+  const device = controller ? store.deviceOfController(controller) : undefined;
   found.value = {
     ...(device ? { key: device.key } : {}),
     name: device?.name ?? controller?.name.trim() ?? `Controller ${index + 1}`,

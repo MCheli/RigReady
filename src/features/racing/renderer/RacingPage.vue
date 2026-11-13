@@ -4,6 +4,7 @@ import PageSkeleton from '../../../renderer/components/PageSkeleton.vue';
 import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import { racingContract, type RacingOverview } from '../contract';
+import { wheelHead } from '../core/wheelbases/head';
 import './racing.css';
 
 const api = useClient(racingContract);
@@ -25,14 +26,8 @@ onMounted(() => {
 });
 onBeforeUnmount(() => off?.());
 
-/** A PC that never had a wheel base: none connected, no wheel software, no trace of one. */
-const neverHere = computed(
-  () =>
-    view.value !== undefined &&
-    !view.value.wheel.connected &&
-    view.value.wheel.lastSeen.length === 0 &&
-    view.value.wheel.software.every((s) => !s.ok)
-);
+/** Which case the wheel card is in, and its words: the same as on the Wheel page. */
+const head = computed(() => (view.value ? wheelHead(view.value.wheel) : undefined));
 
 /** The mode is fine when it is the PC one, or when the brand's USB id cannot tell. */
 const modeOk = computed(
@@ -62,7 +57,7 @@ const ICONS: Record<string, string> = {
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
     <PageSkeleton v-if="!view && !error" label="Looking at the rig…" />
 
-    <template v-if="view">
+    <template v-if="view && head">
       <section class="rc-section">
         <h2 class="rr-section-title">Wheel</h2>
         <router-link
@@ -73,35 +68,41 @@ const ICONS: Record<string, string> = {
           <div class="rc-card-title">
             <v-icon
               :icon="
-                view.wheel.connected
+                head.state === 'connected'
                   ? modeOk
                     ? 'mdi-check-circle'
                     : 'mdi-alert'
-                  : neverHere
-                    ? 'mdi-minus-circle-outline'
-                    : 'mdi-close-circle'
+                  : head.state === 'seen'
+                    ? 'mdi-help-circle'
+                    : head.state === 'none'
+                      ? 'mdi-minus-circle-outline'
+                      : 'mdi-close-circle'
               "
               :class="
-                view.wheel.connected
+                head.state === 'connected'
                   ? modeOk
                     ? 'rr-ok'
                     : 'rr-warn'
-                  : neverHere
-                    ? 'rr-muted'
-                    : 'rr-bad'
+                  : head.state === 'seen'
+                    ? 'rr-warn'
+                    : head.state === 'none'
+                      ? 'rr-muted'
+                      : 'rr-bad'
               "
             />
-            {{
-              view.wheel.name ??
-              (neverHere
-                ? 'No wheel base on this PC'
-                : `No ${view.wheel.brandName ?? ''} wheel base connected`.replace('  ', ' '))
-            }}
+            {{ head.title }}
             <v-spacer />
             <v-icon icon="mdi-chevron-right" class="rr-muted" />
           </div>
           <div class="rr-row-sub" data-testid="racing-wheel-summary">
-            <template v-if="view.wheel.connected">
+            <template v-if="view.wheel.connected && view.wheel.unlisted">
+              {{ view.wheel.maker ?? 'Maker not given' }} · A model RigReady does not know ·
+              {{ view.wheel.controllers }} game controller{{
+                view.wheel.controllers === 1 ? '' : 's'
+              }}
+              <template v-if="view.wheel.connection"> · {{ view.wheel.connection }}</template>
+            </template>
+            <template v-else-if="view.wheel.connected">
               {{ view.wheel.brandName }} ·
               {{
                 view.wheel.mode === 'compatibility'
@@ -117,9 +118,17 @@ const ICONS: Record<string, string> = {
               }}
               <template v-if="view.wheel.connection"> · {{ view.wheel.connection }}</template>
             </template>
-            <template v-else-if="neverHere"
+            <template v-else-if="head.state === 'seen'"
+              >It is connected, but it is not in the list of wheel bases RigReady knows. Open this
+              page to say it is your wheel base.</template
+            >
+            <template v-else-if="head.state === 'awaited'"
+              >You added it as your wheel base. Plug it in and switch it on.</template
+            >
+            <template v-else-if="head.state === 'none'"
               >Nothing to set up unless you have one. Plug a base in and its page fills in by
-              itself.</template
+              itself. If yours is plugged in and not shown, its page has My wheel is not
+              listed.</template
             >
             <template v-else
               >Plug the base in and switch it on. Its settings page has the presets you

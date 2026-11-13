@@ -6,12 +6,14 @@ import {
   axisLabel,
   axisPercent,
   axisRaw,
+  axisWindowsLabel,
   buttonGameName,
   buttonLabel,
   detectIdentify,
   diffStates,
   hatDirection,
   inputKeyFor,
+  NO_CONTROLLER,
   rangeShortfall,
   widen,
 } from './input';
@@ -40,6 +42,20 @@ const state = (over: Partial<InputState> = {}): InputState => ({
 const press = (...buttons: number[]): boolean[] =>
   Array.from({ length: 16 }, (_, i) => buttons.includes(i + 1));
 
+/** A wheel base whose axes the maker names (the shape the recorded rig has). */
+const dd2: InputDevice = {
+  index: 0,
+  name: 'FANATEC Podium Wheel Base DD2',
+  guid: 'G-0',
+  productGuid: '',
+  vendorId: '0EB7',
+  productId: '0007',
+  numAxes: 8,
+  numButtons: 108,
+  numHats: 1,
+  axisNames: ['X', 'Y', 'Z', 'RX', 'RY', 'RZ', 'SLIDER1', 'SLIDER2'],
+};
+
 describe('input as a game sees it', () => {
   it('shows a 16-bit raw value next to the percent: the centre reads 32767 and 50%', () => {
     expect(axisRaw(0)).toBe(32767);
@@ -64,6 +80,29 @@ describe('input as a game sees it', () => {
     expect(hatDirection([0, 1])).toBe('up');
     expect(hatDirection([-1, -1])).toBe('down-left');
     expect(hatDirection(undefined)).toBe('centred');
+  });
+
+  it('calls the axes of a wheel base what its maker calls them, with the Windows name at hand', () => {
+    expect(dd2.axisNames.map((_, i) => axisLabel(dd2, i))).toEqual([
+      'Wheel',
+      'Combined pedals',
+      'Accelerator',
+      'X rotation',
+      'Y rotation',
+      'Brake',
+      'Clutch',
+      'Dial',
+    ]);
+    expect(axisWindowsLabel(dd2, 0)).toBe('X axis');
+    expect(axisWindowsLabel(dd2, 6)).toBe('Slider 1');
+    // A game reads the same inputs, whatever the tester calls them.
+    expect(axisGameName(dd2, 0)).toBe('JOY_X');
+    expect(axisGameName(dd2, 5)).toBe('JOY_RZ');
+    // The same axes on anything that is not such a base keep Windows' names: another
+    // maker's controller, and the same maker's pedals on their own USB lead.
+    expect(axisLabel({ ...dd2, vendorId: '4098', productId: 'BD26' }, 0)).toBe('X axis');
+    expect(axisLabel({ ...dd2, productId: '183B' }, 2)).toBe('Z axis');
+    expect(axisLabel({ axisNames: dd2.axisNames }, 0)).toBe('X axis');
   });
 
   it('keys a controller by model and position, so a changed instance GUID does not lose it', () => {
@@ -135,6 +174,62 @@ describe('activity log', () => {
     expect(log.entries).toHaveLength(3);
     log.clear();
     expect(log.entries).toEqual([]);
+  });
+
+  it('writes a wheel under the names of its axes', () => {
+    const log = new ActivityLog();
+    const wheel = (axes: number[]): InputState => ({
+      index: 0,
+      name: dd2.name,
+      axes,
+      buttons: [],
+      hats: [],
+      timestamp: 0,
+    });
+    const rest = wheel([0, 0, -1, 0, 0, -1, -1, 0]);
+    log.record(dd2, 'Wheel base', undefined, rest, 0);
+    const turned = wheel([0.5, 0, -1, 0, 0, -1, -1, 0]);
+    expect(log.record(dd2, 'Wheel base', rest, turned, 100)?.text).toBe('Wheel moved 50% → 75%');
+    const braking = wheel([0.5, 0, -1, 0, 0, 1, -1, 0]);
+    expect(log.record(dd2, 'Wheel base', turned, braking, 2000)?.text).toBe(
+      'Brake moved 0% → 100%'
+    );
+    // What a game would be told is unchanged.
+    expect(log.lastControl).toEqual({ deviceIndex: 0, input: 'JOY_RZ' });
+  });
+
+  it('never passes the lines of one controller on to the next one with its number', () => {
+    const log = new ActivityLog();
+    const s0 = state();
+    log.record(throttle, 'Throttle', undefined, s0, 0);
+    const moved = state({ axes: [0.5, 0, 0] });
+    log.record(throttle, 'Throttle', s0, moved, 100);
+    log.record(throttle, 'Throttle', moved, state({ axes: [0.5, 0, 0], buttons: press(3) }), 150);
+    expect(log.lastControl).toEqual({ deviceIndex: 10, input: 'JOY_BTN3' });
+
+    // The throttle is unplugged and another controller gets number 10.
+    log.vacate(10);
+    // Its lines stay as the record they are, under the name they were written with ...
+    expect(log.entries.map((e) => [e.device, e.text])).toEqual([
+      ['Throttle', 'Button 3 pressed'],
+      ['Throttle', 'X axis moved 50% → 75%'],
+    ]);
+    // ... but belong to no number any more, and neither does the control used last.
+    expect(log.entries.every((e) => e.deviceIndex === NO_CONTROLLER)).toBe(true);
+    expect(log.lastControl).toBeUndefined();
+
+    // The newcomer starts from where it is: its movement is a line of its own, measured
+    // from its own position, not a continuation of the line the throttle left open.
+    const first = state({ axes: [-1, 0, 0] });
+    expect(log.record(dd2, 'Wheel base', undefined, first, 200)).toBeUndefined();
+    const line = log.record(dd2, 'Wheel base', first, state({ axes: [0, 0, 0] }), 250);
+    expect(line).toMatchObject({
+      device: 'Wheel base',
+      deviceIndex: 10,
+      text: 'Wheel moved 0% → 50%',
+    });
+    expect(log.entries).toHaveLength(3);
+    expect(log.entries[2]).toMatchObject({ device: 'Throttle', text: 'X axis moved 50% → 75%' });
   });
 });
 

@@ -8,7 +8,7 @@ Each fact is marked **confirmed** with its source, or **unconfirmed**. "Confirme
 
 USB ids are written `VVVV:PPPP` in hex. Linux kernel ids come from the mainline `drivers/hid/hid-ids.h` ([source](https://raw.githubusercontent.com/torvalds/linux/master/drivers/hid/hid-ids.h)), which is the strongest public source because each id was added by someone holding the device. The community table at [JacKeTUs/linux-steering-wheels](https://github.com/JacKeTUs/linux-steering-wheels) ([raw](https://raw.githubusercontent.com/JacKeTUs/linux-steering-wheels/main/README.md)) is the second source and is cited below as "LSW".
 
-Market share, from the RigReady ops market research (`rigready-ops/market-research.md`, 2026 survey figures): Moza 24.1%, Fanatec 21.7%, Logitech 17.9%, Simagic 17.2%, Thrustmaster 5.8%. Simucube, Asetek and Cammus are not reported in that write-up, so their share is unknown.
+Market share, from the project's own market notes (2026 survey figures; the notes are not in this repository): Moza 24.1%, Fanatec 21.7%, Logitech 17.9%, Simagic 17.2%, Thrustmaster 5.8%. Simucube, Asetek and Cammus are not reported in that write-up, so their share is unknown.
 
 Fanatec is covered in [racing.md, section 5](racing.md#5-fanatec) and is not repeated here.
 
