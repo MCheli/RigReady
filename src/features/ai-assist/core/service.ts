@@ -651,6 +651,7 @@ export class AiAssist {
         ...(view.value.set.profile ? { profile: view.value.set.profile } : {}),
         simRunning: overview.simRunning,
         notes: view.value.notes,
+        axisActions: view.value.actions.filter((a) => a.accepts.includes('axis')).map((a) => a.id),
       },
     });
   }

@@ -1,6 +1,6 @@
 import * as yaml from 'js-yaml';
 import { z } from 'zod';
-import type { AircraftBindings, BoundAction } from '../../../core/bindings';
+import type { AircraftBindings, BoundAction, BoundInput } from '../../../core/bindings';
 import { err, ok, type Result } from '../../../core/result';
 
 /**
@@ -320,6 +320,8 @@ export interface CurrentBinding {
   inputLabel: string;
   modifiers: string[];
   source: 'user' | 'default';
+  /** What the input is: a button, a hat direction, an axis or a key. */
+  kind?: BoundInput['kind'];
   /** On a device the user marked as not used in the game (a wheel's defaults): does not count. */
   ignored?: boolean;
 }
@@ -361,6 +363,7 @@ function bindingIndex(bindings: AircraftBindings): Map<string, CurrentBinding[]>
         inputLabel: b.inputLabel,
         modifiers: b.modifiers,
         source: b.source,
+        kind: b.kind,
         ...(device.role === 'none' ? { ignored: true } : {}),
       });
       index.set(b.actionId, list);
@@ -421,8 +424,15 @@ export function itemStatus(
   game: GuideGame = 'dcs'
 ): ItemStatus {
   if (actions.length === 0) return 'missing';
+  // An item that goes on an axis (an iRacing pedal) is bound only by an axis: a throttle on a
+  // button is not a throttle pedal set up.
   const counts = (a: ResolvedAction): boolean =>
-    a.bound.some((b) => !b.ignored && (item.place === 'keyboard' || !b.keyboard));
+    a.bound.some(
+      (b) =>
+        !b.ignored &&
+        (item.place === 'keyboard' || !b.keyboard) &&
+        (item.input !== 'axis' || b.kind === 'axis')
+    );
   const bound = actions.filter(counts).length;
   if (bound === 0) {
     // In iRacing, what RigReady cannot bind is bound in iRacing's own Controls screen.

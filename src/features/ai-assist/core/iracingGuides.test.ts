@@ -246,20 +246,24 @@ items:
     expect(itemStatus(throttle, [{ ...unbound, kind: 'button', editable: true }], 'iracing')).toBe(
       'unbound'
     );
-    // Bound in iRacing's file: bound, whoever bound it.
-    const bound = {
-      ...unbound,
-      bound: [
-        {
-          device: 'Pedals',
-          keyboard: false,
-          input: 'Accelerator',
-          inputLabel: 'Accelerator',
-          modifiers: [],
-          source: 'user' as const,
-        },
-      ],
+    // Bound on an axis in iRacing's file: bound, whoever bound it.
+    const onAxis = {
+      device: 'Pedals',
+      keyboard: false,
+      input: 'Accelerator',
+      inputLabel: 'Accelerator',
+      modifiers: [],
+      source: 'user' as const,
+      kind: 'axis' as const,
     };
-    expect(itemStatus(throttle, [bound], 'iracing')).toBe('bound');
+    expect(itemStatus(throttle, [{ ...unbound, bound: [onAxis] }], 'iracing')).toBe('bound');
+    // A throttle on a wheel button is not a throttle pedal set up: still to bind in iRacing.
+    const onButton = {
+      ...onAxis,
+      input: 'Button 3',
+      inputLabel: 'Button 3',
+      kind: 'button' as const,
+    };
+    expect(itemStatus(throttle, [{ ...unbound, bound: [onButton] }], 'iracing')).toBe('inGame');
   });
 });

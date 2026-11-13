@@ -48,6 +48,8 @@ export interface Snapshot {
     profile?: string;
     /** The simulator runs: it writes its files when it closes, so nothing is written now. */
     simRunning: boolean;
+    /** The ids of the actions iRacing lets be bound to an axis (the throttle, not the limiter). */
+    axisActions: string[];
     notes: string[];
   };
 }

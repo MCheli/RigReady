@@ -158,12 +158,20 @@ export function validateDraft(
       dropped++;
       continue;
     }
-    const actions = [...new Set(item.data.actionIds)]
-      .map((id) => byId.get(id))
-      .filter((a) => a !== undefined);
+    const ids = [...new Set(item.data.actionIds)];
+    const actions = ids.map((id) => byId.get(id)).filter((a) => a !== undefined);
     if (actions.length === 0) {
       dropped++;
       continue;
+    }
+    if (game === 'iracing') {
+      // Half an item is worse than none (shift up without shift down would read as bound), and
+      // an axis item may only name actions iRacing takes on an axis.
+      const axisOk = (id: string): boolean => snapshot.iracing?.axisActions.includes(id) ?? false;
+      if (actions.length !== ids.length || (item.data.axis && !ids.every(axisOk))) {
+        dropped++;
+        continue;
+      }
     }
     items.push({
       id: `item-${items.length + 1}`,

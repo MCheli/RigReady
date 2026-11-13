@@ -514,6 +514,28 @@ describe('a guide of your own, and one drafted by AI, for an iRacing car', () =>
                 actionIds: ['Starter'],
                 axis: false,
               },
+              // Half an item: shift up with a shift down iRacing does not have. Left out whole.
+              {
+                title: 'Paddles',
+                tier: 'must',
+                place: 'rim',
+                role: 'wheel',
+                what: 'Shifts.',
+                when: 'Always.',
+                actionIds: ['ShiftUp', 'ShiftDownPaddle'],
+                axis: false,
+              },
+              // An axis item on an action iRacing takes only as a button or a key: left out.
+              {
+                title: 'Limiter',
+                tier: 'must',
+                place: 'rim',
+                role: 'wheel',
+                what: 'The pit limiter.',
+                when: 'In the pits.',
+                actionIds: ['PitSpeedLimiter'],
+                axis: true,
+              },
             ],
           })
         ),
@@ -541,7 +563,7 @@ describe('a guide of your own, and one drafted by AI, for an iRacing car', () =>
     const sent = await a.invoke<Extract<Sent, { kind: 'draft' }>>('ai-assist:send', {
       requestId: draft.requestId,
     });
-    expect(sent).toMatchObject({ kind: 'draft', items: 2, dropped: 2 });
+    expect(sent).toMatchObject({ kind: 'draft', items: 2, dropped: 4 });
     const view = await guideOf(a, CADILLAC);
     expect(view.guide).toMatchObject({ kind: 'drafted' });
     expect(view.guide!.sources[0]).toMatch(
