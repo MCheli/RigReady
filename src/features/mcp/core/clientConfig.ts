@@ -2,9 +2,12 @@ import { MCP_PATH } from '../server/constants';
 
 /**
  * What to paste into each client to reach RigReady. Two ways in: the stdio bridge
- * (`RigReady.exe --mcp`, which needs no token because it reads the bridge's own from the
- * encrypted store) and the HTTP endpoint with a pairing's token. Both texts are made here
- * so the Settings page, the manual and a test say the same thing.
+ * (`RigReady.exe --mcp`, which needs no token in the text because it reads the bridge's own
+ * from a file in the data folder) and the HTTP endpoint with a pairing's token. Both texts
+ * are made here so the Settings page, the manual and a test say the same thing.
+ *
+ * The bridge forms come first in the list and are what every Connect button uses: nothing
+ * secret is in them. The forms that carry a token are listed last and say so.
  */
 
 export const CLIENT_KIND_IDS = [
@@ -15,14 +18,18 @@ export const CLIENT_KIND_IDS = [
   'msty',
   'goose',
   'claude-code',
-  'claude-code-http',
   'cursor',
-  'cursor-http',
   'vscode',
   'windsurf',
   'http',
+  'claude-code-http',
+  'cursor-http',
 ] as const;
 export type ClientKind = (typeof CLIENT_KIND_IDS)[number];
+
+/** The forms that reach the address directly: the text carries a pairing's token. */
+const TOKEN_KINDS: ReadonlySet<ClientKind> = new Set(['http', 'claude-code-http', 'cursor-http']);
+export const needsToken = (kind: ClientKind): boolean => TOKEN_KINDS.has(kind);
 
 export const CLIENT_KINDS: { kind: ClientKind; title: string; sub: string }[] = [
   {
@@ -60,24 +67,28 @@ export const CLIENT_KINDS: { kind: ClientKind; title: string; sub: string }[] = 
     title: 'Claude Code',
     sub: 'One command in a terminal; --scope user makes it work in every folder.',
   },
-  {
-    kind: 'claude-code-http',
-    title: 'Claude Code, over HTTP',
-    sub: 'The same without the bridge: Claude Code talks to the running RigReady directly.',
-  },
   { kind: 'cursor', title: 'Cursor', sub: '~/.cursor/mcp.json or .cursor/mcp.json in a project.' },
-  {
-    kind: 'cursor-http',
-    title: 'Cursor, over HTTP',
-    sub: 'The same with the endpoint and the token.',
-  },
   { kind: 'vscode', title: 'VS Code', sub: '.vscode/mcp.json, or MCP: Open User Configuration.' },
   {
     kind: 'windsurf',
     title: 'Windsurf',
     sub: 'Cascade > MCP servers > View raw config (mcp_config.json), merge this into mcpServers.',
   },
-  { kind: 'http', title: 'Any other client', sub: 'The endpoint and the header to send.' },
+  {
+    kind: 'http',
+    title: 'Any other client, by address (needs a token)',
+    sub: 'The address and the header to send. Pair the assistant below first: the header carries its token.',
+  },
+  {
+    kind: 'claude-code-http',
+    title: 'Claude Code, by address (needs a token)',
+    sub: "The Claude Code form above does the same with no token. This one puts a token on a command line, where the terminal may keep it in its history, and in Claude Code's own settings file, both in plain text.",
+  },
+  {
+    kind: 'cursor-http',
+    title: 'Cursor, by address (needs a token)',
+    sub: 'The Cursor form above does the same with no token. This one puts a token in mcp.json in plain text.',
+  },
 ];
 
 export interface ConfigInputs {

@@ -3,6 +3,7 @@ import { BindingRegistry } from '../core/bindings';
 import { CheckRegistry } from '../core/checks/registry';
 import { ContractRegistry } from '../core/contracts';
 import { DisplayLayoutStore } from '../core/displays/layouts';
+import { logFailures } from '../core/failureLog';
 import type { FeatureMain, IpcBinding, MainContext } from '../core/feature';
 import { GameRegistry } from '../core/games';
 import type { Logger } from '../core/logger';
@@ -92,7 +93,12 @@ export function wireFeatures(options: {
   for (const feature of options.features) {
     if (seen.has(feature.id)) throw new Error(`Feature id used twice: ${feature.id}`);
     seen.add(feature.id);
-    const bindings: IpcBinding[] = feature.setup({ ...context, log: log.child(feature.id) }) ?? [];
+    const featureLog = log.child(feature.id);
+    // Every channel that answers with an error leaves a line under its feature's name: the
+    // code and the message, so a support export says what the user was told.
+    const bindings: IpcBinding[] = (feature.setup({ ...context, log: featureLog }) ?? []).map(
+      (binding) => logFailures(binding, featureLog, ports.clock)
+    );
     for (const binding of bindings) {
       contracts.register(binding.contract);
       const invoke = createInvoker(binding.contract, binding.handlers as never, (name, error) =>
@@ -103,7 +109,7 @@ export function wireFeatures(options: {
         if (handlers.has(name)) throw new Error(`IPC channel registered twice: ${name}`);
         handlers.set(name, async (rawInput) => {
           const envelope = await invoke(key, rawInput);
-          // Expected failures go back to the screen that asked; the detailed log has them too.
+          // Expected failures go back to the screen that asked; the detailed log has them whole.
           if (!envelope.ok) log.debug(`ipc ${name} answered with an error`, envelope.error);
           return envelope;
         });
