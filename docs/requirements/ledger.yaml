@@ -5057,6 +5057,7 @@ requirements:
       - "A request for AI help says whose guide it carries, in the preview and in the request itself, and 'Exactly what is sent' in Settings says that a guide of the user's own is part of such a request."
     notes:
       - "2026-11-12: a guide of the user's own is kept where a draft by AI is kept, <data folder>/ai-assist/guides/<aircraft>.yaml, and read by the same parser; a kept file without the 'drafted' stamp is the user's own. The aircraft list says 'Your own guide'."
+      - "2026-11-13: deleting a guide asks first and keeps a copy (the file is journaled although it is in the data folder), and the page then says 'The guide is deleted. The Safety page can put it back.' tests/e2e/ai-assist.e2e.ts asserts the dialog's words and that line; artifacts/screens/ai-assist-own-guide/03-delete-asks-first.png was taken again by that run."
     status: done
     evidence:
       - "src/features/ai-assist/core/ownGuide.test.ts#takes the file picked in the Windows dialog, checks it, keeps a copy in the data folder and shows it as your own"
