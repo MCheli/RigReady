@@ -6160,7 +6160,8 @@ requirements:
     done_means:
       - "A profile maps any connected controller's axes, buttons and hat directions onto the left and right sticks, the triggers, the buttons and the d-pad of a virtual Xbox 360 controller or DualShock 4; each part is chosen by pressing or moving the control."
       - "Each axis has invert, deadzone, a response curve and a range (full output reached early, for a wheel's steering lock, with a helper from the wheel's rotation); a pedal or throttle onto a trigger has the same; one throttle axis can be split over LT and RT at a chosen point with its own deadzone; an axis can act as a button past half its travel."
-      - "The editor shows live what a game would get. Profiles belong to no game and are kept in RigReady's data folder; three starting points (flight stick for ACE COMBAT 8, HOTAS, wheel and pedals for driving games and console emulators) say what each part is for, map nothing, and are copied, never changed."
+      - "The editor shows live what a game would get. Profiles are kept in RigReady's data folder and work with any program that reads a gamepad; three starting points (a flight stick for Ace Combat 8, HOTAS, wheel and pedals for driving games and console emulators) say what each part is for, map nothing, and are copied, never changed."
+      - "While a part waits for its control, the page says to press or move it now and counts down the seconds that are left."
     status: done
     evidence:
       - "src/features/virtual-controller/core/mapping.test.ts#a deadzone gives nothing inside it and starts from zero at its edge, not with a jump"
@@ -6171,9 +6172,12 @@ requirements:
       - "src/features/virtual-controller/core/profile.test.ts#the starting points are valid, map nothing yet and say what each part is for"
       - "src/features/virtual-controller/core/profile.test.ts#stores the user own profiles, copies starting points, never changes or deletes one"
       - "src/features/virtual-controller/main.test.ts#detects the control the user moves, and sends the live view for an edited profile"
-      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat starting point, mapped by moving the stick, with live bars"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
       - "artifacts/screens/virtual-controller-editor/01-page.png"
-      - "artifacts/screens/virtual-controller-editor/02-editor.png"
+      - "artifacts/screens/virtual-controller-editor/02-listening.png"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+    notes:
+      - "2026-11-12: the owner's sitting found the copy's wording leaning to one game, no countdown while a part listens, and Save out of view. See VPAD-006 to VPAD-010 for what was added."
 
   - id: VPAD-003
     title: A setup starts the virtual controller and Stand down stops it
@@ -6183,13 +6187,13 @@ requirements:
     done_means:
       - "A step before launch 'Start a virtual controller' names a profile and may hide the real controllers from games with HidHide; the launch says which profile runs and what was hidden."
       - "Stand down stops a virtual controller a setup started and shows hidden controllers to games again; one started by hand (the page, the tray, the command palette) keeps running until stopped or RigReady quits. A step 'Stop the virtual controller' exists for Stand down lists too."
-      - "While one runs, every screen (the Play screen included) and the tray say so and offer Stop; the tray also starts a profile."
+      - "While one runs, every screen (the Play screen included) and the tray say so and offer Stop; the tray also starts a profile. The row of the running profile says it is running, and its Start is off."
     status: done
     evidence:
       - "src/features/virtual-controller/main.test.ts#a setup starts it before launch with the real controllers hidden, and Stand down stops it and shows them again"
       - "src/features/virtual-controller/main.test.ts#one started by hand stays at Stand down, and stops when RigReady quits"
       - "tests/unit/tray.test.ts#shows the virtual controller that runs, with Stop, and a Start for each profile"
-      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a setup starts it before launch with the controllers hidden, and Stand down stops it"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a setup starts it before launch with the controllers hidden, the running panel shows it live, and Stand down stops it"
       - "artifacts/screens/virtual-controller-launch/01-launched.png"
       - "artifacts/screens/virtual-controller-launch/02-running.png"
       - "artifacts/screens/virtual-controller-launch/03-stood-down.png"
@@ -6219,12 +6223,139 @@ requirements:
     priority: p2
     done_means:
       - "On the owner's rig, with ViGEmBus installed by the owner, the manual rig test plugs in an Xbox 360 controller that DirectInput lists, feeds it reports and unplugs it."
-      - "ACE COMBAT 8 (or an emulator) is played with a profile made in the editor: the stick, rudder and throttle drive the aircraft as mapped; with hiding on, the game does not also see the real stick; after Stand down HidHide's lists are as they were."
+      - "Ace Combat 8 (or an emulator) is played with a profile made in the editor: the stick, rudder and throttle drive the aircraft as mapped; with hiding on, the game does not also see the real stick; after Stand down HidHide's lists are as they were."
       - "A DualShock 4 profile is tried once in a program that reads one (DuckStation or PCSX2), the Y axes the right way up."
+      - "The Ace Combat 8 starting point as it is since 12 Nov 2026 (VPAD-010) is flown in the game: the throttle on RT, a button on LT, both held together for the high-G turn. Its notes for the game are checked against the game's own controls screen."
     status: in_progress
     evidence: []
     notes:
+      - "2026-11-12: at the owner's sitting the virtual Xbox 360 controller ran on the real driver, Windows listed it, and the owner flew Ace Combat 8 with a profile of eight parts made in the editor from the starting point as it was then. That is the owner's word in the sitting notes, with no rig test and no screenshot, so this stays in progress. Not tried: hiding the real controllers while a game runs, a DualShock 4 profile, and the starting point as it is now. Nobody has read the game's controls screen for the notes yet."
       - "2026-11-11: unverified on hardware. Everything above runs against the fake machine; the helper (python/pad_server.py) and ViGEmClient.dll have never driven the real driver. For the owner, with every game closed: (1) npm run setup:python (fetches ViGEmClient.dll, hash-checked); (2) cross-env RIGREADY_RIG_PAD=1 npx vitest run --config vitest.rig.config.ts tests/rig/virtualController.rig.test.ts, and open joy.cpl meanwhile to see 'Controller (XBOX 360 For Windows)' come and go; (3) in the app, copy the Ace Combat starting point, map the stick, rudder and throttle, Start, and check the axes in joy.cpl, then in the game offline; (4) the same with 'Hide the real controllers' on, then Stop, and check HidHide's window shows the lists as before. Add the rig test id and screenshots to evidence and set done."
+
+  - id: VPAD-006
+    title: Virtual controller profiles are told apart, and a delete that breaks a setup warns first
+    job: configure
+    area: virtual-controller
+    priority: p1
+    done_means:
+      - "A new or copied profile never gets a name another profile has, capitals and spacing aside: a copy is numbered ('My HOTAS 2'), two copies asked for at once get two names, Make a copy pressed twice makes one copy, and a rename to a taken name is refused with the reason, in the editor and again where the file is written."
+      - "Profiles that already share a name still load and can be edited. Each row shows the profile's id and says that another profile has the name; the tray menu and the command palette add the id to such a name."
+      - "Each row of the user's profiles names the setups that start the profile (a step before or after launch or at Stand down, or the fix of a check), or says that no setup uses it. The feature reads the setups from the setup store on its own context, not from the setups feature. When a setup file cannot be read, the page says so."
+      - "The delete question shows the profile's name and id, names every setup that uses it and says what breaks. Delete stays off until the user ticks that they know, and the delete is refused where it happens without that yes."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/names.test.ts#two names are one name when only capitals or spacing differ"
+      - "src/features/virtual-controller/core/names.test.ts#keeps a free name and numbers a taken one"
+      - "src/features/virtual-controller/core/names.test.ts#adds the id only to profiles that share a name"
+      - "src/features/virtual-controller/core/profile.test.ts#never gives a new or renamed profile a name another profile has"
+      - "src/features/virtual-controller/core/profile.test.ts#two copies asked for at once get two names and two ids"
+      - "src/features/virtual-controller/core/profile.test.ts#profiles that already share a name still load, in a steady order, and can be edited"
+      - "src/features/virtual-controller/core/usedBy.test.ts#finds a start step before launch, after launch, at Stand down and as the fix of a check"
+      - "src/features/virtual-controller/core/usedBy.test.ts#names a setup once however many of its steps start the profile"
+      - "src/features/virtual-controller/main.test.ts#says which setups start each profile, and which profiles share a name"
+      - "src/features/virtual-controller/main.test.ts#does not delete a profile a setup starts until it is told to all the same"
+      - "src/features/virtual-controller/main.test.ts#when a setup file cannot be read it says so, and a delete then needs the same yes"
+      - "src/features/virtual-controller/main.test.ts#names a copy for what it was copied from, and never as another profile is named"
+      - "src/features/profiles/core/profiles.test.ts#a copy asked for under a name in use gets its own name, and the list needs no id"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: two profiles of one name are told apart, and deleting the one a setup uses warns first"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-same-names/01-rows.png"
+      - "artifacts/screens/virtual-controller-same-names/02-editor-same-name.png"
+      - "artifacts/screens/virtual-controller-same-names/03-delete-used.png"
+      - "artifacts/screens/virtual-controller-same-names/04-delete-unused.png"
+      - "artifacts/screens/virtual-controller-same-names/05-delete-ticked.png"
+      - "artifacts/screens/virtual-controller-editor/04-name-taken.png"
+      - "artifacts/screens/virtual-controller-editor/09-copies.png"
+    notes:
+      - "2026-11-12: at the owner's sitting two profiles had one name, the rows looked the same, the question only gave the name, and the profile a setup depends on was deleted. A deleted profile still cannot be brought back from inside the app; the warning is what stands in the way."
+
+  - id: VPAD-007
+    title: Save stays in view in the virtual controller editor, and unsaved changes are said
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "In the profile editor, Save and Back are in a bar on the bottom edge of the window that stays in view however far the page is scrolled, at the usual window size and in a window wider than the page. The bar does not lie over the menu beside the page."
+      - "The bar says 'Unsaved changes' when what is on screen differs from what was saved and 'No unsaved changes' when not, what the last save did, and why Save is off when it is. Leaving the editor with unsaved changes, by Back or by the menu, asks first."
+      - "The bar is a shared component (src/renderer/components/SaveBar.vue, listed in docs/CONTRIBUTING-FEATURES.md) that any page with a Save button can use."
+    status: done
+    evidence:
+      - test: "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+      - "artifacts/screens/virtual-controller-editor/04-name-taken.png"
+      - "artifacts/screens/virtual-controller-editor/05-leave-question.png"
+      - "artifacts/screens/virtual-controller-editor/06-scrolled-save-in-view.png"
+      - "artifacts/screens/virtual-controller-editor/07-saved.png"
+      - "artifacts/screens/virtual-controller-editor/10-wide-window.png"
+    notes:
+      - "2026-11-12: the owner's finding 38. Only the virtual controller's editor uses the bar so far. The other pages with a Save button are not changed here; the setup editor has a footer of its own that can move to this bar."
+
+  - id: VPAD-008
+    title: A live picture of the virtual controller, in the running panel and in the editor
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "The running panel on the Virtual controller page draws the virtual controller as the game is being sent it: two sticks that move, two triggers that fill and the buttons, lit while they are down, with the same in words beside it."
+      - "The editor shows the same picture for the profile as it is on screen, before it is saved."
+      - "The picture is drawn from plain shapes and is the picture of no real product. Nothing is said by a lit colour alone, and a screen reader gets the words."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/padView.test.ts#no report yet reads as a controller at rest"
+      - "src/features/virtual-controller/core/padView.test.ts#says where the sticks stand, how far the triggers are pressed and what is down"
+      - "src/features/virtual-controller/core/padView.test.ts#uses the names of a DualShock 4 when the game sees one"
+      - "src/features/virtual-controller/main.test.ts#sends the live view of the running virtual controller: what the game is being sent"
+      - "src/features/virtual-controller/main.test.ts#detects the control the user moves, and sends the live view for an edited profile"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a setup starts it before launch with the controllers hidden, the running panel shows it live, and Stand down stops it"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-launch/02-running.png"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+    notes:
+      - "2026-11-12: the owner's finding 39. The picture has been seen on the fake machine only; on the real driver it shows what RigReady sends, which VPAD-005 is to compare with what a game receives."
+
+  - id: VPAD-009
+    title: What a part does in one game is kept apart from its plain description
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "A part's plain description fits any game. What the part does in one game is a note of its own, shown as 'In <game>: ...', and only a starting point named for that game carries such notes: HOTAS to gamepad and the wheel starting point name no game."
+      - "A copy of a starting point for one game keeps the game in its name and on its row. The editor removes all the notes in one press and leaves the mapping as it is."
+      - "A copy made from the earlier Ace Combat 8 starting point shows its old descriptions as notes for that game, so they can be removed too."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/gameNotes.test.ts#says which game a note is about"
+      - "src/features/virtual-controller/core/gameNotes.test.ts#removes the game and its notes and keeps everything else"
+      - "src/features/virtual-controller/core/gameNotes.test.ts#turns the earlier Ace Combat 8 hints of a copy into notes for that game"
+      - "src/features/virtual-controller/core/gameNotes.test.ts#leaves any other profile as it is"
+      - "src/features/virtual-controller/core/profile.test.ts#only the starting point named for a game carries notes for a game"
+      - "src/features/virtual-controller/core/profile.test.ts#names a copy for what it was copied from"
+      - "src/features/virtual-controller/core/profile.test.ts#a copy of the earlier Ace Combat 8 starting point shows its notes as notes for that game"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-editor/01-page.png"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+      - "artifacts/screens/virtual-controller-editor/08-notes-removed.png"
+    notes:
+      - "2026-11-12: the owner's finding 37."
+
+  - id: VPAD-010
+    title: The Ace Combat 8 starting point can hold both triggers at once
+    job: configure
+    area: virtual-controller
+    priority: p2
+    done_means:
+      - "The Ace Combat 8 starting point has 'One throttle axis on both triggers' off: the throttle drives RT alone and a button (the speed brake switch, say) drives LT, so both can be held together for the game's high-G turn. The editor says when to turn the switch off."
+      - "Its notes for the game say only what players' guides agree on, and claim nothing for A, B, X and Y; its description says that the guides do not agree there and sends the user to the game's controls screen."
+      - "The manual page for the game says which flight control setting is meant (Expert for a stick) and how the high-G turn is flown."
+    status: done
+    evidence:
+      - "src/features/virtual-controller/core/profile.test.ts#the starting points are valid, map nothing yet and say what each part is for"
+      - "src/features/virtual-controller/core/profile.test.ts#only the starting point named for a game carries notes for a game"
+      - "src/features/virtual-controller/core/mapping.test.ts#triggers from their own pedals, or from a button, when the throttle is not split"
+      - "tests/e2e/virtual-controller.e2e.ts#virtual controller: a copy of the Ace Combat 8 starting point, mapped by moving the controls, with the live picture and Save always in view"
+      - "artifacts/screens/virtual-controller-editor/03-editor.png"
+    notes:
+      - "2026-11-12: the owner's findings 36 and 40. Done here is what the app offers. Whether the game takes it that way is not known: nobody has flown this layout or read the game's controls screen, and that is kept open in VPAD-005."
 
   # ---------------------------------------------------------------------------
   # STREAM DECK

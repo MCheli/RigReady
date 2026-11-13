@@ -17,11 +17,19 @@ The game keeps its settings in `%LOCALAPPDATA%\BANDAI NAMCO Entertainment\ACE CO
 ## Flying it with your own stick
 
 1. Install the ViGEmBus driver yourself ([Virtual controller](../hardware/virtual-controller.md#the-driver) has the steps).
-2. On **Configure > Virtual controller**, **Make a copy** of **Flight stick to gamepad (Ace Combat 8)**.
-3. In the copy, press **Press or move** for each part and move your control: stick left and right for roll, stick back and forward for pitch, the pedals (or the stick's twist) for yaw, the throttle for both triggers, and the buttons you want for fire, special weapon, target, view and lock on. Put the throttle split at your idle detent. Save.
-4. Make the setup: **Configure > Setups > New setup from this rig**, and choose Ace Combat 8. The step **Start a virtual controller** is offered under **Before launch**, with your copy chosen by name ([Creating a setup from the rig](../setups/capture.md#before-launch)). If the game also picks up your real stick, open the step in [the setup editor](../setups/editor.md) and turn on **Hide controllers**.
-5. In the game, keep the Standard control scheme, check every axis in the controls settings, and set the game's own sensitivity to taste.
+2. On **Configure > Virtual controller**, **Make a copy** of **Flight stick to gamepad (Ace Combat 8)**. The copy is called "My Ace Combat 8 stick".
+3. In the copy, press **Press or move** for each part and move your control:
+   - the stick left and right for roll, back and forward for pitch;
+   - the pedals (or the stick's twist) for yaw;
+   - the throttle for **Right trigger (RT)**, which speeds up;
+   - a button for **Left trigger (LT)**, which slows down. The speed brake switch of a throttle suits it;
+   - the buttons you want for the rest. Each part says what it does in the game, where players' guides agree.
+4. Watch the live picture near the top of the editor while you move the controls, then **Save**.
+5. Make the setup: **Configure > Setups > New setup from this rig**, and choose Ace Combat 8. The step **Start a virtual controller** is offered under **Before launch**, with your copy chosen by name ([Creating a setup from the rig](../setups/capture.md#before-launch)). If the game also picks up your real stick, open the step in [the setup editor](../setups/editor.md) and turn on **Hide controllers**.
+6. In the game's flight control setting, choose **Expert** for a stick: left and right then roll the aircraft, as a real stick does. With **Standard**, left and right turn the aircraft instead, which suits a gamepad's thumb stick. Then check every axis in the game's controls screen and set the game's own sensitivity to taste.
 
-The starting point follows the game's Standard Xbox layout: pitch and roll on the left stick, yaw on the right stick, throttle up on RT and down on LT, lock on with R3, weapons on the d-pad left and right. Players who use the Expert scheme often put yaw on the bumpers instead: map the pedals to LB and RB as buttons (an axis past half its travel) for that.
+**The high-G turn.** The game reads RT and LT held together as a high-G turn. That is why this starting point has the switch **One throttle axis on both triggers** turned off: one throttle split over both triggers can never press both at once, and pulled fully back it always brakes. With the throttle on RT and a button on LT, push the throttle forward and hold the button for the turn.
+
+**What is not certain.** The notes come from players' guides, not from the game's makers. The guides agree on pitch and roll on the left stick, RT, LT, the high-G turn and the two flight control settings. They do not agree on what A, B, X and Y do, or on whether yaw is read from the right stick or from the bumpers: look at the game's controls screen. If yaw is on the bumpers in yours, map the pedals to LB and RB as buttons (an axis counts as a button once it is pushed past half its travel).
 
 Ace Combat 8 uses Easy Anti-Cheat for online play. Try the virtual controller offline first; see [anti-cheat and online play](../hardware/virtual-controller.md#anti-cheat-and-online-play).

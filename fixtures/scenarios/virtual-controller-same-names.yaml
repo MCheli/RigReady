@@ -1,0 +1,32 @@
+description: Flying rig with two virtual controller profiles of one name, made before names had to differ; the Ace Combat 8 setup starts the second of them, and a third profile is used by no setup
+rig: mark-full
+extends: flying-fresh.yaml
+# The owner's state on 12 November 2026: two profiles both called "My flight stick to gamepad"
+# (ids my-flight-stick-to-gamepad and my-flight-stick-to-gamepad-2), copies of the starting
+# point as it was then, with its hints for one game. The game's files are the ones
+# virtual-controller-ready.yaml writes; a data file of the same target cannot be replaced by
+# a scenario that extends another, so this one starts from flying-fresh.yaml.
+mutations:
+  - op: writeFile
+    path: Program Files (x86)/Steam/steamapps/appmanifest_2288340.acf
+    content: |
+      "AppState"
+      {
+      	"appid"		"2288340"
+      	"name"		"ACE COMBAT 8: WINGS OF THEVE"
+      	"StateFlags"		"4"
+      	"installdir"		"ACE COMBAT 8"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20412345"
+      }
+  - op: writeFile
+    path: Program Files (x86)/Steam/steamapps/common/ACE COMBAT 8/Game/Binaries/Win64/AceCombat8.exe
+    content: ''
+  - op: writeFile
+    path: AppData/Local/BANDAI NAMCO Entertainment/ACE COMBAT 8/Saved/Config/Windows/GameUserSettings.ini
+    content: "[/Script/Engine.GameUserSettings]\nbUseVSync=False\n"
+profiles:
+  - profiles/virtual-controller-same-names.yaml
+data:
+  virtual-controller/profiles.json: data/virtual-controller/profiles-same-names.json
+  state.json: data/virtual-controller/state-same-names.json

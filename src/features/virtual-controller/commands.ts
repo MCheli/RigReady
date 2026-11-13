@@ -37,7 +37,8 @@ export default defineCommands({
       if (running?.profileId === profile.id) continue;
       out.push({
         id: `virtual-controller.start.${profile.id}`,
-        title: `Start virtual controller: ${profile.name}`,
+        // Two profiles of one name are told apart by the id.
+        title: `Start virtual controller: ${profile.name}${profile.sameName ? ` (${profile.id})` : ''}`,
         icon: 'mdi-controller',
         async run(s) {
           s.progress('Plugging in the virtual controller…');
