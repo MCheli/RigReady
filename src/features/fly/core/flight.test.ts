@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   planFixes,
@@ -282,9 +282,7 @@ describe('Make ready and launch, on the wired app', () => {
     const { seen, note } = stages();
     let finished = false;
     const flying = runFlight(calls('fly-hornet-full', made), note).finally(() => (finished = true));
-    await vi.waitFor(() =>
-      expect(app.events.some((e) => e.channel === 'displays:event:applied')).toBe(true)
-    );
+    await app.event('displays:event:applied');
     // The question is open: no later fix has run, nothing was checked again, nothing launched.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(finished).toBe(false);

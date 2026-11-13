@@ -3,8 +3,9 @@ import { z } from 'zod';
 /**
  * What assistants did, newest last: one entry per tool call, with who asked, what ran, how
  * it ended, and the Safety page groups (journal group ids) the call left behind, so a
- * change made through an assistant is attributed to it. Kept in memory for this run (the
- * log has every line too) and shown on the Settings page.
+ * change made through an assistant is attributed to it. Kept in memory for this run and
+ * shown on the Settings page; the log has a line for every change, every launch and every
+ * call that did not go through (who, which tool, how it ended; never the input or the answer).
  */
 
 export const ActivityOutcomeSchema = z.enum([

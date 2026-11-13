@@ -7,7 +7,7 @@ order: 110
 
 **Configure > Binding guide** explains, for an aircraft you do not know yet, what the important controls do, when you use them and where they belong, and walks you through binding them. Everything on the Walkthrough and Priorities tabs works without any key. AI help is optional and needs your own key from Anthropic, OpenAI, Google Gemini, OpenRouter or Mistral, or a model on your own PC.
 
-Choose the aircraft at the top right; each one says **Guide included**, **Guide drafted by AI** or **No guide yet**.
+Choose the aircraft at the top right; each one says **Guide included**, **Your own guide**, **Guide drafted by AI** or **No guide yet**.
 
 An AI assistant of your own (Claude Desktop, Claude Code, Cursor and others) can also help with bindings through RigReady's MCP server, without an API key in RigReady; see [AI assistants](../ai/index.md).
 
@@ -23,13 +23,36 @@ RigReady ships guides for these aircraft:
 | Helicopters | Ka-50 III and Ka-50 Black Shark (one guide), UH-1H Huey (pilot) |
 | Warbirds and trainers | P-51D Mustang, TF-51D, F-86F Sabre, Christen Eagle II |
 
-An aircraft without a guide, such as a gunner's seat or a module not on this list, says **No guide yet**; with your own key, AI help can draft one (see below).
+An aircraft without a guide, such as a gunner's seat or a module not on this list, says **No guide yet**. You can [import a guide file or write your own](#a-guide-of-your-own), with no key; with your own key, AI help can also draft one (see below).
 
 A guide is a plain data file in RigReady's source (`packs/`, one file per aircraft, for example `FA-18C_hornet.yaml`); anyone can add an aircraft by writing one in the same format. Each item in a guide has a title, what it does, when you use it, a tier (**Must have to fly and fight**, **Should have**, **Nice to have**), where it belongs (**On the stick, throttle or pedals**, **On a panel or button box**, **Fine on the keyboard**), and the DCS actions it stands for, each with a plain-language label. The guide also has a plan per kind of device: what to put on the stick, the throttle, the pedals, the MFD frames, the panels and the keyboard, in order.
 
 The guides were written from general knowledge of the aircraft and of how their switches work in DCS. They have not been reviewed by a pilot and are not affiliated with Eagle Dynamics. What is checked, by a test, is that every action name in a guide exists in DCS's own input files for the aircraft, so a DCS update that renames an action is caught. **Where this guide comes from** at the bottom of the Priorities tab says the same.
 
 The plain labels from the guide are also what the [bindings page](bindings.md) and the [cheat sheets](cheat-sheets.md) show first, with DCS's name beside them.
+
+## A guide of your own
+
+For an aircraft RigReady has no guide for, the Walkthrough and Priorities tabs offer two ways to add one. Neither needs a key, and neither sends anything.
+
+- **Import a guide file** opens the Windows file dialog for a guide somebody shared with you: a `.yaml` file in the format described above. RigReady checks it and keeps a copy in its own data folder; the file you picked is left as it is. A file that is not a guide, that was written for another aircraft or that is larger than 512 KB is refused, with the reason.
+- **Write your own** writes a short starter guide: an example on two real actions of the aircraft, with the format explained in its first lines.
+
+![An aircraft without a guide: import a guide file or write your own](../../../artifacts/screens/ai-assist-own-guide/01-two-ways-in.png)
+
+The aircraft then says **Your own guide**, and the guide is used wherever a guide is: the walkthrough, the priorities, and the plain labels on the bindings page and the cheat sheets.
+
+![A guide imported from a file, shown as your own](../../../artifacts/screens/ai-assist-own-guide/02-imported.png)
+
+- **Open the file** opens the kept file in Notepad. Change it, save, and press **Read it again**.
+- An edit that does not fit the format is reported with what is wrong, and the guide is not used until the file is fixed or deleted.
+- **Delete this guide** asks first, then removes the file: the aircraft has no guide again, and the file cannot be brought back.
+
+The file is `ai-assist\guides\<aircraft>.yaml` under [the data folder](../app/index.md). RigReady writes nothing anywhere else for it.
+
+An action in a guide is named exactly as DCS names it, or matched by a pattern (`re`). A pattern is at most 100 characters, repeats no group (`(…)+` is refused), and uses `*`, `+` or `{…}` at most twice; a guide holds at most 40 patterns. The same rules hold for the guides RigReady ships and for a guide drafted by AI.
+
+A guide of your own is never replaced without you: importing or starting one is refused while a guide file is kept, and **Draft a guide** is not offered for that aircraft. If you ask for AI help for the aircraft, the guide's summary and items are part of the request, and the preview names it as your own guide.
 
 ## Priorities tab
 
@@ -54,11 +77,11 @@ Once a provider is set up the Binding guide page gets an **AI help** tab, and th
 - **Suggest a setup** asks for a binding plan for this aircraft on your controllers.
 - **Ask about this setup** takes a question of up to 600 characters, for example "What am I missing for carrier landings?", and answers in plain text.
 - **Explain** on an action in the walkthrough asks what it does in the real aircraft and in DCS, when you use it and where it belongs.
-- **Draft a guide**, for an aircraft without one, has the model write a guide in the same format from the aircraft's own action list. It is saved under RigReady's folder, marked as drafted by AI wherever it is shown, and every action in it was checked against the aircraft's real action list; nobody checked the advice. **Delete the drafted guide** removes it.
+- **Draft a guide**, for an aircraft without one, has the model write a guide in the same format from the aircraft's own action list. It is saved under RigReady's folder, marked as drafted by AI wherever it is shown, and every action in it was checked against the aircraft's real action list; nobody checked the advice. **Delete the drafted guide** removes it. A draft is not offered while a guide file of your own is kept for the aircraft.
 
 ### What is sent
 
-Before each request a dialog shows what will be sent: the host it goes to, the model, the size in characters and tokens, what reading it is estimated at and from which prices (where prices are set for the model; it is an estimate, not a bill), what is in it, and under **Show the exact request** the request body itself. Sent are the aircraft's name, DCS's list of its actions with what each is bound to now, for each controller used in DCS its product name, role, number of buttons and hats and axis names, RigReady's guide when there is one, and your question. Never sent are file paths, device IDs, serial numbers, the names you gave devices, your Windows user or PC name, or the contents of your files. The key goes only to the chosen provider's host (api.anthropic.com by default), in a request header; with Ollama or LM Studio nothing leaves the PC. Nothing leaves the PC until you press **Send**. A [monthly budget](../ai/built-in-assistant.md#the-monthly-budget) set in Settings holds these requests back as well. [Privacy](../app/privacy.md) lists everything that ever leaves the PC.
+Before each request a dialog shows what will be sent: the host it goes to, the model, the size in characters and tokens, what reading it is estimated at and from which prices (where prices are set for the model; it is an estimate, not a bill), what is in it, and under **Show the exact request** the request body itself. Sent are the aircraft's name, DCS's list of its actions with what each is bound to now, for each controller used in DCS its product name, role, number of buttons and hats and axis names, the guide for the aircraft when there is one (RigReady's, one drafted by AI, or your own: its summary and its items), and your question. Never sent are file paths, device IDs, serial numbers, the names you gave devices, your Windows user or PC name, or any other content of your files. All of this is for DCS aircraft; the [built-in assistant](../ai/built-in-assistant.md), which works the same whatever you play, has its own list. The key goes only to the chosen provider's host (api.anthropic.com by default), in a request header; with Ollama or LM Studio nothing leaves the PC. Nothing leaves the PC until you press **Send**. A [monthly budget](../ai/built-in-assistant.md#the-monthly-budget) set in Settings holds these requests back as well. [Privacy](../app/privacy.md) lists everything that ever leaves the PC.
 
 ![What will be sent](../../../artifacts/screens/ai-assist-suggest/01-payload.png)
 

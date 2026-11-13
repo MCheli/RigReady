@@ -1,5 +1,11 @@
 import type { CategoryId } from '../categories';
-import { compareControlIds, controlShort, HAT_ARROWS, HAT_DIRECTIONS } from '../layout';
+import {
+  compareControlIds,
+  controlName,
+  controlShort,
+  HAT_ARROWS,
+  HAT_DIRECTIONS,
+} from '../layout';
 import { textWidth } from '../render';
 import type { SheetControl } from '../sheet';
 import type { DeviceDrawing, PhysicalControl, Side } from './silhouette';
@@ -42,6 +48,8 @@ const MAX_SCALE = 1.25;
 const MAX_FILL_SCALE = 1.35;
 /** A column narrower than this wraps every other label; `fill` stops here. */
 const MIN_COLUMN = 250;
+/** Photos of the user's are not made smaller than this to fit a page. */
+const MIN_PHOTO_SCALE = 0.3;
 /** A block in a row above or below the drawing is never wider than this. */
 const ROW_MAX_WIDTH = 330;
 
@@ -515,7 +523,10 @@ export function planCallouts(
     const rows = rowsFor(control, byId, showEmpty);
     const empty = !rows.some((row) => !row.dim || row.note);
     if (rows.length === 0 || (empty && !showEmpty && !rows.some((r) => r.kind))) continue;
-    const numbers = numbersOf(control);
+    // A control still called what its one input is called ("Button 5", as a control
+    // placed on a photo is until it is given a name) has its number in its name.
+    const only = control.inputs.length === 1 ? control.inputs[0] : undefined;
+    const numbers = only && control.name === controlName(only.id) ? '' : numbersOf(control);
     const assumed = control.assumed ? ' ?' : '';
     callouts.push({
       control,
@@ -550,17 +561,26 @@ export function planCallouts(
   const bandFor = (column: number): number =>
     CANVAS_WIDTH - 2 * MARGIN - sides * (column + BAND_GAP);
   let drawScale = Math.min(MAX_SCALE, bandFor(columnW) / drawing.size.width);
+  const room =
+    (options.fill ?? 0) -
+    2 * MARGIN -
+    (topRowH ? topRowH + STUB + 16 : 0) -
+    (bottomRowH ? bottomRowH + STUB + 16 : 0);
+  const { extras, list } = listUnder(drawing, controls, byId, options);
+  const fit = (drawing.views?.length ?? 0) > 0 && list ? room - list.h - 16 : room;
+  if (options.fill !== undefined && (drawing.views?.length ?? 0) > 0) {
+    // Photos one under the other can be far taller than a page. They are made smaller
+    // to fit it, with the list of what is not placed yet under them, so the page is not
+    // shrunk as a whole and the labels keep their size.
+    drawScale = Math.min(drawScale, Math.max(MIN_PHOTO_SCALE, fit / drawing.size.height));
+  }
   if (options.fill !== undefined && sides > 0) {
-    const room =
-      options.fill -
-      2 * MARGIN -
-      (topRowH ? topRowH + STUB + 16 : 0) -
-      (bottomRowH ? bottomRowH + STUB + 16 : 0);
-    const wanted = Math.min(MAX_FILL_SCALE, room / drawing.size.height);
+    const wanted = Math.min(MAX_FILL_SCALE, fit / drawing.size.height);
     // Columns already narrower than the minimum (a bezel's) stay as they are.
     const minColumn = Math.min(MIN_COLUMN, columnW);
     const grown = Math.min(wanted, bandFor(minColumn) / drawing.size.width);
     if (grown > drawScale) {
+      // (Never for photos made smaller above: `wanted` is at most what fits the page.)
       drawScale = grown;
       columnW = Math.max(
         minColumn,
@@ -640,7 +660,37 @@ export function planCallouts(
       );
   }
 
-  // What is bound but has no place on the drawing: a list under it, never left out.
+  let extrasBox: CalloutPlan['extrasBox'];
+  if (list) {
+    const y = bottom + 16;
+    extrasBox = { x: MARGIN, y, w: list.w, h: list.h, columns: list.columns };
+    bottom = y + extrasBox.h;
+  }
+
+  return {
+    width: CANVAS_WIDTH,
+    height: Math.round((bottom + MARGIN) * 10) / 10,
+    placed,
+    callouts,
+    extras,
+    ...(extrasBox ? { extrasBox } : {}),
+    overflow,
+  };
+}
+
+/**
+ * What is bound but has no place on the drawing: a list under it, never left out. With
+ * the free controls shown, also what the device reports and nothing else accounts for.
+ * The rows come back wrapped, with the size of the box that holds them.
+ */
+function listUnder(
+  drawing: DeviceDrawing,
+  controls: SheetControl[],
+  byId: Map<string, SheetControl>,
+  options: PlanOptions
+): { extras: Row[]; list: { w: number; h: number; columns: number } | undefined } {
+  const showEmpty = options.showEmpty ?? false;
+  const scale = options.fontScale ?? 1;
   const drawn = new Set(drawing.controls.flatMap((c) => c.inputs.map((i) => i.id)));
   const extras: Row[] = [];
   const quiet = (options.listed ?? [])
@@ -688,39 +738,25 @@ export function planCallouts(
     const free = reportedIds(options.reports).filter((id) => !drawn.has(id) && !shown.has(id));
     if (free.length > 0) extras.push(freeRow(free.sort(compareControlIds)));
   }
-  let extrasBox: CalloutPlan['extrasBox'];
-  if (extras.length > 0) {
-    const columns = extras.length > 8 ? 3 : extras.length > 3 ? 2 : 1;
-    const w = CANVAS_WIDTH - 2 * MARGIN;
-    const colW = (w - (columns - 1) * GAP) / columns;
-    const size = ROW_SIZE * scale;
-    for (const row of extras) {
-      row.lines = row.cells
-        ? cellLines(row.cells, colW - 2 * PAD, size)
-        : wrapText(row.text, colW - 2 * PAD - MARK - 6, size);
-    }
-    const perColumn = Math.ceil(extras.length / columns);
-    let tallest = 0;
-    for (let c = 0; c < columns; c++) {
-      const slice = extras.slice(c * perColumn, (c + 1) * perColumn);
-      const h = slice.reduce((sum, row) => sum + row.lines.length * size * LINE_HEIGHT + 2, 0);
-      tallest = Math.max(tallest, h);
-    }
-    const y = bottom + 16;
-    const h = PAD + HEAD_SIZE * scale * LINE_HEIGHT + 3 + tallest + PAD;
-    extrasBox = { x: MARGIN, y, w, h: Math.round(h * 10) / 10, columns };
-    bottom = y + extrasBox.h;
+  if (extras.length === 0) return { extras, list: undefined };
+  const columns = extras.length > 8 ? 3 : extras.length > 3 ? 2 : 1;
+  const w = CANVAS_WIDTH - 2 * MARGIN;
+  const colW = (w - (columns - 1) * GAP) / columns;
+  const size = ROW_SIZE * scale;
+  for (const row of extras) {
+    row.lines = row.cells
+      ? cellLines(row.cells, colW - 2 * PAD, size)
+      : wrapText(row.text, colW - 2 * PAD - MARK - 6, size);
   }
-
-  return {
-    width: CANVAS_WIDTH,
-    height: Math.round((bottom + MARGIN) * 10) / 10,
-    placed,
-    callouts,
-    extras,
-    ...(extrasBox ? { extrasBox } : {}),
-    overflow,
-  };
+  const perColumn = Math.ceil(extras.length / columns);
+  let tallest = 0;
+  for (let c = 0; c < columns; c++) {
+    const slice = extras.slice(c * perColumn, (c + 1) * perColumn);
+    const h = slice.reduce((sum, row) => sum + row.lines.length * size * LINE_HEIGHT + 2, 0);
+    tallest = Math.max(tallest, h);
+  }
+  const h = PAD + HEAD_SIZE * scale * LINE_HEIGHT + 3 + tallest + PAD;
+  return { extras, list: { w, h: Math.round(h * 10) / 10, columns } };
 }
 
 /** What a device says it has, for the list of a device with no drawing. */

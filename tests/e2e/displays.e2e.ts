@@ -1071,7 +1071,10 @@ test('an assistant asks for Make ready: the question names the assistant and giv
   expect(url, state).toBeTruthy();
   await page.getByTestId('mcp-pair-name').locator('input').fill('Claude Code');
   await page.getByTestId('mcp-pair').click();
-  const token = /rr_[0-9a-f]{64}/.exec(await page.getByTestId('mcp-fresh-token').innerText())?.[0];
+  await page.getByTestId('mcp-token-toggle').click();
+  const token = /rr_[0-9a-f]{64}/.exec(
+    await page.getByTestId('mcp-client-config').innerText()
+  )?.[0];
   expect(token).toBeTruthy();
   // Back on the Play page, where the person at the screens would be looking.
   await page.getByTestId('mode-fly').click();

@@ -1,9 +1,11 @@
 import { runAsAssistant } from '../../../core/assistantScripts';
+import { maskSecrets } from '../../../core/logger';
 import type { McpCallContext } from '../../../core/mcp';
 import type { Clock } from '../../../core/ports';
 import { err, type Result, type RigError } from '../../../core/result';
 import type { ChannelTier, Envelope } from '../../../shared/ipc';
 import { ActivityLog, type ActivityEntry, type ActivityOutcome } from './activity';
+import { clip } from './clip';
 import type { ConfirmOutcome } from './confirm';
 import { gateDecision, type ConfirmPolicy } from './tiers';
 
@@ -13,6 +15,10 @@ import { gateDecision, type ConfirmPolicy } from './tiers';
  * to be allowed in the window first), one change at a time across every assistant, the
  * work itself through the app's validated channels, and the record: what was asked, how
  * it ended, and which Safety page actions it left behind, under the assistant's name.
+ *
+ * What a question shows and a record keeps has every secret masked first (a key, a token,
+ * a password an assistant put in a call or a program put in its answer), and a line that is
+ * too long is cut with a mark that says so.
  *
  * Both doors use it: the MCP server (a paired assistant) and the built-in assistant of the
  * app (`McpService.host`, as `ctx.mcp.host()`), so a rule changed here holds for both.
@@ -71,6 +77,8 @@ export interface GateDeps {
 
 /** The longest line a question or a record shows. */
 const LINE_LENGTH = 200;
+/** The longest reason a record keeps for a call that did not work. */
+const MESSAGE_LENGTH = 400;
 
 /** Calls a pairing may make: this many at once, refilled at this rate. */
 export const RATE_BURST = 30;
@@ -116,7 +124,8 @@ export class Gate {
       signal: caller.signal,
     };
     /** What the question and the record say: the call's plain line, until its own is worked out. */
-    let summary = call.summary;
+    let summary = clip(maskSecrets(call.summary), LINE_LENGTH);
+    const detail = call.detail ? maskSecrets(call.detail) : undefined;
     const record = (
       outcome: ActivityOutcome,
       message: string,
@@ -130,9 +139,9 @@ export class Gate {
         ...(call.channel ? { channel: call.channel } : {}),
         tier: call.tier,
         summary,
-        ...(call.detail ? { detail: call.detail } : {}),
+        ...(detail ? { detail } : {}),
         outcome,
-        message,
+        message: clip(maskSecrets(message), MESSAGE_LENGTH),
         ms: Math.max(0, this.deps.clock.now().getTime() - started.getTime()),
         journalGroups,
       };
@@ -162,7 +171,7 @@ export class Gate {
         const line = (await runAsAssistant(caller.client, () => describe(ctx)))
           .replace(/\s+/g, ' ')
           .trim();
-        if (line !== '') summary = line.slice(0, LINE_LENGTH);
+        if (line !== '') summary = clip(maskSecrets(line), LINE_LENGTH);
       } catch {
         // The plain line stands.
       }
@@ -177,7 +186,7 @@ export class Gate {
           client: caller.client,
           tool: call.tool,
           summary,
-          ...(call.detail ? { detail: call.detail } : {}),
+          ...(detail ? { detail } : {}),
           tier: call.tier === 'launch' ? 'launch' : 'change',
         },
         caller.signal
@@ -237,14 +246,16 @@ export class Gate {
   }
 }
 
-/** What an answer says, in one short line for the record. */
+/** What an answer says, in one short line for the record: no secret in it, and marked where it is cut. */
 export function oneLine(value: unknown): string {
   if (value === null || value === undefined) return 'Done';
-  if (typeof value === 'string') return value.slice(0, 200);
+  if (typeof value === 'string') return clip(maskSecrets(value), LINE_LENGTH);
   if (typeof value === 'object') {
     const object = value as Record<string, unknown>;
     for (const key of ['headline', 'message', 'summary', 'line']) {
-      if (typeof object[key] === 'string') return (object[key] as string).slice(0, 200);
+      if (typeof object[key] === 'string') {
+        return clip(maskSecrets(object[key] as string), LINE_LENGTH);
+      }
     }
     if (typeof object['ready'] === 'boolean') return object['ready'] ? 'Ready' : 'Not ready';
     if (Array.isArray(value)) return counted(value.length, 'items');

@@ -42,7 +42,9 @@ const aircraftItems = computed(() =>
         ? 'Guide included'
         : a.guide === 'drafted'
           ? 'Guide drafted by AI'
-          : 'No guide yet',
+          : a.guide === 'own'
+            ? 'Your own guide'
+            : 'No guide yet',
   }))
 );
 

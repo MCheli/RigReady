@@ -44,7 +44,7 @@ const byTitle = (sheet: Sheet, title: string): SheetDevice => {
 };
 
 const sheetOf = (running: WiredApp): Promise<Sheet> =>
-  running.invoke<Sheet>('cheat-sheets:sheet', HORNET);
+  running.invoke<Sheet>('cheat-sheets:windowSheet', HORNET);
 
 const STICK = { vendorId: '4098', productId: 'BEA8' };
 

@@ -34,7 +34,18 @@ export interface Snapshot {
   /** Connected controllers that are used in DCS (not marked "not used"), in name order. */
   controllers: ControllerRef[];
   pack?: Pack;
+  /** Whose guide `pack` is. Absent means the one RigReady ships. */
+  guideKind?: GuideKind;
 }
+
+export type GuideKind = 'shipped' | 'drafted' | 'own';
+
+/** Whose guide it is, as a request says it: the model is told how far to rely on it. */
+const GUIDE_SOURCE: Record<GuideKind, string> = {
+  shipped: "RigReady's binding guide for this aircraft",
+  drafted: 'a binding guide an AI model drafted for this aircraft; no person checked it',
+  own: 'a binding guide the player wrote or was given for this aircraft; RigReady did not check its advice',
+};
 
 export async function takeSnapshot(
   reader: BindingReader,
@@ -116,7 +127,7 @@ export function contextText(snapshot: Snapshot): string {
   );
   lines.push(`</aircraft>`);
   if (snapshot.pack) {
-    lines.push(`<guide source="RigReady's binding guide for this aircraft">`);
+    lines.push(`<guide source="${GUIDE_SOURCE[snapshot.guideKind ?? 'shipped']}">`);
     lines.push(oneLine(snapshot.pack.summary, 800));
     for (const item of snapshot.pack.items) {
       lines.push(

@@ -89,6 +89,14 @@ export async function rigFromState(
 export interface WiredApp extends TestRig {
   wiring: Wiring;
   events: { channel: string; payload: unknown }[];
+  /**
+   * The payload of the first event the main side sends on a channel, looking at `events` from
+   * `from` on (from the start when left out, so an event that was already sent counts). It
+   * is settled by the sending itself: no clock and no looking again and again, so a loaded
+   * PC cannot make the test give up early. An event that never comes ends the test at the
+   * test's own time limit.
+   */
+  event<T = unknown>(channel: string, from?: number): Promise<T>;
   /** Calls an IPC channel exactly as the renderer would, through validation. */
   invoke<T = unknown>(channel: string, input?: unknown): Promise<T>;
   /**
@@ -110,6 +118,8 @@ export async function wiredApp(
   const rig = await scenarioRig(scenario, options);
   await options.beforeWiring?.(rig);
   const events: WiredApp['events'] = [];
+  /** Tests waiting for an event that was not sent yet (WiredApp.event). */
+  let waiting: { channel: string; settle: (payload: unknown) => void }[] = [];
   const answer = (channel: string): void => {
     // After the event, as a click would be: never inside the apply that raised it.
     setTimeout(() => void wiring.handlers.get(channel)?.(undefined), 0);
@@ -120,6 +130,11 @@ export async function wiredApp(
     log: nullLogger,
     send: (channel, payload) => {
       events.push({ channel, payload });
+      const met = waiting.filter((w) => w.channel === channel);
+      if (met.length > 0) {
+        waiting = waiting.filter((w) => w.channel !== channel);
+        for (const w of met) w.settle(payload);
+      }
       if (channel === 'displays:event:applied' && app.layoutAnswer !== 'wait') {
         answer(app.layoutAnswer === 'keep' ? 'displays:keep' : 'displays:revert');
       }
@@ -130,6 +145,13 @@ export async function wiredApp(
     wiring,
     events,
     layoutAnswer: 'keep',
+    event<T>(channel: string, from = 0): Promise<T> {
+      const sent = events.slice(from).find((e) => e.channel === channel);
+      if (sent) return Promise.resolve(sent.payload as T);
+      return new Promise<T>((resolve) => {
+        waiting.push({ channel, settle: (payload) => resolve(payload as T) });
+      });
+    },
     async invoke<T>(channel: string, input?: unknown): Promise<T> {
       const handler = wiring.handlers.get(channel);
       if (!handler) throw new Error(`No handler for ${channel}`);
