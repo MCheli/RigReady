@@ -154,7 +154,7 @@ CalibrationInfo:
 - Keys name no device.
 - RigReady matches a controller in the file to what is plugged in like this: the same instance GUID is **Connected**; no such GUID but a controller of the same vendor and product that the file does not name is **New Windows id**; neither is **Not connected**; when Windows gave no list the page says **Cannot tell**.
 - The name shown is the name the owner gave the controller in RigReady, with the hardware name next to it. The hardware name is, in order: the `DeviceName` of `joyCalib.yaml`, the name of the connected controller, and last the USB ids from the product GUID.
-- Pointing iRacing at a new instance GUID is the existing repair of `src/features/racing` (`racing.md` 2.5). The bindings page links to it and does not repeat it. That repair changes the older files only, not a control profile (see "Two readers of one file").
+- Pointing iRacing at a new instance GUID is the existing repair of `src/features/racing` (`racing.md` 2.5). The bindings page links to it and does not repeat it. Since 13 Nov it changes the control profile iRacing uses, as this page reads it (see "Two readers of one file").
 
 ## Control profiles (iRacing 2026 Season 3 and later)
 
@@ -205,7 +205,7 @@ The key record itself, checked against the 166 key bindings of the real file (th
 - **[V/W]** `0x4a` (74) is J. iRacing's published camera editor keys "Ctrl+J – Toggle Pitch Gyro" and "Alt+J – Toggle Roll Gyro" (https://www.iracing.com/keyboard-shortcuts-camera-editor/) are the records `CamTogglePitchGyro` and `CamToggleRollGyro`, code 74 with `0x0C` and `0x30`. For letters iRacing's own table (`racing.md` 2.4) uses the ASCII code, which is also the Windows virtual-key code of the letter (J is `0x4A`). It is not the keyboard scan code (J is `0x24`). No other record uses Shift+J.
 - **[V]** All 166 keys in the file are iRacing's published defaults. So before the retest the file had never shown a key that a user set. The retest at 12:16 showed iRacing taking a key RigReady wrote: Shift+J, code 74 with `03`, the same form as above.
 - **[W/V] The black box actions.** iRacing's own list (https://support.iracing.com/support/solutions/articles/31000133517, "Black Box Controls") has "Next Black Box" and "Previous Black Box" not assigned by default, F1 to F10 for the boxes, and the arrows, Home and Space for the selected control inside the box shown. In the file the arrows are on `BlackBoxNext` (Down), `BlackBoxPrev` (Up), `BlackBoxInc` (Right), `BlackBoxDec` (Left), Space is on `BlackBoxToggle`, and the only unbound pair is `BlackBoxShowNext` and `BlackBoxShowPrev`. **[I]** `BlackBoxShowNext` is iRacing's "Next Black Box". The same page says the boxes are for when "you are on track"; the test drive was on track, so the action had its screen. Nothing marks it as special beyond that.
-- RigReady named `BlackBoxNext` "Next black box" and `BlackBoxShowNext` "Black box show next", which could send someone to the wrong entry in iRacing's Options. The names now follow iRacing: `BlackBoxShowNext` "Next black box", `BlackBoxNext` "Black box next control", `BlackBoxToggle` "Black box toggle control" (`core/names.ts`; the `racing` feature's own table still has the old names).
+- RigReady named `BlackBoxNext` "Next black box" and `BlackBoxShowNext` "Black box show next", which could send someone to the wrong entry in iRacing's Options. The names now follow iRacing: `BlackBoxShowNext` "Next black box", `BlackBoxNext` "Black box next control", `BlackBoxToggle` "Black box toggle control" (`core/names.ts`; since 13 Nov the `racing` feature's table gives the same names, held together by `tests/unit/iracingActionNames.test.ts`).
 
 ## Per-car bindings
 
@@ -257,7 +257,7 @@ The two actions are picked on purpose: they have no binding in the recorded file
 
 `src/features/racing/core/iracing` already read `controls.cfg` for the iRacing page, the id repair, the check and the cheat sheets. Features may not import each other, so `src/features/iracing-bindings` has its own reader and its own table of action names. The two tables now differ in a few labels and groups (the new one fixes labels such as "Boost (axis) (axis)", and since 13 Nov the black box names). When the game picker lands, the reader and the names should move to one shared place and the racing page should use them.
 
-**[V, by reading the code, 13 Nov]** The racing feature still reads only `Documents\iRacing\controls.cfg` and `setups\<car>\controls.cfg`. On an iRacing with control profiles its iRacing page, cheat sheets and check show the older file, and its id repair changes the older file, which iRacing no longer reads. It needs the same change as this feature.
+Since 13 Nov the racing feature follows the same rule for control profiles: its iRacing page, check, binding reader (cheat sheets), id repair, backups and saved sets, and the iRacing game module's tracked files find the files with `src/core/iracingControls.ts`, and never use the older file once a profiles folder exists. This feature keeps its own copy of the lookup in `core/view.ts`; `tests/unit/iracingControlProfiles.test.ts` holds the two together, and `tests/unit/iracingActionNames.test.ts` the two tables of names. RACE-IRACING-006 and RACE-IRACING-007 in the ledger.
 
 ## Open questions
 

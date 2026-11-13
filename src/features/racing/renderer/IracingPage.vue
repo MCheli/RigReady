@@ -88,6 +88,23 @@ async function repair(): Promise<void> {
 }
 
 const shortId = (guid: string): string => `${guid.slice(0, 8)}…${guid.slice(19, 23)}`;
+
+/** The control profile iRacing uses for all cars, when it keeps them and one was found. */
+const profile = computed(() =>
+  view.value?.source?.kind === 'profiles' && !view.value.source.problem
+    ? view.value.source.profile
+    : undefined
+);
+
+/** Which control profile iRacing uses, and that the older file beside it is not read. */
+const sourceLine = computed(() => {
+  const s = view.value?.source;
+  if (!profile.value || !s) return '';
+  const older = s.oldFiles.length
+    ? ' The older controls.cfg from before control profiles is not read by iRacing any more, so this page does not show it or change it.'
+    : '';
+  return `iRacing keeps bindings in control profiles. It uses the profile “${profile.value}” for all cars.${older}`;
+});
 </script>
 
 <template>
@@ -100,7 +117,9 @@ const shortId = (guid: string): string => `${guid.slice(0, 8)}…${guid.slice(19
         <h1 class="rr-page-title">iRacing</h1>
         <p class="rr-page-sub">
           Bindings and wheel calibration from
-          <span class="rr-mono">{{ view?.userFolder ?? 'Documents\\iRacing' }}</span>
+          <span class="rr-mono" data-testid="iracing-folder">{{
+            view?.source?.folder ?? view?.userFolder ?? 'Documents\\iRacing'
+          }}</span>
         </p>
       </div>
       <v-spacer />
@@ -136,16 +155,29 @@ const shortId = (guid: string): string => `${guid.slice(0, 8)}…${guid.slice(19
           settings when it exits.
         </div>
       </div>
+      <div v-if="view.source?.problem" class="rc-notice warn" data-testid="iracing-source-problem">
+        <v-icon icon="mdi-alert" class="rr-warn" />
+        <div>
+          {{ view.source.problem }} iRacing shows its bindings in Options, then Controls. RigReady
+          does not read or change the older controls.cfg instead, because iRacing no longer uses it.
+        </div>
+      </div>
+      <div v-else-if="sourceLine" class="rc-notice" data-testid="iracing-source">
+        <v-icon icon="mdi-folder-account-outline" class="rr-muted" />
+        <div>{{ sourceLine }}</div>
+      </div>
       <div v-for="p in view.problems" :key="p" class="rc-notice bad">
         <v-icon icon="mdi-alert-circle" class="rr-bad" />
         <div>{{ p }}</div>
       </div>
 
-      <section v-if="view.userFolder" class="rc-section">
+      <section v-if="view.userFolder && !view.source?.problem" class="rc-section">
         <div class="rc-section-head">
           <h2 class="rr-section-title">Controllers iRacing knows</h2>
           <span class="rc-hint"
-            >From joyCalib.yaml and controls.cfg, matched to what is connected now</span
+            >From joyCalib.yaml and controls.cfg<template v-if="profile">
+              of the profile “{{ profile }}”</template
+            >, matched to what is connected now</span
           >
         </div>
         <div class="rr-panel">
@@ -256,7 +288,10 @@ const shortId = (guid: string): string => `${guid.slice(0, 8)}…${guid.slice(19
         </div>
       </section>
 
-      <section v-if="view.userFolder" class="rc-section">
+      <section
+        v-if="view.userFolder && (!view.source?.problem || view.customCars.length > 0)"
+        class="rc-section"
+      >
         <h2 class="rr-section-title">Custom controls per car</h2>
         <div class="rr-panel">
           <div
@@ -325,8 +360,10 @@ const shortId = (guid: string): string => `${guid.slice(0, 8)}…${guid.slice(19
     >
       <template v-if="confirming">
         RigReady replaces the old id of <strong>{{ confirming.name }}</strong> with the new one in
-        these files ({{ confirming.bindingCount }} bindings and its calibration). Nothing else in
-        them changes.
+        these files<template v-if="profile"> of the control profile “{{ profile }}”</template> ({{
+          confirming.bindingCount
+        }}
+        bindings and its calibration). Nothing else in them changes.
       </template>
       <template #after>
         <div class="rc-notice warn mt-3" data-testid="iracing-unverified">

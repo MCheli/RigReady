@@ -5,6 +5,7 @@ import { wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { BindingReader, BindingsChanged, BoundDevice } from '../../../core/bindings';
 import { axisFromName, beamngControl, lmuControl, mergeAxisHalves } from './bindingReaders';
 import { racingCategory } from './categories';
+import { replaceGuidBytes } from './iracing/controlsCfg';
 
 /**
  * The racing games' bindings for the rest of the app (cheat sheets, the input tester):
@@ -333,5 +334,102 @@ describe('the games’ input names as controls', () => {
     expect(racingCategory('Look left')).toBe('View');
     expect(racingCategory('Chat macro 3')).toBe('Radio & chat');
     expect(racingCategory('Telemetry marker')).toBe('Other');
+  });
+});
+
+/**
+ * iRacing 2026 Season 3 and later keep their bindings in a control profile that app.ini names.
+ * The reader (cheat sheets, the input tester, the overlay, the guides) reads the profile and
+ * never the older Documents\iRacing\controls.cfg beside it.
+ */
+describe('the iRacing reader with control profiles', () => {
+  const DD2 = '45D4BEA1-60A1-17D8-8001-444553540000';
+  /** A made-up id that the older files name instead of the wheel's. */
+  const OLD = '11112222-3333-11F1-8001-444553540000';
+  const IRACING_FILES = ['Documents/iRacing/**'];
+  const dir = (): string => path.join(app!.ports.folders.documents(), 'iRacing');
+
+  it('reads the profile app.ini names: the wheel of the profile, not the id of the older file', async () => {
+    await start('iracing-bindings-profiles', IRACING_FILES);
+    // The older file names another id: were it read, the wheel would be "not connected".
+    const older = path.join(dir(), 'controls.cfg');
+    const replaced = replaceGuidBytes(new Uint8Array(await fs.readFile(older)), DD2, OLD);
+    expect(replaced.count).toBe(17);
+    await fs.writeFile(older, replaced.bytes);
+
+    expect(await reader('iracing').available()).toBe(true);
+    const sets = await reader('iracing').aircraft();
+    expect(sets.ok && sets.value).toEqual([
+      { id: 'all', name: 'All cars', hasUserBindings: true, general: true },
+    ]);
+    const wheel = wheelOf(await devicesOf('iracing'));
+    expect(wheel).toMatchObject({ guid: DD2, connected: true });
+    expect(on(wheel, 'Shift up')).toEqual([{ kind: 'button', index: 5 }]);
+    const keyboard = (await devicesOf('iracing')).find((d) => d.kind === 'keyboard')!;
+    expect(keyboard.bindings.find((b) => b.actionId === 'BlackBoxNext')).toMatchObject({
+      action: 'Black box next control',
+      inputLabel: 'Down',
+    });
+
+    // And the cheat sheet that reads through it draws that wheel with its bindings.
+    const sheet = await app!.invoke<{
+      devices: { connected: boolean; counts: { bound: number } }[];
+    }>('cheat-sheets:sheet', { game: 'iracing', aircraftId: 'all' });
+    expect(sheet.devices.map((d) => [d.connected, d.counts.bound > 0])).toContainEqual([
+      true,
+      true,
+    ]);
+  });
+
+  it('says why when the profile cannot be found, instead of showing the older file', async () => {
+    await start('iracing-bindings-profiles', IRACING_FILES);
+    await fs.writeFile(path.join(dir(), 'app.ini'), '[ControlProfiles]\r\nGlobal=Gone\r\n');
+    // Still offered, so a cheat sheet says what is wrong rather than leaving iRacing out.
+    expect(await reader('iracing').available()).toBe(true);
+    const problem =
+      'iRacing uses the control profile “Gone” for all cars, but RigReady found no controls.cfg in it.';
+    const bindings = await reader('iracing').bindings('all');
+    expect(!bindings.ok && bindings.error.message).toBe(problem);
+    await expect(
+      app!.invoke('cheat-sheets:sheet', { game: 'iracing', aircraftId: 'all' })
+    ).rejects.toThrow(problem);
+  });
+
+  it('offers a car with a profile of its own, by its line in [ControlProfiles]', async () => {
+    await start('iracing-bindings-profiles', IRACING_FILES);
+    // As iRacing writes it: iRacing's path name for the car, then the profile's folder name.
+    // The car has no folder under setups.
+    const ctsv = path.join(dir(), 'profiles', 'controls', 'Test Profile CTSV');
+    await fs.mkdir(ctsv, { recursive: true });
+    await fs.copyFile(
+      path.join(dir(), 'profiles', 'controls', 'Baseline', 'controls.cfg'),
+      path.join(ctsv, 'controls.cfg')
+    );
+    const ini = await fs.readFile(path.join(dir(), 'app.ini'), 'utf8');
+    await fs.writeFile(
+      path.join(dir(), 'app.ini'),
+      ini.replace(
+        '[ControlProfiles]\r\n',
+        '[ControlProfiles]\r\ncadillacctsvr=Test Profile CTSV\r\n'
+      )
+    );
+    // A car folder with the older per-car file only is not a car iRacing reads.
+    await fs.mkdir(path.join(dir(), 'setups', 'porsche992rgt3'), { recursive: true });
+    await fs.copyFile(
+      path.join(dir(), 'controls.cfg'),
+      path.join(dir(), 'setups', 'porsche992rgt3', 'controls.cfg')
+    );
+    const sets = await reader('iracing').aircraft();
+    expect(sets.ok && sets.value).toEqual([
+      { id: 'all', name: 'All cars', hasUserBindings: true, general: true },
+      { id: 'car:cadillacctsvr', name: 'cadillacctsvr', hasUserBindings: true },
+    ]);
+    const own = await reader('iracing').bindings('car:cadillacctsvr');
+    // Its profile has no calibration of its own; the one for all cars names the axes.
+    expect(own.ok && on(wheelOf(own.value.devices), 'Brake')).toEqual([
+      { kind: 'axis', axis: 'RZ' },
+    ]);
+    const refused = await reader('iracing').bindings('car:porsche992rgt3');
+    expect(!refused.ok && refused.error.message).toContain('no custom controls for that car');
   });
 });

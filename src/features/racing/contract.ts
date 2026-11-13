@@ -37,6 +37,25 @@ export const IracingViewSchema = z.object({
   running: z.boolean(),
   simRunning: z.boolean(),
   userFolder: z.string().optional(),
+  /**
+   * Where iRacing keeps the bindings it uses. Since 2026 Season 3: a control profile
+   * (Documents\iRacing\profiles\controls\<name>), named in app.ini [ControlProfiles]; the
+   * older files beside it are then not read. Absent when Documents\iRacing is not there.
+   */
+  source: z
+    .object({
+      /** "profiles": control profiles. "files": an iRacing from before them. */
+      kind: z.enum(['profiles', 'files']),
+      /** The profile for all cars, as app.ini names it. */
+      profile: z.string().optional(),
+      /** The folder the bindings for all cars are read from, when it is known. */
+      folder: z.string().optional(),
+      /** Why the bindings iRacing uses could not be found among the profiles. */
+      problem: z.string().optional(),
+      /** Older controls.cfg files that iRacing no longer reads. */
+      oldFiles: z.array(z.string()),
+    })
+    .optional(),
   controlsFound: z.boolean(),
   calibrationFound: z.boolean(),
   problems: z.array(z.string()),
@@ -497,7 +516,7 @@ export const racingContract = defineContract('racing', {
   }),
   iracing: channel(noInput, IracingViewSchema, {
     describe:
-      "iRacing's controllers and bindings, whether it is running, and controllers whose Windows ids changed (old and new GUIDs for racing:iracingRepair). Changes nothing.",
+      "iRacing's controllers and bindings (from the control profile iRacing uses, named in source.profile), whether it is running, and controllers whose Windows ids changed (old and new GUIDs for racing:iracingRepair). Changes nothing.",
     tier: 'read',
   }),
   /** Points iRacing at controllers' new Windows ids (old instance GUID -> new). */
@@ -506,7 +525,7 @@ export const racingContract = defineContract('racing', {
     Message,
     {
       describe:
-        "Points iRacing's bindings at controllers' new Windows ids, from old instance GUID to new, as found by racing:iracing. Call racing:iracingRepairPreview first and show the user. iRacing must be closed.",
+        "Points iRacing's bindings at controllers' new Windows ids, from old instance GUID to new, as found by racing:iracing, in the control profile iRacing uses. Call racing:iracingRepairPreview first and show the user. iRacing must be closed.",
       tier: 'change',
     }
   ),
