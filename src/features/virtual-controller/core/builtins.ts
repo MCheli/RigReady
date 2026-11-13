@@ -5,43 +5,60 @@ import { PadProfileSchema, type PadProfile } from './profile';
  * from what players of these games use (docs/research/gamepad-emulation.md), without
  * naming any controller. A copy is made and the user presses or moves their own control
  * for each part. They are never started as they are: nothing in them is mapped yet.
+ *
+ * A plain hint fits any game. What a part does in one game goes in `gameHint`, and only
+ * in a starting point that names that game in `game` and in its own name; the page shows
+ * it as "In <game>: ...". "HOTAS to gamepad" and the wheel name no game.
  */
 
 export const BUILTIN_PREFIX = 'starting-';
 
-const flightStick = PadProfileSchema.parse({
+const aceCombat = PadProfileSchema.parse({
   id: 'starting-flight-stick-ace-combat',
   name: 'Flight stick to gamepad (Ace Combat 8)',
+  game: 'Ace Combat 8',
   description:
-    "For games that read only a gamepad, such as Ace Combat 8: Wings of Theve. Follows the game's Standard Xbox layout: pitch and roll on the left stick, yaw on the right stick, throttle forward on RT and back on LT. A starting point: press or move your own control for each part, then check every axis in the game.",
+    'For Ace Combat 8: Wings of Theve. Stick on the left stick, rudder on the right stick, throttle on RT, and a button of yours (the speed brake switch, say) on LT to slow down. RT and LT held together give the high-G turn. The notes for the game follow players\' guides, which do not agree on A, B, X and Y: check those on the game\'s controls screen. For any other game, start from "HOTAS to gamepad". A starting point: press or move your own control for each part.',
   kind: 'xbox360',
   sticks: {
-    lx: { hint: 'Roll: the stick left and right', deadzone: 0.03 },
+    lx: {
+      hint: 'Roll: the stick left and right',
+      gameHint: 'Rolls with the Expert flight controls; with Standard it turns the aircraft',
+      deadzone: 0.03,
+    },
     // DirectInput reads a stick pulled back as positive; a gamepad stick pulled down is
     // negative. Inverted, pulling back is "stick down", which climbs with the game's
     // default (not inverted) setting.
     ly: { hint: 'Pitch: pull back to climb', invert: true, deadzone: 0.03 },
     rx: { hint: 'Yaw: rudder pedals or the stick twist', deadzone: 0.05 },
-    ry: { hint: 'Camera up and down (a hat or a mini stick), if you want it', deadzone: 0.1 },
+    ry: { hint: 'A hat or a mini stick, if you want this direction', deadzone: 0.1 },
   },
-  throttle: {
-    hint: 'Throttle: forward accelerates (RT), back slows down (LT); put the split at your idle detent',
-    split: 0.5,
-    deadzone: 0.05,
+  // No split throttle here: one axis on both triggers can never hold both at once, and
+  // this game needs both for its high-G turn. The throttle drives RT, a button drives LT.
+  triggers: {
+    rt: {
+      hint: 'Throttle: forward presses it further',
+      gameHint: 'Speeds up. Held together with LT: a high-G turn',
+      deadzone: 0.05,
+    },
+    lt: {
+      hint: 'A button, such as the speed brake switch',
+      gameHint: 'Slows down. Held together with RT: a high-G turn',
+    },
   },
   buttons: {
-    a: { hint: 'Fire the gun or missile, as set in the game' },
-    b: { hint: 'Special weapon' },
-    x: { hint: 'Change target' },
-    y: { hint: 'Change view' },
-    rs: { hint: 'Lock on (R3 in the Standard layout)' },
-    ls: { hint: 'Evasive manoeuvres (L3 with the left stick)' },
-    left: { hint: 'Change weapon' },
-    right: { hint: 'Change weapon' },
-    up: { hint: 'Zoom the reticle' },
-    down: { hint: 'Zoom the reticle' },
+    a: { hint: 'Trigger' },
+    b: { hint: 'Weapon release' },
+    x: { hint: 'A thumb button' },
+    y: { hint: 'A thumb button' },
+    rs: { hint: 'A button under your thumb', gameHint: 'Lock on' },
+    ls: { hint: 'A button under your thumb', gameHint: 'Evasive manoeuvres, with the stick' },
+    left: { hint: 'Hat left', gameHint: 'Change weapon' },
+    right: { hint: 'Hat right', gameHint: 'Change weapon' },
+    up: { hint: 'Hat up', gameHint: 'Zoom the reticle' },
+    down: { hint: 'Hat down', gameHint: 'Zoom the reticle' },
     start: { hint: 'Pause and the menu' },
-    back: { hint: 'Target information' },
+    back: { hint: 'A button on the throttle or the base', gameHint: 'Target information' },
   },
 });
 
@@ -106,6 +123,20 @@ const wheel = PadProfileSchema.parse({
   },
 });
 
-export const BUILTIN_PROFILES: readonly PadProfile[] = [flightStick, hotas, wheel];
+export const BUILTIN_PROFILES: readonly PadProfile[] = [aceCombat, hotas, wheel];
 
 export const isBuiltin = (id: string): boolean => id.startsWith(BUILTIN_PREFIX);
+
+/** What a copy of each starting point is called until the user names it. */
+const COPY_NAMES: Record<string, string> = {
+  [aceCombat.id]: 'My Ace Combat 8 stick',
+  [hotas.id]: 'My HOTAS',
+  [wheel.id]: 'My wheel and pedals',
+};
+
+/**
+ * The name a copy starts with. A copy of a starting point for one game keeps the game in
+ * its name, so its row does not read as a profile for every game.
+ */
+export const copyName = (from: Pick<PadProfile, 'id' | 'name'>): string =>
+  COPY_NAMES[from.id] ?? `Copy of ${from.name}`.slice(0, 80).trimEnd();

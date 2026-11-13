@@ -95,7 +95,30 @@ const MANIFESTS: FeatureManifest[] = [
   },
   // No screen at all.
   { id: 'processes' },
+  // A page in the navigation, and a window of its own that is not a place to go.
+  {
+    id: 'overlay',
+    nav: [
+      {
+        title: 'Overlay',
+        icon: 'mdi-o',
+        to: '/configure/overlay',
+        order: 330,
+        section: 'Controls',
+      },
+    ],
+    routes: [
+      { path: '/configure/overlay', component: blank },
+      { path: '/overlay/window', component: blank, meta: { bare: true, title: 'Window' } },
+    ],
+  },
 ];
+
+/** A page of Configure that is in no menu, as a feature has before it gets its place there. */
+const ABOUT: FeatureManifest = {
+  id: 'about',
+  routes: [{ path: '/configure/about', component: blank, meta: { title: 'About this PC' } }],
+};
 
 const shell = {} as CommandShell;
 const run = async (): Promise<void> => undefined;
@@ -162,6 +185,11 @@ describe('pages for the palette, from the manifests alone', () => {
     expect(pages.filter((p) => p.to === '/configure/devices')).toHaveLength(1);
   });
 
+  it('leaves out a bare page: a window of its own is opened by the app, not gone to', () => {
+    expect(byRoute('/configure/overlay')).toMatchObject({ title: 'Overlay' });
+    expect(byRoute('/overlay/window')).toBeUndefined();
+  });
+
   it('orders them as the navigation does, each sub-page right after its page, Play first', () => {
     expect(pages.map((p) => p.to)).toEqual([
       '/fly',
@@ -171,6 +199,7 @@ describe('pages for the palette, from the manifests alone', () => {
       '/configure/racing',
       '/configure/racing/assetto-corsa',
       '/configure/dcs-bindings',
+      '/configure/overlay',
       '/configure/devices',
       '/configure/devices/test',
       '/configure/devices/usb',
@@ -193,16 +222,12 @@ describe('where a feature’s commands stand', () => {
     expect(areaOf(racing, 'racing').order).toBeLessThan(areaOf(devices, 'devices').order);
   });
 
-  it('a feature without a navigation entry comes first, under its route’s title or its own name', () => {
-    const about: FeatureManifest = {
-      id: 'about',
-      routes: [{ path: '/configure/about', component: blank, meta: { title: 'About this PC' } }],
-    };
-    expect(areaOf(about, 'about')).toMatchObject({ title: 'About this PC', order: -1 });
-    expect(areaOf(undefined, 'checks-generic')).toMatchObject({
-      title: 'Checks generic',
-      order: -1,
-    });
+  it('a feature without a navigation entry stands after the ones that have one, under its route’s title or its own name', () => {
+    expect(areaOf(ABOUT, 'about')).toMatchObject({ title: 'About this PC' });
+    expect(areaOf(undefined, 'checks-generic')).toMatchObject({ title: 'Checks generic' });
+    const last = Math.max(...MANIFESTS.filter((m) => m.nav).map((m) => areaOf(m, m.id).order));
+    expect(areaOf(ABOUT, 'about').order).toBeGreaterThan(last);
+    expect(areaOf(undefined, 'checks-generic').order).toBeGreaterThan(last);
   });
 
   it('the feature whose pages are those of Play mode stands under the mode’s name', () => {
@@ -313,6 +338,41 @@ describe('pages and commands together', () => {
       group: 'Play',
       kind: 'action',
     });
+  });
+
+  it('only Play comes first: a feature without a navigation entry cannot stand before it', () => {
+    // Whatever such a feature contributes: an action, a page under a heading of its own
+    // (one that sorts before "Play"), a page among the pages.
+    const more: FeatureCommands[] = [
+      {
+        feature: 'about',
+        commands: [
+          { id: 'about.copy', title: 'Copy the version', run },
+          { id: 'about.open', title: 'About this PC', group: 'About', to: '/configure/about' },
+          { id: 'about.licences', title: 'Licences', to: '/configure/about?tab=licences' },
+        ],
+      },
+      ...modules,
+    ];
+    const withAbout = staticCommands([ABOUT, ...MANIFESTS], more);
+    expect(withAbout[0]).toMatchObject({ id: 'fly.recheck', group: 'Play' });
+    expect([...new Set(withAbout.map((c) => c.group))]).toEqual([
+      'Play',
+      'Devices',
+      'About',
+      'About this PC',
+      GO_TO,
+    ]);
+    // Its pages come after the pages of the navigation, and Play's pages still lead.
+    const routes = withAbout.filter((c) => c.group === GO_TO).map((c) => c.to);
+    expect(routes.slice(0, 2)).toEqual(['/fly', '/fly/compact']);
+    expect(routes.at(-1)).toBe('/configure/about?tab=licences');
+
+    // The same for a page that has no command: from the manifest alone it goes last.
+    expect(pageCommands([ABOUT, ...MANIFESTS]).map((p) => p.to)).toEqual([
+      ...pageCommands(MANIFESTS).map((p) => p.to),
+      '/configure/about',
+    ]);
   });
 
   it('works with no command modules at all: the pages are still there', () => {

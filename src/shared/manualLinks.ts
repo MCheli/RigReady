@@ -102,6 +102,7 @@ export const MANUAL_LINKS: Record<string, ManualLink> = {
   '/configure/dcs/simapppro': { page: 'dcs/simapppro' },
   '/configure/racing': { page: 'games/index' },
   '/configure/racing/iracing': { page: 'games/iracing' },
+  '/configure/iracing-bindings': { page: 'games/iracing-bindings' },
   '/configure/racing/lmu': { page: 'games/le-mans-ultimate' },
   '/configure/racing/beamng': { page: 'games/beamng' },
   '/configure/racing/assetto-corsa': { page: 'games/assetto-corsa' },
@@ -124,6 +125,9 @@ export const MANUAL_LINKS: Record<string, ManualLink> = {
   '/configure/cheat-sheets': { page: 'dcs/cheat-sheets' },
   '/configure/cheat-sheets/quick': { page: 'dcs/cheat-sheets' },
   '/configure/cheat-sheets/learn': { page: 'dcs/trainer' },
+  '/configure/overlay': { page: 'play/overlay' },
+  // The overlay's own window over the game: it has no help button, the page is the same.
+  '/overlay/:widget': { page: 'play/overlay' },
 
   // Hardware
   '/configure/devices': { page: 'hardware/devices' },

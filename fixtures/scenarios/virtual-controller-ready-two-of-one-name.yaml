@@ -1,0 +1,31 @@
+description: The virtual-controller-ready rig with a second virtual controller that has the name of the first and nothing mapped, from a file written before names had to differ
+rig: mark-full
+extends: flying-fresh.yaml
+# The same as virtual-controller-ready.yaml but for the data file: a scenario that extends
+# another cannot replace a data file of the same target, so this one repeats it.
+# Written by hand: ACE COMBAT 8 was not on the PC when the rig was recorded. Its folders follow
+# docs/research/gamepad-emulation.md. ViGEmBus and HidHide are recorded (services.json, hidhide.json).
+mutations:
+  - op: writeFile
+    path: Program Files (x86)/Steam/steamapps/appmanifest_2288340.acf
+    content: |
+      "AppState"
+      {
+      	"appid"		"2288340"
+      	"name"		"ACE COMBAT 8: WINGS OF THEVE"
+      	"StateFlags"		"4"
+      	"installdir"		"ACE COMBAT 8"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20412345"
+      }
+  - op: writeFile
+    path: Program Files (x86)/Steam/steamapps/common/ACE COMBAT 8/Game/Binaries/Win64/AceCombat8.exe
+    content: ''
+  - op: writeFile
+    path: AppData/Local/BANDAI NAMCO Entertainment/ACE COMBAT 8/Saved/Config/Windows/GameUserSettings.ini
+    content: "[/Script/Engine.GameUserSettings]\nbUseVSync=False\n"
+profiles:
+  - profiles/virtual-controller-ace-combat.yaml
+data:
+  virtual-controller/profiles.json: data/virtual-controller/profiles-two-of-one-name.json
+  state.json: data/virtual-controller/state.json

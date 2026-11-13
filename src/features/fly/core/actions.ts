@@ -32,6 +32,34 @@ export function actionConfirmation(
   return params.success ? definition.confirm(params.data) : undefined;
 }
 
+/**
+ * What a step was set to, by name, when that was chosen from a list: which virtual
+ * controller "Start a virtual controller" starts. The name the setup stored with the
+ * choice comes first (the first param the list fills in). A setup written without one, by
+ * hand or before the lists were there, is looked up in the list as it is now.
+ */
+export async function chosenName(
+  action: LaunchAction,
+  registry: CheckRegistry,
+  ctx: CheckContext
+): Promise<string | undefined> {
+  const picker = registry.remediation(action.type)?.picker;
+  if (!picker) return undefined;
+  const nameParam = picker.fills?.[0];
+  const stored = nameParam ? action.params[nameParam] : undefined;
+  if (typeof stored === 'string' && stored.trim() !== '') return stored.trim();
+  const value = action.params[picker.param];
+  if (typeof value !== 'string' || value === '') return undefined;
+  try {
+    const listed = await picker.choices(ctx);
+    return listed.ok ? listed.value.find((choice) => choice.value === value)?.label : undefined;
+  } catch (e) {
+    // A list that cannot be read is no reason to fail the Play page: the title stands alone.
+    ctx.log.error(`picker ${picker.list} threw`, e);
+    return undefined;
+  }
+}
+
 /** The image name a start-program action leaves running, for closing it at Stand down. */
 export function startedProgram(action: LaunchAction): string | undefined {
   if (action.type !== 'process.launch') return undefined;

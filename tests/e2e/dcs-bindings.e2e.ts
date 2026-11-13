@@ -715,3 +715,108 @@ test('bindings: actions read in plain language, with the name DCS uses beside th
   await expect(page.getByTestId('dev-dcs-name').first()).toBeVisible();
   await shot('device-plain-labels');
 });
+
+test('bindings: binding show or hide the kneeboard says its pages turn with two more actions, and goes on to bind them', async ({
+  rig,
+}) => {
+  const run = await rig.launch('dcs-bindings-hornet', 'bindings-kneeboard-pages');
+  const { page, shot } = run;
+  const stickFile = path.join(joystickDir(run), `${STICK} {${STICK_ID}}.diff.lua`);
+  await openBindings(page, 'actions');
+  await page.getByTestId('act-search').locator('input').fill('kneeboard');
+  const action = (name: string) => page.locator(`[data-testid="act-row"][data-action="${name}"]`);
+  const dialog = page.getByTestId('bind-dialog');
+  const note = page.getByTestId('bind-kneeboard-pages');
+  const where = (key: string) =>
+    page.locator(`[data-testid="bind-kneeboard-page"][data-key="${key}"]`);
+  /** Presses a button of the stick while the dialog listens for it. */
+  const press = async (button: number): Promise<void> => {
+    await page.getByTestId('bind-listen').click();
+    await expect(page.getByTestId('bind-listening')).toBeVisible();
+    await run.sendInput([stickState()]);
+    await run.sendInput([stickState([button])]);
+    await expect(page.getByTestId('bind-input')).toContainText(`Button ${button}`);
+    await run.sendInput([stickState()]);
+  };
+
+  // Another action of the kneeboard: the dialog has nothing to add.
+  await action('Kneeboard glance view').getByTestId('act-bind').click();
+  await expect(dialog).toBeVisible();
+  await expect(note).toHaveCount(0);
+  await page.getByTestId('bind-cancel').click();
+  await expect(dialog).toHaveCount(0);
+
+  // Show or hide: DCS has the two page actions on the keyboard and on no controller.
+  await action('Kneeboard ON/OFF').getByTestId('act-bind').click();
+  await expect(note).toBeVisible();
+  await expect(note).toContainText(
+    'This shows and hides the kneeboard. Its pages turn with two other actions, and neither is on a controller yet.'
+  );
+  await expect(note).toContainText('Kneeboard Next Page');
+  await expect(where('next')).toHaveText('] on the keyboard');
+  await expect(note).toContainText('Kneeboard Previous Page');
+  await expect(where('previous')).toHaveText('[ on the keyboard');
+  await expect(note).toContainText(
+    'Bind each to a button too, to turn the pages from your stick or throttle.'
+  );
+  // No control is chosen yet, so there is nothing to add and nothing to go on from.
+  await expect(page.getByTestId('bind-kneeboard-next')).toBeDisabled();
+  await press(14);
+  await expect(page.getByTestId('bind-taken')).toHaveCount(0);
+  await expect(page.getByTestId('bind-kneeboard-next')).toHaveText('Add this and bind them next');
+  await shot('show-or-hide-needs-the-page-actions');
+
+  // The offer stages this one and opens the dialog on the first page action, same device.
+  await page.getByTestId('bind-kneeboard-next').click();
+  await expect(page.getByTestId('bind-staged-item')).toHaveCount(1);
+  await expect(page.getByTestId('bind-action')).toContainText('Kneeboard Next Page');
+  await expect(page.getByTestId('bind-then')).toHaveText(
+    'After this one: Kneeboard Previous Page.'
+  );
+  await expect(page.getByTestId('bind-device')).toContainText(STICK);
+  await expect(note).toHaveCount(0);
+  await press(33);
+  await shot('next-page-then-previous-page');
+  await page.getByTestId('bind-save').click();
+  await expect(page.getByTestId('bind-action')).toContainText('Kneeboard Previous Page');
+  await expect(page.getByTestId('bind-then')).toHaveCount(0);
+  await press(35);
+  await page.getByTestId('bind-save').click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId('bind-staged-item')).toHaveCount(3);
+
+  // With both page actions waiting to be saved there is nothing left to say...
+  await action('Kneeboard ON/OFF').getByTestId('act-bind').click();
+  await expect(dialog).toBeVisible();
+  await expect(note).toHaveCount(0);
+  // ...until show or hide is put on the button that was to turn to the next page.
+  await press(33);
+  await expect(note).toContainText('one of them is not on a controller yet');
+  await expect(where('next')).toHaveText('] on the keyboard');
+  await expect(where('previous')).toHaveCount(0);
+  await expect(page.getByTestId('bind-kneeboard-next')).toHaveText('Add this and bind it next');
+  await page.getByTestId('bind-cancel').click();
+  await expect(dialog).toHaveCount(0);
+
+  // Saved: all three are in the stick's file.
+  await page.getByTestId('bind-review').click();
+  const plan = page.getByTestId('plan-dialog');
+  await expect(plan).toContainText('Kneeboard ON/OFF: bind Button 14');
+  await expect(plan).toContainText('Kneeboard Next Page: bind Button 33');
+  await expect(plan).toContainText('Kneeboard Previous Page: bind Button 35');
+  await plan.getByTestId('plan-apply').click();
+  await expect(page.getByTestId('bind-saved')).toContainText(
+    'Saved: Change 3 bindings for F/A-18C'
+  );
+  const written = await fs.readFile(stickFile, 'utf8');
+  expect(written).toContain('["name"] = "Kneeboard ON/OFF",');
+  expect(written).toContain('["name"] = "Kneeboard Next Page",');
+  expect(written).toContain('["name"] = "Kneeboard Previous Page",');
+
+  // Binding show or hide once more, with the pages turning from the stick: no note.
+  await action('Kneeboard ON/OFF').getByTestId('act-bind').click();
+  await expect(dialog).toBeVisible();
+  await expect(page.getByTestId('bind-action')).toContainText('Kneeboard ON/OFF');
+  await expect(note).toHaveCount(0);
+  await shot('nothing-to-add-once-the-pages-turn');
+});

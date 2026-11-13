@@ -151,7 +151,7 @@ function insertVariable(field: Field, variable: PathVariableChoice): void {
     <template v-for="{ field, pick } in rows" :key="field.key">
       <div v-if="pick" class="params-picker">
         <v-select
-          :model-value="asText(modelValue[field.key] ?? field.default) || null"
+          :model-value="pick.selected ?? null"
           :items="pick.items"
           item-props
           :label="pick.info.label + (pick.required ? ' *' : '')"

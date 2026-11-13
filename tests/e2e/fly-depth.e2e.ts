@@ -304,6 +304,8 @@ test('fly: steps before and after launch; a step that must not fail pauses with 
     'Game · DCS with launch steps',
     'After launch · Start SRS',
   ]);
+  // The list above is what ran; the lines that said what Launch would do are gone while the game runs.
+  await expect(page.getByTestId('fly-plan')).toHaveCount(0);
   expect(await windowVisible(app)).toBe(true);
   await shot('launched');
 

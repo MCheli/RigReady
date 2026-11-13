@@ -43,7 +43,7 @@ The setup path variables `{IRACING_USER}` (the Documents folder) and `{IRACING_I
 
 **Bindings** lists every bound action in plain language, grouped as Driving, In-car adjustments, Cameras and replay, and Interface and chat, with the input ("Accelerator", "Button 13", "Wheel Axis, turning right", a key) and the controller. A field filters the list; the heading counts bound and not bound actions. The file is binary; RigReady reads it and lists what it finds, and never edits bindings in it.
 
-**Custom controls per car** lists the cars that have their own `controls.cfg`, or says that every car uses the bindings above.
+**Custom controls per car** lists the cars that have their own `controls.cfg`, or says that every car uses the bindings above. The [iRacing bindings page](iracing-bindings.md) lists every action, bound or not, for all cars and for each of those cars, and shows what a car changes.
 
 **Force feedback options in app.ini** is read only. It shows the `[Force Feedback]` keys with their values and iRacing's own comment for each. Strength and wheel force are kept by iRacing per car and are not in this file.
 

@@ -2,21 +2,16 @@ import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-rou
 import { featureRoutes, firstConfigurePath } from './features';
 import ConfigureLayout from './layouts/ConfigureLayout.vue';
 import NotFound from './layouts/NotFound.vue';
+import { scrollOnMove } from './shell/nav';
+import { routeKinds } from './shell/routes';
 
-const flyRoutes = featureRoutes.filter((r) => r.meta?.mode === 'fly');
-const configureRoutes = featureRoutes.filter((r) => r.meta?.mode !== 'fly');
-
-for (const route of configureRoutes) {
-  if (!route.path.startsWith('/configure/')) {
-    throw new Error(
-      `Feature route ${route.path} must start with /configure/ or set meta.mode to 'fly'`
-    );
-  }
-}
+const { fly: flyRoutes, bare: bareRoutes, configure: configureRoutes } = routeKinds(featureRoutes);
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: flyRoutes[0]?.path ?? '/configure' },
   ...flyRoutes,
+  // Windows of their own (an overlay over a game): main.ts mounts them without the shell.
+  ...bareRoutes,
   {
     path: '/configure',
     component: ConfigureLayout,
@@ -30,4 +25,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/:rest(.*)*', component: NotFound },
 ];
 
-export const router = createRouter({ history: createWebHashHistory(), routes });
+export const router = createRouter({
+  history: createWebHashHistory(),
+  routes,
+  scrollBehavior: (to, from, saved) => scrollOnMove(to.path, from.path, saved),
+});

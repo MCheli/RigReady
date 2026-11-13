@@ -42,8 +42,28 @@ export function steamLaunchFor(
   const id = app.trim();
   if (!id) return {};
   const { launch } = profile;
-  if (launch && profile.steamAppId === undefined && steamAppOf(launch) !== undefined) {
-    return { launch: { ...launch, args: ['-applaunch', id] } };
-  }
+  // Only a number is handed to steam.exe. Anything else goes as a Steam app id, which the
+  // setup refuses with its own message, and never as an argument that starts nothing.
+  const handsOver = launch && profile.steamAppId === undefined && steamAppOf(launch) !== undefined;
+  if (handsOver && /^\d+$/.test(id)) return { launch: { ...launch, args: ['-applaunch', id] } };
   return { steamAppId: id };
+}
+
+/**
+ * The launch a new setup is saved with: the program as typed, or "Through Steam" with the
+ * game's number. Nothing when what the chosen kind needs is not filled in.
+ */
+export function newSetupLaunch(
+  kind: LaunchKind,
+  typed: Launch | undefined,
+  app: string
+): { launch?: Launch; steamAppId?: string } {
+  if (kind === 'steam') return steamLaunchFor(typed ? { launch: typed } : {}, app);
+  return kind === 'program' && typed ? { launch: typed } : {};
+}
+
+/** What is wrong with a typed Steam app id, in the words the field shows. Nothing when fine. */
+export function steamAppProblem(app: string): string | undefined {
+  const id = app.trim();
+  return id === '' || /^\d{1,10}$/.test(id) ? undefined : 'A number, for example 223750.';
 }

@@ -47,7 +47,7 @@ Features are discovered with `import.meta.glob` in exactly two places (`src/main
 
 Check types, remediation types, capture sources and stand-down steps are registered by features (`registerCheck`, `registerRemediation`, `registerCapture`, `registerStandDownStep`), not by a switch statement. Core never names a check type.
 
-The current features: `ai-assist`, `audio`, `backup`, `cheat-sheets`, `checks-generic`, `dcs-bindings`, `dcs-setup`, `devices`, `diagnostics`, `displays`, `fly`, `games`, `one-click`, `processes`, `profiles`, `racing`, `safety`, `settings`, `sharing`, `stream-deck`, `trackir`, `updates`, `virtual-controller`. `docs/CONTRIBUTING-FEATURES.md` section 14 says what each owns.
+The current features: `ai-assist`, `audio`, `backup`, `cheat-sheets`, `checks-generic`, `dcs-bindings`, `dcs-setup`, `devices`, `diagnostics`, `displays`, `fly`, `games`, `iracing-bindings`, `one-click`, `overlay`, `processes`, `profiles`, `racing`, `safety`, `settings`, `sharing`, `stream-deck`, `trackir`, `updates`, `virtual-controller`. `docs/CONTRIBUTING-FEATURES.md` section 14 says what each owns.
 
 ### Navigation
 
