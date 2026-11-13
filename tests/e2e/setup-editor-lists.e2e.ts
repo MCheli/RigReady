@@ -112,23 +112,18 @@ test('setup editor: a virtual controller is chosen by name, two of one name are 
   rig,
 }) => {
   const { page, shot, dataRoot } = await rig.launch(
-    'virtual-controller-ready',
+    'virtual-controller-ready-two-of-one-name',
     'editor-lists-virtual-controller'
   );
   await expect(page.getByTestId('fly-status-title')).toHaveText('Ready');
 
-  // A second virtual controller that is given the name of the first.
+  // Two virtual controllers of one name. The page gives a new one a name of its own, so
+  // these two come from a file written before names had to differ.
   await page.getByTestId('mode-configure').click();
   await page.getByTestId('nav-virtual-controller').click();
-  await page
-    .locator('[data-testid="vc-builtin"][data-id="starting-flight-stick-ace-combat"]')
-    .getByTestId('vc-copy')
-    .click();
-  await page.getByTestId('vc-editor-name').locator('input').fill('My Ace Combat stick');
-  await page.getByTestId('vc-editor-save').click();
-  await expect(page.getByTestId('vc-editor-message')).toHaveText('Saved My Ace Combat stick');
-  await page.getByTestId('vc-editor-back').click();
-  await expect(page.getByTestId('vc-profile')).toHaveCount(2);
+  await expect(
+    page.getByTestId('vc-profile').filter({ hasText: 'My Ace Combat stick' })
+  ).toHaveCount(2);
 
   await openEditor(page, 'ACE COMBAT 8');
   const first = step(page, 'Virtual gamepad for the stick');
