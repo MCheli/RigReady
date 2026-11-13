@@ -158,7 +158,8 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
   executablePath: [undefined, { option: true }],
 
   rig: async ({ executablePath }, use, testInfo) => {
-    const started: { app: ElectronApplication; isolated: IsolatedEnv; page: Page }[] = [];
+    // `page` is missing only for an app whose first window never came.
+    const started: { app: ElectronApplication; isolated: IsolatedEnv; page?: Page }[] = [];
 
     const rig: Rig = {
       async launch(scenario, flow, options = {}) {
@@ -188,10 +189,13 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
           // The window, clicks and fills are waited for 30 s by default; a shared CI runner needs
           // longer for the same step. (A runner once took over 30 s to open any window for a
           // minute and a half, which failed two tests and their retries and with them a release.)
-          const page = await app.firstWindow(process.env['CI'] ? { timeout: 120_000 } : {});
-          if (process.env['CI']) page.setDefaultTimeout(90_000);
-          const entry = { app, isolated, page };
+          // Noted before its window is waited for: an app whose first window never comes is
+          // still closed, its temp folders are removed and its log is kept with the failure.
+          const entry: (typeof started)[number] = { app, isolated };
           started.push(entry);
+          const page = await app.firstWindow(process.env['CI'] ? { timeout: 120_000 } : {});
+          entry.page = page;
+          if (process.env['CI']) page.setDefaultTimeout(90_000);
           await page.waitForLoadState('domcontentloaded');
           // Every scenario run says so on screen; this also proves the app is on fake providers.
           await expect(page.getByTestId('scenario-banner')).toBeVisible();
@@ -292,7 +296,7 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
     const failed = testInfo.status !== testInfo.expectedStatus;
     const roots = new Set<IsolatedEnv>();
     for (const { app, isolated, page } of started) {
-      if (failed) {
+      if (failed && page) {
         // A window hidden in the tray cannot be captured, and waiting on it would only hold up
         // the next test: it is brought out first, briefly, and the capture is given a bound.
         await Promise.race([
@@ -305,7 +309,17 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
           .screenshot({ path: testInfo.outputPath('failure.png'), timeout: 20_000 })
           .catch(() => undefined);
       }
-      await app.close().catch(() => undefined);
+      if (page) {
+        await app.close().catch(() => undefined);
+      } else {
+        // It never showed a window, so it may not answer a close either: it gets ten
+        // seconds, and is then ended.
+        await Promise.race([
+          app.close().catch(() => undefined),
+          new Promise((resolve) => setTimeout(resolve, 10_000)),
+        ]);
+        app.process().kill();
+      }
       roots.add(isolated);
     }
     if (failed) {

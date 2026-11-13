@@ -1233,6 +1233,23 @@ describe('the history file', () => {
     expect(kept.sessions[0]!.id).toBe('s5');
   });
 
+  it('changes made at the same moment are all kept: none reads the history before the one ahead of it has written', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const log = new SessionLog(app.ports.files, sessionsDir());
+    // A game closes as the next one is launched: the session that ended, the one that
+    // begins and the one after it, with nothing waited for in between.
+    const results = await Promise.all([
+      log.finish(record(1)),
+      log.setCurrent({ ...record(2), processes: ['DCS.exe'] }),
+      log.finish(record(2)),
+      log.finish(record(3)),
+    ]);
+    expect(results.map((result) => result.ok)).toEqual([true, true, true, true]);
+    const history = await log.history();
+    expect(history.sessions.map((s) => s.id)).toEqual(['s3', 's2', 's1']);
+    expect(await log.current()).toEqual({ ok: true, value: undefined });
+  });
+
   it('a damaged file is left exactly as it is, named, and the history goes on in the next one', async () => {
     app = await wiredApp('flying-all-good', { files: [] });
     await fs.mkdir(sessionsDir(), { recursive: true });

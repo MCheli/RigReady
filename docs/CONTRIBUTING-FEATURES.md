@@ -38,10 +38,12 @@ Nothing else is needed for unit and e2e work: both run on fake providers. `npm r
 
 | Command | What it does |
 |---|---|
-| `npm run check` | Typecheck (node and web projects), lint, format check, unit tests with coverage threshold, ledger check. Must pass before every commit. |
+| `npm run check` | Typecheck (node and web projects), lint, format check, unit tests with coverage threshold, ledger check. Every commit is checked by it, here or by GitHub's run on its pull request. Nothing merges into main without a green run. |
 | `npm run typecheck` / `npm run lint` / `npm run format` | The single gates; `format` fixes formatting, `lint:fix` fixes what ESLint can. |
 | `npm test` / `npm run test:watch` | Unit tests. `npx vitest run tests/unit/<file>.test.ts` runs one file. |
+| `npm run test:coverage:shard -- --shard=1/4` / `npm run test:coverage:merge` | How CI runs the unit tests of `npm run check`: a quarter of the test files on each of four runners, then the coverage limits on the four reports together (`.github/workflows/ci.yml`). Not needed on a desk PC: one shard alone is not held to the limits. |
 | `npm run test:e2e` | Build, then run every scenario flow. Screenshots land in `artifacts/screens/<flow>/`. |
+| `npm run test:e2e:changed` | Build, then run the scenario files that what you changed since `origin/main` can reach, after printing which and why (section 13). `-- --list` prints and runs nothing; `-- --base=<branch>` compares with another branch; `-- --no-build` skips the build; anything else goes to Playwright, for example `-- --workers=1`. |
 | `npx playwright test tests/e2e/<file>.e2e.ts` | One e2e file (run `npm run build` first). |
 | `npm run dev:scenario -- <scenario>` | The app in dev mode on a scenario (fake providers, temp data folder). Without a name it lists the scenarios. |
 | `npm run ledger:check` | Validate `docs/requirements/ledger.yaml`. |
@@ -684,9 +686,29 @@ A test is `<file>#<test title>`; the file must exist and contain that title (quo
 ## 13. Before you commit
 
 1. `npm run check` passes. It includes every audit of section 15; the sabotage audit alone takes 60 to 80 seconds.
-2. `npm run test:e2e` passes and you have looked at your screenshots, the tour's pictures of your page on all four rigs included.
+2. `npm run test:e2e` passes and you have looked at your screenshots, the tour's pictures of your page on all four rigs included. When you cannot wait for all of it, `npm run test:e2e:changed` is the least to run before a push (below).
 3. A new page is on the `PAGES` list of `tests/e2e/generic-rig.e2e.ts` (section 10).
 4. `git add` your own paths only (your feature folder, your scenario and e2e files, your screenshot folders, the ledger). Never `git add -A`. Other flows' screenshots change on every e2e run (they show temp paths and times); do not commit them: `git checkout -- artifacts/screens/<their-flow>`.
+
+### The scenario tests your change can reach
+
+`npm run check` runs no scenario test. Running only your own feature's scenario files is not enough either: from 6 to 12 November 2026, 11 of the 21 red CI runs were a real defect that only a scenario test could see, and at least 7 of those were in a scenario the branch had not run: one that crosses features, or one of another feature, broken by a change to code they share. Each was first seen a quarter of an hour after the push. `npm run test:e2e:changed` is for that. It compares your files with `origin/main` (committed or not, new files too), says which scenario files it runs and why, builds, and runs them:
+
+| What changed | What runs |
+|---|---|
+| A scenario test file | That file. |
+| A feature folder, `src/features/<id>/` | The files named after that feature (`<id>.e2e.ts`, `<id>-*.e2e.ts`) and the 24 files named after no feature, because those cross features: the walk over every page, the keyboard, the tray, damaged files. About half of the suite. |
+| A scenario, a recorded rig or a data file under `fixtures/` | The files that name that scenario, or one built on it. A fixture nothing names runs every file. |
+| Anything else that a scenario can read: `src/core`, `src/shared`, `src/renderer`, `src/main`, `src/preload`, `src/platform` with its fakes, the helpers in `tests/e2e/`, the Playwright and build settings, `package.json`, and any path the script does not know | Every file. A guess that nothing reads it would be the expensive mistake. |
+| Unit tests, documents, the website, the workflows, the scripts, screenshots, the packaged and installer tests | Nothing. |
+
+The rules are in `scripts/lib/scenarioPick.ts`, with their tests beside them. Three things it does not do:
+
+- It is the first look, not the whole answer. A feature can still break a scenario named after another feature; CI runs all of them on every pull request.
+- It does not run the packaged smoke. After a change to packaging, the sidecar or the updater, run `npm run smoke:packaged`.
+- It does not test a clean install. After a change to `package.json`, run `npm ci` once before you push.
+
+On a PC where other test runs are going, add `-- --workers=1`: two apps at once take each other's focus.
 
 ## 14. The features and what each owns
 

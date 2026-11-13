@@ -1,7 +1,8 @@
 /**
  * PLAT-016: the gates. `npm run ledger:check` fails on a "done" entry without evidence or
  * with evidence that does not exist; `npm run check` is typecheck, lint, format, unit
- * tests with a coverage threshold and the ledger check; and CI runs it on every push.
+ * tests with a coverage threshold and the ledger check; and CI runs every part of it on
+ * every push to main and on every pull request.
  * (The validator's own cases are in scripts/lib/lib.test.ts.)
  */
 import { spawnSync } from 'node:child_process';
@@ -129,29 +130,151 @@ describe('PLAT-016 npm run check, and CI', () => {
     }
   });
 
-  it('CI runs npm run check on every push to main, and on pull requests into main', async () => {
+  it('CI runs every part of npm run check on every push to main, and on pull requests into main', async () => {
+    interface Step {
+      name?: string;
+      run?: string;
+      uses?: string;
+      if?: string;
+      env?: Record<string, string>;
+      with?: Record<string, unknown>;
+    }
+    interface Job {
+      name?: string;
+      'runs-on': string;
+      needs?: string | string[];
+      if?: string;
+      strategy?: { 'fail-fast'?: boolean; matrix?: Record<string, unknown[]> };
+      steps: Step[];
+    }
     const text = await fs.readFile(path.join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8');
     const workflow = yaml.load(text) as {
       on: { push?: { branches?: string[] } | null; pull_request?: { branches?: string[] } | null };
-      jobs: Record<
-        string,
-        { 'runs-on': string; needs?: string; steps: { name?: string; run?: string }[] }
-      >;
+      jobs: Record<string, Job>;
+    };
+    const pkg = JSON.parse(await fs.readFile(path.join(repoRoot, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>;
     };
     // A branch is checked by its pull request; main is checked on every push.
     expect(workflow.on.push?.branches).toEqual(['main']);
     expect(workflow.on.pull_request?.branches).toEqual(['main']);
-    const checking = Object.values(workflow.jobs).filter((job) =>
-      job.steps.some((step) => step.run === 'npm run check')
+
+    const jobs = Object.entries(workflow.jobs);
+    const needs = (job: Job): string[] =>
+      job.needs === undefined ? [] : Array.isArray(job.needs) ? job.needs : [job.needs];
+    const commands = (job: Job): string[] =>
+      job.steps
+        .filter((step) => step.name !== 'Prepare the runner')
+        .flatMap((step) => (step.run ? [step.run] : []));
+    const running = (start: string): [string, Job][] =>
+      jobs.filter(([, job]) => job.steps.some((step) => step.run?.startsWith(start)));
+
+    // No job runs the whole command: on one runner its unit tests alone took eight to thirteen
+    // minutes, the longest job of every run. CI runs the command's parts, and all of them.
+    const parts = pkg.scripts['check']!.split('&&').map((s) => s.trim());
+    const rest = parts.filter((part) => part !== 'npm run test:coverage');
+    expect(rest).toHaveLength(parts.length - 1);
+
+    // Everything but the unit tests: one job, in the command's order. Windows: the app, its
+    // native bindings and half of its tests are Windows-only. It waits for nothing and is
+    // skipped by nothing.
+    const statics = running(rest[0]!);
+    expect(statics).toHaveLength(1);
+    const [staticId, still] = statics[0]!;
+    expect(still['runs-on']).toMatch(/^windows-/);
+    expect(still.needs).toBeUndefined();
+    expect(still.if).toBeUndefined();
+    expect(commands(still)).toEqual(['npm ci', ...rest]);
+
+    // The unit tests: `npm run test:coverage` itself, with a report for the merge and without
+    // the limits (a part of the tests reaches a part of the code: one shard of four alone had
+    // 54 to 76% of the lines), on one Windows runner per shard. Besides preparing the runner
+    // (its virus scanner has timed the unit tests out), a shard is nothing but npm ci and
+    // that command, and one failing shard does not stop the others.
+    const measures = ['lines', 'functions', 'statements', 'branches'];
+    expect(pkg.scripts['test:coverage:shard']).toBe(
+      [
+        pkg.scripts['test:coverage'],
+        '--reporter=default',
+        '--reporter=blob',
+        ...measures.map((measure) => `--coverage.thresholds.${measure}=0`),
+      ].join(' ')
     );
-    expect(checking).toHaveLength(1);
-    const job = checking[0]!;
-    // Windows: the app, its native bindings and half of its tests are Windows-only.
-    expect(job['runs-on']).toMatch(/^windows-/);
-    // The gate waits for nothing and is skipped by nothing. Besides preparing the runner (its
-    // virus scanner has timed the unit tests out), it is nothing but npm ci and npm run check.
-    expect(job.needs).toBeUndefined();
-    const commands = job.steps.filter((s) => s.name !== 'Prepare the runner').map((s) => s.run);
-    expect(commands.filter(Boolean)).toEqual(['npm ci', 'npm run check']);
+    const shards = running('npm run test:coverage:shard');
+    expect(shards).toHaveLength(1);
+    const [unitId, unit] = shards[0]!;
+    const numbers = unit.strategy?.matrix?.['shard'] ?? [];
+    const total = numbers.length;
+    expect(total).toBeGreaterThanOrEqual(2);
+    expect(numbers).toEqual(Array.from({ length: total }, (_, i) => i + 1));
+    expect(unit.strategy?.['fail-fast']).toBe(false);
+    expect(unit.name).toContain('${{ matrix.shard }}');
+    expect(unit['runs-on']).toMatch(/^windows-/);
+    expect(unit.needs).toBeUndefined();
+    expect(unit.if).toBeUndefined();
+    expect(commands(unit)).toEqual([
+      'npm ci',
+      `npm run test:coverage:shard -- --shard=\${{ matrix.shard }}/${total}`,
+    ]);
+    // Each shard hands its report on, and a shard that wrote none fails.
+    const keep = unit.steps.find((step) => step.uses?.startsWith('actions/upload-artifact@'))!;
+    expect(keep.if).toBeUndefined();
+    expect(keep.with).toMatchObject({
+      name: 'unit-report-shard-${{ matrix.shard }}',
+      path: '.vitest/blob/',
+      'include-hidden-files': true,
+      'if-no-files-found': 'error',
+    });
+
+    // The coverage limits are those of vitest.config.ts (the test above), applied once, to all
+    // the shards' reports together: tried on a desk PC, the merged figures were those of one
+    // run (93.57% of statements against 93.55%), and a limit that cannot be met failed the
+    // merge. The job runs only when every shard passed. Vitest merges whatever reports it
+    // finds, and three of four still cleared the limits (83.9%), so they are counted first.
+    expect(pkg.scripts['test:coverage:merge']).toBe('vitest --merge-reports --coverage');
+    const merging = running('npm run test:coverage:merge');
+    expect(merging).toHaveLength(1);
+    const [coverageId, coverage] = merging[0]!;
+    expect(coverage['runs-on']).toMatch(/^windows-/);
+    expect(needs(coverage)).toEqual([unitId]);
+    expect(coverage.if).toBeUndefined();
+    for (const step of coverage.steps) expect(step.if).toBeUndefined();
+    const fetchAt = coverage.steps.findIndex((step) =>
+      step.uses?.startsWith('actions/download-artifact@')
+    );
+    const countAt = coverage.steps.findIndex((step) => step.run?.includes(`-ne ${total}`));
+    const mergeAt = coverage.steps.findIndex((step) => step.run === 'npm run test:coverage:merge');
+    expect(fetchAt).toBeGreaterThanOrEqual(0);
+    expect(countAt).toBeGreaterThan(fetchAt);
+    expect(mergeAt).toBeGreaterThan(countAt);
+    expect(coverage.steps[fetchAt]!.with).toMatchObject({
+      pattern: 'unit-report-shard-*',
+      path: '.vitest/blob',
+      'merge-multiple': true,
+    });
+    expect(coverage.steps[countAt]!.run).toContain(`'blob-*-${total}.json'`);
+    expect(coverage.steps[countAt]!.run).toContain('exit 1');
+
+    // One check carries the name the branch ruleset requires. It reports whatever became of
+    // the parts, and each one's result must be success: a coverage job that was skipped
+    // because a shard failed is a failure, and a cancelled part is not a check that never came.
+    const sums = jobs.filter(
+      ([, job]) => job.name === 'Check (typecheck, lint, format, unit tests, ledger)'
+    );
+    expect(sums).toHaveLength(1);
+    const sum = sums[0]![1];
+    expect([...needs(sum)].sort()).toEqual([staticId, unitId, coverageId].sort());
+    expect(sum.if).toBe('always()');
+    expect(sum.steps).toHaveLength(1);
+    const verdict = sum.steps[0]!;
+    const tests = needs(sum).map((id) => {
+      const variable = Object.entries(verdict.env ?? {}).find(
+        ([, value]) => value === `\${{ needs.${id}.result }}`
+      )?.[0];
+      expect(variable, id).toBeDefined();
+      return `test "$${variable}" = success`;
+    });
+    // The step's last line is all of them and nothing else, so its exit code is theirs.
+    expect(verdict.run!.trim().split('\n').pop()).toBe(tests.join(' && '));
   });
 });

@@ -113,8 +113,21 @@ export function providerFailure(state: RigState, port: HangablePort): Result<nev
     : err(`${port}.read`, message, 'The driver call failed (0x80004005).');
 }
 
+/**
+ * The reads that never answer, kept for as long as the app runs. A promise that nothing
+ * holds is cleared out of memory together with whoever waits for it, and Electron then
+ * tells the window "reply was never sent": the page showed an error where it should have
+ * gone on waiting, at whatever moment memory happened to be cleared. A driver call that
+ * hangs stays alive, and so do these.
+ */
+const hung: Promise<unknown>[] = [];
+
 /** A promise that never settles: what a hung driver call looks like to the caller. */
-export const never = <T>(): Promise<T> => new Promise<T>(() => {});
+export const never = <T>(): Promise<T> => {
+  const read = new Promise<T>(() => {});
+  hung.push(read);
+  return read;
+};
 
 const DeviceMatchSchema = z
   .object({
