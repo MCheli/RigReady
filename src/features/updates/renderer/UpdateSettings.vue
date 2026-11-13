@@ -99,7 +99,9 @@ const busy = computed(
   <div data-testid="updates-section" :data-phase="status?.phase ?? 'loading'">
     <div class="rr-row">
       <div class="rr-row-main">
-        <div class="rr-row-title">Check for updates automatically</div>
+        <label class="rr-row-title" for="update-automatic-switch">
+          Check for updates automatically
+        </label>
         <div class="rr-row-sub">
           At start and once a day. A new version downloads in the background and is installed when
           you say so or when you quit RigReady, never in the middle of a session and never while a
@@ -107,6 +109,7 @@ const busy = computed(
         </div>
       </div>
       <v-switch
+        id="update-automatic-switch"
         :model-value="status?.automatic ?? true"
         :disabled="!status"
         data-testid="update-automatic"
