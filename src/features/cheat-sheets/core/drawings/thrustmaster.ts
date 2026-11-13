@@ -1,4 +1,4 @@
-import { t16000m, warthogStick, warthogThrottle } from '../known/thrustmaster';
+import { t16000m, twcs, warthogStick, warthogThrottle } from '../known/thrustmaster';
 import { circle, placeKnown, roundedRect } from './shapes';
 import { DRAWING_FORMAT, DRAWING_VERSION, type DeviceDrawingInput } from './silhouette';
 
@@ -313,8 +313,92 @@ export const T16000M: DeviceDrawingInput = {
   columnWidth: 300,
 };
 
+/**
+ * The TWCS throttle, as Thrustmaster's manual draws it with every number ("Mapping of the
+ * 14 buttons and 8 axes"), in three views top to bottom:
+ *
+ * - The side of the handle with the mini-stick: the mini-stick, and in a row beside it the
+ *   wheel switch (4 above, 5 below), button 3 and button 2, then the antenna dial; the
+ *   rocker runs along the bottom of that side.
+ * - The side with the hats: the 8-way POV hat at the top, the hat 7 to 10 under it, the
+ *   hat 11 to 14 under that, button 1 low at the side. Each hat's ways are as the manual
+ *   draws them looking at this side.
+ * - The base from above, the edge nearest the pilot at the bottom: the handle on its
+ *   rail (the throttle, Z) and, at the back, the socket TFRP pedals plug into.
+ *
+ * The manual draws the two sides without saying which is the left and which the right,
+ * so the views are named by what is on them.
+ */
+export const TWCS: DeviceDrawingInput = {
+  format: DRAWING_FORMAT,
+  version: DRAWING_VERSION,
+  name: 'Thrustmaster TWCS throttle',
+  match: { vendorId: TM, productIds: ['B687'], names: ['TWCS Throttle'] },
+  author: 'RigReady',
+  license: CC0,
+  view: 'Three views: the side with the mini-stick, the side with the hats, the base from above',
+  notes:
+    'Three views, top to bottom: the side of the handle with the mini-stick, the side with the hats, the base from above. ' +
+    'Numbered as Windows reports the throttle without a TARGET profile.',
+  size: { width: 360, height: 892 },
+  paths: [
+    // The side with the mini-stick, and the rocker along its bottom.
+    { d: roundedRect(30, 28, 300, 186, 44), role: 'body' },
+    { d: roundedRect(46, 42, 268, 150, 32), role: 'panel' },
+    { d: circle(100, 104, 30), role: 'screen' },
+    { d: circle(100, 104, 18), role: 'key' },
+    { d: circle(100, 104, 6), role: 'screen' },
+    { d: roundedRect(150, 76, 22, 56, 9), role: 'key' },
+    { d: 'M 153 92 L 169 92 M 153 104 L 169 104 M 153 116 L 169 116', role: 'line' },
+    { d: circle(202, 118, 12), role: 'key' },
+    { d: circle(238, 138, 12), role: 'key' },
+    { d: circle(284, 116, 24), role: 'key' },
+    { d: 'M 284 96 L 284 108', role: 'line' },
+    { d: roundedRect(64, 196, 212, 30, 12), role: 'key' },
+    { d: 'M 170 200 L 170 222', role: 'line' },
+    // The side with the hats.
+    { d: roundedRect(100, 276, 160, 296, 44), role: 'body' },
+    { d: roundedRect(114, 290, 132, 268, 32), role: 'panel' },
+    { d: circle(180, 334, 22), role: 'screen' },
+    { d: circle(180, 334, 13), role: 'key' },
+    { d: circle(180, 404, 24), role: 'screen' },
+    { d: roundedRect(168, 392, 24, 24, 6), role: 'key' },
+    { d: circle(180, 472, 22), role: 'screen' },
+    { d: circle(180, 472, 13), role: 'key' },
+    { d: circle(156, 530, 11), role: 'key' },
+    // The base from above: the rail, the handle on it, the pedals' socket at the back.
+    { d: roundedRect(60, 626, 240, 232, 28), role: 'body' },
+    { d: roundedRect(170, 642, 20, 190, 8), role: 'screen' },
+    { d: roundedRect(118, 700, 124, 84, 26), role: 'panel' },
+    { d: roundedRect(166, 840, 28, 16, 3), role: 'key' },
+  ],
+  texts: [
+    { x: 180, y: 16, text: 'SIDE WITH THE MINI-STICK', size: 10 },
+    { x: 180, y: 264, text: 'SIDE WITH THE HATS', size: 10 },
+    { x: 180, y: 614, text: 'BASE, FROM ABOVE', size: 10 },
+    { x: 180, y: 656, text: 'MAX', size: 9 },
+    { x: 180, y: 882, text: 'this edge is nearest you', size: 9 },
+  ],
+  controls: placeKnown(twcs, {
+    'mini-stick': { at: { x: 100, y: 104 }, side: 'left', glyph: 'stick' },
+    wheel: { at: { x: 161, y: 104 }, side: 'top', glyph: 'none' },
+    b3: { at: { x: 202, y: 118 }, side: 'top', glyph: 'button' },
+    b2: { at: { x: 238, y: 138 }, side: 'right', glyph: 'button' },
+    antenna: { at: { x: 284, y: 116 }, side: 'right', glyph: 'knob' },
+    rocker: { at: { x: 120, y: 211 }, side: 'left', glyph: 'rocker' },
+    pov: { at: { x: 180, y: 334 }, side: 'right', glyph: 'hat' },
+    'middle-hat': { at: { x: 180, y: 404 }, side: 'left', glyph: 'hat' },
+    'lower-hat': { at: { x: 180, y: 472 }, side: 'right', glyph: 'hat' },
+    b1: { at: { x: 156, y: 530 }, side: 'left', glyph: 'button' },
+    throttle: { at: { x: 180, y: 742 }, side: 'right', glyph: 'slide' },
+    pedals: { at: { x: 180, y: 848 }, side: 'left', glyph: 'none' },
+  }),
+  columnWidth: 300,
+};
+
 export const THRUSTMASTER_DRAWINGS: DeviceDrawingInput[] = [
   WARTHOG_STICK,
   WARTHOG_THROTTLE,
   T16000M,
+  TWCS,
 ];
