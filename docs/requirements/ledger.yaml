@@ -4312,14 +4312,15 @@ requirements:
     priority: p1
     done_means:
       - "Every shipped drawing was checked against a real map (the maker's number map or manual, and the game's default profile for the device); the table of device, source, what was fixed and what stays unconfirmed is in docs/research/controller-drawings.md."
-      - "A device whose places no source confirms has no drawing: it shows as its named list, which claims no places, and the page says 'Controls named for the <device> (no drawing of it yet)'. This is so for the Thrustmaster HOTAS Warthog throttle and the Saitek / Logitech X52 Pro."
+      - "A device whose places no source confirms has no drawing: it shows as its named list, which claims no places, and the page says 'Controls named for the <device> (no drawing of it yet)'. This is so for the Saitek / Logitech X52 Pro; it was for the Thrustmaster HOTAS Warthog throttle until it was drawn again from Thrustmaster's numbered drawings (SHEET-028)."
       - "The '?' mark is kept for exactly the controls whose number or direction is not confirmed from a real source; LAYOUT-FORMAT.md says so for drawings other people make."
       - "The manual says which devices have a drawing, which have a named list, and what '?' means."
     notes:
       - "2026-11-12: the owner in the sitting: 'We got to redo all of these diagrams because as they stand today, they are just too misleading.' The two withdrawn drawings are in the history of this repository and come back once a source settles their places."
+      - "2026-11-12, evening: the Warthog throttle came back, drawn from Thrustmaster's numbered drawings (SHEET-028). The X52 Pro was looked at again and stays a named list: Logitech's user guide names the kinds of control on photos but numbers none, and only a third party's map says which number is which button (docs/research/controller-drawings.md section 10)."
     status: done
     evidence:
-      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#shows no picture of a device whose places are not known to match it: the Warthog throttle and the X52 Pro are their named lists"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#shows no picture of a device whose places are not known to match it: the X52 Pro is its named list"
       - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
       - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
       - "docs/research/controller-drawings.md"
@@ -4476,6 +4477,50 @@ requirements:
       - "artifacts/screens/cheat-sheets-photo-named/02-refused-too-large.png"
 
   - id: SHEET-028
+    title: The Thrustmaster HOTAS Warthog throttle is drawn again, every control where Thrustmaster's drawings put it
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The Warthog throttle (044F:0404) has a drawing in RigReady's flat style, made from nothing, CC0, in three views: the handles from the front (the coolie switch and the slew control on the right handle, the left throttle button on the left one), the thumb side of the right handle (mic switch, speed brake, boat switch, china hat, top to bottom), and the base from above (the flaps switch left of the slot, fuel flow, engine operate, APU and gear horn right of it, the slider wheel on the right edge, EAC, radar altimeter and autopilot on the strip nearest the pilot, the pinky switch on the left handle)."
+      - "Every control of the throttle's named map (SHEET-017) is on the drawing with the map's name and inputs; every place is settled by Thrustmaster's numbered drawings in the throttle's manual and agrees with figure 70 of the game's A-10C manual and with the game's A-10C profile for the throttle. docs/research/controller-drawings.md section 10 cites them. No control carries the '?' mark."
+      - "For DCS's Hornet defaults and for every input bound, at the app's size and filled for a kneeboard page, no two leader lines cross and every label block is on the page; the sheet says 'RigReady drawing'."
+    notes:
+      - "2026-11-12: withdrawn earlier the same day (SHEET-021) because its first drawing put the thumb switches on the left handle. Redrawn from the maker's manual, which numbers every control on three drawings. The coolie is named an 8-way hat, as Thrustmaster lists it."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays each out for the Hornet fixture bindings and for every input bound, with no leader crossing and every label on the page"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
+      - "docs/research/controller-drawings.md"
+      - "artifacts/screens/cheat-sheets-known-devices/04-warthog-throttle.png"
+      - "artifacts/screens/cheat-sheets-known-devices/05-warthog-throttle-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/06-warthog-throttle-kneeboard-night-page.png"
+
+  - id: SHEET-029
+    title: The Thrustmaster TWCS throttle is named and drawn as Thrustmaster's manual numbers it
+    job: configure
+    area: cheat-sheet
+    priority: p2
+    done_means:
+      - "The TWCS throttle (044F:B687, name 'TWCS Throttle') is a known device: every button, the hat and every axis it reports has a name, numbered as Thrustmaster's manual draws them (the mini-stick X, Y and its press 6, the wheel switch 4 and 5, buttons 2 and 3, the antenna dial on the first slider, the rocker on RZ, the 8-way POV hat, the hats 7 to 10 and 11 to 14, button 1, the throttle on Z), and TFRP pedals plugged into it are named too (rudder on the second slider, toe brakes on RY and RX). The game's defaults for the TWCS agree with every number."
+      - "It has a drawing in RigReady's flat style, made from nothing, CC0, in three views: the side of the handle with the mini-stick, the side with the hats, and the base from above with the socket the pedals report through. Every control of the map is on it with the map's name and inputs, each where the manual draws it; no control carries the '?' mark. docs/research/controller-drawings.md section 10 cites the sources."
+      - "For DCS's Hornet defaults and for every input bound, at the app's size and filled for a kneeboard page, no two leader lines cross and every label block is on the page; the sheet says 'RigReady drawing'."
+    notes:
+      - "2026-11-12: the TWCS was left out of the known devices on 11 November because its manual prints the button figure as an image; read as a picture, it numbers both sides of the handle. The manual does not say which side is the left one, so the views are named by what is on them. Nobody at the rig has a TWCS, so no press has checked it."
+    status: done
+    evidence:
+      - "src/features/cheat-sheets/core/known/known.test.ts#the TWCS throttle: numbered as Thrustmaster’s manual draws it, the pedals plugged into it as well"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#anchor every control the named map has, with the same name and inputs, on a drawn part of the device"
+      - "src/features/cheat-sheets/core/drawings/drawings.test.ts#lays each out for the Hornet fixture bindings and for every input bound, with no leader crossing and every label on the page"
+      - "tests/e2e/cheat-sheets-known-devices.e2e.ts#cheat sheets: a popular controller has a drawing only where the picture is known to match it, and its named list otherwise"
+      - "docs/research/controller-drawings.md"
+      - "docs/research/device-control-names.md"
+      - "artifacts/screens/cheat-sheets-known-devices/13-twcs-throttle.png"
+      - "artifacts/screens/cheat-sheets-known-devices/14-twcs-throttle-kneeboard-day-page.png"
+      - "artifacts/screens/cheat-sheets-known-devices/15-twcs-throttle-kneeboard-night-page.png"
+
+  - id: SHEET-030
     title: Save layout and Cancel stay in view in the cheat sheets layout editor
     job: configure
     area: cheat-sheet
@@ -4497,7 +4542,7 @@ requirements:
       - "artifacts/screens/cheat-sheets-photo-save-bar/03-one-placed-can-be-saved.png"
     notes:
       - "2026-11-12: the owner's finding 38. The two buttons were in the editor's own row of buttons, which scrolls away with the drawing, and Cancel dropped a change without asking."
-      - "2026-11-12: written as SHEET-023 on its branch; the photo drawings took 023 to 027 on main first, so it is 028 here."
+      - "2026-11-12: written as SHEET-023 on its branch, then SHEET-028; the photo drawings took 023 to 027 on main first and the Thrustmaster throttles 028 and 029, so it is 030 here."
 
   # ---------------------------------------------------------------------------
   # OVERLAY — what you press, shown over the game (2D first; asked for on 2026-11-12)

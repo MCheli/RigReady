@@ -1,11 +1,11 @@
 description: Cheat sheets, the popular Thrustmaster and Saitek controllers added to the owner's rig
 rig: mark-full
 extends: cheat-sheets-hornet.yaml
-# Controllers RigReady ships a drawing of besides the owner's own: the Thrustmaster HOTAS
-# Warthog stick and throttle, the T.16000M and the Saitek X52 Pro. DCS's own default
-# bindings for the first three (Mods/aircraft/FA-18C/.../<device name>.diff.lua, in the
-# recorded install) give them something to show in the Hornet; the X52 Pro has none
-# there, so its sheet shows its controls with nothing bound.
+# Controllers RigReady knows besides the owner's own: the Thrustmaster HOTAS Warthog
+# stick and throttle, the T.16000M, the Saitek X52 Pro and the TWCS throttle. DCS's own
+# default bindings for the Thrustmaster ones (Mods/aircraft/FA-18C/.../<device
+# name>.diff.lua, in the recorded install) give them something to show in the Hornet;
+# the X52 Pro has none there, so its sheet shows its controls with nothing bound.
 mutations:
   - op: plugDevice
     device:
@@ -95,3 +95,25 @@ mutations:
       numButtons: 39
       numHats: 1
       axisNames: [X, Y, Z, RX, RY, RZ, SLIDER1]
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_044F&PID_B687\6&2c41a7f0&0&8'
+      vendorId: 044F
+      productId: B687
+      name: TWCS Throttle
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Thrustmaster
+    controller:
+      name: TWCS Throttle
+      guid: 3A7C1E24-7A11-11EF-8005-444553540000
+      productGuid: B687044F-0000-0000-0000-504944564944
+      vendorId: 044F
+      productId: B687
+      numAxes: 8
+      numButtons: 14
+      numHats: 1
+      axisNames: [X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2]
