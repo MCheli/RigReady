@@ -52,7 +52,7 @@ Bindings you change in the game are picked up within about two minutes of your n
 
 - **Screen** chooses the monitor. The place is remembered for that monitor, so the overlay is on the same one after you switch your [monitor layout](../monitors-and-audio/layouts.md). When that monitor is off, the overlay is on the main screen until it is back, and the page says so.
 - **Place** has the small picture of the screen with nine spots: the corners, the edges and the middle. Click one and the overlay goes there.
-- **Move it on screen** frames the overlay where it is. Drag the frame to anywhere on the screen, on any monitor, then press **Lock here** in the frame or **Lock it here** on the page. While it is framed it takes clicks; locked, they go through it again.
+- **Move it on screen** frames the overlay where it is. Drag the frame to anywhere on the screen, on any monitor, then press **Lock here** in the frame or **Lock it here** on the page. While it is framed it takes clicks; locked, they go through it again. Leaving the Overlay page locks it where it is, so it is never left framed over the game.
 
 The list hangs from the edge it is nearest to. In the upper half of the screen the newest press is at the top and older ones go down; in the lower half the newest is at the bottom and older ones go up. So the newest press is always in the same spot.
 
