@@ -11,6 +11,7 @@ The website: a few static pages built from this repository by `build.mjs` and pu
 | `/docs/<section>/` | `docs/manual/<section>/index.md` and a card per page of the section |
 | `/docs/<section>/<page>/` | `docs/manual/<section>/<page>.md` |
 | `/docs/contributing/` | `CONTRIBUTING.md` |
+| `/other-tools/` | `pages/other-tools.html`, written by hand and dated: other tools that overlap parts of RigReady |
 
 Every page uses `layout.html` (head, header, footer). Every page has a title, a description, a canonical URL and Open Graph tags; the manual's pages also carry their breadcrumbs as schema.org data. `sitemap.xml` and `robots.txt` cover the whole site.
 
