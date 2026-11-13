@@ -741,7 +741,7 @@ describe('DCS screen setup and the monitors', () => {
       name: 'MFD left',
       usbSerial: 'WWIN29320221210163532',
     });
-    await app.invoke('dcs-setup:applyScreens', { setup });
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     type Overview = { monitorSetup: { problems: string[] } };
     expect((await app.invoke<Overview>('dcs-setup:overview')).monitorSetup.problems).toEqual([]);
 

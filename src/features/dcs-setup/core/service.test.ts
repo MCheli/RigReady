@@ -585,7 +585,7 @@ describe('SimAppPro', () => {
     const { setup } = await app.invoke<{ setup: ScreenSetup }>('dcs-setup:importSimAppPro', {
       desktopId: 'current',
     });
-    await app.invoke('dcs-setup:applyScreens', { setup });
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     await app.invoke('dcs-setup:applyExport', { kind: 'add', tool: 'dcs-bios' });
     await saveProfile('p', [
       {
@@ -662,9 +662,12 @@ describe('SimAppPro', () => {
       desktopId: 'current',
     });
     const preview = await app.invoke<ScreensPreview>('dcs-setup:previewScreens', { setup });
-    await app.invoke('dcs-setup:applyScreens', { setup });
+    await app.invoke('dcs-setup:applyScreens', { setup, pairingChecked: true });
     const file = path.join(dcsDir(), 'Config', 'MonitorSetup', 'RigReady.lua');
     await fs.rm(file);
+    // An import nobody has looked at yet does not stand in the way: what is put back is the
+    // setup in use.
+    await app.invoke('dcs-setup:importSimAppPro', { desktopId: 'current' });
     await saveProfile('p', [
       {
         type: 'dcs.monitorSetup',

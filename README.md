@@ -20,7 +20,11 @@ People with a flight or racing rig on a PC that is also used for other things. G
 
 ## Status
 
-Version 2.0.0 is a rebuild from the ground up. It is **pre-release**: nothing has been published yet, there is no installer to download, and the only way to run it today is from source (below). `docs/requirements/ledger.yaml` lists every requirement with its status and the evidence for it; `CHANGELOG.md` summarises what 2.0.0 contains and what is still open.
+Version 2.0.0 is a rebuild from the ground up, and it is what this page describes. It is in final testing and **not published yet**: there is no 2.0 installer to download, and the only way to run it today is from source (below). When it is published, the installer will be on the [download page](https://rigready.io/download/) and under [Releases](https://github.com/MCheli/RigReady/releases).
+
+The installer on the Releases page today is version 1.1.0, the first RigReady, from February 2026. Version 2.0 replaces it and does not read its setups, and 1.1.0 does not update itself to 2.0.
+
+`docs/requirements/ledger.yaml` lists every requirement with its status and the evidence for it; `CHANGELOG.md` summarises what 2.0.0 contains and what is still open.
 
 ## What it does
 
@@ -80,7 +84,9 @@ Any game works with a checklist, launch, tracked files and backups. These get mo
 |---|---|
 | DCS World | The deepest: installs (Steam and standalone), MFD screen setup (MonitorSetup), Export.lua, options, bindings (view, edit, clean up, device ID repair, copy between aircraft, snapshots), cheat sheets, kneeboard pages, binding guides for twenty aircraft (F/A-18C, F-16C, A-10C, F-14, F-15E, Ka-50, UH-1H, the Flaming Cliffs jets, warbirds and more). |
 | iRacing, Le Mans Ultimate, BeamNG.drive, Assetto Corsa | A page per game with its bindings and controllers as the game's files have them, cheat sheets and the trainer, backup and restore, and checks for a racing setup. |
-| Microsoft Flight Simulator 2024, Assetto Corsa EVO, Assetto Corsa Rally | A game module: detection, config locations, backup suggestions, launch. |
+| Microsoft Flight Simulator 2024 and 2020, X-Plane 12 and 11, IL-2 Sturmovik: Great Battles, Falcon BMS | A game module: detection, config locations, backup suggestions, launch. |
+| Assetto Corsa EVO, Assetto Corsa Rally, Assetto Corsa Competizione, rFactor 2, Automobilista 2, EA SPORTS WRC, F1 25 and F1 24, DiRT Rally 2.0, RaceRoom | The same game module: detection, config locations, backup suggestions, launch. |
+| ACE COMBAT 8, and other games that read only a gamepad | A game module for ACE COMBAT 8, and a [virtual controller](docs/manual/hardware/virtual-controller.md): a virtual Xbox 360 controller or DualShock 4 driven by your stick, wheel, pedals or throttle. It needs the ViGEmBus driver, which you install yourself. |
 | Any other game | Works generically: a checklist, launch, tracked files, backup. |
 | Hardware | Any USB game controller, monitor and audio device Windows sees. Dedicated pages for a wheel base of any major brand (tested on a real Fanatec; the other brands on recorded data only), Stream Deck and TrackIR; HidHide is noticed when it hides a device. WinWing devices work as controllers; features that need WinWing's own protocol (backlight sync, UFC/ICP displays, vibration) still need SimAppPro, and RigReady checks that it is running when a setup uses them. Device drawings so far cover the gear RigReady was built on (WinWing) and the Thrustmaster and Saitek sticks listed in the manual; other brands work fully as controllers, and reports and drawings for them are welcome. |
 
@@ -99,6 +105,20 @@ RigReady reads your hardware and changes game files, so it should say exactly wh
 - It never reports success for something that did not happen.
 
 How these are kept, what the app touches and how to report a security problem: [`SECURITY.md`](SECURITY.md), and the [security page](docs/manual/app/security.md) of the manual.
+
+## How it was built
+
+RigReady is written with AI coding agents. It is a side project by [Mark Cheli](https://www.markcheli.com), a software engineer by profession for more than ten years, built for his own flight and racing rig and shared because other people have the same problem. The code, the tests, the manual and the website were written by AI coding agents (Anthropic's Claude, in Claude Code), working from his direction. He decided what the product is and what it must and must not do, set the safety rules, reviewed the results and the screenshots, tested it on his own PC, and decides what is released. He did not write the code by hand, and not every line has been read by a person.
+
+Care went into how the work was checked. Every feature is a written requirement with its acceptance criteria, and counts as done only with a test of the real code and, for anything on screen, a screenshot from a test run. Unit tests, and scenario tests that start the real app on a recorded copy of a rig, run on a clean Windows machine for every change. None of this makes it free of mistakes. It is how they are kept small and found early.
+
+[How this was built](https://rigready.io/how-it-was-built/) says more, with what it was tested on and what is not verified yet.
+
+## Reporting a problem
+
+Open an issue with one of the [two forms](https://github.com/MCheli/RigReady/issues/new/choose): one for something that went wrong, and one for a report of how RigReady does on your hardware, working or not. Paste the diagnostics report (Configure > Diagnostics > Copy diagnostics), which has personal details removed. RigReady has been used on one rig, so reports from other hardware help most.
+
+A security problem is reported privately, through the Security tab of this repository. [`SECURITY.md`](SECURITY.md) says how.
 
 ## Run from source
 
@@ -148,9 +168,11 @@ Everything RigReady keeps is in `%USERPROFILE%\.rigready` (`~/.rigready`): setup
 | [How this was built](https://rigready.io/how-it-was-built/) | An AI disclosure: written with AI coding agents, how the work was checked, what it was tested on, and what is not verified yet. Source: `site/pages/built.html`. |
 | [`docs/RELEASING.md`](docs/RELEASING.md) | How a version is released, the checklist before it is, and the runbook for a security fix. |
 | [`SECURITY.md`](SECURITY.md) | Reporting a vulnerability, supported versions, what the app touches, how a fix reaches users. |
+| [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | How people are expected to treat each other here. |
 | [`docs/requirements/ledger.yaml`](docs/requirements/ledger.yaml) | Requirements, status, evidence. |
 | [`site/README.md`](site/README.md) | The rigready.io website: how it is built, and what updates by itself. |
 | [`docs/research/`](docs/research/) | Findings on game file formats and hardware. |
+| [`docs/archive/`](docs/archive/README.md) | The planning documents of version 1, from early 2026. History only: they do not describe this version. |
 
 ## License
 
