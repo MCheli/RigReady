@@ -2024,6 +2024,42 @@ td {
   margin-bottom: 10px;
 }
 
+/* RigReady and other tools: the "How this was built" sections, with one entry per tool -------- */
+
+.on-this-page ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tools {
+  display: grid;
+  gap: 26px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tools h3 {
+  margin: 0 0 0.35em;
+  font-size: 1.08rem;
+}
+.tools h3 a {
+  text-decoration: none;
+}
+.tools h3 a:hover {
+  text-decoration: underline;
+}
+.tools p {
+  margin: 0 0 0.35em;
+}
+.tools .licence {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

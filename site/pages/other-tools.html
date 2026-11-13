@@ -1,0 +1,433 @@
+<section class="page-head">
+  <div class="wrap narrow">
+    <h1>RigReady and other tools</h1>
+    <p class="lead">
+      Many good tools already do parts of what RigReady does, and some do their part better. If one
+      of them already works for you, keep it.
+    </p>
+  </div>
+</section>
+
+<div class="built others">
+  <section aria-labelledby="about-title">
+    <div class="wrap narrow">
+      <h2 id="about-title" class="visually-hidden">About this page</h2>
+      <p>
+        This page groups those tools by job, says what each one does well, and says where it goes
+        further than RigReady. At the end: what RigReady adds when you want these jobs in one app,
+        and what it does not do.
+      </p>
+      <p class="small">
+        As of November 2026. Each description comes from the tool's own page; the tools were not
+        tested for this page. Projects change quickly: if something here is wrong or out of date, or
+        a tool is missing, please say so through the
+        <a href="{{REPO_URL}}/issues/new/choose">issue forms</a>.
+      </p>
+      <nav class="on-this-page" aria-label="On this page">
+        <ul>
+          <li><a href="#launch-title">Launching games and apps</a></li>
+          <li><a href="#displays-title">Switching monitors and audio</a></li>
+          <li><a href="#dcs-title">DCS bindings, cheat sheets and kneeboards</a></li>
+          <li><a href="#iracing-title">iRacing bindings and backups</a></li>
+          <li><a href="#input-title">Input testing, remapping and USB</a></li>
+          <li><a href="#visibility-title">Which controllers a game sees</a></li>
+          <li><a href="#adds-title">What RigReady adds</a></li>
+          <li><a href="#not-title">What RigReady does not do</a></li>
+        </ul>
+      </nav>
+    </div>
+  </section>
+
+  <section aria-labelledby="launch-title">
+    <div class="wrap narrow">
+      <h2 id="launch-title">Launching games and apps</h2>
+      <p>
+        If starting the sim and its helper apps in the right order is all you need, one of these is
+        the more focused choice. A batch file works too.
+      </p>
+      <ul class="tools">
+        <li>
+          <h3><a href="https://simlauncher.com">SimLauncher</a></h3>
+          <p>
+            One click starts a sim together with its helper apps (SimHub, Crew Chief, Trading
+            Paints, Garage 61 and up to 20 of your own), in the order you choose and with a delay
+            between them, and can close the helpers when the game exits. Its list of sims covers
+            racing and flight, and its installer is code-signed.
+          </p>
+          <p class="licence">Licence: GPL-3.0</p>
+        </li>
+        <li>
+          <h3><a href="https://github.com/rigstart/rigstart">RigStart</a></h3>
+          <p>
+            One click or one Stream Deck key starts a racing session: the VR runtime, the wheel
+            software, SimHub and a spotter in order, skipping what is already running, then the
+            game. End session closes it all again. It has VR and Flat profiles per game, Home
+            Assistant webhooks, five languages and a portable version; the webhooks, the other
+            languages and a portable version are not in RigReady. It was called SimLauncher until
+            version 1.8.0, and is a different project from the one above.
+          </p>
+          <p class="licence">Licence: MIT</p>
+        </li>
+        <li>
+          <h3><a href="https://github.com/ExpertFett/DCS-PreFlight">DCS Pre-Flight Launcher</a></h3>
+          <p>
+            For DCS: it finds the companion apps on your PC (SRS, OpenKneeboard, SimAppPro, Virtual
+            Desktop, TrackIR, VoiceAttack, Tacview and more), starts them in order, replays the
+            clicks some of them need after starting, and launches DCS after a countdown you can
+            cancel. Replaying those clicks is something RigReady does not do.
+          </p>
+          <p class="licence">Licence: MIT</p>
+        </li>
+        <li>
+          <h3><a href="https://github.com/bluexone116/BlueRunner">Blue Runner</a></h3>
+          <p>
+            A launcher for DCS: helper apps started in the order they depend on each other, each
+            with its own delay, DCS started in 2D or in VR, CPU affinity, clearing the shader
+            caches, and backups of MissionScripting.lua and Export.lua. Choosing 2D or VR at launch,
+            CPU affinity and the shader caches are not in RigReady.
+          </p>
+          <p class="licence">Licence: proprietary, free for personal, non-commercial use</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="displays-title">
+    <div class="wrap narrow">
+      <h2 id="displays-title">Switching monitors and audio</h2>
+      <ul class="tools">
+        <li>
+          <h3><a href="https://github.com/terrymacdonald/DisplayMagician">DisplayMagician</a></h3>
+          <p>
+            Display profiles, and a desktop shortcut per game that switches the displays and the
+            audio device, starts helper programs, runs the game and can switch back when it closes.
+            It handles NVIDIA Surround, AMD Eyefinity and HDR, which RigReady does not set up, picks
+            games from Steam, Epic, GOG, Uplay and Origin, and has a field-of-view calculator. It
+            has had releases since 2020.
+          </p>
+          <p class="licence">Licence: GPL-3.0</p>
+        </li>
+        <li>
+          <h3><a href="https://manuelstaggl.github.io/RigShift/">RigShift</a></h3>
+          <p>
+            Switches one PC between desk and rig in one step: displays (HDR and NVIDIA Surround
+            included), audio, apps, window positions and desktop icons. It can switch when the
+            wheelbase powers on, and a layout that leaves you without a picture reverts by itself.
+            Switching on wheelbase power and putting windows and desktop icons back are not in
+            RigReady; RigShift also works out the field of view for 18 sims.
+          </p>
+          <p class="licence">Licence: MIT</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="dcs-title">
+    <div class="wrap narrow">
+      <h2 id="dcs-title">DCS bindings, cheat sheets and kneeboards</h2>
+      <ul class="tools">
+        <li>
+          <h3><a href="https://github.com/Holdi601/JoystickProfiler2">JoyPro 2</a></h3>
+          <p>
+            One profile for all your devices in flight and space games (DCS, IL-2, MSFS, X-Plane,
+            Star Citizen and more): a control is placed once and lands in the same spot in every
+            aircraft, with curves, force feedback and a backup before every export. It reaches more
+            games than RigReady, whose bindings editor covers DCS and iRacing. It follows
+            <a href="https://github.com/Holdi601/JoystickProfiler">JoyPro</a>, which did this for
+            DCS.
+          </p>
+          <p class="licence">Licence: GPL-3.0 or later</p>
+        </li>
+        <li>
+          <h3><a href="https://joystick-diagrams.com">Joystick Diagrams</a></h3>
+          <p>
+            Reference cards drawn from your games' binding files, for DCS, MSFS 2020, IL-2, Star
+            Citizen, Elite Dangerous, Falcon BMS, Joystick Gremlin and OpenKneeboard, with a plugin
+            system for more. It has templates for many more devices than RigReady (Virpil, VKB,
+            WinWing, Thrustmaster, Saitek, CH and others), runs on Linux too, and has had releases
+            since 2020.
+          </p>
+          <p class="licence">Licence: GPL-2.0</p>
+        </li>
+        <li>
+          <h3><a href="https://github.com/VEAF/hotas-kneeboard">VEAF HOTAS Kneeboard</a></h3>
+          <p>
+            DCS kneeboard pages and printable sheets of your bindings, drawn on your own devices and
+            written into the aircraft's kneeboard in one click. It has 45 device drawings and an
+            editor for more, reads the buttons SRS and VectorXR use, tidies DCS's default bindings
+            with a backup and undo, and works in English and French. RigReady has drawings for fewer
+            devices.
+          </p>
+          <p class="licence">Licence: GPL-2.0</p>
+        </li>
+        <li>
+          <h3>
+            <a href="https://github.com/niru-27/DCS-Keybinds-Manager">DCS Keybinds Manager</a>
+          </h3>
+          <p>
+            An AutoHotkey script that backs up your DCS keybinds to a zip file and brings them back
+            after a device gets a new ID (another USB port, a Windows reinstall), replacing the old
+            ID in the file names and in modifiers.lua. If that is your only problem, it is a small,
+            single-purpose fix.
+          </p>
+          <p class="licence">Licence: none stated in the repository</p>
+        </li>
+        <li>
+          <h3><a href="https://openkneeboard.com">OpenKneeboard</a></h3>
+          <p>
+            Shows reference pages and notes in games, especially flight sims, including in VR,
+            controlled from your HOTAS or a graphics tablet. RigReady's kneeboard pages go into
+            DCS's own kneeboard and its overlay is a window on a monitor, so in VR OpenKneeboard is
+            the one to use. It has had releases since 2022.
+          </p>
+          <p class="licence">Licence: OpenKneeboard Public License</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="iracing-title">
+    <div class="wrap narrow">
+      <h2 id="iracing-title">iRacing bindings and backups</h2>
+      <ul class="tools">
+        <li>
+          <h3><a href="https://github.com/IanBertolucci/ibinds">iBinds</a></h3>
+          <p>
+            Edits iRacing bindings in bulk: one binding applied to many control profiles at once,
+            the all-cars profile and per-car ones, with a preview for each, and calibration copied
+            between profiles, all with iRacing closed. Changing many car profiles in one go and
+            copying calibration are not in RigReady, which copies buttons and keys from one profile
+            into another.
+          </p>
+          <p class="licence">Licence: MIT</p>
+        </li>
+        <li>
+          <h3>
+            <a href="https://github.com/dillonkirsch/iracing-tracker">iRacing Config Tracker</a>
+          </h3>
+          <p>
+            Keeps a history of iRacing's settings and control files by itself, with what changed
+            between versions and a restore of any older one, from a desktop window or the command
+            line. It installs with Python, or as a standalone .exe from its releases that needs no
+            Python. A history of every change goes further than RigReady's backups and snapshots.
+          </p>
+          <p class="licence">Licence: MIT</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="input-title">
+    <div class="wrap narrow">
+      <h2 id="input-title">Input testing, remapping and USB</h2>
+      <ul class="tools">
+        <li>
+          <h3>
+            <a href="https://github.com/fredemmott/Freds-Controller-Tester"
+              >Fred's Controller Tester</a
+            >
+          </h3>
+          <p>
+            A small DirectInput and XInput tester for any device and any number of buttons, axes and
+            hats, identical devices included, with colours that show how much of each axis's range
+            has been tested. It tests gamepads through XInput as well; RigReady's tester reads
+            DirectInput only.
+          </p>
+          <p class="licence">Licence: ISC</p>
+        </li>
+        <li>
+          <h3><a href="https://whitemagic.github.io/JoystickGremlin/">Joystick Gremlin</a></h3>
+          <p>
+            Remaps any joystick-like device, merges several into one virtual device, and adds
+            response curves, deadzones, macros, modes and Python scripting. RigReady sets an axis's
+            curve and deadzone only in DCS's own bindings, and its virtual controller maps a stick,
+            wheel or pedals onto a gamepad; it has no general remapping, merging, macros, modes or
+            scripting. It has had releases since 2015.
+          </p>
+          <p class="licence">Licence: GPL-3.0</p>
+        </li>
+        <li>
+          <h3><a href="https://github.com/DeaconDP/Deez-USB-Hub">Deez USB Hub</a></h3>
+          <p>
+            Maps the USB controllers, hubs and every port, empty ones included, with details for
+            each device. It shows the empty ports, which RigReady's USB map does not. Its page has
+            you build it from source, with Node.js and Rust.
+          </p>
+          <p class="licence">Licence: MIT</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="visibility-title">
+    <div class="wrap narrow">
+      <h2 id="visibility-title">Which controllers a game sees</h2>
+      <ul class="tools">
+        <li>
+          <h3><a href="https://github.com/nefarius/HidHide">HidHide</a></h3>
+          <p>
+            A driver that hides chosen controllers from programs, so a flight sim sees the HOTAS and
+            not the gamepad, or a racing game sees the wheel and not the joysticks. RigReady does
+            not replace it: it can check that a device is hidden by HidHide, and its virtual
+            controller can use HidHide to hide the real ones.
+          </p>
+          <p class="licence">Licence: MIT</p>
+        </li>
+        <li>
+          <h3>
+            <a href="https://github.com/Ginger-Beard/ControllerManager">Controller Manager</a>
+          </h3>
+          <p>
+            Per-game profiles, built on HidHide, that choose which devices a game sees and which
+            appear only a few seconds after it starts, so that force feedback goes to the wheel and
+            a gamepad stays out of a racing game. RigReady does not choose per game which devices
+            appear, or in what order.
+          </p>
+          <p class="licence">Licence: MIT</p>
+        </li>
+        <li>
+          <h3>
+            <a href="https://github.com/mojouto3/mojo-input-manager">Mojo Input Manager</a>
+          </h3>
+          <p>
+            Creates vJoy virtual controllers, forwards and combines physical devices onto them with
+            curves and deadzones, and uses HidHide to choose which devices each game sees, with a
+            profile per game.
+          </p>
+          <p class="licence">Licence: MIT</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="adds-title">
+    <div class="wrap narrow">
+      <h2 id="adds-title">What RigReady adds</h2>
+      <p>
+        RigReady's part is doing these jobs together, for flight and racing, with a check before the
+        session, so that less time goes on rig chores. In version 2.0:
+      </p>
+      <ul class="facts">
+        <li>
+          <strong>A check before the session, with a fix for each problem.</strong> Each setup
+          checks the controllers, helper apps, monitor layout, audio and game files.
+          <a href="/docs/play/make-ready-and-launch/">Make ready and launch</a> runs the fixes in
+          order and starts the game; Stand down puts the desk back after it closes. For iRacing, a
+          setup can also switch the control profile at Make ready and put the old one back at Stand
+          down, and warn when iRacing will ask to calibrate the wheel or pedals plugged in now.
+        </li>
+        <li>
+          <strong>Bindings with a safety net, for DCS and iRacing.</strong> A preview before
+          anything is written, a backup first, and Undo on the Safety page. In DCS: editing,
+          clean-up of the defaults DCS binds on every device, copy between aircraft, and a
+          <a href="/docs/dcs/device-ids/">repair when Windows gives a device a new ID</a>. In
+          iRacing:
+          <a href="/docs/games/iracing-bindings/">binding an action to a button or a key</a>, or
+          clearing it, in the control profile iRacing uses (a button and a key bound this way were
+          used by iRacing in a test drive); the control profiles and which cars use each, with
+          buttons and keys copied from one profile into another; clearing the bindings of
+          controllers that are gone; and the same kind of repair.
+        </li>
+        <li>
+          <strong>Binding guides.</strong> Twenty for
+          <a href="/docs/dcs/binding-guide-and-ai/">DCS aircraft</a>, and for
+          <a href="/docs/games/iracing-binding-guide/">iRacing</a> one for each class of car: GT3,
+          GT4, LMDh and prototypes, formula and open-wheel, oval, and dirt. Each lists what to bind
+          first and walks you through binding it. For another aircraft you can import or write a
+          guide of your own. The guides were written from general knowledge and have not been
+          reviewed by a pilot or a racing driver.
+        </li>
+        <li>
+          <strong>Cheat sheets, a trainer and an overlay.</strong>
+          <a href="/docs/controls/cheat-sheets/">Cheat sheets</a> of what every control does, for
+          DCS, iRacing, Le Mans Ultimate, BeamNG.drive and Assetto Corsa, for print, PDF or DCS
+          kneeboard pages. Some WinWing and Thrustmaster devices have an outline drawing; for any
+          device you can make a sheet from your own photos. The
+          <a href="/docs/controls/trainer/">trainer</a> names an action and waits for you to press
+          its button or hat. The <a href="/docs/play/overlay/">overlay</a> lists each button or hat
+          you press and what it does in the aircraft or car you are in, with a switch in each setup.
+        </li>
+        <li>
+          <strong>A hands-off health check and a USB map.</strong> The
+          <a href="/docs/hardware/health-check/">health check</a> has you take your hands off for
+          ten seconds, then lists stuck buttons, inputs that fire by themselves and noisy axes. The
+          <a href="/docs/hardware/usb-map/">USB map</a> draws each USB controller through its hubs
+          to every device, says how close each controller is to its limits, and what to unplug.
+        </li>
+        <li>
+          <strong>Every change can be undone.</strong> Any file outside RigReady's own folder is
+          backed up before it is changed, and the change is listed on the Safety page with Undo.
+          Free and open source (MIT), with no account and no telemetry.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="not-title">
+    <div class="wrap narrow">
+      <h2 id="not-title">What RigReady does not do</h2>
+      <ul class="facts">
+        <li>
+          Bindings for other games. Binding an action to a control is for DCS and iRacing only. Le
+          Mans Ultimate, BeamNG.drive and Assetto Corsa have their bindings shown, with cheat
+          sheets; Microsoft Flight Simulator, X-Plane, IL-2, Falcon BMS and the other racing games
+          are found, launched and backed up, nothing deeper.
+        </li>
+        <li>
+          Every binding in DCS and iRacing. In DCS, many actions, mostly keyboard and view commands,
+          are shown but not edited; they are marked "bind in DCS". In iRacing, RigReady binds
+          buttons and keys; axes, hat switches and the number pad keys are bound in iRacing itself.
+        </li>
+        <li>
+          VR. There are no VR checks, and the overlay that shows each press is a window on a
+          monitor, not inside a headset. Over a game in exclusive full screen the overlay may not
+          show at all.
+        </li>
+        <li>
+          Placing the DCS kneeboard. DCS opens it in the bottom right corner of its whole window,
+          which can be on a small screen; RigReady shows where, but cannot choose the place yet.
+        </li>
+        <li>
+          General remapping. It does not merge devices, put one control on another or add macros for
+          games; it sets axis curves only in DCS's own bindings and on its virtual controller.
+        </li>
+        <li>
+          Choosing which controllers each game sees, apart from its virtual controller hiding the
+          real controllers while it runs.
+        </li>
+        <li>Display modes such as NVIDIA Surround, AMD Eyefinity and HDR.</li>
+        <li>
+          Replacing the makers' software. WinWing backlight sync, the UFC and ICP displays and
+          vibration still need SimAppPro. A Fanatec base keeps its tuning values on the base, where
+          RigReady cannot read them; the Wheel page keeps a copy you enter by hand. TrackIR's active
+          profile cannot be switched from outside TrackIR.
+        </li>
+        <li>Backups over 2 GB. A single backup is built in memory and capped at 2 GB.</li>
+        <li>
+          Linux or macOS: it runs on Windows 10 and 11 only, and has not yet been tried on a real
+          Windows 10 PC.
+        </li>
+      </ul>
+      <p>
+        RigReady 2.0 is new and has been used on one rig. The Wheel page has been tried on a real
+        Fanatec base only; other brands were tested on recorded data made from their published USB
+        IDs. The iRacing repair for a controller with a new Windows ID, and the Assetto Corsa repair
+        for controllers Windows lists in another order, were tested on recorded files, not yet with
+        a controller that really changed. The virtual controller has run on the real driver once;
+        hiding the real controllers while a game runs has not been tried.
+        <a href="/how-it-was-built/">How it was built</a> lists everything not verified yet.
+      </p>
+    </div>
+  </section>
+
+  <section aria-labelledby="corrections-title">
+    <div class="wrap narrow">
+      <h2 id="corrections-title">Corrections</h2>
+      <p>
+        If a tool here is described wrongly, has changed, or is missing, please open an issue
+        through the <a href="{{REPO_URL}}/issues/new/choose">issue forms</a>, and this page will be
+        corrected.
+      </p>
+    </div>
+  </section>
+</div>

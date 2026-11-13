@@ -18,6 +18,7 @@
 //                     headings), loaded by site/main.js the first time the box is used
 //   /how-it-was-built/   site/pages/built.html: who did what, how it is checked, and what is not
 //                     verified yet (the counts and the open requirements read from the ledger)
+//   /other-tools/     site/pages/other-tools.html: other tools that overlap parts of RigReady
 //
 // So the site follows the project without anyone editing it: the downloads come from the
 // published GitHub releases (drafts are ignored, and so is anything older than the major version
@@ -363,6 +364,24 @@ page({
       REPO_URL,
     },
     'site/pages/built.html'
+  ),
+});
+
+// RigReady and other tools ------------------------------------------------------------------
+//
+// The tools that overlap parts of RigReady, by job, with what each does well. Written by hand:
+// each description comes from the tool's own page, and the page carries its date.
+
+page({
+  path: '/other-tools/',
+  page: 'other-tools',
+  title: 'RigReady and other tools',
+  description:
+    'Other tools that do parts of what RigReady does, grouped by job: what each does well, its licence, and what RigReady adds and does not do.',
+  main: fill(
+    await read('site/pages/other-tools.html'),
+    { REPO_URL },
+    'site/pages/other-tools.html'
   ),
 });
 
