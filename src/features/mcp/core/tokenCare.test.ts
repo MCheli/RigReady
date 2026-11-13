@@ -220,6 +220,19 @@ describe('MCP-014 a pairing token never reaches the log, a support export or a n
     expect(kinds.slice(firstByAddress).every((kind) => needsToken(kind))).toBe(true);
     expect(needsToken(kinds[0]!)).toBe(false);
   });
+
+  it('the Claude Code form by address says where its command leaves the token, and that Forget cuts it off', async () => {
+    app = await loggedApp('flying-all-good');
+    const shown = await app.invoke<{ text: string; hint: string }>('mcp:clientConfig', {
+      kind: 'claude-code-http',
+    });
+    if (!shown.ok) throw new Error(shown.error.message);
+    expect(shown.value.text).toMatch(/^claude mcp add --transport http rigready /);
+    expect(shown.value.hint).toContain(
+      "leaves the pairing's token in your terminal's history and in Claude Code's settings, both in plain text"
+    );
+    expect(shown.value.hint).toContain('Forget on that pairing, below, cuts it off at once.');
+  });
 });
 
 describe('MCP-014 the masking itself', () => {

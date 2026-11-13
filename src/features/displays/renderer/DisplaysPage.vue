@@ -702,7 +702,7 @@ onBeforeUnmount(() => stop?.());
           <v-text-field
             v-model="saveName_"
             label="Layout name"
-            placeholder="e.g. Flying"
+            placeholder="e.g. Racing or Flying"
             autofocus
             data-testid="layout-save-name"
             @keyup.enter="saveCurrent"

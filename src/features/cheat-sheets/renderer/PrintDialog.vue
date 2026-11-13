@@ -84,7 +84,8 @@ onBeforeUnmount(() => {
       <v-card-title>Print or save as PDF</v-card-title>
       <v-card-text>
         <p class="rr-muted mb-3">
-          One page per device with the aircraft and device name on top, on plain white for printing.
+          One page per device with the aircraft or car and the device name on top, on plain white
+          for printing.
         </p>
         <div class="rr-section-title">Devices</div>
         <div class="print-devices">

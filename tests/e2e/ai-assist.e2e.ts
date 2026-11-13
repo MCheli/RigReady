@@ -68,6 +68,10 @@ test('ai-assist: without a key the guide, priorities and walkthrough work, with 
   const run = await rig.launch('ai-assist-hornet', 'ai-assist-no-key');
   const { page, shot } = run;
   await openGuide(page);
+  // The page is for DCS aircraft only, and says so at the top: its menu entry does not.
+  await expect(page.getByTestId('ai-guide-page').locator('.rr-page-sub')).toContainText(
+    'For DCS World: what matters in each aircraft'
+  );
 
   await expect(page.getByTestId('ai-walkthrough')).toBeVisible();
   await expect(page.getByTestId('ai-current-item')).toHaveAttribute('data-item', 'pitch-roll');
@@ -172,6 +176,10 @@ test('ai-assist: the key is entered in Settings, tested, never shown again, and 
   );
   await expect(page.getByTestId('ai-what-is-sent')).toContainText(
     'Never sent: file paths, device ids'
+  );
+  // What AI is for, said for every game first, and the DCS-only part named as such.
+  await expect(page.getByTestId('ai-who-answers')).toContainText(
+    'With it, the assistant answers questions about your rig, proposes setups and drafts scripts, whatever you play. For DCS aircraft, the Binding guide page can also suggest bindings on your devices and explain actions.'
   );
   await page.getByTestId('ai-settings').scrollIntoViewIfNeeded();
   expect(await page.content()).not.toContain(KEY);

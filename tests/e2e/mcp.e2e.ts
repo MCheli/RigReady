@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
-import { expect, repoRoot, test } from './harness';
+import { expect, openOption, repoRoot, test } from './harness';
 
 /**
  * Settings > AI assistants: the MCP server turned on, an assistant paired and its client
@@ -137,6 +137,34 @@ test('mcp: turned on in Settings, an assistant paired, its change asked in the w
 
   await page.getByTestId('mcp-enable').locator('input').uncheck();
   await expect(page.getByTestId('mcp-state')).toContainText('Off');
+});
+
+test('mcp: the Claude Code form by address says where its command leaves the token, and that Forget cuts it off', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('mcp-settings', 'mcp-claude-code-address');
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-settings').click();
+  await page.getByTestId('mcp-settings').scrollIntoViewIfNeeded();
+  await page.getByTestId('mcp-enable').locator('input').check();
+  await expect(page.getByTestId('mcp-state')).toHaveAttribute('data-running', 'true');
+  // The list is long and draws only what is in view, so it is walked with the keys: the last
+  // entry is Cursor by address, the one above it Claude Code by address.
+  await page.getByTestId('mcp-client-kind').click();
+  await expect(page.locator('.v-overlay--active').getByRole('listbox')).toBeVisible();
+  await page.keyboard.press('End');
+  await expect(openOption(page, 'Cursor, by address (needs a token)')).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(openOption(page, 'Claude Code, by address (needs a token)')).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('mcp-client-config')).toContainText(
+    'claude mcp add --transport http rigready'
+  );
+  await expect(page.getByTestId('mcp-client-hint')).toHaveText(
+    "The Claude Code form above does the same with no token. This command leaves the pairing's token in your terminal's history and in Claude Code's settings, both in plain text. Forget on that pairing, below, cuts it off at once."
+  );
+  await page.getByTestId('mcp-copy').scrollIntoViewIfNeeded();
+  await shot('claude-code-by-address');
 });
 
 test('mcp: a channel called directly is asked about in words with the call under them, and a no is counted', async ({

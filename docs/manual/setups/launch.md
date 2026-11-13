@@ -16,7 +16,7 @@ Launch starts the program and waits up to 30 seconds for it to appear in the lis
 
 ## Through Steam
 
-A **Steam app id** (the number in the game's store address, 223750 for DCS World) makes Launch ask Steam to start the game, through `steam://rungameid/<id>`. Steam must be installed. The result is "Asked Steam to start DCS F/A-18C": Steam does the rest, after an update or a sign-in if it needs one. RigReady then waits for the game's own program, which it knows from the [game module](../games/index.md), for up to fifteen minutes before it gives up on the session ([Sessions and history](../play/sessions.md)). A launch program whose file is `steam.exe` counts the same way. When its arguments are `-applaunch` and the number, which is how a new setup for a Steam game is saved, [the setup editor](editor.md) shows the setup as **Through Steam**.
+A **Steam app id** (the number in the game's store address: 244210 for Assetto Corsa, 223750 for DCS World) makes Launch ask Steam to start the game, through `steam://rungameid/<id>`. Steam must be installed. The result is "Asked Steam to start DCS F/A-18C": Steam does the rest, after an update or a sign-in if it needs one. RigReady then waits for the game's own program, which it knows from the [game module](../games/index.md), for up to fifteen minutes before it gives up on the session ([Sessions and history](../play/sessions.md)). A launch program whose file is `steam.exe` counts the same way. When its arguments are `-applaunch` and the number, which is how a new setup for a Steam game is saved, [the setup editor](editor.md) shows the setup as **Through Steam**.
 
 ## Nothing
 

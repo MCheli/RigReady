@@ -30,7 +30,7 @@ export default defineCommands({
     {
       // The navigation entry keeps its name; these are more words it is found by.
       id: 'cheat-sheets.page',
-      title: 'Print or export as kneeboard',
+      title: 'Print a cheat sheet or save it as PDF',
       keywords: ['kneeboard', 'print', 'pdf', 'diagram', 'picture'],
       to: PAGE,
     },

@@ -209,7 +209,7 @@ const ACTIONS = [
         <div class="result-actions">
           <v-btn
             color="primary"
-            prepend-icon="mdi-airplane-takeoff"
+            prepend-icon="mdi-clipboard-check-outline"
             data-testid="restore-run-checks"
             to="/fly"
           >

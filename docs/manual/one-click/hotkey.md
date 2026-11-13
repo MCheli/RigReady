@@ -12,7 +12,7 @@ A hotkey is a key combination Windows gives to RigReady, so it works whatever pr
 
 Open **Configure > Settings** ([Settings](../app/settings.md#hotkey)) and find **Hotkey**, under "Make ready from anywhere". **Choose a hotkey** opens a field: hold Ctrl, Alt or the Windows key and press a key. The combination is taken at once and the line says "Ctrl + Alt + R is active". Esc cancels; Tab leaves the field.
 
-- A hotkey needs Ctrl, Alt or the Windows key, so it cannot be pressed by accident while typing or flying. Shift on its own is not enough.
+- A hotkey needs Ctrl, Alt or the Windows key, so it cannot be pressed by accident while typing or playing. Shift on its own is not enough.
 - The last key can be a letter, a digit, a function key (F1 to F24), a number pad digit, an arrow, Space, Home, End, Page Up, Page Down, Insert or Delete.
 - A combination another program already holds is refused: "Windows did not give it to RigReady: another program is probably using it. Choose another combination." The hotkey you had before stays.
 
