@@ -39,14 +39,46 @@ function savedValue(picker: PickerInfo, params: Params, fallback?: unknown): str
   return typeof value === 'string' && value !== '' ? value : undefined;
 }
 
-/** The choice the params name, when it is in the list. */
+const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * What tells one row of a list from every other. The value, except where two choices have
+ * the same one (the saved bindings of two games, made in the same moment): those are told
+ * apart by what each fills in as well.
+ */
+export function choiceKey(picker: PickerInfo, choice: PickerChoice): string {
+  const shared = picker.choices.filter((c) => c.value === choice.value).length > 1;
+  return shared ? `${choice.value}\n${JSON.stringify(choice.fill ?? {})}` : choice.value;
+}
+
+/**
+ * The choice the params name, when it is in the list. Of two with the same value it is
+ * the one that fills in what the params have: the saved bindings of the setup's own game.
+ */
 export function chosenOf(
   picker: PickerInfo,
   params: Params,
   fallback?: unknown
 ): PickerChoice | undefined {
   const value = savedValue(picker, params, fallback);
-  return value === undefined ? undefined : picker.choices.find((c) => c.value === value);
+  if (value === undefined) return undefined;
+  const named = picker.choices.filter((c) => c.value === value);
+  const agrees = (choice: PickerChoice): number =>
+    Object.entries(choice.fill ?? {}).filter(([key, filled]) => same(params[key], filled)).length;
+  return named.reduce<PickerChoice | undefined>(
+    (best, choice) => (best === undefined || agrees(choice) > agrees(best) ? choice : best),
+    undefined
+  );
+}
+
+/** The row of the list that is chosen now: what `pickerItems` calls it. */
+export function selectedKey(
+  picker: PickerInfo,
+  params: Params,
+  fallback?: unknown
+): string | undefined {
+  const choice = chosenOf(picker, params, fallback);
+  return choice ? choiceKey(picker, choice) : savedValue(picker, params, fallback);
 }
 
 /** What the setup uses is not among the choices (it was deleted, or the list was not read). */
@@ -72,7 +104,7 @@ function savedName(picker: PickerInfo, params: Params): string | undefined {
  */
 export function pickerItems(picker: PickerInfo, params: Params, fallback?: unknown): PickerItem[] {
   const items = picker.choices.map((c) => ({
-    value: c.value,
+    value: choiceKey(picker, c),
     title: c.current ? `${c.label} (in use now)` : c.label,
     ...(c.detail ? { subtitle: c.detail } : {}),
   }));
@@ -104,8 +136,9 @@ export function pickerNote(
 }
 
 /**
- * The params after choosing from the list. A choice sets the field and everything the
- * choice fills in; what an earlier choice filled in does not linger. Clearing takes the
+ * The params after choosing a row of the list (by what `pickerItems` calls it). A choice
+ * sets the field and everything the choice fills in; what an earlier choice filled in
+ * does not linger. Clearing takes the
  * field out and what it filled, except the fields in `keep` (those the type cannot do
  * without, such as the monitors of a layout check).
  */
@@ -122,7 +155,7 @@ export function applyChoice(
     for (const key of picker.fills) if (!kept.has(key)) delete next[key];
     return next;
   }
-  const choice = picker.choices.find((c) => c.value === value);
+  const choice = picker.choices.find((c) => choiceKey(picker, c) === value);
   // The saved one that is no longer in the list, chosen again: nothing changes.
   if (!choice) return next;
   for (const key of picker.fills) delete next[key];
@@ -160,6 +193,23 @@ export function titleFromChoice(
   return nameOf(after);
 }
 
+/**
+ * The name a step takes when its type is changed. A step is named after its type ("Start the
+ * app") until the person names it, so only a step still carrying that name follows
+ * the type: a name the person typed is theirs and is never replaced. "New start the app"
+ * is what earlier versions called an unnamed step, and is treated the same.
+ */
+export function titleFromType(
+  title: string,
+  before: string | undefined,
+  after: string
+): string | undefined {
+  const unnamed =
+    title.trim() === '' ||
+    (before !== undefined && (title === before || title === `New ${before.toLowerCase()}`));
+  return unnamed ? after : undefined;
+}
+
 export interface Followed {
   /** What is followed, for the line that says so: "layout", "game and aircraft". */
   label: string;
@@ -186,8 +236,6 @@ export function followedBy(
   };
 }
 
-const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
-
 /**
  * True while the fix says exactly what the check says in the followed fields. A fix that
  * was given something else (in the file, by hand) is not following: its own list is shown,
@@ -210,6 +258,8 @@ export function mergeFollowed(fix: Params, check: Params, followed: Followed): P
 export interface FormPick {
   info: PickerInfo;
   items: PickerItem[];
+  /** The row that is chosen now, when one is. */
+  selected?: string;
   note?: PickerNote;
   required: boolean;
 }
@@ -247,11 +297,13 @@ export function formRows(
       const info = pickerOf(pickers, field.key);
       if (!info) return { field };
       const note = pickerNote(info, params, field.default);
+      const selected = selectedKey(info, params, field.default);
       return {
         field,
         pick: {
           info,
           items: pickerItems(info, params, field.default),
+          ...(selected !== undefined ? { selected } : {}),
           ...(note ? { note } : {}),
           required: pickerRequired(info, required, params),
         },

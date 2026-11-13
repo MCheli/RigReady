@@ -256,6 +256,11 @@ export interface KnownApp {
   icon: string;
   helper?: boolean;
   kind?: GameKind;
+  /**
+   * The games it is made for, by game module id, when it is of no use with any other
+   * (DCS-SRS talks to DCS only). A new setup keeps it by default only for those games.
+   */
+  games?: string[];
   close?: boolean;
   /** What it is for, in a few words. */
   purpose?: string;
@@ -285,7 +290,10 @@ export const KNOWN_APPS: Record<string, KnownApp> = {
     'WinWing panels, displays and backlight',
     'flight'
   ),
-  'sr-clientradio.exe': helper('DCS-SRS', 'mdi-radio-handheld', 'radio for multiplayer', 'flight'),
+  'sr-clientradio.exe': {
+    ...helper('DCS-SRS', 'mdi-radio-handheld', 'radio for multiplayer', 'flight'),
+    games: ['dcs'],
+  },
   'target.exe': helper('Thrustmaster TARGET', 'mdi-controller', 'controller scripts', 'flight'),
   'helios control center.exe': helper(
     'Helios',
@@ -380,6 +388,7 @@ export function createProcessCapture(games: GameRegistry): CaptureDefinition {
           tier: known ? 'main' : 'more',
           icon: known?.icon ?? 'mdi-application-outline',
           ...(known?.kind ? { kind: known.kind } : {}),
+          ...(known?.games ? { forGames: known.games } : {}),
           ...(known?.close ? { standDownNote: 'closed at Stand down' } : {}),
           check: {
             type: PROCESS_RUNNING,

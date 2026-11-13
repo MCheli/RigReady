@@ -364,4 +364,25 @@ describe('process capture', () => {
     rig.ports.processes.list = async () => err('process.list', 'nope');
     expect(await processCapture.capture(rig.ctx)).toMatchObject({ ok: false });
   });
+
+  it('says which games a helper is made for: DCS-SRS is for DCS only, and no other helper is tied to a game', async () => {
+    rig = await scenarioRig('flying-fresh', { files: [] });
+    rig.ports.state.processes.push({
+      pid: 99997,
+      name: 'SR-ClientRadio.exe',
+      path: 'C:\\Program Files\\DCS-SimpleRadio-Standalone\\SR-ClientRadio.exe',
+    });
+    const result = await createProcessCapture(new GameRegistry()).capture(rig.ctx);
+    if (!result.ok) throw new Error('capture failed');
+    const srs = result.value.find((c) => c.title === 'DCS-SRS');
+    // Still a flight helper the rig proposes; the game it is for is said beside that.
+    expect(srs).toMatchObject({
+      program: 'SR-ClientRadio.exe',
+      kind: 'flight',
+      selectedByDefault: true,
+      forGames: ['dcs'],
+    });
+    expect(result.value.filter((c) => c.forGames !== undefined)).toEqual([srs]);
+    expect(result.value.find((c) => c.title === 'SimAppPro')).toMatchObject({ kind: 'flight' });
+  });
 });

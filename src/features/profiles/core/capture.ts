@@ -266,9 +266,34 @@ export async function captureSteps(
       type,
       label: definition.label,
       picker: await resolvePicker(definition.picker, ctx),
+      checks: requiredChecks(definition.requires ?? [], ctx.checks),
     });
   }
   return steps;
+}
+
+/**
+ * The checks a step says it cannot work without, as they go into a new setup, each with
+ * the fix its check type names. Only a check that needs nothing filled in can be added
+ * without asking, so one that needs more is not offered here.
+ */
+function requiredChecks(types: string[], checks: Ctx['checks']): CaptureStep['checks'] {
+  return types.flatMap((type) => {
+    const check = checks.check(type);
+    if (!check || !check.params.safeParse({}).success) return [];
+    const fix = (check.fixes ?? []).find(
+      (fixType) => checks.remediation(fixType)?.params.safeParse({}).success
+    );
+    return [
+      {
+        type,
+        title: check.label,
+        required: true,
+        params: {},
+        ...(fix ? { remediation: { type: fix, params: {} } } : {}),
+      },
+    ];
+  });
 }
 
 /** Everything the capture screen shows: the rig as it is now, as proposals. */
