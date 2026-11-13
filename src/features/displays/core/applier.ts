@@ -8,7 +8,7 @@ import type {
 import { actingAssistant } from '../../../core/assistantScripts';
 import { err, ok, type Result } from '../../../core/result';
 import type { DisplayInfo, DisplayLayout, DisplayTarget } from '../../../shared/models';
-import { notAsAsked, proofOf, type Proof } from './proven';
+import { notAsAsked, proofOf, sameProof, type Proof } from './proven';
 import type { LayoutDecision, RevertGuard } from './revertGuard';
 import type { ProvenStore, RecoveryStore } from './stores';
 
@@ -145,6 +145,47 @@ export class LayoutApplier {
     );
     this.known.unasked?.();
     return ok(applied.value);
+  }
+
+  /**
+   * Would Make ready or Stand down have to ask about this change with these monitors
+   * connected? True unless it is known to work (`proven.ts`): what the countdown before a
+   * Stand down by itself says, so that someone stays to answer. Changes nothing.
+   */
+  async wouldAsk(targets: DisplayTarget[], connected: DisplayInfo[]): Promise<boolean> {
+    const proof = proofOf(targets, connected);
+    if (!proof || !this.known) return true;
+    return !(await this.known.proven.has(proof));
+  }
+
+  /**
+   * "Replace with the monitors as they are now": the layout now holds the arrangement the
+   * monitors are in, and the person who pressed it is looking at them in RigReady's
+   * window. Nothing was applied, so there is nothing to undo, and that arrangement counts
+   * as kept with these monitors (`proven.ts` has the reasoning). `before` is the read the
+   * layout was made from; the monitors are read again, and nothing is remembered unless
+   * they are still exactly as the targets say. True when it was remembered.
+   */
+  async seen(targets: DisplayTarget[], before: DisplayInfo[]): Promise<boolean> {
+    // An assistant cannot see the screens, and an open question is about a change nobody
+    // has answered yet: neither is a person looking at an arrangement they chose.
+    if (!this.known || actingAssistant() !== undefined || this.guard.pending) return false;
+    const proof = proofOf(targets, before);
+    if (!proof) return false;
+    const now = await this.displays.read();
+    if (!now.ok) return false;
+    const still = proofOf(targets, now.value.displays);
+    if (!still || !sameProof(still, proof) || notAsAsked(targets, now.value.displays).length > 0) {
+      return false;
+    }
+    const saved = await this.known.proven.add(proof);
+    if (!saved.ok) {
+      // The layout is saved either way; it is only asked about once more.
+      this.known.log?.(`could not remember the replaced monitor layout: ${saved.error.message}`);
+      return false;
+    }
+    this.known.log?.('display layout replaced with the monitors as they are: counts as kept');
+    return true;
   }
 
   /** Applies the change and starts the countdown. Returns as soon as it runs. */

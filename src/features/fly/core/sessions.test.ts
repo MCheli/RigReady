@@ -63,6 +63,7 @@ function make(options: TrackerOptions = {}): {
         const found = await fly.profile(profileId);
         return found.ok ? standDownOnClose(found.value.profile) : { enabled: false, seconds: 60 };
       },
+      standDownNeedsYou: (profileId) => fly.standDownNeedsYou(profileId),
       showWindow: async () => {
         await app.ports.window.showOn([{ x: 0, y: 0, width: 1920, height: 1080 }]);
       },
@@ -1160,6 +1161,192 @@ describe('stand down by itself when the game closes', () => {
     // It is over: nobody is waiting any more.
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(waits).toHaveLength(4);
+  });
+});
+
+describe('the countdown and the desk layout', () => {
+  const NOT_KEPT_YET =
+    'The desk layout "Desk" has not been kept with these monitors yet. Stay and press Keep it when RigReady asks, or the monitors stay as they are.';
+  const closedApps = (): string[] => app.ports.processes.closed.map((c) => c.name);
+
+  /**
+   * Flying, with a desk layout "Desk" that has only the ultrawide on: what Stand down
+   * applies differs from the monitors as they are. Hands back the flying arrangement.
+   */
+  async function withDeskLayout(): Promise<{ id: string; flying: () => Promise<void> }> {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const read = await app.ports.displays.read();
+    if (!read.ok) throw new Error('read failed');
+    const flyingTargets = read.value.displays.map((d) => ({ ...d }));
+    const view = await app.invoke<{ monitors: { id: string; name: string }[] }>('displays:view');
+    const ultrawide = view.monitors.find((m) => m.name === 'LC49G95T')!;
+    const made = await app.invoke<{ layouts: { id: string; name: string }[] }>(
+      'displays:newLayout',
+      { name: 'Desk', stayOn: [ultrawide.id] }
+    );
+    const id = made.layouts.find((l) => l.name === 'Desk')!.id;
+    await app.invoke('displays:setDeskLayout', { id });
+    return {
+      id,
+      flying: async () => {
+        const back = await app.ports.displays.apply(flyingTargets);
+        if (!back.ok) throw new Error(back.error.message);
+      },
+    };
+  }
+
+  /** Half an hour of the game, then closed, with nobody at a window. */
+  async function session(made: ReturnType<typeof make>): Promise<void> {
+    made.tracker.presence('main', false);
+    await made.fly.launch(P);
+    app.clock.advance(30 * MINUTE);
+    await closeGame();
+    await made.tracker.poll();
+  }
+
+  it('says, with the countdown and in Windows, when the desk layout has not been kept with these monitors yet; once kept it says nothing', async () => {
+    const desk = await withDeskLayout();
+    const made = make();
+    await session(made);
+    expect(await made.tracker.current()).toMatchObject({
+      phase: 'ended',
+      standDownSeconds: 60,
+      standDownNeedsYou: [NOT_KEPT_YET],
+    });
+    expect(notified()).toEqual([
+      {
+        title: 'Welcome back',
+        body: `DCS F/A-18C: 30 min. Stand down starts in 1 minute. Open RigReady to cancel. ${NOT_KEPT_YET}`,
+      },
+    ]);
+
+    // Time is up. Stand down asks about Desk, and somebody stayed and kept it.
+    app.clock.advance(MINUTE);
+    await made.tracker.poll();
+    expect(made.states.at(-1)).toMatchObject({
+      stoodDown: { finished: true, failed: 0 },
+    });
+    expect(made.states.at(-1)!.standDownNeedsYou).toBeUndefined();
+    expect(closedApps()).toEqual(['TrackIR5.exe']);
+    made.tracker.dismiss();
+
+    // Another evening: flying again, then the game closes. Desk was kept with these
+    // monitors, so Stand down will not ask, and the countdown has nothing to warn of.
+    await desk.flying();
+    await startGame();
+    await session(made);
+    const counting = await made.tracker.current();
+    expect(counting).toMatchObject({ phase: 'ended', standDownSeconds: 60 });
+    expect(counting.standDownNeedsYou).toBeUndefined();
+    expect(notified()[2]!.body).toBe(
+      'DCS F/A-18C: 30 min. Stand down starts in 1 minute. Open RigReady to cancel.'
+    );
+  });
+
+  it('a Stand down nobody stayed for: the desk layout goes back, and the result says what to do next time', async () => {
+    await withDeskLayout();
+    const made = make();
+    await session(made);
+    expect((await made.tracker.current()).standDownNeedsYou).toEqual([NOT_KEPT_YET]);
+    app.layoutAnswer = 'revert';
+    app.clock.advance(MINUTE);
+    await made.tracker.poll();
+    expect(made.states.at(-1)).toMatchObject({
+      stoodDown: {
+        finished: true,
+        failed: 1,
+        problems: [
+          'Desk monitor layout: The new monitor layout was not kept, so the previous one is back. Next time, stay for the question and press Keep it.',
+        ],
+      },
+    });
+  });
+
+  it('a Replace with the monitors as they are counts as kept: nothing to warn of', async () => {
+    const desk = await withDeskLayout();
+    const made = make();
+    /** Only the ultrawide on, set up in Windows' own settings: RigReady asked nothing. */
+    const deskInWindows = (): Promise<void> =>
+      mutate(app, [
+        { op: 'setDisplay', match: { name: 'USB_Monitor', index: 0 }, set: { enabled: false } },
+        { op: 'setDisplay', match: { name: 'USB_Monitor', index: 1 }, set: { enabled: false } },
+        { op: 'setDisplay', match: { name: 'USB_Monitor', index: 2 }, set: { enabled: false } },
+      ]);
+    await deskInWindows();
+    await desk.flying();
+    expect(await made.fly.standDownNeedsYou(P)).toEqual([NOT_KEPT_YET]);
+
+    // At the desk again, Desk is replaced with the monitors as they are.
+    await deskInWindows();
+    await app.invoke('displays:updateLayout', { id: desk.id });
+    await desk.flying();
+    expect(await made.fly.standDownNeedsYou(P)).toEqual([]);
+    await session(made);
+    expect((await made.tracker.current()).standDownNeedsYou).toBeUndefined();
+    // And the Stand down after the countdown asks nothing.
+    app.layoutAnswer = 'wait';
+    const asked = app.events.filter((e) => e.channel === 'displays:event:applied').length;
+    app.clock.advance(MINUTE);
+    await made.tracker.poll();
+    expect(made.states.at(-1)).toMatchObject({ stoodDown: { finished: true, failed: 0 } });
+    expect(app.events.filter((e) => e.channel === 'displays:event:applied')).toHaveLength(asked);
+  });
+
+  it('never holds the countdown up: what Stand down will need is left unsaid when it does not come in time', async () => {
+    app = await wiredApp('flying-all-good', { files: [] });
+    const states: SessionState[] = [];
+    const tracker = new SessionTracker(
+      app.wiring.context,
+      new SessionLog(app.ports.files, sessionsDir()),
+      {
+        emit: (state) => states.push(state),
+        standDown: async () => ok({ headline: 'Closed 1 app', failed: 0, problems: [] }),
+        standDownOnClose: async () => ({ enabled: true, seconds: 60 }),
+        // A monitor read that never answers.
+        standDownNeedsYou: () => new Promise(() => {}),
+        showWindow: async () => {},
+      },
+      { sleep: () => new Promise(() => {}), needsYouMs: 20 }
+    );
+    await startGame();
+    await tracker.launched(
+      { id: P, name: 'DCS F/A-18C' },
+      { name: 'DCS World', processes: ['DCS.exe'], seen: true }
+    );
+    app.clock.advance(10 * MINUTE);
+    await closeGame();
+    await tracker.poll();
+    const counting = states.at(-1)!;
+    expect(counting).toMatchObject({ phase: 'ended', standDownSeconds: 60 });
+    expect(counting.standDownNeedsYou).toBeUndefined();
+
+    // And one that fails says nothing either.
+    const failing = new SessionTracker(
+      app.wiring.context,
+      new SessionLog(app.ports.files, sessionsDir()),
+      {
+        emit: (state) => states.push(state),
+        standDown: async () => ok({ headline: 'Closed 1 app', failed: 0, problems: [] }),
+        standDownOnClose: async () => ({ enabled: true, seconds: 60 }),
+        standDownNeedsYou: async () => {
+          throw new Error('The monitors could not be read.');
+        },
+        showWindow: async () => {},
+      },
+      { sleep: () => new Promise(() => {}) }
+    );
+    await startGame();
+    await failing.launched(
+      { id: P, name: 'DCS F/A-18C' },
+      { name: 'DCS World', processes: ['DCS.exe'], seen: true }
+    );
+    app.clock.advance(10 * MINUTE);
+    await closeGame();
+    await failing.poll();
+    expect(states.at(-1)).toMatchObject({ phase: 'ended', standDownSeconds: 60 });
+    expect(states.at(-1)!.standDownNeedsYou).toBeUndefined();
+    tracker.stop();
+    failing.stop();
   });
 });
 

@@ -1,0 +1,10 @@
+description: Flying with the game running, and a desk layout "Desk" that was never kept on this PC
+rig: mark-full
+extends: fly-game-running.yaml
+# Desk is the saved "Desk" of displays-layouts (the Dell the main display, the ultrawide to
+# its right, the MFD screens off), chosen as the desk layout. It was never kept here, so
+# the Stand down after the game closes asks about it. The question waits five seconds
+# instead of fifteen, so that a test can let it run out.
+data:
+  displays/layouts.json: data/displays/layouts.json
+  settings.json: data/fly/settings-desk-not-kept.json

@@ -369,6 +369,12 @@ export interface StandDownStep {
   order: number;
   /** Resolves with what was done, or null when there was nothing to do. */
   run(ctx: CheckContext): Promise<Result<string | null>>;
+  /**
+   * Said before a Stand down that runs by itself, while its countdown is on the screen:
+   * what this step will need a person at the screens for (a question that goes its own
+   * way when nobody answers it), or null when it needs nobody. Changes nothing.
+   */
+  needsYou?(ctx: CheckContext): Promise<string | null>;
 }
 
 /**

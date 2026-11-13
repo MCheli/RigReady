@@ -55,6 +55,8 @@ const shown = computed(
 
 const game = computed(() => session.value.gameName ?? 'The game');
 const setup = computed(() => session.value.profileName ?? 'this setup');
+/** What that Stand down will need someone at the screens for, while it counts down. */
+const needsYou = computed(() => session.value.standDownNeedsYou ?? []);
 
 /**
  * Said once to a screen reader when the notice changes; the ticking heading is not read
@@ -65,7 +67,10 @@ const announcement = computed(() => {
   if (result.value) return [result.value.title, ...result.value.lines].join('. ');
   if (counting.value) {
     const wait = standDownWaitText(session.value.standDownSeconds ?? 60);
-    return `${game.value} has closed. Stand down starts in ${wait} unless you cancel.`;
+    return [
+      `${game.value} has closed. Stand down starts in ${wait} unless you cancel.`,
+      ...needsYou.value,
+    ].join(' ');
   }
   return '';
 });
@@ -146,6 +151,15 @@ function editSetup(): void {
         {{ game }} has closed. When the time is up, RigReady stands down {{ setup }}: it closes the
         helper apps and puts the rig back, as the Stand down button does.
       </div>
+      <!-- A question Stand down will ask (a desk layout not kept yet): someone has to stay. -->
+      <div
+        v-for="(line, index) in needsYou"
+        :key="index"
+        class="sd-needs rr-warn"
+        data-testid="stand-down-notice-needs-you"
+      >
+        {{ line }}
+      </div>
       <div v-if="problem" class="sd-problem rr-bad">{{ problem }}</div>
       <div class="sd-actions">
         <v-btn
@@ -223,6 +237,12 @@ function editSetup(): void {
 }
 .sd-lines li + li {
   margin-top: 4px;
+}
+.sd-needs {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 .sd-problem {
   margin-top: 6px;
