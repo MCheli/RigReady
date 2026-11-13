@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "seen": [
+    {
+      "vendorId": "044F",
+      "productId": "B68F",
+      "instanceId": "USB\\VID_044F&PID_B68F\\6&2c41a7f0&0&3",
+      "name": "T-Pendular-Rudder",
+      "location": "Port 3 on USB Root Hub (USB 3.0)",
+      "path": "3",
+      "lastSeen": "2026-11-10T18:30:00.000Z",
+      "connected": false
+    }
+  ]
+}

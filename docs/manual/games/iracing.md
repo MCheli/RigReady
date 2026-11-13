@@ -88,3 +88,16 @@ A racing setup for iRacing gets, when captured from the rig:
 - **Wheel base in PC mode** ([Wheel](wheel.md)) and the helper apps, as for every racing game (see [Games](index.md)).
 - **iRacing helper service running**: the Windows service `iRacingService`, which iRacing needs to start a session. RigReady cannot start it, because that needs administrator rights; the check says to start it from Windows Services.
 - **iRacing knows the connected controllers**: fails when a controller iRacing uses has a new Windows ID ("new Windows ID, iRacing will ask to recalibrate") or is not connected, and sends you to this page. It reads the control profile in use, and fails with "RigReady cannot tell which control profile iRacing uses" when `app.ini` names none that RigReady can find. The iRacing card on the Racing page says the same.
+- **Wheel and pedals calibrated in iRacing**: an optional check, so it warns and never blocks a launch. See [Calibration](#calibration).
+
+### Calibration
+
+iRacing keeps the calibration of each controller in `joyCalib.yaml`, beside `controls.cfg` in the control profile it uses: the controller's name, its Windows IDs, and for each axis the lowest, middle and highest value it measured. A controller that has no entry there is new to iRacing, and iRacing asks you to calibrate it.
+
+The check **Wheel and pedals calibrated in iRacing** looks at the wheel and pedals plugged in now and finds each one in that file by its Windows ID. It passes when each has an entry with at least one measured axis: "FANATEC Podium Wheel Base DD2 is calibrated in iRacing (control profile “Baseline”)". When one has none, it warns: "Not calibrated in iRacing: Load Cell Pedals", and says that iRacing will ask you to calibrate it, which you do in iRacing: **Options**, then **Controls**. When the file knows the same model under an older Windows ID, it says so and points to [the repair](#repair-a-wheel-with-a-new-windows-id), which keeps the calibration you have.
+
+Which devices count: what you said a device is on the [Devices page](../hardware/devices.md) comes first ("This is a: Wheel", "Pedals"; a device you marked as flight gear is left out); then the wheel bases and pedals RigReady knows by their USB IDs; then the name. Rudder pedals for flying are left out. Pedals plugged into the wheel base are axes of the base, so the base's entry covers them. A base that Windows shows as two controllers counts once.
+
+![The wheel calibrated in iRacing](../../../artifacts/screens/racing-iracing-calibrated/01-passing.png)
+
+![New pedals that iRacing has not calibrated](../../../artifacts/screens/racing-iracing-uncalibrated/01-failing.png)

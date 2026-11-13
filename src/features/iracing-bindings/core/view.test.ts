@@ -709,6 +709,10 @@ describe('iRacing bindings: reading only', () => {
       ['set', 'read'],
       ['changePreview', 'off'],
       ['change', 'off'],
+      // The cleanup of controllers that are gone (cleanup.test.ts): reading, and the same switch.
+      ['goneDevices', 'read'],
+      ['clearGonePreview', 'off'],
+      ['clearGone', 'off'],
       ['listenStart', 'off'],
       ['listenStop', 'off'],
     ]);

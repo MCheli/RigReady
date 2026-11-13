@@ -6463,6 +6463,38 @@ requirements:
       - "tests/e2e/racing-iracing-profiles.e2e.ts#racing: iRacing with a control profile, read and repaired in the profile"
       - "artifacts/screens/racing-iracing-profiles/02-black-box-names.png"
 
+  - id: RACE-IRACING-CALIB-001
+    title: A setup check that the wheel and pedals are calibrated in iRacing
+    job: fly
+    area: racing-iracing
+    priority: p2
+    done_means:
+      - "A setup check 'Wheel and pedals calibrated in iRacing' (racing.iracingCalibration) reads joyCalib.yaml of the control profile iRacing uses for all cars (the older Documents\\iRacing\\joyCalib.yaml only on an iRacing from before control profiles) and finds each wheel and pedal set plugged in now in it by the instance GUID Windows gives it now."
+      - "A controller counts as calibrated when its entry has at least one axis with CalibMax above CalibMin; a wheel base that shows up as two controllers counts once. What is verified in the real file and what is inferred is written in docs/research/iracing-bindings.md, 'What proves a controller is calibrated'."
+      - "When one is not calibrated the check says plainly that iRacing will ask to calibrate it, and that calibrating is done in iRacing's Options, then Controls. An entry under an older Windows id is said to be one, with the way to the id repair."
+      - "The wheel and pedals are what the owner said on the Devices page first (flight gear left out), then the racing table's bases and pedals by USB id, then the name; rudder pedals for flying are never counted. With none plugged in it says so; it says so when the profile cannot be found, the controllers cannot be listed or the file cannot be read, and never passes then."
+      - "A new setup made on a PC with iRacing and a wheel or pedals gets it, ticked and optional: it warns and never blocks a launch."
+    status: done
+    evidence:
+      - "src/features/racing/core/iracingCalibration.test.ts#passes when the wheel plugged in now is calibrated in the profile iRacing uses"
+      - "src/features/racing/core/iracingCalibration.test.ts#warns, in plain words, about pedals plugged in now that iRacing has not calibrated"
+      - "src/features/racing/core/iracingCalibration.test.ts#reads the profile iRacing uses, never the older joyCalib.yaml beside it"
+      - "src/features/racing/core/iracingCalibration.test.ts#says iRacing will ask to calibrate when the profile has no calibration file yet"
+      - "src/features/racing/core/iracingCalibration.test.ts#a calibration under an older Windows id points to the id repair"
+      - "src/features/racing/core/iracingCalibration.test.ts#says so when no wheel or pedals are plugged in, and when the file cannot be read"
+      - "src/features/racing/core/iracingCalibration.test.ts#says so when it cannot tell which profile iRacing uses, or cannot list the controllers"
+      - "src/features/racing/core/iracingCalibration.test.ts#is offered in a new setup made on a PC with iRacing and a wheel, as a warning"
+      - "src/features/racing/core/iracingCalibration.test.ts#is not offered on a PC with no wheel or pedals"
+      - "src/features/racing/core/iracingCalibration.test.ts#a wheel base, racing pedals and a wheel by name; never flight rudder pedals or other gear"
+      - "src/features/racing/core/iracingCalibration.test.ts#what the owner said on the Devices page wins over the name and the table"
+      - "src/features/racing/core/iracingCalibration.test.ts#matches by the instance id Windows gives now, and needs an axis with a range"
+      - "src/features/racing/core/iracingCalibration.test.ts#judges a base that shows up as two controllers once: calibrated when one of them is"
+      - "tests/e2e/racing-iracing-calibration.e2e.ts#racing: the wheel is calibrated in iRacing, and the check passes"
+      - "tests/e2e/racing-iracing-calibration.e2e.ts#racing: new pedals iRacing has not calibrated, and the check says iRacing will ask"
+      - "artifacts/screens/racing-iracing-calibrated/01-passing.png"
+      - "artifacts/screens/racing-iracing-uncalibrated/01-failing.png"
+      - "docs/research/iracing-bindings.md"
+
   # ---------------------------------------------------------------------------
   # BINDINGS — iRacing (reading; see docs/research/iracing-bindings.md)
   # ---------------------------------------------------------------------------
@@ -6712,6 +6744,48 @@ requirements:
       - "src/features/iracing-bindings/core/names.test.ts#names the black box actions as iRacing does: the arrows work inside the box shown"
       - "tests/e2e/iracing-bindings.e2e.ts#iRacing bindings: an iRacing with control profiles shows the profile it uses"
       - "artifacts/screens/iracing-bindings-profiles/01-profile.png"
+      - "docs/research/iracing-bindings.md"
+
+  - id: BIND-IRACING-CLEANUP-001
+    title: Clear the iRacing bindings of controllers that are gone, never of one that is only unplugged
+    job: configure
+    area: iracing-bindings
+    priority: p2
+    done_means:
+      - "The iRacing bindings page lists every controller of the set shown (the control profile iRacing uses, or a car's) that is not plugged in under the instance GUID the file names, with its bindings and one of four verdicts, each with the reason in words: gone, unplugged, new Windows id, cannot tell."
+      - "Gone means no controller of its model (product GUID) is plugged in and RigReady does not know the model as the owner's: the Devices page's history has never seen one on this PC, and the owner neither named one nor said what one is. Only a gone controller can be ticked, and nothing is ticked for the user."
+      - "A controller that is only unplugged today but known is never offered: the page says it is unplugged and when RigReady last saw it. A model plugged in under another id is the id repair's: the row points there and offers no clearing. When the controllers cannot be listed or the history cannot be read, nothing is offered. The main side decides this again on every request, whatever the page or an assistant asks."
+      - "Clearing is shown first (every binding that goes, by device, and the file change), written through FileStore with a backup as one change Undo reverses, behind the same switch as changing one binding (BIND-IRACING-007), never while the simulator runs or RigReady cannot see whether it does, and never when the file changed after the review. The file is read back before the page says what was cleared."
+      - "Each cleared record gets bytes +8 to +67 all zero, what iRacing has for an action that was never bound, axis actions included; the first two fields, every other record, the header and joyCalib.yaml stay byte for byte. Cheat sheets and the other readers of iRacing bindings are told."
+    notes:
+      - "2026-11-13: the devices history (devices-history.json) only knows what RigReady saw since it was installed; a controller unplugged before RigReady first ran reads as gone. Hence nothing ticked by default and the row's own words ('If it is yours and only unplugged, leave it'). The cleared file has not been loaded by iRacing on the rig yet: that is the rig script's step, and the same unproven point as BIND-IRACING-007 for a cleared record."
+    status: done
+    evidence:
+      - "src/features/iracing-bindings/core/cleanup.test.ts#lists the controllers that are not plugged in: two gone, one only unplugged, with why"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#knows a controller by the history the Devices page keeps: seen once, it is never gone"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#a controller the owner named on the Devices page is known, even before it was seen"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#cannot tell when the history cannot be read, and then leaves every binding alone"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#cannot tell when Windows does not list the controllers"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#a controller with a new Windows id is the id repair’s, never cleared"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#a second id of a model that is plugged in is not gone"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#is switched off with changing bindings: reading goes on, nothing is written"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#shows first which bindings go, per controller chosen, and writes nothing"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#clears the chosen controller and nothing else: a backup first, one change, and Undo puts it back"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#gives each cleared action exactly what iRacing had for it before it was bound"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#never clears a controller that is only unplugged, whatever is asked"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#while iRacing runs, or when RigReady cannot see the programs: shown, and nothing is written"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#writes nothing when the file changed after the review"
+      - "src/features/iracing-bindings/core/cleanup.test.ts#clears an axis and a button record to all zeros after the first two fields"
+      - "src/features/devices/core/store.test.ts#says a model is known when one was seen, named or said what it is; nothing without the history"
+      - "tests/unit/writeAudit.test.ts#iRacing: clearing the bindings of a controller that is gone"
+      - "tests/e2e/iracing-bindings-cleanup.e2e.ts#iRacing bindings: clear the bindings of a controller that is gone, after the review"
+      - "tests/e2e/iracing-bindings-cleanup.e2e.ts#iRacing bindings, switched off: the gone controllers are listed, and cleared in iRacing"
+      - "tests/e2e/iracing-bindings-cleanup.e2e.ts#iRacing bindings: a wheel with a new Windows id points to the repair, never a cleanup"
+      - "artifacts/screens/iracing-bindings-cleanup/01-offer.png"
+      - "artifacts/screens/iracing-bindings-cleanup/02-review.png"
+      - "artifacts/screens/iracing-bindings-cleanup/03-cleared.png"
+      - "artifacts/screens/iracing-bindings-cleanup-off/01-switched-off.png"
+      - "artifacts/screens/iracing-bindings-cleanup-moved/01-moved.png"
       - "docs/research/iracing-bindings.md"
 
   # ---------------------------------------------------------------------------

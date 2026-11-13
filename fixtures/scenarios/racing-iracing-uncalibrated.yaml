@@ -1,0 +1,28 @@
+description: iRacing with a control profile, and new pedals plugged in that iRacing has not calibrated
+rig: mark-full
+extends: racing-iracing-calibrated.yaml
+# A pedal set of its own on USB (made-up model and id) joins the DD2. joyCalib.yaml of the
+# profile names only the DD2, so iRacing will ask to calibrate the pedals.
+mutations:
+  - op: plugDevice
+    device:
+      instanceId: 'USB\VID_1209&PID_5ED1\6&2c41a7f0&0&9'
+      vendorId: '1209'
+      productId: 5ED1
+      name: Load Cell Pedals
+      isHid: true
+      isGameController: true
+      isHub: false
+      hubChain:
+        - { instanceId: 'USB\ROOT_HUB30\4&1f2e3d4c&0&0', name: USB Root Hub (USB 3.0) }
+      manufacturer: Example
+    controller:
+      name: Load Cell Pedals
+      guid: 5EED00B1-7A11-11EF-8001-444553540000
+      productGuid: 5ED11209-0000-0000-0000-504944564944
+      vendorId: '1209'
+      productId: 5ED1
+      numAxes: 3
+      numButtons: 0
+      numHats: 0
+      axisNames: [X, Y, Z]

@@ -35,6 +35,11 @@ import {
   racingOverview,
 } from './core/checks';
 import type { RacingContext } from './core/context';
+import {
+  iracingCalibrationCapture,
+  iracingCalibrationCheck,
+  type NamesFor,
+} from './core/iracingCalibration';
 import { wheelStatus } from './core/fanatec/fanatec';
 import { wheelRotationCheck } from './core/wheelbases/rotation';
 import { addMyWheel, removeMyWheel, unlistedView } from './core/wheelbases/unlisted';
@@ -108,6 +113,10 @@ export default defineFeatureMain({
       run: async (params, checkCtx) => changed(params.game, await restoreFix.run(params, checkCtx)),
     });
     ctx.checks.registerCapture(racingCapture(ctx.games));
+    // Whether iRacing will ask to calibrate the wheel or pedals (core/iracingCalibration.ts).
+    const deviceNames: NamesFor = (present) => ctx.names.devices(present);
+    ctx.checks.registerCheck(iracingCalibrationCheck(ctx.games, deviceNames));
+    ctx.checks.registerCapture(iracingCalibrationCapture(ctx.games, deviceNames));
     const setups = { profiles: ctx.profiles, clock: ctx.ports.clock };
     ctx.backupSources.register(fanatecBackupSource);
     ctx.backupSources.register(brandBackupSource('logitech'));

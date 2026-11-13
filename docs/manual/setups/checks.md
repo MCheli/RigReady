@@ -102,6 +102,10 @@ The aircraft's binding files belong to the device IDs Windows has now, and the c
 
 The controllers in iRacing's own files are connected, and none has a new Windows ID. No fields, no fix; the row points to Configure > Games > Racing > iRacing ([Repair: a wheel with a new Windows ID](../games/iracing.md#repair-a-wheel-with-a-new-windows-id)).
 
+### Wheel and pedals calibrated in iRacing (`racing.iracingCalibration`)
+
+The wheel and pedals plugged in now are calibrated in the control profile iRacing uses, so iRacing will not ask you to calibrate them ([Calibration](../games/iracing.md#calibration)). No fields, no fix: calibrating is done in iRacing, in Options, then Controls. A new setup made from the rig gets it as optional, so it warns and never blocks a launch.
+
 ### Racing bindings are the saved set (`racing.bindingSet`)
 
 A racing game's binding files are the ones saved in a named backup ([Use in a setup](../games/iracing.md#backups)). Fields: `game` (iracing, lmu, beamng, assetto-corsa), `backupId`, `name`. Fix: **Restore the saved racing bindings** (`racing.restoreBindingSet`).

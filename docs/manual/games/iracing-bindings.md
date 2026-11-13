@@ -37,6 +37,25 @@ Above the list of actions there is a button for each of them; it shows only the 
 
 ![A wheel that Windows gave a new id](../../../artifacts/screens/iracing-bindings-moved-wheel/01-new-windows-id.png)
 
+## Controllers iRacing will not find
+
+A set of bindings often still names a wheel, pedals or a button box you sold or swapped long ago. **Controllers iRacing will not find** lists every controller of the set that is not plugged in under the id the file names, with its bindings and what RigReady makes of it:
+
+- **Not seen on this PC**: no controller of that model is plugged in, and RigReady has never seen one on this PC. RigReady knows the devices it has seen from the [Devices page](../hardware/devices.md)'s history of where and when each device was plugged in, and from the names and answers you gave there. Only these can be cleared.
+- **Unplugged**: not plugged in today, but RigReady has seen it on this PC (it says when), or you named it, or another controller of the same model is plugged in. Its bindings stay. If Windows gives it a new id when you plug it back in, the [iRacing page](iracing.md) points iRacing at the new id.
+- **New Windows id**: the same model is plugged in under another id. Clearing is never offered: **Open the iRacing page** leads to the repair, which makes its bindings work again.
+- **Cannot tell**: Windows did not list the controllers, or RigReady cannot read its list of the devices it has seen. Nothing is offered.
+
+To clear the bindings of a controller that is gone, tick it (nothing is ticked for you), then **Review clearing**. The review lists every binding that goes, device by device, and the file that changes: the `controls.cfg` of the set, in the control profile iRacing uses. **Clear** writes it after a backup, as one change you can undo on the [Safety page](../protect/safety-page.md). Each action is then not bound, exactly as iRacing has an action that was never bound; every other binding and `joyCalib.yaml` stay as they are. Nothing is written while the iRacing simulator runs, or when the file changed after the review.
+
+Clearing is part of changing bindings from RigReady: while that is switched off, the list is there and says to clear them in iRacing: Options, then Controls.
+
+![Two controllers that are gone, and one only unplugged](../../../artifacts/screens/iracing-bindings-cleanup/01-offer.png)
+
+![The review before clearing](../../../artifacts/screens/iracing-bindings-cleanup/02-review.png)
+
+![After clearing the pedals](../../../artifacts/screens/iracing-bindings-cleanup/03-cleared.png)
+
 ## The list of actions
 
 The list has every action in the file, in four groups: Driving, In-car adjustments, Cameras and replay, and Interface and chat. Each row has the action in plain words with iRacing's own id next to it, what is bound ("Accelerator", "Button 13", "Wheel Axis, turning right", a key with its modifiers) and the device. An action with nothing bound says "Not bound". The heading counts the actions, the bound and the not bound.

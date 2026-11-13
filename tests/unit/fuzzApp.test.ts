@@ -87,6 +87,7 @@ const WITH_INPUT: [string, unknown][] = [
   ['dcs-bindings:cleanupOps', { aircraft: [] }],
   ['devices:boundInputs', { game: 'dcs', aircraftId: 'FA-18C_hornet' }],
   ['iracing-bindings:set', { id: 'all' }],
+  ['iracing-bindings:goneDevices', { set: 'all' }],
   ['racing:backups', { game: 'iracing' }],
   ['racing:backups', { game: 'lmu' }],
   ['racing:beamngCopyOlderPreview', { version: '0.36' }],

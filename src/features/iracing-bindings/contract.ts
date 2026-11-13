@@ -231,6 +231,75 @@ export const ChangeResultSchema = z.object({
 });
 export type ChangeResult = z.infer<typeof ChangeResultSchema>;
 
+/**
+ * What RigReady makes of a controller a set names that is not plugged in now under that
+ * id (core/cleanup.ts). Only "gone" is offered for clearing.
+ * - gone: no controller of its model is plugged in, and RigReady has never seen one on
+ *   this PC (the Devices page's history, the names and answers given there).
+ * - unplugged: not plugged in today, but RigReady knows the model as the owner's.
+ * - moved: a controller of its model is plugged in under a new Windows id (the id repair).
+ * - unknown: RigReady cannot tell, so it leaves the bindings alone.
+ */
+export const GoneVerdictSchema = z.enum(['gone', 'unplugged', 'moved', 'unknown']);
+export type GoneVerdict = z.infer<typeof GoneVerdictSchema>;
+
+export const GoneDeviceSchema = z.object({
+  /** The controller's DirectInput instance GUID as the file has it. */
+  key: z.string(),
+  name: z.string(),
+  givenName: z.string().optional(),
+  vendorId: z.string().optional(),
+  productId: z.string().optional(),
+  verdict: GoneVerdictSchema,
+  /** Why, in one or two sentences. */
+  why: z.string(),
+  /** The actions bound on it in this set. */
+  bindings: z.array(z.object({ action: z.string(), name: z.string(), input: z.string() })),
+});
+export type GoneDevice = z.infer<typeof GoneDeviceSchema>;
+
+export const GoneViewSchema = z.object({
+  set: BindingSetSchema,
+  /** Every controller of the set that is not plugged in now under the id the file names. */
+  devices: z.array(GoneDeviceSchema),
+});
+export type GoneView = z.infer<typeof GoneViewSchema>;
+
+export const ClearGoneRequestSchema = z.object({
+  /** A set id from overview. */
+  set: z.string(),
+  /** Instance GUIDs of controllers whose verdict is "gone", chosen one by one. */
+  devices: z.array(z.string().max(64)).min(1).max(32),
+  /** The set's file as the preview read it; clearGone writes nothing when it is no longer that. */
+  seen: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
+});
+export type ClearGoneRequest = z.infer<typeof ClearGoneRequestSchema>;
+
+export const ClearGoneReviewSchema = z.object({
+  set: BindingSetSchema,
+  devices: z.array(z.object({ key: z.string(), name: z.string(), count: z.number().int() })),
+  /** Every binding that would be cleared, by device. */
+  bindings: z.array(
+    z.object({ device: z.string(), action: z.string(), name: z.string(), input: z.string() })
+  ),
+  /** Why it cannot be written right now (iRacing is open), when it cannot. */
+  blocked: z.string().optional(),
+  preview: ChangePreviewSchema,
+  /** The file as this was worked out from: hand it to clearGone as `seen`. */
+  seen: z.string(),
+});
+export type ClearGoneReview = z.infer<typeof ClearGoneReviewSchema>;
+
+export const ClearGoneResultSchema = z.object({
+  cleared: z.number().int(),
+  message: z.string(),
+  file: z.string(),
+});
+export type ClearGoneResult = z.infer<typeof ClearGoneResultSchema>;
+
 /** Something the user just pressed on a controller while the page listens. */
 export const PressedSchema = z.object({
   /** The controller's DirectInput instance GUID. */
@@ -277,6 +346,23 @@ export const iracingBindingsContract = defineContract(
      */
     change: channel(ChangeRequestSchema, ChangeResultSchema, {
       describe: `Binds one iRacing action to a controller button or a key, or clears it, in iRacing's own file, after a backup. Refused while iRacing runs. ${EDIT_OFF}`,
+      tier: 'off',
+    }),
+
+    /** The controllers of one set that are not plugged in, and which of them are gone. */
+    goneDevices: channel(z.object({ set: z.string() }), GoneViewSchema, {
+      describe:
+        'Lists the controllers one iRacing binding set names that are not plugged in now, each with what RigReady makes of it: gone (never seen on this PC, so its bindings can be cleared), unplugged (known as the owner’s), moved (a new Windows id: the id repair on the racing iRacing page is the answer) or unknown. set is a set id from iracing-bindings:overview. Reads only.',
+      tier: 'read',
+    }),
+    /** Clearing the bindings of the chosen gone controllers, as it would be. Writes nothing. */
+    clearGonePreview: channel(ClearGoneRequestSchema, ClearGoneReviewSchema, {
+      describe: `Shows which bindings clearing the chosen gone controllers of one iRacing set would remove, and the file change. Only controllers goneDevices calls gone are accepted. Writes nothing. ${EDIT_OFF}`,
+      tier: 'off',
+    }),
+    /** Clears them in the set's controls.cfg through FileStore. Refused while iRacing runs. */
+    clearGone: channel(ClearGoneRequestSchema, ClearGoneResultSchema, {
+      describe: `Clears every binding of the chosen gone controllers in one iRacing set's controls.cfg, after a backup, as one change Undo reverses. Refused while iRacing runs, and for a controller that is not gone. ${EDIT_OFF}`,
       tier: 'off',
     }),
 

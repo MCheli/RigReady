@@ -68,13 +68,17 @@ function setupDevices(ctx: MainContext) {
     const names = data.ok ? data.value.names : [];
     // What the user said each device is, for the same askers (`whatIs`).
     const what = data.ok ? data.value.whatItIs : [];
+    // Where and when each device was seen, for `known`. A history that cannot be read
+    // gives no answer at all, never "not seen".
+    const history = await stores.history.read();
+    const seen = history.ok ? history.value.seen : undefined;
     // Nothing named and nothing said: there is nothing to find, so the machine is not asked.
-    if (names.length === 0 && what.length === 0) return deviceNames([], []);
+    if (names.length === 0 && what.length === 0) return deviceNames([], [], [], [], seen);
     // The asker's own list when it has one: the devices are never listed twice for one answer.
     const listed = present ? ok(present) : await ports.devices.list();
     // The controllers as the shared reader has them now (never started from here): they
     // say which of several identical devices a DirectInput GUID is.
-    return deviceNames(names, listed.ok ? listed.value : [], ports.input.devices(), what);
+    return deviceNames(names, listed.ok ? listed.value : [], ports.input.devices(), what, seen);
   });
 
   /** The setup Fly shows: the one used last, else the first. */

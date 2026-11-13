@@ -3,6 +3,7 @@ import { listenForPresses } from '../../core/inputPresses';
 import { ok } from '../../core/result';
 import { iracingBindingsContract } from './contract';
 import { applyChange, editingOn, pressedOf, refuseWhenOff, reviewChange } from './core/change';
+import { clearGone, goneDevices, reviewClearGone } from './core/cleanup';
 import { overview, setView, type BindingsContext } from './core/view';
 
 /**
@@ -36,6 +37,17 @@ export default defineFeatureMain({
 
         changePreview: async (request) => reviewChange(bctx, request, await ctx.names.devices()),
         change: async (request) => applyChange(bctx, request, await ctx.names.devices()),
+
+        // Controllers that are gone: which they are, and clearing their bindings.
+        goneDevices: async ({ set }) => goneDevices(bctx, set, await ctx.names.devices()),
+        clearGonePreview: async (request) =>
+          reviewClearGone(bctx, request, await ctx.names.devices()),
+        async clearGone(request) {
+          const cleared = await clearGone(bctx, request, await ctx.names.devices());
+          // Cheat sheets, the overlay and the guides read the same file.
+          if (cleared.ok) ctx.bindings.notifyChanged({ game: 'iracing' });
+          return cleared;
+        },
 
         async listenStart() {
           const on = refuseWhenOff();

@@ -17,6 +17,7 @@ import {
 } from '../contract';
 import DeviceState from './DeviceState.vue';
 import EditDialog from './EditDialog.vue';
+import GoneDevices from './GoneDevices.vue';
 
 /**
  * Every action of one iRacing binding set and what it is bound to. As shipped it only
@@ -438,6 +439,12 @@ const cheatSheet = computed(() => ({
               </div>
             </div>
           </section>
+
+          <GoneDevices
+            :set="view.set.id"
+            :editing="overview.editing"
+            :repair-route="overview.repairRoute"
+          />
 
           <section class="ib-section" data-testid="iracing-bindings-shared">
             <div class="ib-section-head">
