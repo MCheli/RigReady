@@ -14,7 +14,7 @@ The window has two modes, switched at the top left or with Ctrl+1 and Ctrl+2.
 | Setups | [Setups](../setups/index.md), [Backups](../protect/backups.md), [Share](../protect/sharing.md) |
 | Games | [Games](../games/index.md), and from its cards the [DCS World](../dcs/index.md) and [Racing](../games/index.md#configure-games-racing) pages |
 | Controls | Bindings, with a game picker: [DCS](../dcs/bindings.md) or [iRacing](../games/iracing-bindings.md); [Binding guide](../dcs/binding-guide-and-ai.md) (DCS aircraft), [Cheat sheets](../dcs/cheat-sheets.md), [Overlay](../play/overlay.md) |
-| Hardware | [Devices](../hardware/devices.md), [Monitors](../monitors-and-audio/index.md), [Audio](../monitors-and-audio/audio.md), [Wheel](../games/wheel.md), [Stream Deck](../hardware/stream-deck.md), [TrackIR](../hardware/trackir.md) |
+| Hardware | [Devices](../hardware/devices.md), [Monitors](../monitors-and-audio/index.md), [Audio](../monitors-and-audio/audio.md), [Wheel](../games/wheel.md), [Stream Deck](../hardware/stream-deck.md), [TrackIR](../hardware/trackir.md), [Virtual controller](../hardware/virtual-controller.md) |
 | RigReady | [Settings](../app/settings.md), [Safety](../protect/safety-page.md), [Diagnostics](../app/diagnostics.md) |
 
 ![Bindings with its Game picker open above the DCS bindings](../../../artifacts/screens/games-menu-bindings/02-picker-open.png)

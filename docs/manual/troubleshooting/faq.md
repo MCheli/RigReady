@@ -16,7 +16,7 @@ Only when you ask it to, and never without a copy first. A [restore](../protect/
 
 ## Can I use it without DCS?
 
-Yes. The [Play screen](../play/index.md), setups, checks, monitors, audio, backups, devices and the [input tester](../hardware/input-tester.md) work for any game. The racing games have their own pages, and any other game works with a setup of its own: a checklist, a launch target and tracked files. The DCS pages simply say DCS was not found. See [games](../games/index.md).
+Yes. The [Play screen](../play/index.md), setups, checks, monitors, audio, backups, devices and the [input tester](../hardware/input-tester.md) work for any game. The racing games have their own pages. A game RigReady does not know can be added on the Games page ([Other games](../games/other-games.md)), or used with a setup of its own: a checklist, a launch target and tracked files. The DCS pages simply say DCS was not found. See [games](../games/index.md).
 
 ## Can I use it on several PCs?
 
@@ -32,7 +32,7 @@ No. It uses the network only to check for [updates](../app/updates.md), which yo
 
 ## What does "not yet verified on real hardware" mean?
 
-A few features passed their tests on recorded data from one rig but have not been tried in the real game or on the real device yet. The app marks them, and the [changelog](../../../CHANGELOG.md) lists them under known limitations: a [binding written by RigReady](../dcs/bindings.md) checked in DCS's own controls screen, [MFD displays](../dcs/screens.md) drawn by DCS from RigReady's monitor setup with SimAppPro closed, the [iRacing device ID repair](../games/iracing.md) with a wheel whose ID really changed, [restoring a Stream Deck backup](../hardware/stream-deck.md) file by file, the [taskbar](../one-click/taskbar.md) badge and buttons on a real taskbar, the [ready tone](../play/the-menu.md)'s sound and a real press of the [hotkey](../one-click/hotkey.md). They work as far as tests can tell; treat them with a little more care.
+A few features passed their tests on recorded data from one rig but have not been tried in the real game or on the real device yet. The app marks them, and the [changelog](../../../CHANGELOG.md) lists them under known limitations: a [binding written by RigReady](../dcs/bindings.md) checked in DCS's own controls screen, [MFD displays](../dcs/screens.md) drawn by DCS from RigReady's monitor setup with SimAppPro closed, the [iRacing device ID repair](../games/iracing.md) with a wheel whose ID really changed, [restoring a Stream Deck backup](../hardware/stream-deck.md) file by file, the [taskbar](../one-click/taskbar.md) badge and buttons on a real taskbar, the [ready tone](../play/the-menu.md)'s sound, a real press of the [hotkey](../one-click/hotkey.md), and the [overlay](../play/overlay.md) over a running game. They work as far as tests can tell; treat them with a little more care.
 
 ## Is it free?
 
