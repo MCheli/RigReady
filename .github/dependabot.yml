@@ -23,32 +23,6 @@ updates:
       # when both support it.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
-      # Build and test toolchain: no majors until 2.0.0 is out, so the release is built
-      # by the tools it was tested with. Remove this block after the 2.0.0 release.
-      - dependency-name: "vite"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "electron-vite"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@vitejs/*"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "vite-plugin-vuetify"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "vitest"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@vitest/*"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "electron-builder"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "electron-updater"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@playwright/test"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "vue-tsc"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "typescript-eslint"
-        update-types: ["version-update:semver-major"]
     # Patch and minor updates are grouped (one PR for dev, one for prod).
     # Anything not matched by a group, i.e. majors that are not ignored above, gets its own PR.
     groups:
