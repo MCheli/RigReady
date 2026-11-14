@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.1 (not released)
+
+A fix for monitors turned sideways.
+
+- A monitor turned to portrait had its supported sizes read turned, so a monitor layout that changes its size or refresh rate could be refused with "does not offer", although the monitor offers it. RigReady now reads the sizes the right way round in every orientation. Monitors in landscape, and layouts that keep a sideways monitor's size, were not affected.
+
 ## 2.0.0 (2026-11-13)
 
 A rebuild from the ground up. Nothing of 1.1.0's code or update channel carries over. The setup files version 1 left in `~/.rigready` are left as they are: they are listed apart on the Setups page, where one can be brought over as a new setup from the parts that convert exactly, or deleted. RigReady 1 also left "Keep in the tray" switched off in the settings file, behind a switch nobody could use; this version ignores that value, so closing the window keeps RigReady in the tray. A 2.0 beta (up to beta 4) that saved the settings kept the off value as a choice: if closing the window quits RigReady, turn on **Keep RigReady in the tray when you close the window** once in Configure > Settings.
