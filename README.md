@@ -21,9 +21,7 @@ People with a flight or racing rig on a PC that is also used for other things. G
 
 ## Status
 
-Version 2.0.0 is a rebuild from the ground up, and it is what this page describes. It is in final testing and **not published yet**: there is no 2.0 installer to download, and the only way to run it today is from source (below). When it is published, the installer will be on the [download page](https://rigready.io/download/) and under [Releases](https://github.com/MCheli/RigReady/releases).
-
-The installer on the Releases page today is version 1.1.0, the first RigReady, from February 2026. Version 2.0 replaces it. It does not use version 1's setups as they are, but lists them apart and can bring one over as a new setup; 1.1.0 does not update itself to 2.0.
+Version 2.0.0, released 13 November 2026, is a rebuild from the ground up, and it is what this page describes. The installer is on the [download page](https://rigready.io/download/) and under [Releases](https://github.com/MCheli/RigReady/releases). It replaces version 1.1.0, the first RigReady, from February 2026: it does not read version 1's setups as they are, and 1.1.0 does not update itself to 2.0.
 
 `docs/requirements/ledger.yaml` lists every requirement with its status and the evidence for it; `CHANGELOG.md` summarises what 2.0.0 contains and what is still open.
 

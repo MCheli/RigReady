@@ -16,8 +16,6 @@ Say what you found, which version, and how to reproduce it. A diagnostics report
 | Older 2.x releases | No: update to the newest one |
 | 1.1.0 and earlier | No. Version 1 does not update itself; install 2.x from rigready.io/download |
 
-Version 2.0.0 is in final testing and not published yet. Until it is, the only public installer is 1.1.0, which gets no fixes.
-
 ## What the program touches
 
 - **Runs as you, never as administrator.** The installer is per user (`%LOCALAPPDATA%\Programs\RigReady`), nothing asks for elevation, and the registry is only read, except the per-user "start with Windows" entry.
