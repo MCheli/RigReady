@@ -61,6 +61,7 @@ Whether portrait on these panels is rotation **90 or 270** has not been read fro
 
 - The MFD screens only offer one mode, 1024x768 (EDID and `WmiMonitorListedSupportedSourceModes`). Portrait is therefore a rotation, not a different resolution.
 - In the Windows display configuration API the source mode keeps the unrotated size (1024x768) when rotation is 90/270; the desktop sees the turned size (768x1024). `DisplayInfo.width/height` are the desktop size. `rawRotation` is the untouched `DISPLAYCONFIG_ROTATION` value (1=0°, 2=90°, 3=180°, 4=270°).
+- GDI (`EnumDisplaySettingsEx`) is the other way round: it lists only the modes of the orientation a monitor has now, turned as the desktop sees them, so a sideways MFD screen lists 768x1024 (measured 2026-11-13 on the Dell and the ultrawide by asking for every orientation: each portrait entry is the landscape one turned). `DisplayInfo.modes` are unrotated all the same: the platform turns them back (`src/core/displays/modes.ts`). This recording was made in landscape, so its modes are as Windows listed them.
 - The three MFD screens have the same EDID name and serial; they differ only in the instance part of their device path (`...reg0319#a&5a2ab1a5...`, `...a&618400bb...`, `...a&7e437000...`), which is what `DisplayInfo.id` holds. Which id is the left, centre or right panel is not known from the recording.
 - Disabling the primary, moving, rotating and re-enabling all worked through `SetDisplayConfig` on this rig, including the USB (indirect display) MFD screens.
 

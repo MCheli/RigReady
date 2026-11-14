@@ -5,7 +5,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { matchMonitors } from '../../src/core/displays/identity';
+import { matchMonitors, modelOf } from '../../src/core/displays/identity';
 import { layoutToTargets } from '../../src/core/displays/layouts';
 import { nullLogger } from '../../src/core/logger';
 import { buildUsbTree } from '../../src/core/usb';
@@ -15,6 +15,7 @@ import {
   DeviceInfoSchema,
   DisplayLayoutSchema,
   ProcessInfoSchema,
+  type DisplayInfo,
 } from '../../src/shared/models';
 
 const projectRoot = path.resolve(__dirname, '../..');
@@ -60,7 +61,8 @@ describe('real hardware (read-only)', () => {
     for (const d of displays) {
       console.log(
         `  ${d.name || '(unnamed)'} ${d.enabled ? `${d.width}x${d.height} @${d.x},${d.y} rot ${d.rotation} (raw ${d.rawRotation}) ${d.refreshHz ?? '?'} Hz` : 'off'}${d.primary ? ' primary' : ''}` +
-          ` | ${d.connector ?? '?'} | serial ${d.serial ?? '-'} | usb ${d.usbId ?? '-'} ${d.usbSerial ?? '-'} | ${d.modes?.length ?? 0} modes`
+          // Whether it has a serial, never the serial itself: this output can end up in public.
+          ` | ${d.connector ?? '?'} | serial ${d.serial ? 'yes' : '-'} | usb ${d.usbId ?? '-'} serial ${d.usbSerial ? 'yes' : '-'} | ${d.modes?.length ?? 0} modes`
       );
     }
   });
@@ -71,7 +73,9 @@ describe('real hardware (read-only)', () => {
     if (!result.ok) return;
     const { displays } = result.value;
     for (const d of displays) expect(d.connector, d.name).toBeTruthy();
-    // An enabled monitor lists its modes, and its current mode is one of them.
+    // An enabled monitor lists its modes, and its current mode is one of them. Modes are
+    // unrotated (Windows lists them turned while a monitor is sideways, and the platform
+    // turns them back), so a sideways monitor's desktop size is turned back to compare.
     for (const d of displays.filter((m) => m.enabled)) {
       expect(d.modes?.length ?? 0, `${d.name} modes`).toBeGreaterThan(0);
       const sideways = d.rotation === 90 || d.rotation === 270;
@@ -93,8 +97,9 @@ describe('real hardware (read-only)', () => {
       if (same.length < 2) continue;
       const keys = same.map((d) => d.usbSerial ?? d.serial ?? '');
       const distinct = new Set(keys.filter(Boolean)).size === same.length;
+      const kind = same.every((d) => d.usbSerial) ? 'USB device serial' : 'EDID serial';
       console.log(
-        `  ${same.length} x ${model}: ${distinct ? 'told apart by serial' : 'told apart only by connector'} (${keys.join(', ')})`
+        `  ${same.length} x ${model}: ${distinct ? `told apart by ${kind}` : 'told apart only by connector'}`
       );
       // A USB screen always has a USB device above it.
       for (const d of same.filter((m) => m.connector === 'USB')) {
@@ -107,6 +112,7 @@ describe('real hardware (read-only)', () => {
     const result = await ports.displays.read();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
+    const now = result.value.displays;
     const fixture = DisplayLayoutSchema.parse(
       JSON.parse(
         await fs.readFile(
@@ -115,16 +121,71 @@ describe('real hardware (read-only)', () => {
         )
       )
     );
-    const matches = matchMonitors(layoutToTargets(fixture), result.value.displays);
-    const missing = matches.filter((m) => !m.actual).map((m) => m.expected.name);
-    console.log(
-      `  fixture mark-full: ${fixture.displays.length} monitors, this PC: ${result.value.displays.length}; matched by ${matches.map((m) => m.how ?? 'nothing').join(', ')}`
-    );
+    // The fixture's ids and serials are made up (the repository holds no real ones), so it
+    // is compared by model and count; the real identities are checked on this PC below.
+    const modelKey = (d: DisplayInfo): string => (d.edid ?? modelOf(d.id) ?? d.name).toUpperCase();
+    const byModel = (list: DisplayInfo[]): Record<string, number> => {
+      const counts: Record<string, number> = {};
+      for (const d of [...list].sort((a, b) => modelKey(a).localeCompare(modelKey(b)))) {
+        counts[modelKey(d)] = (counts[modelKey(d)] ?? 0) + 1;
+      }
+      return counts;
+    };
+    const told = (counts: Record<string, number>): string =>
+      Object.entries(counts)
+        .map(([model, count]) => `${count} x ${model}`)
+        .join(', ');
+    const recorded = byModel(fixture.displays);
+    const connected = byModel(now);
+    console.log(`  fixture mark-full: ${told(recorded)}; this PC: ${told(connected)}`);
     // A monitor that is gone, or a new one (the TV), means the fixture should be recorded again.
-    expect(missing, 'fixture monitors not connected now').toEqual([]);
-    expect(result.value.displays.length, 'monitor count as recorded in the fixture').toBe(
-      fixture.displays.length
+    expect(connected, 'monitors by model, as recorded in the fixture').toEqual(recorded);
+
+    // What follows a monitor from port to port: the serial of the USB device a USB screen
+    // hangs off, else its EDID serial. A monitor the fixture knows by its USB device has
+    // one here too, and identical monitors have one each, all different.
+    const identity = (d: DisplayInfo): string | undefined => d.usbSerial ?? d.serial;
+    for (const model of Object.keys(recorded)) {
+      const same = now.filter((d) => modelKey(d) === model);
+      if (fixture.displays.some((d) => modelKey(d) === model && d.usbSerial)) {
+        for (const d of same) expect(d.usbSerial, `${d.name} USB device serial`).toBeTruthy();
+      }
+      if (same.length < 2) continue;
+      const identities = same.map(identity);
+      expect(
+        identities.every(Boolean) && new Set(identities).size === same.length,
+        `${same.length} x ${model} have ${same.length} different identities`
+      ).toBe(true);
+    }
+
+    // Read again: the same identities, and with every monitor's connector changed (ids that
+    // match nothing now), each is found again as itself; identical ones by their serial.
+    const again = await ports.displays.read();
+    expect(again.ok).toBe(true);
+    if (!again.ok) return;
+    // Compared as yes or no, so that a failure does not print a real serial or device path.
+    const firstRead = now.map(identity);
+    const secondRead = again.value.displays.map(identity);
+    expect(
+      secondRead.length === firstRead.length && secondRead.every((id, i) => id === firstRead[i]),
+      'the same identities on a second read'
+    ).toBe(true);
+    const elsewhere = (id: string): string =>
+      id
+        .split('#')
+        .map((part, i) => (i === 2 ? 'another-port' : part))
+        .join('#');
+    const moved = layoutToTargets(result.value).map((t) => ({ ...t, id: elsewhere(t.id) }));
+    const matches = matchMonitors(moved, again.value.displays);
+    console.log(
+      `  every connector changed: found by ${matches.map((m) => m.how ?? 'nothing').join(', ')}`
     );
+    matches.forEach((m, i) => {
+      expect(m.actual?.id === now[i]!.id, `${m.expected.name} found again as itself`).toBe(true);
+      if (connected[modelKey(now[i]!)]! > 1) {
+        expect(['usb', 'serial'], `${m.expected.name} found by its serial`).toContain(m.how);
+      }
+    });
   });
 
   it('lists processes including this one, with image paths', async () => {
