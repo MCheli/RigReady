@@ -146,7 +146,7 @@
     "@vitest/coverage-v8": "^5.0.3",
     "axe-core": "^4.13.0",
     "cross-env": "^10.0.0",
-    "electron": "^44.10.1",
+    "electron": "^44.11.3",
     "electron-builder": "^26.18.1",
     "electron-updater": "^6.8.9",
     "electron-vite": "^6.0.0",
