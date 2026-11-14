@@ -1,6 +1,7 @@
 import type { DisplayApplyOutcome, DisplayProvider } from '../../core/ports';
 import { err, ok, type Result } from '../../core/result';
 import { connectorName, monitorInstanceId, parseEdid, usbIdentity } from '../../core/displays/edid';
+import { unrotatedModes } from '../../core/displays/modes';
 import type {
   DisplayInfo,
   DisplayLayout,
@@ -181,7 +182,8 @@ const ENUM_CURRENT_SETTINGS = 0xffffffff;
 /**
  * What the older GDI API calls the orientation of an enabled display: 0 landscape,
  * 1 portrait (DMDO_90), 2 landscape flipped, 3 portrait flipped (DMDO_270), in the order
- * of Windows' own orientation list. For diagnosis and the rig smoke test.
+ * of Windows' own orientation list. Turns the listed modes back (displayModes); also for
+ * diagnosis and the rig smoke test.
  */
 export function gdiOrientation(gdiName: string): number | undefined {
   const devMode = Buffer.alloc(DEVMODE_SIZE);
@@ -190,25 +192,25 @@ export function gdiOrientation(gdiName: string): number | undefined {
   return devMode.readUInt32LE(DM_ORIENTATION);
 }
 
-/** Every mode Windows lists for an enabled display, unrotated, largest first. */
+/**
+ * Every mode Windows lists for an enabled display, unrotated, largest first. GDI lists
+ * them turned while the display is sideways (768x1024 for a 1024x768 screen in portrait);
+ * unrotatedModes turns them back.
+ */
 function displayModes(gdiName: string): DisplayMode[] {
-  const seen = new Map<string, DisplayMode>();
+  const listed: DisplayMode[] = [];
   const devMode = Buffer.alloc(DEVMODE_SIZE);
   for (let index = 0; index < 4000; index++) {
     devMode.fill(0);
     devMode.writeUInt16LE(DEVMODE_SIZE, DM_SIZE);
     if (EnumDisplaySettingsExW(gdiName, index, devMode, 0) === 0) break;
-    const mode: DisplayMode = {
+    listed.push({
       width: devMode.readUInt32LE(DM_WIDTH),
       height: devMode.readUInt32LE(DM_HEIGHT),
       refreshHz: devMode.readUInt32LE(DM_FREQUENCY),
-    };
-    if (mode.width === 0 || mode.height === 0) continue;
-    seen.set(`${mode.width}x${mode.height}@${mode.refreshHz}`, mode);
+    });
   }
-  return [...seen.values()].sort(
-    (a, b) => b.width * b.height - a.width * a.height || b.refreshHz - a.refreshHz
-  );
+  return unrotatedModes(listed, gdiOrientation(gdiName));
 }
 
 function sourceName(paths: Buffer, offset: number): string {
