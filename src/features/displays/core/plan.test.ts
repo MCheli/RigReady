@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DisplayInfo, DisplayTarget } from '../../../shared/models';
 import { matchMonitors, modelOf } from './identity';
 import { checkMonitorName, monitorLabels, monitorNumbers, orientationText } from './labels';
-import { analyzeLayout, joinNames } from './plan';
+import { analyzeLayout, joinNames, type LayoutTarget } from './plan';
 
 const mfd = (instance: string, x: number, extra: Partial<DisplayInfo> = {}): DisplayInfo => ({
   id: `\\\\?\\display#reg0319#${instance}&0&uid256#{e6f07b5f}`,
@@ -173,6 +173,32 @@ describe('analyzeLayout', () => {
     );
     expect(overlapping.problems).toEqual(['LC49G95T and USB_Monitor overlap.']);
     expect(overlapping.targets[1]).not.toHaveProperty('width');
+  });
+
+  it('judges a monitor that is sideways now by its unrotated modes: a size or rate it lists is no problem', () => {
+    // As the platform reads a portrait MFD screen: the desktop size turned, the modes not.
+    const sideways = mfd('a&1', 5120, {
+      refreshHz: 60,
+      modes: [
+        { width: 1024, height: 768, refreshHz: 75 },
+        { width: 1024, height: 768, refreshHz: 60 },
+        { width: 800, height: 600, refreshHz: 60 },
+      ],
+    });
+    const current = [ultrawide, sideways];
+    const layoutWith = (change: Partial<LayoutTarget>): LayoutTarget[] => [
+      asTarget(ultrawide),
+      { ...asTarget(sideways), ...change },
+    ];
+    expect(analyzeLayout(layoutWith({ refreshHz: 75 }), current).problems).toEqual([]);
+    expect(analyzeLayout(layoutWith({ width: 600, height: 800 }), current).problems).toEqual([]);
+    expect(
+      analyzeLayout(layoutWith({ width: 600, height: 800, refreshHz: 60 }), current).problems
+    ).toEqual([]);
+    // A rate it does not list is still refused, named as the screen has it, unrotated.
+    expect(analyzeLayout(layoutWith({ refreshHz: 120 }), current).problems).toEqual([
+      'USB_Monitor does not offer 1024x768 at 120 Hz.',
+    ]);
   });
 
   it('when the main display is missing another one takes over', () => {

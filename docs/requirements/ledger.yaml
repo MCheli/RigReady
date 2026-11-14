@@ -2064,8 +2064,13 @@ requirements:
       - "A layout may specify resolution and refresh rate per monitor; apply sets them only if the mode is in the monitor's supported mode list, otherwise it reports which monitor/mode is unsupported and applies nothing."
       - "Unit test with fake DisplayProvider modes covers supported and unsupported modes."
       - "A layout saved from the monitors carries each one's refresh rate: a monitor running at another rate is a difference on the card and in the apply preview (words and the picture: 'changes to 120 Hz'), and applying hands the rate to the display port and reads it back."
+    notes:
+      - "2026-11-13: found by tests/rig/read.rig.test.ts with the three MFD screens in portrait ('USB_Monitor 1024x768 is a listed mode: expected false'). The supported mode list of a sideways monitor was read turned: GDI's EnumDisplaySettingsEx lists only the modes of the orientation a monitor has now, as the desktop sees them (768x1024 for a 1024x768 screen in portrait; measured on the Dell and the ultrawide by asking for every orientation, each portrait entry is the landscape one turned). The list is meant to be unrotated, and the layout check compares it that way, so a layout asking a sideways monitor for another size or refresh rate it does offer would have been refused with 'does not offer'. Fixed: the platform turns the list back from the monitor's GDI orientation (src/core/displays/modes.ts). Not yet seen on the real screens: the MFD screens were off when the fix was made, so tests/rig/read.rig.test.ts runs again once they are on."
     status: done
     evidence:
+      - "src/core/displays/modes.test.ts#turns back the modes of a portrait monitor: a 1024x768 screen sideways lists 768x1024"
+      - "src/core/displays/modes.test.ts#keeps every size and refresh rate of a sideways list once, unrotated, largest then fastest"
+      - "src/features/displays/core/plan.test.ts#judges a monitor that is sideways now by its unrotated modes: a size or rate it lists is no problem"
       - "src/features/displays/core/service.test.ts#saves the refresh rate of each monitor, shows it, says when it differs, and applies it; a layout without one still applies"
       - "src/features/displays/core/layoutCheck.test.ts#compares the refresh rate only when the layout gives one"
       - "tests/e2e/displays.e2e.ts#monitors: a saved layout keeps each refresh rate, says when Windows runs another, and puts it back"
