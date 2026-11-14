@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { isSecurityRelease } from '../../src/core/updateMarker';
 import { repoRoot, tempDir } from '../helpers';
 
 /**
@@ -104,6 +105,19 @@ describe('release notes from the changelog', () => {
     expect(missing.stderr).toContain('no "## 2.0.1" section');
     // "2.0" is not "2.0.0": a prefix never passes for a version.
     expect(run('2.0', out).status).toBe(1);
+  });
+
+  it('gives 2.0.1, a security release, notes the installed app reads as one', async () => {
+    // Dated here as the release commit dates it; the notes are then what the release carries.
+    const real = await fs.readFile(path.join(repoRoot, 'CHANGELOG.md'), 'utf8');
+    await fs.writeFile(
+      path.join(dir, 'CHANGELOG.md'),
+      real.replace('## 2.0.1 (not released)', '## 2.0.1 (2026-11-14)')
+    );
+    const out = path.join(dir, 'release-notes.md');
+    const result = run('2.0.1', out);
+    expect(result.status, result.stderr).toBe(0);
+    expect(isSecurityRelease(undefined, await fs.readFile(out, 'utf8'))).toBe(true);
   });
 
   it('is what the Release workflow runs for its tag, before the tests', async () => {
