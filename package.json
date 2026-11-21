@@ -133,7 +133,7 @@
     ]
   },
   "dependencies": {
-    "koffi": "^3.3.2"
+    "koffi": "^3.3.8"
   },
   "devDependencies": {
     "@mdi/font": "^7.4.47",
