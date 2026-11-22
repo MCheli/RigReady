@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.1 (not released)
+## 2.0.1 (2026-11-22)
 
 [security] A security update, and a fix for monitors turned sideways. Update now.
 
