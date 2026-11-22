@@ -93,7 +93,10 @@ if ($actual -ne $pythonSha256) {
 }
 if (Test-Path $pythonDir) { Remove-Item -Recurse -Force $pythonDir }
 New-Item -ItemType Directory -Force -Path $pythonDir | Out-Null
-Expand-Archive -Path $zip -DestinationPath $pythonDir -Force
+# Windows' own tar rather than Expand-Archive, for the same module-path reason: PS7's Archive
+# module calls a ZipFile.ExtractToDirectory overload that .NET Framework does not have.
+& (Join-Path $env:SystemRoot "System32\tar.exe") -xf $zip -C $pythonDir
+if ($LASTEXITCODE -ne 0) { throw "Could not extract the Python download (tar exit $LASTEXITCODE)" }
 Remove-Item $zip -Force
 
 if (-not (Test-Runtime)) { throw "The Python runtime in $pythonDir does not start" }

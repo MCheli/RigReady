@@ -1,9 +1,10 @@
 # Changelog
 
-## 2.0.1 (not released)
+## 2.0.1 (2026-11-22)
 
-A fix for monitors turned sideways.
+[security] A security update, and a fix for monitors turned sideways. Update now.
 
+- Electron, which RigReady is built on, is updated to 44.11.5 for its fixes to the Chromium browser engine, among them one for a flaw Google reports is being exploited (CVE-2026-125350), and for the Node.js security release of 2026-11-11 (Node.js 24.22.3).
 - A monitor turned to portrait had its supported sizes read turned, so a monitor layout that changes its size or refresh rate could be refused with "does not offer", although the monitor offers it. RigReady now reads the sizes the right way round in every orientation. Monitors in landscape, and layouts that keep a sideways monitor's size, were not affected.
 
 ## 2.0.0 (2026-11-13)
