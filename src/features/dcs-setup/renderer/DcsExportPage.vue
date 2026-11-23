@@ -119,9 +119,8 @@ const toolName = (tool?: string): string =>
     <template v-else-if="view">
       <p class="exp-intro">
         Each tool that reads data out of DCS adds a line to
-        <span class="rr-mono">{{ view.path }}</span
-        >. RigReady adds or removes one tool's line and leaves every other line exactly as it was,
-        line endings included.
+        <span class="rr-mono">{{ view.path }}</span>. RigReady adds or removes one tool's line and
+        leaves every other line exactly as it was, line endings included.
       </p>
 
       <v-alert v-if="view.dcsRunning" type="info" variant="tonal" class="mb-4">

@@ -507,8 +507,8 @@ const kindIcon = (b: BackupView): string =>
     </div>
 
     <div v-if="view" class="rr-row-sub folder-line">
-      Backups are kept in <span class="rr-mono">{{ view.folder }}</span
-      >. Backups added from a file are never deleted automatically.
+      Backups are kept in <span class="rr-mono">{{ view.folder }}</span>. Backups added from a file
+      are never deleted automatically.
     </div>
 
     <v-dialog

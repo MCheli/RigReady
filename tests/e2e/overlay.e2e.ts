@@ -6,7 +6,7 @@ import type { OverlayState, PressRow } from '../../src/features/overlay/contract
 import { RECENT_PRESSES_SIZES, recentPresses } from '../../src/features/overlay/core/widgets';
 import type { InputState } from '../../src/shared/models';
 import { axeViolations, colourOnlyStatus, type Dom, type El } from './a11y';
-import { expect, openOption, screensDir, test } from './harness';
+import { expect, openOption, screensDir, setSwitch, test } from './harness';
 
 /**
  * The overlay: a small see-through window over the game that lists each press with what the
@@ -342,7 +342,7 @@ const toastSaying = (page: Page, text: string): Locator =>
 async function turnOn(app: ElectronApplication, page: Page): Promise<Page> {
   const [popup] = await Promise.all([
     app.waitForEvent('window'),
-    page.getByTestId('overlay-on').locator('input').check(),
+    setSwitch(page.getByTestId('overlay-on').locator('input'), true),
   ]);
   await popup.waitForLoadState('domcontentloaded');
   await expect(popup.getByTestId('overlay-window')).toHaveAttribute(
@@ -639,7 +639,7 @@ test('the overlay lists each press with what the game does on it, and lets it go
     .toEqual(two);
 
   // ---- Presses the game has nothing on, left out: the one that is listed goes at once ----
-  await page.getByTestId('overlay-show-unbound').locator('input').uncheck();
+  await setSwitch(page.getByTestId('overlay-show-unbound').locator('input'), false);
   await expect.poll(async () => (await options())['showUnbound']).toBe(false);
   await expect(lines).toHaveCount(1);
   await expect(newest.getByTestId('overlay-press-action')).toHaveText('RADAR Switch - CCW');
@@ -672,7 +672,7 @@ test('the overlay lists each press with what the game does on it, and lets it go
   expect(await accessible(page)).toEqual([]);
 
   // ---- Off again: the examples are back, at the size and with the number of lines set ----
-  await page.getByTestId('overlay-on').locator('input').uncheck();
+  await setSwitch(page.getByTestId('overlay-on').locator('input'), false);
   await expect(main).toHaveAttribute('data-on', 'false');
   await expect.poll(() => panels(app)).toEqual([]);
   await expect(shown).toHaveCount(0);
@@ -899,7 +899,7 @@ test('the overlay goes where it is put, stays there, and comes up again with Rig
   await shot(page, 'locked-on-leaving');
 
   // ---- Off: the window is gone, and the controllers are no longer read for it ----
-  await page.getByTestId('overlay-on').locator('input').uncheck();
+  await setSwitch(page.getByTestId('overlay-on').locator('input'), false);
   await expect(page.getByTestId('overlay-main')).toHaveAttribute('data-on', 'false');
   await expect(page.getByTestId('overlay-status')).toContainText('Off.');
   await expect.poll(() => panels(app)).toEqual([]);

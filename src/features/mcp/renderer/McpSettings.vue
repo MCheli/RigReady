@@ -200,9 +200,9 @@ onBeforeUnmount(() => {
       <p class="mt-2" data-testid="mcp-state" :data-running="String(status.running)">
         <template v-if="status.running && status.endpoint">
           <span class="rr-ok"><v-icon size="16" icon="mdi-check-circle" /> On</span>, listening at
-          <span class="rr-mono">{{ status.endpoint.url }}</span
-          >. Offers {{ status.catalogue.tools }} tools, {{ status.catalogue.resources }} kinds of
-          resource and {{ status.catalogue.prompts }} guided conversations.
+          <span class="rr-mono">{{ status.endpoint.url }}</span>. Offers
+          {{ status.catalogue.tools }} tools, {{ status.catalogue.resources }} kinds of resource and
+          {{ status.catalogue.prompts }} guided conversations.
         </template>
         <template v-else-if="status.problem">
           <span class="rr-bad"><v-icon size="16" icon="mdi-alert-circle" /> Not listening</span>:

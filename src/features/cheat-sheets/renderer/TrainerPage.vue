@@ -654,8 +654,7 @@ onBeforeUnmount(() => {
               <template v-if="phase === 'asking'">
                 <v-icon icon="mdi-gesture-tap-button" size="20" class="rr-muted" />
                 <span
-                  >Press the control for it on <strong>{{ places }}</strong
-                  >.</span
+                  >Press the control for it on <strong>{{ places }}</strong>.</span
                 >
               </template>
               <template v-else-if="phase === 'right' && answered">
@@ -668,17 +667,15 @@ onBeforeUnmount(() => {
                   <strong>Not that one.</strong> You pressed {{ wrong.where
                   }}<template v-if="wrong.does.length"
                     >, which is {{ wrong.does.join(' / ') }}</template
-                  >. It is <strong>{{ where }}</strong
-                  >, lit on the picture: press {{ answers.length > 1 ? 'one of them' : 'it' }} to go
-                  on.
+                  >. It is <strong>{{ where }}</strong>, lit on the picture: press
+                  {{ answers.length > 1 ? 'one of them' : 'it' }} to go on.
                 </span>
               </template>
               <template v-else-if="phase === 'shown'">
                 <v-icon icon="mdi-lightbulb-on-outline" size="20" class="rr-muted" />
                 <span>
-                  It is <strong>{{ where }}</strong
-                  >, lit on the picture. Press {{ answers.length > 1 ? 'one of them' : 'it' }} to go
-                  on.
+                  It is <strong>{{ where }}</strong>, lit on the picture. Press
+                  {{ answers.length > 1 ? 'one of them' : 'it' }} to go on.
                 </span>
               </template>
               <template v-else-if="phase === 'corrected' && answered">

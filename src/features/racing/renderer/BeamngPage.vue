@@ -283,8 +283,9 @@ async function copyToController(): Promise<void> {
             <div class="rr-section-title px-4 pt-3">Force feedback (in the steering binding)</div>
             <div class="rc-grid" data-testid="beamng-ffb">
               <div v-for="p in m.forceFeedback" :key="p.label" class="rc-pair">
-                <span class="rc-pair-label">{{ p.label }}</span
-                ><span class="rc-pair-value">{{ p.value }}</span>
+                <span class="rc-pair-label">{{ p.label }}</span><span class="rc-pair-value">{{
+                  p.value
+                }}</span>
               </div>
             </div>
           </template>

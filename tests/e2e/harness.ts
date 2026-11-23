@@ -353,6 +353,17 @@ export const test = base.extend<{ rig: Rig } & HarnessOptions>({
 
 export { expect };
 
+/**
+ * Turns a switch or tick on or off whose state is the rig's, not the page's: the control shows
+ * what the main process last reported, so it moves only once the change has been saved.
+ * Playwright's check() looks straight after the click and would say the click did nothing.
+ */
+export async function setSwitch(input: Locator, on: boolean): Promise<void> {
+  await expect(input).toBeEnabled();
+  if ((await input.isChecked()) !== on) await input.click();
+  await expect(input).toBeChecked({ checked: on });
+}
+
 /** The checklist row for a check title. */
 /**
  * A click after which RigReady hides its window (Launch does, unless told to stay). After a

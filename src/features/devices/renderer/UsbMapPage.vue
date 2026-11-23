@@ -162,8 +162,8 @@ watch(selected, () => void reveal());
         data-testid="usb-spare"
       >
         <div class="rr-row-sub mb-2">
-          Not needed by <strong>{{ map.activeProfile }}</strong
-          >, so these are the first to unplug or move when this controller runs short:
+          Not needed by <strong>{{ map.activeProfile }}</strong>, so these are the first to unplug
+          or move when this controller runs short:
         </div>
         <div v-for="s in c.spare" :key="s.key" class="usb-spare-row">
           <a href="#" @click.prevent="select(s.key)">{{ s.name }}</a>

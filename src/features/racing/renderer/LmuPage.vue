@@ -167,8 +167,8 @@ async function repair(): Promise<void> {
             </div>
             <div v-if="d.rename" class="lmu-fix" data-testid="lmu-repair-panel">
               <p class="mb-2">
-                Windows now calls this controller <strong>{{ d.rename.name }}</strong
-                >. Le Mans Ultimate finds its controllers by name, so
+                Windows now calls this controller <strong>{{ d.rename.name }}</strong>. Le Mans
+                Ultimate finds its controllers by name, so
                 {{
                   d.rename.bindings === 1 ? 'the 1 binding' : `the ${d.rename.bindings} bindings`
                 }}
@@ -185,8 +185,9 @@ async function repair(): Promise<void> {
             </div>
             <div v-if="d.forceFeedback.length" class="rc-grid lmu-pairs" data-testid="lmu-ffb">
               <div v-for="p in d.forceFeedback" :key="p.label" class="rc-pair">
-                <span class="rc-pair-label">{{ p.label }}</span
-                ><span class="rc-pair-value">{{ p.value }}</span>
+                <span class="rc-pair-label">{{ p.label }}</span><span class="rc-pair-value">{{
+                  p.value
+                }}</span>
               </div>
             </div>
           </div>
@@ -196,8 +197,9 @@ async function repair(): Promise<void> {
         </div>
         <div v-if="view.steering.length" class="rr-panel mt-3 rc-grid" data-testid="lmu-steering">
           <div v-for="p in view.steering" :key="p.label" class="rc-pair">
-            <span class="rc-pair-label">{{ p.label }}</span
-            ><span class="rc-pair-value">{{ p.value }}</span>
+            <span class="rc-pair-label">{{ p.label }}</span><span class="rc-pair-value">{{
+              p.value
+            }}</span>
           </div>
         </div>
       </section>
@@ -261,9 +263,9 @@ async function repair(): Promise<void> {
     >
       <div v-for="d in renamed" :key="d.key" data-testid="lmu-repair-what">
         <template v-if="d.rename?.exact">
-          The game already lists <strong>{{ d.rename.name }}</strong
-          >. RigReady points the {{ d.rename.bindings }} bindings made for
-          <strong>{{ d.name }}</strong> at it. Nothing else in the file changes.
+          The game already lists <strong>{{ d.rename.name }}</strong>. RigReady points the
+          {{ d.rename.bindings }} bindings made for <strong>{{ d.name }}</strong> at it. Nothing
+          else in the file changes.
         </template>
         <template v-else-if="d.rename">
           RigReady replaces <strong>{{ d.name }}</strong> with

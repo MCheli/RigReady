@@ -491,8 +491,7 @@ watch(
             </template>
             <template v-else-if="hidHide?.state === 'ok'">
               <p>
-                Cloaking is <strong>{{ hidHide.cloak ? 'on' : 'off' }}</strong
-                >{{
+                Cloaking is <strong>{{ hidHide.cloak ? 'on' : 'off' }}</strong>{{
                   hidHide.inverse
                     ? ' (inverse mode: listed programs are the ones that cannot see hidden devices)'
                     : ''
