@@ -173,10 +173,8 @@ const shortId = (guid: string): string =>
           </p>
           <ul class="rc-repair-list">
             <li v-for="c in toFix" :key="c.index" data-testid="ac-repair-item">
-              <strong>{{ c.givenName ?? c.name }}</strong
-              >: controller {{ c.index }} in controls.ini<template
-                v-if="c.now && c.now.number !== undefined"
-              >
+              <strong>{{ c.givenName ?? c.name }}</strong>: controller {{ c.index }} in
+              controls.ini<template v-if="c.now && c.now.number !== undefined">
                 becomes {{ c.now.number }}</template
               ><template v-if="c.state === 'moved' && c.now"> with its new Windows id</template> ({{
                 c.bindingCount
@@ -275,8 +273,9 @@ const shortId = (guid: string): string =>
         <h2 class="rr-section-title">Force feedback</h2>
         <div class="rr-panel rc-grid">
           <div v-for="p in view.forceFeedback" :key="p.label" class="rc-pair">
-            <span class="rc-pair-label">{{ p.label }}</span
-            ><span class="rc-pair-value">{{ p.value }}</span>
+            <span class="rc-pair-label">{{ p.label }}</span><span class="rc-pair-value">{{
+              p.value
+            }}</span>
           </div>
         </div>
       </section>

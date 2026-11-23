@@ -412,8 +412,8 @@ async function forget(): Promise<void> {
           </p>
           <p v-if="own.usedBy.length" class="remove-text" data-testid="game-remove-used">
             {{ own.usedBy.length === 1 ? 'This setup is' : 'These setups are' }} for it:
-            <strong>{{ own.usedBy.join(', ') }}</strong
-            >. {{ own.usedBy.length === 1 ? 'It keeps' : 'They keep' }} working, as
+            <strong>{{ own.usedBy.join(', ') }}</strong>.
+            {{ own.usedBy.length === 1 ? 'It keeps' : 'They keep' }} working, as
             {{ own.usedBy.length === 1 ? 'a setup' : 'setups' }} for “Another game” called
             {{ own.name }}, with the same checks and the same program to launch.
           </p>

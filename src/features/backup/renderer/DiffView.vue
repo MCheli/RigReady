@@ -68,8 +68,7 @@ const STATUS = { added: 'Added', removed: 'Removed', changed: 'Changed' } as con
               class="line rr-mono"
               :class="{ add: line.kind === '+', del: line.kind === '-' }"
             >
-              <span class="sign">{{ line.kind === ' ' ? '' : line.kind }}</span
-              >{{ line.text }}
+              <span class="sign">{{ line.kind === ' ' ? '' : line.kind }}</span>{{ line.text }}
             </div>
           </div>
         </div>

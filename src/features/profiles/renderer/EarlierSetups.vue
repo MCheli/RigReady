@@ -130,8 +130,7 @@ function ask(target: EarlierPlan | undefined): void {
             <div class="rr-row-sub rr-warn">RigReady cannot bring this setup over.</div>
             <ul class="earlier-list">
               <li v-for="part in reasons(plans[old.id]!)" :key="part.title">
-                <strong>{{ part.title }}</strong
-                >: {{ part.why }}
+                <strong>{{ part.title }}</strong>: {{ part.why }}
               </li>
             </ul>
             <div class="rr-row-sub">
@@ -186,8 +185,8 @@ function ask(target: EarlierPlan | undefined): void {
           <p v-if="asking.checks.length > 0" class="earlier-head">It checks:</p>
           <ul class="earlier-list" data-testid="profile-bring-checks">
             <li v-for="check in asking.checks" :key="check.title">
-              <strong>{{ check.title }}</strong
-              >: {{ check.what }}{{ check.required ? '' : ' (optional)' }}
+              <strong>{{ check.title }}</strong>: {{ check.what
+              }}{{ check.required ? '' : ' (optional)' }}
             </li>
           </ul>
           <p v-if="asking.launch" data-testid="profile-bring-launch">
@@ -197,8 +196,7 @@ function ask(target: EarlierPlan | undefined): void {
             <p class="earlier-head">Not brought over:</p>
             <ul class="earlier-list" data-testid="profile-bring-left">
               <li v-for="part in asking.left" :key="part.title">
-                <strong>{{ part.title }}</strong
-                >: {{ part.why }}
+                <strong>{{ part.title }}</strong>: {{ part.why }}
               </li>
             </ul>
           </template>

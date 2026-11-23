@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { unzipSync } from 'fflate';
 import type { ElectronApplication } from '@playwright/test';
-import { expect, screensDir, test } from './harness';
+import { expect, screensDir, setSwitch, test } from './harness';
 
 /** What the app put on the (fake) clipboard, oldest first. */
 const clipboard = (app: ElectronApplication): Promise<string[]> =>
@@ -50,7 +50,7 @@ test('diagnostics: versions, games, devices and the recent log; copy, open the l
   await expect(entries.first()).toBeVisible();
 
   // Detailed log: a setting, written to the log itself.
-  await root.getByTestId('diagnostics-detailed').locator('input').check();
+  await setSwitch(root.getByTestId('diagnostics-detailed').locator('input'), true);
   await expect
     .poll(
       // The file does not exist until the first setting is saved: not there yet is not an error.

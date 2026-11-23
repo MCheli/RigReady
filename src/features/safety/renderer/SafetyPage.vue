@@ -83,8 +83,8 @@ const fileCount = (n: number): string => `${n} ${n === 1 ? 'file' : 'files'}`;
     <template v-if="view">
       <div class="rr-row-sub safety-usage" data-testid="safety-usage">
         Automatic backups use {{ size(view.backupBytes) }} in
-        <span class="rr-mono">{{ view.backupFolder }}</span
-        >. They are kept {{ view.retention.autoBackupDays }} days; the newest
+        <span class="rr-mono">{{ view.backupFolder }}</span>. They are kept
+        {{ view.retention.autoBackupDays }} days; the newest
         {{ view.retention.autoBackupGroups }} changes are always kept.
       </div>
 

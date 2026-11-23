@@ -671,8 +671,7 @@ const cheatSheet = computed(() => ({
             </div>
             <p class="ib-foot">
               Read from
-              <span class="rr-mono" data-testid="iracing-bindings-file">{{ view.set.file }}</span
-              >.
+              <span class="rr-mono" data-testid="iracing-bindings-file">{{ view.set.file }}</span>.
               <template v-if="overview.repairRoute">
                 Backups of these files and the repair of a controller id are on the
                 <router-link :to="overview.repairRoute" data-testid="iracing-bindings-racing-link"

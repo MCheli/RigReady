@@ -757,8 +757,8 @@ onBeforeUnmount(() => {
             <template v-else>DCS uses its default single screen</template>
           </div>
           <div class="rr-row-sub">
-            RigReady writes its own file, <span class="rr-mono">{{ state.rigReady.path }}</span
-            >, and never changes SimAppPro's or anyone else's.
+            RigReady writes its own file, <span class="rr-mono">{{ state.rigReady.path }}</span>,
+            and never changes SimAppPro's or anyone else's.
           </div>
         </div>
         <v-btn
@@ -1213,8 +1213,7 @@ onBeforeUnmount(() => {
                 data-testid="screens-setup"
                 :data-id="s.id"
               >
-                <strong>{{ s.name }}</strong
-                >: {{ s.items.map(followLine).join('; ') }}
+                <strong>{{ s.name }}</strong>: {{ s.items.map(followLine).join('; ') }}
               </li>
             </ul>
             <p class="rr-row-sub">{{ followNote }}</p>

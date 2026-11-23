@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
-import { checkRow, expect, test, type RunningApp } from './harness';
+import { checkRow, expect, setSwitch, test, type RunningApp } from './harness';
 import { expectSaveBarPinned } from './saveBar';
 
 /**
@@ -1172,7 +1172,7 @@ test('cheat sheets: the kneeboard check is added to a setup from the kneeboard d
   await expect(setup).toHaveCount(1);
   await expect(setup).toContainText('DCS F/A-18C');
   await expect(setup).toHaveAttribute('data-checked', 'false');
-  await setup.locator('input').check();
+  await setSwitch(setup.locator('input'), true);
   await expect(page.getByTestId('kneeboard-setup-note')).toContainText(
     '"DCS F/A-18C" now checks the F/A-18C kneeboard pages'
   );
@@ -1204,7 +1204,7 @@ test('cheat sheets: the kneeboard check is added to a setup from the kneeboard d
   await openSheets(page);
   await page.getByTestId('sheet-kneeboard').click();
   await expect(setup).toHaveAttribute('data-checked', 'true');
-  await setup.locator('input').uncheck();
+  await setSwitch(setup.locator('input'), false);
   await expect(page.getByTestId('kneeboard-setup-note')).toContainText(
     '"DCS F/A-18C" no longer checks these kneeboard pages'
   );

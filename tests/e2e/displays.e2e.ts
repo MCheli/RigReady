@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { axeViolations, colourOnlyStatus } from './a11y';
-import { checkRow, expect, test } from './harness';
+import { checkRow, expect, setSwitch, test } from './harness';
 
 /** The Monitors page, saved layouts, the display check and its fix. */
 
@@ -1096,7 +1096,7 @@ test('an assistant asks for Make ready: the question names the assistant and giv
   await page.getByTestId('mode-configure').click();
   await page.getByTestId('nav-settings').click();
   await page.getByTestId('mcp-settings').scrollIntoViewIfNeeded();
-  await page.getByTestId('mcp-enable').locator('input').check();
+  await setSwitch(page.getByTestId('mcp-enable').locator('input'), true);
   await expect(page.getByTestId('mcp-state')).toHaveAttribute('data-running', 'true');
   const state = await page.getByTestId('mcp-state').innerText();
   const url = /http:\/\/127\.0\.0\.1:\d+\/mcp/.exec(state)?.[0];

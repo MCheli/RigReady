@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { ElectronApplication, Page } from '@playwright/test';
 import { axeViolations, colourOnlyStatus } from './a11y';
-import { expect, openOption, test } from './harness';
+import { expect, openOption, setSwitch, test } from './harness';
 
 /**
  * The overlay as a choice of each setup, and the screen it goes on: on the recorded rig at the
@@ -67,7 +67,7 @@ test('the overlay is a choice of each setup, and can go with the main screen', a
   await expect(words('overlay-x-plane')).toHaveText(`Off to begin with. ${XPLANE_WHY}`);
 
   // Turned on: up over the main screen, for the setup in use.
-  await page.getByTestId('overlay-on').locator('input').check();
+  await setSwitch(page.getByTestId('overlay-on').locator('input'), true);
   await expect(main).toHaveAttribute('data-on', 'true');
   await expect(status).toContainText('On, over whatever is on DELL G3223D');
   await expect.poll(() => overlayWindows(app)).toBe(1);

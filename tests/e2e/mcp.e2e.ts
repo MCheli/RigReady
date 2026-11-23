@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
-import { expect, openOption, repoRoot, test } from './harness';
+import { expect, openOption, repoRoot, setSwitch, test } from './harness';
 
 /**
  * Settings > AI assistants: the MCP server turned on, an assistant paired and its client
@@ -21,7 +21,7 @@ test('mcp: turned on in Settings, an assistant paired, its change asked in the w
   await expect(page.getByTestId('mcp-state')).toContainText('Off');
   await shot('off');
 
-  await page.getByTestId('mcp-enable').locator('input').check();
+  await setSwitch(page.getByTestId('mcp-enable').locator('input'), true);
   await expect(page.getByTestId('mcp-state')).toHaveAttribute('data-running', 'true');
   const state = await page.getByTestId('mcp-state').innerText();
   const url = /http:\/\/127\.0\.0\.1:\d+\/mcp/.exec(state)?.[0];
@@ -135,7 +135,7 @@ test('mcp: turned on in Settings, an assistant paired, its change asked in the w
     )
   ).rejects.toThrow();
 
-  await page.getByTestId('mcp-enable').locator('input').uncheck();
+  await setSwitch(page.getByTestId('mcp-enable').locator('input'), false);
   await expect(page.getByTestId('mcp-state')).toContainText('Off');
 });
 
@@ -146,7 +146,7 @@ test('mcp: the Claude Code form by address says where its command leaves the tok
   await page.getByTestId('mode-configure').click();
   await page.getByTestId('nav-settings').click();
   await page.getByTestId('mcp-settings').scrollIntoViewIfNeeded();
-  await page.getByTestId('mcp-enable').locator('input').check();
+  await setSwitch(page.getByTestId('mcp-enable').locator('input'), true);
   await expect(page.getByTestId('mcp-state')).toHaveAttribute('data-running', 'true');
   // The list is long and draws only what is in view, so it is walked with the keys: the last
   // entry is Cursor by address, the one above it Claude Code by address.
@@ -174,7 +174,7 @@ test('mcp: a channel called directly is asked about in words with the call under
   await page.getByTestId('mode-configure').click();
   await page.getByTestId('nav-settings').click();
   await page.getByTestId('mcp-settings').scrollIntoViewIfNeeded();
-  await page.getByTestId('mcp-enable').locator('input').check();
+  await setSwitch(page.getByTestId('mcp-enable').locator('input'), true);
   await expect(page.getByTestId('mcp-state')).toHaveAttribute('data-running', 'true');
   const state = await page.getByTestId('mcp-state').innerText();
   const url = /http:\/\/127\.0\.0\.1:\d+\/mcp/.exec(state)?.[0];
@@ -308,7 +308,7 @@ test('mcp: RigReady.exe --mcp is a stdio bridge to the running RigReady, and say
 
   await page.getByTestId('mode-configure').click();
   await page.getByTestId('nav-settings').click();
-  await page.getByTestId('mcp-enable').locator('input').check();
+  await setSwitch(page.getByTestId('mcp-enable').locator('input'), true);
   await expect(page.getByTestId('mcp-state')).toHaveAttribute('data-running', 'true');
 
   const client = new Client({ name: 'e2e-stdio', version: '1.0.0' });

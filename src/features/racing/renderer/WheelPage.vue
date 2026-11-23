@@ -700,8 +700,9 @@ const STATUS = {
                 <template v-if="comparison.caveat">{{ comparison.caveat }}</template>
                 <template v-for="a in comparison.also" :key="a.url">
                   See also
-                  <a :href="a.url" target="_blank" rel="noopener" class="rec-link">{{ a.title }}</a
-                  >.
+                  <a :href="a.url" target="_blank" rel="noopener" class="rec-link">{{
+                    a.title
+                  }}</a>.
                 </template>
               </div>
             </div>
