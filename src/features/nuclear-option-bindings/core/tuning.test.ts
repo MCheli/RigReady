@@ -51,6 +51,7 @@ describe('tuning the axes of a controller for Nuclear Option', () => {
           index: 0,
           name: 'X axis',
           tunable: true,
+          unread: false,
           deadZone: 0.1,
           upperDeadZone: 0,
           sensitivity: 1,
@@ -60,6 +61,7 @@ describe('tuning the axes of a controller for Nuclear Option', () => {
           index: 1,
           name: 'Y axis',
           tunable: true,
+          unread: false,
           deadZone: 0.05,
           upperDeadZone: 0.02,
           sensitivity: 0.8,
@@ -80,6 +82,7 @@ describe('tuning the axes of a controller for Nuclear Option', () => {
       index: 2,
       name: 'Z axis',
       tunable: true,
+      unread: false,
       deadZone: 0,
       sensitivity: 1,
       reversed: true,
@@ -196,6 +199,81 @@ describe('tuning the axes of a controller for Nuclear Option', () => {
     expect(await values(a)).toEqual(before);
     const journal = await a.ports.files.journalGroups();
     expect(journal.ok && journal.value).toEqual([]);
+  });
+
+  it('an unplugged controller’s axes go by the game’s numbers, and an axis in a shape RigReady does not read is said to be unread', async () => {
+    const a = await start();
+    const all = await values(a);
+    const name = Object.keys(all).find(
+      (n) => n.includes('dataType=CalibrationMap') && n.includes('HOTASWarthog0402044F')
+    )!;
+    // The first axis as a later game build might save it: with a field this code has not seen.
+    const text = Buffer.from(all[name]!.value as string, 'hex').toString('utf8');
+    await mutate(a, [
+      {
+        op: 'setRegistryValue',
+        hive: 'HKCU',
+        key: REGISTRY_KEY,
+        name,
+        value: {
+          type: 'binary',
+          value: Buffer.from(
+            text.replace(
+              '<enabled>true</enabled>',
+              '<enabled>true</enabled><smoothing>2</smoothing>'
+            ),
+            'utf8'
+          ).toString('hex'),
+        },
+      },
+      { op: 'unplugDevice', match: { vendorId: '044F', productId: '0402' } },
+    ]);
+    const stick = await tuning(a, STICK);
+    expect(stick.named).toBe(false);
+    expect(stick.axes.map((x) => x.name)).toEqual([
+      'Axis 0',
+      'Axis 1',
+      'Axis 2',
+      'Axis 3',
+      'Axis 4',
+      'Axis 5',
+      'Axis 6',
+      'Axis 7',
+    ]);
+    expect(stick.axes[0]).toMatchObject({ unread: true, tunable: false });
+    expect(stick.axes[1]).toMatchObject({ unread: false, tunable: true, deadZone: 0.05 });
+    await expect(
+      tune(a, { device: STICK, axis: 0, deadZone: 0.03, sensitivity: 1 })
+    ).rejects.toThrow('saved in a way RigReady does not understand');
+    // The axis after it is still tuned, unplugged or not.
+    expect(
+      (await tune(a, { device: STICK, axis: 1, deadZone: 0.03, sensitivity: 0.8 })).message
+    ).toBe(
+      'Saved: Axis 1 of Joystick - HOTAS Warthog now has dead zone 3 %, upper dead zone 2 %, sensitivity 0.8. Undo is on the Safety page.'
+    );
+  });
+
+  it('with two controllers of one model nothing is read or written: the calibration does not say whose it is', async () => {
+    const a = await start();
+    const all = await values(a);
+    const map = Object.keys(all).find(
+      (n) => n.includes('dataType=ControllerMap|') && n.includes('HOTASWarthog0402044F')
+    )!;
+    await mutate(a, [
+      {
+        op: 'setRegistryValue',
+        hive: 'HKCU',
+        key: REGISTRY_KEY,
+        name: map.replace('duplicate=0', 'duplicate=1').replace(/_h\d+$/, '_h1100000098'),
+        value: all[map]!,
+      },
+    ]);
+    const before = await values(a);
+    await expect(tuning(a, STICK)).rejects.toThrow('Two controllers of this model');
+    await expect(
+      tune(a, { device: STICK, axis: 0, deadZone: 0.03, sensitivity: 1 })
+    ).rejects.toThrow('Two controllers of this model');
+    expect(await values(a)).toEqual(before);
   });
 
   it('two saved calibrations of one form for a controller are not chosen between', async () => {

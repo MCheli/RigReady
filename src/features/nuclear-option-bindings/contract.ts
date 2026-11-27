@@ -213,6 +213,8 @@ export const TuningSchema = z.object({
       name: z.string(),
       /** False when the axis is saved in a way RigReady does not change. */
       tunable: z.boolean(),
+      /** The axis is saved in a shape RigReady does not read: its settings are not known. */
+      unread: z.boolean(),
       /** 0 to 1 of the way from the axis's zero. */
       deadZone: z.number(),
       /** 0 to 1 of the way back from the axis's end; absent in an older calibration. */

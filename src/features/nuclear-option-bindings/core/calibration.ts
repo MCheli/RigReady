@@ -39,6 +39,8 @@ export interface AxisCalibration {
   index: number;
   /** The axis is written the way this code knows, with a plain sensitivity (no curve). */
   tunable: boolean;
+  /** The axis is in a shape this code does not read: the numbers below are not its own. */
+  unread: boolean;
   deadZone: number;
   /** Absent in a calibration an earlier build of the game saved. */
   upperDeadZone?: number;
@@ -86,6 +88,7 @@ export function parseCalibration(document: string): Result<Calibration> {
     return {
       index,
       tunable: plain,
+      unread: m === null,
       deadZone: m ? Number(m[2]) : 0,
       ...(m?.[3] !== undefined ? { upperDeadZone: Number(m[3]) } : {}),
       sensitivity: m ? Number(m[8]) : 1,
@@ -100,13 +103,19 @@ export function parseCalibration(document: string): Result<Calibration> {
  * A number as the game writes one: a 32-bit float in the shortest of seven or nine
  * significant digits that reads back as itself (0.1 as "0.1", a slider's 0.498286575 in full).
  */
+/** Never "1e-7": the game writes such a number another way, which this code has not seen. */
+const plainDecimal = (value: number): string => {
+  const text = String(value);
+  return /e/i.test(text) ? value.toFixed(9).replace(/\.?0+$/, '') : text;
+};
+
 export function gameNumber(value: number): string {
   const single = Math.fround(value);
   for (const digits of [7, 9]) {
     const short = Number(single.toPrecision(digits));
-    if (Math.fround(short) === single) return String(short);
+    if (Math.fround(short) === single) return plainDecimal(short);
   }
-  return String(Number(single.toPrecision(9)));
+  return plainDecimal(Number(single.toPrecision(9)));
 }
 
 export interface AxisTuning {

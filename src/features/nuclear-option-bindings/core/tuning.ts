@@ -116,6 +116,7 @@ export async function tuningOf(ctx: BindingsContext, deviceId: string): Promise<
       index: a.index,
       name: axisLabel(names, a.index),
       tunable: a.tunable,
+      unread: a.unread,
       deadZone: a.deadZone,
       ...(a.upperDeadZone !== undefined ? { upperDeadZone: a.upperDeadZone } : {}),
       sensitivity: a.sensitivity,
