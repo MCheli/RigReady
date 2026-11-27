@@ -356,6 +356,14 @@ export const useAiStore = defineStore('ai-assist', () => {
     event.stopImmediatePropagation();
     if (event.repeat || MODIFIER_KEYS.has(event.key)) return;
     if (nuclearOptionShown()) {
+      // A key the browser cannot name, or one held with the Windows key, is not a binding
+      // the game's screen offers: nothing is taken, and the walkthrough goes on listening.
+      if (!event.code || event.metaKey) {
+        pressNote.value = event.metaKey
+          ? 'The Windows key cannot be part of a binding. Press the key without it.'
+          : 'That key has no name RigReady can go by. Press another.';
+        return;
+      }
       // AltGr reports itself as Ctrl and Alt together: it is neither, for a binding.
       const altGr = event.getModifierState('AltGraph');
       void previewNuclearOption(listeningFor.value, {
@@ -488,8 +496,23 @@ export const useAiStore = defineStore('ai-assist', () => {
   /** Nuclear Option: the axis shown is to be reversed, or not: the change is shown again. */
   async function reverseNuclearOption(invert: boolean): Promise<void> {
     const current = nuclearOptionBinding.value;
-    if (!current || current.busy || current.binding.kind !== 'axis') return;
-    await previewNuclearOption(current.actionId, { ...current.binding, invert });
+    const id = aircraftId.value;
+    if (!current?.review || current.busy || current.binding.kind !== 'axis' || !id) return;
+    const binding = { ...current.binding, invert };
+    // Busy at once, with the review it had: the dialog stays open and Save is off until the
+    // change is shown again, so the un-reversed one cannot be saved in between.
+    const asking: NuclearOptionBinding = { ...current, binding, busy: true, error: undefined };
+    nuclearOptionBinding.value = asking;
+    const result = await api.nuclearOptionBindPreview({
+      aircraftId: id,
+      actionId: current.actionId,
+      binding,
+    });
+    if (toRaw(nuclearOptionBinding.value) !== asking || aircraftId.value !== id) return;
+    nuclearOptionBinding.value = result.ok
+      ? { actionId: current.actionId, binding, review: result.value, busy: false }
+      : // Not shown again: the dialog goes back to what it showed, and says why.
+        { ...current, busy: false, error: errorText(result.error) };
   }
 
   function cancelNuclearOption(): void {

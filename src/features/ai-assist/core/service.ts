@@ -209,7 +209,7 @@ export function whatIsSent(provider: ChatProvider | undefined): WhatIsSent {
       'Only when you ask for AI help on the Binding guide page, which covers DCS aircraft, iRacing cars and Nuclear Option. If you play none of them, nothing in this list is ever sent.',
       'Sent for a DCS aircraft: its name, and DCS\'s list of its actions (ids, names, categories) with what each is bound to now; for each controller used in DCS, its DirectInput product name (such as "Joystick - HOTAS Warthog"), what it is used as, how many buttons and hats it has, and the names of its axes.',
       "Sent for iRacing: the class or car's name, iRacing's list of actions (ids and groups) with what each is bound to now in those bindings, and the DirectInput product name of each connected controller they name.",
-      "Sent for Nuclear Option: the game's list of actions (ids, names, categories) with what each is bound to now; for each connected controller the game has bindings for, its DirectInput product name, how many buttons and hats it has, and the names of its axes.",
+      "Sent for Nuclear Option: the game's list of actions (ids, names, categories) with what each is bound to now on the controllers, the keyboard and the mouse; for each connected controller the game has bindings for, its DirectInput product name, how many buttons and hats it has, and the names of its axes.",
       "Sent: the guide when there is one (RigReady's, one drafted by AI, or your own): its summary and each item with its title, tier, place and what it does. And your question.",
       'Never sent: file paths, device ids (GUIDs), serial numbers, the names you gave your devices, your Windows user or PC name, or any other content of your files.',
       'Every request is shown to you in full before it is sent.',
@@ -1041,7 +1041,7 @@ export class AiAssist {
   }
 
   // -------------------------------------------------------------------------
-  // Nuclear Option: one button at a time, through the Nuclear Option bindings feature
+  // Nuclear Option: one control at a time, through the Nuclear Option bindings feature
   // -------------------------------------------------------------------------
 
   /**
@@ -1115,7 +1115,7 @@ export class AiAssist {
     });
   }
 
-  /** What binding one action of the guide to this button would change. Writes nothing. */
+  /** What binding one action of the guide to this button, axis or key would change. Writes nothing. */
   async nuclearOptionPreview(
     aircraftId: string,
     actionId: string,

@@ -59,7 +59,7 @@ test('binding guide for nuclear option: the walkthrough binds a moved axis, a pr
     'This guide works on the one set of bindings Nuclear Option has for every aircraft.'
   );
   await expect(where).toContainText('press a button or a key, or move an axis');
-  // No AI help for this game, with or without a key.
+  // No AI help tab without an AI provider (with one: the test below).
   await expect(page.getByTestId('ai-tab-ai')).toHaveCount(0);
   await expect(page.locator('.v-alert.text-error, .v-alert.bg-error')).toHaveCount(0);
 
@@ -209,4 +209,45 @@ test('binding guide for nuclear option: the walkthrough binds a moved axis, a pr
   // The link goes to the bindings page.
   await page.getByTestId('ai-nuclear-option-page').click();
   await expect(page.getByTestId('nuclear-option-bindings-page')).toBeVisible();
+});
+
+/**
+ * With an AI provider set up: the AI help tab and Explain are there for Nuclear Option, with
+ * questions and no "Suggest a setup"; what is to be sent is shown before anything goes.
+ */
+test('binding guide for nuclear option, with a key: questions and Explain are offered, a setup suggestion is not, and the request is shown first', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch('nuclear-option-bindings', 'ai-assist-nuclear-option-ai');
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-settings').click();
+  // A made-up key in the shape of one: nothing is sent in this test.
+  await page
+    .getByTestId('ai-key-input')
+    .locator('input')
+    .fill('sk-ant-api03-MADEUPMADEUPMADEUPMADEUP-stuvwxyz');
+  await page.getByTestId('ai-key-save').click();
+  await expect(page.getByTestId('ai-key-state')).toHaveText('An Anthropic API key is stored');
+
+  await page.getByTestId('nav-ai-assist').click();
+  await expect(page.getByTestId('ai-game')).toContainText('Nuclear Option');
+  // Explain beside each action of the walkthrough.
+  await expect(page.getByTestId('ai-current-item').getByTestId('ai-explain')).toHaveCount(2);
+  await page.getByTestId('ai-tab-ai').click();
+  await expect(page.getByTestId('ai-guide-page')).toContainText(
+    'What should I bind first for my first sortie?'
+  );
+  await expect(page.getByTestId('ai-help')).toBeVisible();
+  await expect(page.getByTestId('ai-suggest')).toHaveCount(0);
+  await expect(page.getByTestId('ai-guide-page')).not.toContainText('Draft a guide');
+  await shot('ai-tab');
+
+  // Explain shows the complete request before anything is sent; Cancel sends nothing.
+  await page.getByTestId('ai-tab-walkthrough').click();
+  await page.getByTestId('ai-current-item').getByTestId('ai-explain').first().click();
+  const payload = page.getByTestId('ai-payload-dialog');
+  await expect(payload).toBeVisible();
+  await expect(payload).toContainText('Nuclear Option actions, with what each is bound to now');
+  await expect(payload).toContainText("RigReady's binding guide for Nuclear Option");
+  await shot('request');
 });

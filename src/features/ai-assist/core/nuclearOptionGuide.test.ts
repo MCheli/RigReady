@@ -453,6 +453,25 @@ describe('the binding guide page’s data for Nuclear Option', () => {
     expect(explain.body).toContain('not reviewed by the game');
     expect(explain.body).toContain('Toggle Gear');
     expect(explain.body).not.toContain('DCS');
+    // What is bound is named as the app names it, not as the game's screen counts it: the
+    // scenario's Fire is the stick's first button, which the game calls button 0.
+    const body = JSON.stringify(JSON.parse(explain.body)).replace(/\\n/g, '\n');
+    const row = (name: string): string =>
+      body.split('\n').find((line) => line.includes(`| ${name} |`)) ?? '';
+    expect(row('Fire')).toMatch(/dev\d:Button 1\b/);
+    expect(row('Fire')).toContain('keyboard:Space');
+    expect(row('Fire')).not.toContain('Button 0');
+    expect(row('Pitch Axis')).toMatch(/dev\d:Y axis/);
+    expect(row('Eject')).toContain('keyboard:Ctrl+Shift+E');
+    // A binding on the mouse is not left out, as if the action had none.
+    expect(body).toMatch(/\| mouse:/);
+    // The controllers by name and by what they have, with no "used as": the game has no such thing.
+    expect(body).toContain(
+      '<devices columns=\\"ref | DirectInput name | buttons | hats | axes\\">'
+    );
+    expect(body).toMatch(/dev\d \| Joystick - HOTAS Warthog \| 19 \| 1 \| X axis, Y axis/);
+    expect(body).toContain('mouse | Mouse | - | - | -');
+    expect(body).toContain('fifth button');
     // No controller id, and nothing of the registry's value names.
     const overview = await a.invoke<{ devices: { guid?: string }[] }>(
       'nuclear-option-bindings:overview'

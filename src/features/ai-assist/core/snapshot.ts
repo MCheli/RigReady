@@ -5,6 +5,7 @@ import type {
   BoundDevice,
   BoundDeviceRole,
 } from '../../../core/bindings';
+import { controlLabel } from '../../../core/bindings';
 import { err, ok, type Result } from '../../../core/result';
 import { describeInput, type Controls } from './inputs';
 import type { GuideGame, Pack } from './pack';
@@ -116,16 +117,23 @@ function boundNow(snapshot: Snapshot): Map<string, string[]> {
   const refByGuid = new Map(snapshot.controllers.map((c) => [c.guid, c.ref]));
   const map = new Map<string, string[]>();
   for (const device of snapshot.bindings.devices) {
+    const nuclearOption = snapshot.game === 'nuclear-option';
     const ref =
       device.kind === 'keyboard'
         ? 'keyboard'
-        : device.guid
-          ? refByGuid.get(device.guid.toUpperCase())
-          : undefined;
+        : device.kind === 'mouse' && nuclearOption
+          ? 'mouse'
+          : device.guid
+            ? refByGuid.get(device.guid.toUpperCase())
+            : undefined;
     if (!ref) continue;
     for (const b of device.bindings) {
       const list = map.get(b.actionId) ?? [];
-      list.push(`${ref}:${[...b.modifiers, b.input].join('+')}`);
+      // Nuclear Option's own screen counts buttons from 0 and axes by number; the request
+      // names an input as the rest of RigReady does ("Button 5", "Y axis"), which is also
+      // what the devices below are described by.
+      const input = nuclearOption ? b.inputLabel : b.input;
+      list.push(`${ref}:${[...b.modifiers, input].join('+')}`);
       map.set(b.actionId, list);
     }
   }
@@ -217,6 +225,25 @@ export function devicesText(snapshot: Snapshot): string {
     const lines = [`<devices columns="ref | DirectInput name">`];
     for (const c of snapshot.controllers) lines.push(`${c.ref} | ${oneLine(c.name, 100)}`);
     lines.push(`keyboard | Keyboard`);
+    lines.push(`</devices>`);
+    return lines.join('\n');
+  }
+  if (snapshot.game === 'nuclear-option') {
+    // The game does not say what a controller is used as: its name and what it has.
+    const lines = [`<devices columns="ref | DirectInput name | buttons | hats | axes">`];
+    for (const c of snapshot.controllers) {
+      lines.push(
+        [
+          c.ref,
+          oneLine(c.name, 100),
+          c.controls.buttons,
+          c.controls.hats,
+          c.controls.axes.map((axis) => controlLabel({ kind: 'axis', axis })).join(', ') || '-',
+        ].join(' | ')
+      );
+    }
+    lines.push(`keyboard | Keyboard | - | - | -`);
+    lines.push(`mouse | Mouse | - | - | -`);
     lines.push(`</devices>`);
     return lines.join('\n');
   }
