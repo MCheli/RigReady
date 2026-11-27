@@ -57,6 +57,13 @@ export interface BindingEdit {
    * Without it, a clear takes every key of the action and a bind adds one.
    */
   replaces?: { element: number; modifiers: number[] };
+  /**
+   * On a controller, with a button or an axis to bind: everything else that is on that
+   * button or axis is taken off it, so that the control does this one thing. What a setup
+   * suggested as a whole asks for; a single change from the page leaves the rest and says
+   * what else the control does.
+   */
+  alone?: boolean;
 }
 
 /** What an action, or a side of one, is on: a button (1 the first) or an axis (0 the first). */
@@ -79,6 +86,8 @@ export interface EditOutcome {
   alsoOn: string[];
   /** For a key: every key the action has afterwards, when that is more than what was asked for. */
   after?: BoundTo[];
+  /** With `alone`: what was taken off the control, by the names the game's screen gives them. */
+  tookOff?: string[];
 }
 
 const PLAIN = {
@@ -177,7 +186,9 @@ export function editMap(map: ControllerMap, edit: BindingEdit): Edited {
   if (edit.axis !== undefined && edit.button !== undefined) {
     return err('nuclear-option.edit.both', 'A binding is a button or an axis, not both.');
   }
-  if (edit.axis !== undefined) return editAxis(map, edit.actionId, edit.side, edit.axis);
+  if (edit.axis !== undefined) {
+    return freed(editAxis(map, edit.actionId, edit.side, edit.axis), edit);
+  }
   if (edit.button === undefined) {
     return err('nuclear-option.edit.nothing', 'Nothing was chosen to bind it to.');
   }
@@ -190,7 +201,60 @@ export function editMap(map: ControllerMap, edit: BindingEdit): Edited {
   if (action.kind !== 'axis' && edit.side !== undefined) {
     return err('nuclear-option.edit.side', `${action.name} is a button and has no sides.`);
   }
-  return editButton(map, edit.actionId, edit.side, edit.button);
+  return freed(editButton(map, edit.actionId, edit.side, edit.button), edit);
+}
+
+/**
+ * With `alone`: the result of a bind with everything else taken off the button or the axis
+ * it went to. Only bindings are taken out, as when a controller is cleared; nothing is
+ * composed, so one written in a way this code does not understand goes like the others.
+ */
+function freed(edited: Edited, edit: BindingEdit): Edited {
+  if (!edited.ok || !edit.alone) return edited;
+  const contribution = edit.side === '-' ? 1 : 0;
+  let onControl: (e: ElementMap) => boolean;
+  let mine: (e: ElementMap) => boolean;
+  if (edit.axis) {
+    const index = edit.axis.index;
+    onControl = (e) => e.elementType === 0 && e.elementIdentifierId === index;
+    mine = (e) => e.actionId === edit.actionId;
+  } else if (typeof edit.button === 'number') {
+    const target = edit.button - 1 + FIRST_BUTTON;
+    onControl = (e) => e.elementType === 1 && e.elementIdentifierId === target;
+    mine = (e) =>
+      e.actionId === edit.actionId &&
+      (edit.side === undefined || e.axisContribution === contribution);
+  } else {
+    // A clear binds nothing, so there is no control to free.
+    return edited;
+  }
+  const map = edited.value.map;
+  const goes = (e: ElementMap): boolean => onControl(e) && !mine(e);
+  const gone = [...map.buttonMaps, ...map.axisMaps].filter(goes);
+  if (gone.length === 0) return ok({ ...edited.value, alsoOn: [], tookOff: [] });
+  const buttonMaps = map.buttonMaps.filter((e) => !goes(e));
+  const axisMaps = map.axisMaps.filter((e) => !goes(e));
+  const form = (
+    was: ControllerMap['source']['buttons'],
+    left: number
+  ): ControllerMap['source']['buttons'] =>
+    was === 'absent' ? was : left === 0 ? 'self-closed' : 'open';
+  const result = checked(
+    {
+      ...map,
+      buttonMaps,
+      axisMaps,
+      source: {
+        ...map.source,
+        buttons: form(map.source.buttons, buttonMaps.length),
+        axes: form(map.source.axes, axisMaps.length),
+      },
+    },
+    edited.value.before,
+    []
+  );
+  if (!result.ok) return result;
+  return ok({ ...result.value, tookOff: [...new Set(gone.map(doingOf))] });
 }
 
 /** Every field of every binding of a list, in one fixed order, to compare two lists by. */
@@ -669,6 +733,13 @@ export function editMapText(document: string, edit: BindingEdit): Result<EditOut
   }
   const edited = editMap(map.value, edit);
   if (!edited.ok) return edited;
-  const { text, before, same, alsoOn, after } = edited.value;
-  return ok({ text, before, same, alsoOn, ...(after ? { after } : {}) });
+  const { text, before, same, alsoOn, after, tookOff } = edited.value;
+  return ok({
+    text,
+    before,
+    same,
+    alsoOn,
+    ...(after ? { after } : {}),
+    ...(tookOff ? { tookOff } : {}),
+  });
 }

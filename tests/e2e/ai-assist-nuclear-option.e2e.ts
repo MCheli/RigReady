@@ -213,9 +213,9 @@ test('binding guide for nuclear option: the walkthrough binds a moved axis, a pr
 
 /**
  * With an AI provider set up: the AI help tab and Explain are there for Nuclear Option, with
- * questions and no "Suggest a setup"; what is to be sent is shown before anything goes.
+ * questions and "Suggest a setup"; what is to be sent is shown before anything goes.
  */
-test('binding guide for nuclear option, with a key: questions and Explain are offered, a setup suggestion is not, and the request is shown first', async ({
+test('binding guide for nuclear option, with a key: questions, Explain and a setup suggestion are offered, no drafted guide, and the request is shown first', async ({
   rig,
 }) => {
   const { page, shot } = await rig.launch('nuclear-option-bindings', 'ai-assist-nuclear-option-ai');
@@ -238,7 +238,7 @@ test('binding guide for nuclear option, with a key: questions and Explain are of
     'What should I bind first for my first sortie?'
   );
   await expect(page.getByTestId('ai-help')).toBeVisible();
-  await expect(page.getByTestId('ai-suggest')).toHaveCount(0);
+  await expect(page.getByTestId('ai-suggest')).toBeVisible();
   await expect(page.getByTestId('ai-guide-page')).not.toContainText('Draft a guide');
   await shot('ai-tab');
 
@@ -250,4 +250,113 @@ test('binding guide for nuclear option, with a key: questions and Explain are of
   await expect(payload).toContainText('Nuclear Option actions, with what each is bound to now');
   await expect(payload).toContainText("RigReady's binding guide for Nuclear Option");
   await shot('request');
+});
+
+/**
+ * "Suggest a setup" for Nuclear Option: the request is shown first, the answer is checked
+ * line by line, the ticked suggestions are reviewed as the bindings feature would write them
+ * and written as one change, which Undo takes out again.
+ */
+test('binding guide for nuclear option: a suggested setup is shown before it is sent, checked, reviewed, written as one change and undone', async ({
+  rig,
+}) => {
+  const { page, shot } = await rig.launch(
+    'ai-assist-nuclear-option',
+    'ai-assist-nuclear-option-suggest'
+  );
+  await page.getByTestId('mode-configure').click();
+  await page.getByTestId('nav-settings').click();
+  // A made-up key in the shape of one; the answer is the scenario's.
+  await page
+    .getByTestId('ai-key-input')
+    .locator('input')
+    .fill('sk-ant-api03-MADEUPMADEUPMADEUPMADEUP-stuvwxyz');
+  await page.getByTestId('ai-key-save').click();
+  await expect(page.getByTestId('ai-key-state')).toHaveText('An Anthropic API key is stored');
+
+  await page.getByTestId('nav-ai-assist').click();
+  await expect(page.getByTestId('ai-game')).toContainText('Nuclear Option');
+  await page.getByTestId('ai-tab-ai').click();
+  await expect(page.getByTestId('ai-guide-page')).toContainText(
+    'Suggest a setup for Nuclear Option on my devices'
+  );
+  await page.getByTestId('ai-suggest').click();
+  const payload = page.getByTestId('ai-payload-dialog');
+  await expect(payload).toBeVisible();
+  await expect(payload).toContainText('Nuclear Option actions, with what each is bound to now');
+  await page.getByTestId('ai-payload-toggle').click();
+  await expect(page.getByTestId('ai-payload-body')).toContainText(
+    'suggest how to bind Nuclear Option on these controllers'
+  );
+  await expect(page.getByTestId('ai-payload-body')).not.toContainText('DCS');
+  await expect(page.getByTestId('ai-payload-body')).not.toContainText('3A7C1E20');
+  await shot('request');
+  await page.getByTestId('ai-payload-send').click();
+
+  // Four lines checked out; a hat and an action the game does not have were left out.
+  await expect(page.getByTestId('ai-round')).toBeVisible();
+  await expect(page.getByTestId('ai-suggestion')).toHaveCount(4);
+  await expect(page.getByTestId('ai-dropped')).toContainText('2 lines of the answer were left out');
+  const suggestion = (action: string) =>
+    page.locator(`[data-testid="ai-suggestion"][data-action="${action}"]`);
+  const ticked = (action: string) =>
+    suggestion(action).getByTestId('ai-suggestion-tick').locator('input');
+  const lights = suggestion('Toggle Navigation Lights');
+  await expect(lights).toContainText('Joystick - HOTAS Warthog · Button 1');
+  await expect(lights.getByTestId('ai-flag-replaces')).toContainText('Fire');
+  await expect(ticked('Toggle Navigation Lights')).toBeChecked();
+  // Pitch is on that axis already: not ticked.
+  await expect(suggestion('Pitch Axis')).toContainText('Joystick - HOTAS Warthog · Y axis');
+  await expect(suggestion('Pitch Axis').getByTestId('ai-flag-already')).toBeVisible();
+  await expect(ticked('Pitch Axis')).not.toBeChecked();
+  // Two suggestions want the throttle's button 18: neither is ticked until the user picks.
+  await expect(suggestion('Zoom In').getByTestId('ai-flag-clash')).toBeVisible();
+  await expect(suggestion('Link Guns').getByTestId('ai-flag-clash')).toBeVisible();
+  await expect(ticked('Zoom In')).not.toBeChecked();
+  await expect(ticked('Link Guns')).not.toBeChecked();
+  await page.getByTestId('ai-dropped').locator('summary').click();
+  await expect(page.getByTestId('ai-dropped')).toContainText(
+    'RigReady does not bind a hat in Nuclear Option'
+  );
+  await shot('suggestions');
+
+  // Zoom In gets the button. The review is the bindings feature's own plan, device by device.
+  await ticked('Zoom In').check();
+  await expect(page.getByTestId('ai-review-suggestions')).toHaveText(/Review 2 changes/);
+  await page.getByTestId('ai-review-suggestions').click();
+  const review = page.getByTestId('ai-review-dialog');
+  await expect(review).toBeVisible();
+  await expect(page.getByTestId('ai-review-file')).toHaveCount(2);
+  await expect(review).toContainText('the bindings Nuclear Option saved in the registry');
+  await expect(review).toContainText('Toggle Navigation Lights: Button 1');
+  await expect(review).toContainText('Button 1 no longer does Fire');
+  await expect(review).toContainText('Zoom In: Button 18 (was Button 7)');
+  await expect(review).toContainText('Button 18 no longer does Toggle Gear');
+  // A registry value has no file name to show, and one line of XML has no text to compare.
+  await expect(review).not.toContainText('regvalue');
+  await expect(review).not.toContainText('DCS');
+  await expect(page.getByTestId('ai-review-toggle-diff')).toHaveCount(0);
+  await expect(page.getByTestId('ai-review-apply')).toHaveText('Write the change');
+  await shot('review');
+  await page.getByTestId('ai-review-apply').click();
+  await expect(page.getByTestId('ai-saved')).toContainText(
+    'Written: Bind 2 actions suggested by AI (2 controllers, backed up first)'
+  );
+  await shot('written');
+
+  // One entry on the Safety page, and the bindings page shows the change.
+  await page.getByTestId('nav-safety').click();
+  await expect(page.getByTestId('safety-page')).toContainText(
+    'Nuclear Option bindings: Bind 2 actions suggested by AI'
+  );
+  await shot('safety-page');
+
+  // Undo from the guide puts both controllers back.
+  await page.getByTestId('nav-ai-assist').click();
+  await page.getByTestId('ai-undo').click();
+  await expect(page.getByTestId('ai-saved')).toContainText(
+    'Undone: Bind 2 actions suggested by AI'
+  );
+  await page.getByTestId('ai-tab-walkthrough').click();
+  await shot('undone');
 });

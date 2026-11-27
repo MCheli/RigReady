@@ -12,6 +12,7 @@ import {
   renameSnapshot,
   reviewRestore,
 } from './core/snapshots';
+import { createProposals } from './core/proposals';
 import { createBindingReader, GAME, overview, type BindingsContext } from './core/view';
 
 /**
@@ -31,7 +32,11 @@ export default defineFeatureMain({
   id: 'nuclear-option-bindings',
   setup(ctx) {
     const bctx: BindingsContext = { ports: ctx.ports, log: ctx.log, games: ctx.games };
-    ctx.bindings.register(createBindingReader(bctx));
+    // Another feature (a setup suggested by AI) hands over several bindings as one change.
+    ctx.bindings.register({
+      ...createBindingReader(bctx),
+      proposals: createProposals(bctx, () => ctx.bindings.notifyChanged({ game: GAME })),
+    });
     // The bindings are registry values: a full backup keeps them as a record to read back.
     ctx.backupSources.register(nuclearOptionBackupSource);
     return [

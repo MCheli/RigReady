@@ -384,7 +384,15 @@ onBeforeUnmount(() => {
         <template v-if="store.saved.undone">Undone: {{ store.saved.summary }}</template>
         <template v-else>
           Written: {{ store.saved.summary }} ({{ store.saved.files }}
-          {{ store.saved.files === 1 ? 'file' : 'files' }}, backed up first)
+          {{
+            store.guide?.game === 'nuclear-option'
+              ? store.saved.files === 1
+                ? 'controller'
+                : 'controllers'
+              : store.saved.files === 1
+                ? 'file'
+                : 'files'
+          }}, backed up first)
         </template>
       </span>
       <v-btn

@@ -23,6 +23,7 @@ import {
   storedKeyboardMap,
   storedGameMap,
   type BindingsContext,
+  type StoredMap,
 } from './view';
 
 /**
@@ -52,7 +53,7 @@ export async function whyBlocked(ctx: BindingsContext): Promise<string | undefin
 }
 
 /** One thing an action is on, in RigReady's words: "Button 3", "Y axis", "Y axis, reversed". */
-function boundInWords(to: BoundTo, axes: string[]): string {
+export function boundInWords(to: BoundTo, axes: string[]): string {
   if (to.kind === 'button') return `Button ${to.button}`;
   if (to.kind === 'key') {
     return [...to.modifiers.flatMap((m) => modifierName(m) ?? []), keyName(to.keyCode)].join(' + ');
@@ -62,7 +63,7 @@ function boundInWords(to: BoundTo, axes: string[]): string {
   return to.invert ? `${axis}, reversed` : axis;
 }
 
-const inWords = (to: BoundTo[], axes: string[]): string => {
+export const inWords = (to: BoundTo[], axes: string[]): string => {
   if (to.length === 0) return 'Not bound';
   const words = to.map((t) => boundInWords(t, axes));
   return words.length === 1 ? words[0]! : `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
@@ -88,7 +89,7 @@ interface Plan {
  * that are not UTF-8 read as text with a replacement character, and writing that text back
  * would lose them for good.
  */
-async function exactBytes(
+export async function exactBytes(
   ctx: BindingsContext,
   valueName: string,
   text: string
@@ -105,7 +106,18 @@ async function exactBytes(
   return ok(bytes);
 }
 
-async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Result<Plan>> {
+/** A request as the edit of one saved map it asks for, with the map as it is stored. */
+export interface Resolved {
+  stored: StoredMap;
+  /** The controller's axes by name, in the game's order; none for the keyboard. */
+  axes: string[];
+  edit: BindingEdit;
+}
+
+export async function resolve(
+  ctx: BindingsContext,
+  request: ChangeRequest
+): Promise<Result<Resolved>> {
   const onKeyboard = request.device === KEYBOARD;
   if (onKeyboard !== (request.key !== undefined)) {
     return err(
@@ -122,7 +134,6 @@ async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Resul
   if (!stored.ok) return stored;
   const exact = await exactBytes(ctx, stored.value.valueName, stored.value.text);
   if (!exact.ok) return exact;
-  const text = exact.value;
   // The keyboard has no axes to ask about.
   const asked = onKeyboard
     ? ok({ names: [] as string[], asked: true })
@@ -197,6 +208,17 @@ async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Resul
     ...(key !== undefined ? { key } : {}),
     ...(replaces ? { replaces } : {}),
   };
+  return ok({ stored: stored.value, axes: axes.value, edit });
+}
+
+async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Result<Plan>> {
+  const resolved = await resolve(ctx, request);
+  if (!resolved.ok) return resolved;
+  const stored = { value: resolved.value.stored };
+  const axes = { value: resolved.value.axes };
+  const { edit } = resolved.value;
+  const axis = edit.axis;
+  const text = Buffer.from(stored.value.text, 'utf8');
   const edited = editMapText(stored.value.text, edit);
   if (!edited.ok) return edited;
   // A key taken off an action that has another is a change of what it is on, not a clear.

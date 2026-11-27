@@ -334,6 +334,16 @@ On the owner's rig, 27 November 2026 (driven by Claude Code, with the owner's pe
 
 Not tried: a restore after the game ran in between; a snapshot restored on another PC or after the game renamed a controller's value; Undo of a restore on the rig (it is tested on the scenario).
 
+### Several bindings as one change
+
+Another feature (a setup suggested by AI) hands the bindings feature a list of bindings through the reader's `proposals` (`core/proposals.ts`), the interface DCS's reader offers. Each binding is the same edit the page makes (`core/edit.ts`), folded into the controller's saved map in the order given, and every changed map is written through FileStore under one `beginGroup()`, each read back. The scenario test checks that two bindings written this way leave the same bytes as the same two made one at a time on the page.
+
+A proposed binding takes its control over (`alone` in `BindingEdit`): every other binding on that button, or that axis, of the controller's Game map is taken out, a half axis too. Nothing new is composed for that. Removing a binding is what the game does when the player clears one, and what clearing a controller does (above). A single change from the page does not do this; it leaves the other action and says so.
+
+An axis action that is on an axis reversed keeps the reversal when a proposal puts it on an axis. A hat, a key, a mouse button, a clear, and a controller without a saved map are refused with the reason, and one refusal refuses the whole list. An action of the Chat, Mission Editor or Debug tab is refused too: a controller's bindings are changed in its Game map, and such an action belongs in that tab's map. The review is remembered by what it would write; a write of a list that was not reviewed, or after the saved maps changed, is refused.
+
+Not tried on a rig: a proposal written to the real registry and the game started on it. The bytes are the writer's own (section 7), which the game has loaded.
+
 ### In a flight, 27 November 2026
 
 The owner, at the controls, with the same build: Eject cleared on the R-VPC panel and bound to its Button 16 on the Bindings page (two entries on the Safety page), then the game started and the button pressed in a flight. It worked. **[V]** by the owner. That is a clear and a bind in the real game, on a second controller, and the press that the second look left out.
