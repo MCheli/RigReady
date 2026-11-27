@@ -69,6 +69,16 @@ test('nuclear option bindings: each device’s bindings as the game saved them, 
   await expect(rows.nth(4)).toContainText('Ctrl + Shift + E');
   await shot('keyboard');
 
+  // The command palette offers the page here, where the game is found.
+  await page.keyboard.press('Control+k');
+  await expect(page.getByTestId('palette-input')).toBeFocused();
+  await page.keyboard.type('nuclear option bindings');
+  await expect(
+    page.locator('[data-testid="palette-row"][data-to="/configure/nuclear-option-bindings"]')
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('palette')).toBeHidden();
+
   // The cheat sheets draw the same bindings, through the reader this feature registers.
   await page.getByTestId('nuclear-option-bindings-cheat-sheet').click();
   await expect(page.locator('.rr-page')).toContainText('Nuclear Option');
