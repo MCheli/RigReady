@@ -57,30 +57,63 @@ const OverviewSchema = z.object({
   /** Where the bindings were read from, in words. */
   registryKey: z.string(),
   devices: z.array(DeviceSchema),
-  /** The actions a controller button can be bound to here, in the game's own order. */
-  actions: z.array(z.object({ id: z.number().int(), name: z.string(), category: z.string() })),
+  /**
+   * What can be bound on a controller here, in the game's own order: each button action, and
+   * each axis action as a whole (an axis) and by its two sides (a button each).
+   */
+  actions: z.array(
+    z.object({
+      /** The game's action id. */
+      id: z.number().int(),
+      /** The side of an axis action this entry is: "+" or "-". */
+      side: z.enum(['+', '-']).optional(),
+      /** The id of the bindings this entry has: "11", "25", "25:+". */
+      key: z.string(),
+      name: z.string(),
+      category: z.string(),
+      /** What it is bound to: a button of the controller, or an axis. */
+      takes: z.enum(['button', 'axis']),
+    })
+  ),
   /** Saved maps that could not be read, in words. */
   problems: z.array(z.string()),
 });
 export type Overview = z.infer<typeof OverviewSchema>;
 
-/** One binding of a controller to change: an action bound to a button, or cleared. */
-export const ChangeRequestSchema = z.object({
-  /** The controller, by its id in the overview. */
-  device: z.string().min(1).max(300),
-  /** The game's action id. */
-  actionId: z.number().int().min(0).max(100000),
-  /** The button, as RigReady numbers buttons (1 is the first); null clears the action. */
-  button: z.number().int().min(1).max(128).nullable(),
-  /**
-   * The saved map as the preview read it (`seen` of changePreview). With it, change writes
-   * nothing when the map is no longer that: what the user approved may not hold any more.
-   */
-  seen: z
-    .string()
-    .regex(/^[0-9a-f]{64}$/)
-    .optional(),
-});
+/**
+ * One binding of a controller to change: a button action bound to a button, one side of an
+ * axis action bound to a button, or an axis action bound to an axis; or any of them cleared.
+ */
+export const ChangeRequestSchema = z
+  .object({
+    /** The controller, by its id in the overview. */
+    device: z.string().min(1).max(300),
+    /** The game's action id. */
+    actionId: z.number().int().min(0).max(100000),
+    /** For an axis action: the side a button is bound to ("+" Zoom In, "-" Zoom Out). */
+    side: z.enum(['+', '-']).optional(),
+    /** The button, as RigReady numbers buttons (1 is the first); null clears it. */
+    button: z.number().int().min(1).max(128).nullable().optional(),
+    /**
+     * The controller's axis for an axis action as a whole, by the name RigReady shows it
+     * under ("X", "RZ", "SLIDER1"), and whether the game is to reverse it; null clears it.
+     */
+    axis: z
+      .object({ name: z.string().min(1).max(40), invert: z.boolean() })
+      .nullable()
+      .optional(),
+    /**
+     * The saved map as the preview read it (`seen` of changePreview). With it, change writes
+     * nothing when the map is no longer that: what the user approved may not hold any more.
+     */
+    seen: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .optional(),
+  })
+  .refine((r) => (r.button !== undefined) !== (r.axis !== undefined), {
+    message: 'Give a button or an axis: one of them, not both.',
+  });
 export type ChangeRequest = z.infer<typeof ChangeRequestSchema>;
 
 /** One change as it would be, before anything is written. */
@@ -93,7 +126,7 @@ export const ChangeReviewSchema = z.object({
   after: z.string(),
   /** Nothing would change. */
   same: z.boolean(),
-  /** Other actions already on the button: one press will do those too. */
+  /** What else is already on that button or axis: one press, or one movement, does those too. */
   alsoOnButton: z.array(z.string()),
   /** Why it cannot be saved right now (the game is running), when it cannot. */
   blocked: z.string().optional(),
@@ -142,6 +175,16 @@ export const PressedSchema = z.object({
 });
 export type Pressed = z.infer<typeof PressedSchema>;
 
+/** A controller axis the user just moved, while the page listens. */
+export const MovedSchema = z.object({
+  /** The controller's DirectInput instance GUID. */
+  device: z.string(),
+  deviceName: z.string(),
+  /** The axis by the name RigReady shows it under: "X", "RZ", "SLIDER1". */
+  axis: z.string(),
+});
+export type Moved = z.infer<typeof MovedSchema>;
+
 const ON_THE_PAGE =
   'Changing a game binding is done on the Nuclear Option bindings page, where the person sees the change and presses Save.';
 
@@ -150,7 +193,7 @@ export const nuclearOptionBindingsContract = defineContract(
   {
     /** One change as it would be: what the action is on now and would be on. Writes nothing. */
     changePreview: channel(ChangeRequestSchema, ChangeReviewSchema, {
-      describe: `Shows what binding one Nuclear Option action to a controller button, or clearing it, would change. Writes nothing. ${ON_THE_PAGE}`,
+      describe: `Shows what binding one Nuclear Option action to a controller button or axis, or clearing it, would change. Writes nothing. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
     /**
@@ -158,7 +201,7 @@ export const nuclearOptionBindingsContract = defineContract(
      * (a backup first, one entry on the Safety page). Refused while the game runs.
      */
     change: channel(ChangeRequestSchema, ChangeResultSchema, {
-      describe: `Binds one Nuclear Option action to a controller button, or clears it, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
+      describe: `Binds one Nuclear Option action to a controller button or axis, or clears it, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
     /** Clearing one controller as it would be: how many bindings would go. Writes nothing. */
@@ -182,7 +225,7 @@ export const nuclearOptionBindingsContract = defineContract(
     /** Starts reporting button presses on any controller as `pressed` events. */
     listenStart: channel(noInput, z.object({ listening: z.boolean() }), {
       describe:
-        'Starts sending pressed events for every controller button press, for choosing a button by pressing it on the Nuclear Option bindings page.',
+        'Starts sending pressed events for every controller button press and moved events for every axis moved, for choosing a button or an axis by using it on the Nuclear Option bindings page.',
       tier: 'off',
     }),
     listenStop: channel(noInput, z.object({ listening: z.boolean() }), {
@@ -193,5 +236,7 @@ export const nuclearOptionBindingsContract = defineContract(
   {
     /** A controller button the user just pressed, while the page listens. */
     pressed: PressedSchema,
+    /** A controller axis the user just moved, while the page listens. */
+    moved: MovedSchema,
   }
 );

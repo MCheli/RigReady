@@ -9,14 +9,21 @@ import { errorText, useClient } from '../../../renderer/ipc';
 import { onMachineChanged } from '../../../renderer/machine';
 import {
   nuclearOptionBindingsContract,
+  type ChangeRequest,
   type ChangeReview,
   type ClearDeviceReview,
   type Overview,
   type OverviewBinding,
   type OverviewDevice,
+  type Moved,
   type Pressed,
 } from '../contract';
+import { controlLabel } from '../../../core/bindings';
 import { canChange, shownBindings } from './rows';
+
+/** The usual axes, in the order the game numbers them, for a controller that is not plugged in. */
+const USUAL_AXES = ['X', 'Y', 'Z', 'RX', 'RY', 'RZ', 'SLIDER1', 'SLIDER2'];
+const axisLabel = (name: string): string => controlLabel({ kind: 'axis', axis: name });
 
 /**
  * Nuclear Option's bindings as the game saved them, one device at a time. A button of a
@@ -38,7 +45,10 @@ const device = computed<OverviewDevice | undefined>(
 const rows = computed(() =>
   device.value ? shownBindings(device.value.bindings, search.value) : []
 );
-const buttonActions = computed(() => new Set((overview.value?.actions ?? []).map((a) => a.id)));
+/** What each thing the page offers to bind is bound to, by its binding id ("5", "25", "25:+"). */
+const takes = computed(
+  () => new Map((overview.value?.actions ?? []).map((a) => [a.key, a.takes] as const))
+);
 
 /** The controller a link asked for (`?guid=`), when it is one the game has bindings for. */
 function fromLink(view: Overview): string | undefined {
@@ -87,12 +97,18 @@ const deviceIcon = (d: OverviewDevice): string =>
 // ---- Changing one binding: the review first, and only its Save writes ----
 
 interface Editing {
-  /** The action; chosen in the dialog when it opens from "Bind an action". */
-  actionId: number | null;
+  /**
+   * What is being bound, by its key in the overview's actions ("5", "25", "25:+"); chosen in
+   * the dialog when it opens from "Bind an action".
+   */
+  key: string | null;
   /** The action was given by the row, so it is not asked for. */
   fromRow: boolean;
   /** The button, as typed; empty until one is. */
   button: string;
+  /** For an axis action: the controller's axis by its name, and whether it is reversed. */
+  axis: string | null;
+  invert: boolean;
   clear: boolean;
 }
 const editing = ref<Editing>();
@@ -103,12 +119,38 @@ const savedMessage = ref('');
 /** Counts the reviews asked for: an answer to an earlier one is not shown. */
 let reviewTurn = 0;
 
-const wantedButton = computed<number | null | undefined>(() => {
+/** The entry of the overview's actions being bound: a button action, an axis, or a side. */
+const entry = computed(() =>
+  (overview.value?.actions ?? []).find((a) => a.key === editing.value?.key)
+);
+const wantsAxis = computed(() => entry.value?.takes === 'axis');
+/** The axes of the controller shown, for the picker: the name the game numbers, and RigReady's words. */
+const axisItems = computed(() =>
+  (device.value?.controls?.axes ?? USUAL_AXES).map((name) => ({
+    value: name,
+    title: axisLabel(name),
+  }))
+);
+
+/** The change as it will be asked for; undefined until enough is chosen. */
+const wanted = computed<Omit<ChangeRequest, 'seen'> | undefined>(() => {
   const e = editing.value;
-  if (!e) return undefined;
-  if (e.clear) return null;
+  const what = entry.value;
+  if (!e || !what || !device.value) return undefined;
+  const base = {
+    device: device.value.id,
+    actionId: what.id,
+    ...(what.side ? { side: what.side } : {}),
+  };
+  if (what.takes === 'axis') {
+    if (e.clear) return { ...base, axis: null };
+    return e.axis ? { ...base, axis: { name: e.axis, invert: e.invert } } : undefined;
+  }
+  if (e.clear) return { ...base, button: null };
   const n = Number(e.button);
-  return e.button.trim() !== '' && Number.isInteger(n) && n >= 1 && n <= 128 ? n : undefined;
+  return e.button.trim() !== '' && Number.isInteger(n) && n >= 1 && n <= 128
+    ? { ...base, button: n }
+    : undefined;
 });
 const buttonHint = computed(() => {
   const count = device.value?.controls?.buttons;
@@ -121,15 +163,23 @@ async function refreshReview(): Promise<void> {
   const mine = ++reviewTurn;
   review.value = undefined;
   reviewError.value = '';
-  const e = editing.value;
-  const button = wantedButton.value;
-  if (!e || !device.value || e.actionId === null || button === undefined) return;
-  const result = await api.changePreview({ device: device.value.id, actionId: e.actionId, button });
+  const request = wanted.value;
+  if (!request) return;
+  const result = await api.changePreview(request);
   if (mine !== reviewTurn) return;
   if (result.ok) review.value = result.value;
   else reviewError.value = errorText(result.error);
 }
-watch(() => [editing.value?.actionId, editing.value?.button, editing.value?.clear], refreshReview);
+watch(
+  () => [
+    editing.value?.key,
+    editing.value?.button,
+    editing.value?.axis,
+    editing.value?.invert,
+    editing.value?.clear,
+  ],
+  refreshReview
+);
 
 // ---- The button can be pressed instead of typed, while the dialog asks for one ----
 
@@ -142,9 +192,23 @@ let listens = 0;
 /** Main was asked to listen and has not been told to stop since. */
 let listenAsked = false;
 
+/** An axis moved while the dialog asks for one. */
+function onMoved(move: Moved): void {
+  const e = editing.value;
+  if (!e || e.clear || !device.value || !wantsAxis.value) return;
+  if (move.device.toUpperCase() !== (device.value.guid ?? '').toUpperCase()) {
+    elsewhere.value = `That was an axis on ${move.deviceName}. This change is for ${device.value.name}.`;
+    return;
+  }
+  const known = axisItems.value.find((a) => a.value.toUpperCase() === move.axis.toUpperCase());
+  if (!known) return;
+  elsewhere.value = '';
+  e.axis = known.value;
+}
+
 function onPressed(press: Pressed): void {
   const e = editing.value;
-  if (!e || e.clear || !device.value) return;
+  if (!e || e.clear || !device.value || wantsAxis.value) return;
   if (press.device.toUpperCase() !== (device.value.guid ?? '').toUpperCase()) {
     elsewhere.value = `That was Button ${press.button} on ${press.deviceName}. This change is for ${device.value.name}.`;
     return;
@@ -159,7 +223,12 @@ async function startListening(): Promise<void> {
   // Only a plugged-in controller can be pressed; the number can always be typed.
   if (!device.value?.connected) return;
   offPressed?.();
-  offPressed = api.on('pressed', onPressed);
+  const offButton = api.on('pressed', onPressed);
+  const offAxis = api.on('moved', onMoved);
+  offPressed = () => {
+    offButton();
+    offAxis();
+  };
   listenAsked = true;
   const started = await api.listenStart();
   if (mine !== listens) return;
@@ -184,18 +253,28 @@ async function stopListening(): Promise<void> {
 }
 onBeforeUnmount(() => void stopListening());
 
+const blank = { button: '', axis: null, invert: false };
 function startChange(binding: OverviewBinding): void {
   savedMessage.value = '';
-  editing.value = { actionId: Number(binding.actionId), fromRow: true, button: '', clear: false };
+  editing.value = {
+    ...blank,
+    key: binding.actionId,
+    fromRow: true,
+    // An axis row opens on what it has, so that only reversing it is one tick.
+    ...(binding.control?.kind === 'axis'
+      ? { axis: binding.control.axis, invert: binding.inverted }
+      : {}),
+    clear: false,
+  };
   void startListening();
 }
 function startClear(binding: OverviewBinding): void {
   savedMessage.value = '';
-  editing.value = { actionId: Number(binding.actionId), fromRow: true, button: '', clear: true };
+  editing.value = { ...blank, key: binding.actionId, fromRow: true, clear: true };
 }
 function startBind(): void {
   savedMessage.value = '';
-  editing.value = { actionId: null, fromRow: false, button: '', clear: false };
+  editing.value = { ...blank, key: null, fromRow: false, clear: false };
   void startListening();
 }
 function closeEdit(): void {
@@ -207,16 +286,10 @@ function closeEdit(): void {
 }
 
 async function save(): Promise<void> {
-  const e = editing.value;
-  const button = wantedButton.value;
-  if (!e || !device.value || e.actionId === null || button === undefined || !review.value) return;
+  const request = wanted.value;
+  if (!request || !review.value) return;
   saving.value = true;
-  const result = await api.change({
-    device: device.value.id,
-    actionId: e.actionId,
-    button,
-    seen: review.value.seen,
-  });
+  const result = await api.change({ ...request, seen: review.value.seen });
   saving.value = false;
   if (!result.ok) {
     reviewError.value = errorText(result.error);
@@ -276,9 +349,10 @@ async function saveClearAll(): Promise<void> {
 const editTitle = computed(() => {
   const e = editing.value;
   if (!e) return '';
-  const name = overview.value?.actions.find((a) => a.id === e.actionId)?.name;
+  const name = entry.value?.name;
   if (e.clear) return `Clear ${name ?? 'this binding'}?`;
-  return name ? `Bind ${name} to a button?` : 'Bind an action to a button?';
+  if (!name) return 'Bind an action?';
+  return wantsAxis.value ? `Bind ${name} to an axis?` : `Bind ${name} to a button?`;
 });
 </script>
 
@@ -363,12 +437,12 @@ const editTitle = computed(() => {
         <div class="rr-panel nb-note" data-testid="nuclear-option-bindings-note">
           <v-icon icon="mdi-pencil-outline" class="rr-muted" />
           <div>
-            You can bind a controller’s button to an action here, move it or clear it, or clear
-            everything the game bound on a controller you do not use for it. RigReady shows what
-            will change and writes nothing until you press Save; it backs the saved bindings up
+            You can bind a controller’s button or axis to an action here, move it or clear it, or
+            clear everything the game bound on a controller you do not use for it. RigReady shows
+            what will change and writes nothing until you press Save; it backs the saved bindings up
             first, and Undo is on the
-            <router-link to="/configure/safety">Safety page</router-link>. An axis, a key or a mouse
-            button is bound in the game, under Settings, then Controls. The bindings are in
+            <router-link to="/configure/safety">Safety page</router-link>. A key or a mouse button
+            is bound in the game, under Settings, then Controls. The bindings are in
             <span class="rr-mono">{{ overview.registryKey }}</span>.
           </div>
         </div>
@@ -479,11 +553,11 @@ const editTitle = computed(() => {
                   </td>
                   <td class="rr-mono rr-muted">{{ b.input }}</td>
                   <td v-if="device.kind === 'controller'" class="nb-actions">
-                    <template v-if="canChange(b, buttonActions)">
+                    <template v-if="canChange(b, takes)">
                       <v-btn
                         size="small"
                         variant="text"
-                        :aria-label="`Change the button for ${b.action}`"
+                        :aria-label="`Change what ${b.action} is on`"
                         data-testid="nuclear-option-bindings-change"
                         @click="startChange(b)"
                         >Change</v-btn
@@ -542,10 +616,10 @@ const editTitle = computed(() => {
         </p>
         <v-autocomplete
           v-if="!editing.fromRow"
-          v-model="editing.actionId"
+          v-model="editing.key"
           :items="overview?.actions ?? []"
           item-title="name"
-          item-value="id"
+          item-value="key"
           label="Action"
           density="compact"
           variant="outlined"
@@ -553,8 +627,33 @@ const editTitle = computed(() => {
           class="mb-3"
           data-testid="nuclear-option-bindings-edit-action"
         />
+        <template v-if="!editing.clear && wantsAxis">
+          <v-select
+            v-model="editing.axis"
+            :items="axisItems"
+            label="Axis"
+            density="compact"
+            variant="outlined"
+            :hint="
+              listening
+                ? 'Move the axis on the controller, or choose it here.'
+                : 'The axis of this controller, as on its cheat sheet.'
+            "
+            persistent-hint
+            class="mb-3"
+            data-testid="nuclear-option-bindings-edit-axis"
+          />
+          <v-checkbox
+            v-model="editing.invert"
+            label="Reversed"
+            density="compact"
+            hide-details
+            class="mb-3"
+            data-testid="nuclear-option-bindings-edit-invert"
+          />
+        </template>
         <v-text-field
-          v-if="!editing.clear"
+          v-else-if="!editing.clear"
           v-model="editing.button"
           label="Button number"
           type="number"
@@ -586,8 +685,9 @@ const editTitle = computed(() => {
           <div v-if="review.alsoOnButton.length" class="nb-also">
             <v-icon icon="mdi-alert-outline" size="small" class="rr-warn" />
             <span
-              >That button already does {{ review.alsoOnButton.join(', ') }}. One press will do
-              both.</span
+              >That {{ wantsAxis ? 'axis' : 'button' }} already does
+              {{ review.alsoOnButton.join(', ') }}. One {{ wantsAxis ? 'movement' : 'press' }} will
+              do both.</span
             >
           </div>
           <div

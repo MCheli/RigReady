@@ -56,8 +56,8 @@ test('nuclear option bindings: bind, move and clear a button after a review, und
   const rows = page.getByTestId('nuclear-option-bindings-row');
   const row = (action: string): Locator => rows.filter({ hasText: action });
   await expect(rows).toHaveCount(7);
-  // An axis has no Change: it is bound in the game.
-  await expect(row('Pitch Axis').getByTestId('nuclear-option-bindings-change')).toHaveCount(0);
+  // An axis has a Change too (tests/e2e/nuclear-option-bindings-axes.e2e.ts).
+  await expect(row('Pitch Axis').getByTestId('nuclear-option-bindings-change')).toHaveCount(1);
   await expect(row('Fire').getByTestId('nuclear-option-bindings-change')).toHaveCount(1);
 
   // 1. Bind an action that is not bound: nothing is written until Save.

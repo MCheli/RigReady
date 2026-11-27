@@ -9,12 +9,14 @@ import type {
   ClearDeviceRequest,
   ClearDeviceReview,
 } from '../contract';
-import { actionOf } from './actions';
-import { clearMapText, editMapText } from './edit';
+import { actionOf, bindingName } from './actions';
+import { controlLabel } from '../../../core/bindings';
+import { clearMapText, editMapText, type BindingEdit, type BoundTo } from './edit';
 import {
   GAME,
   GAME_NAME,
   REGISTRY_KEY,
+  axisNamesOf,
   storedControllerMaps,
   storedGameMap,
   type BindingsContext,
@@ -46,12 +48,19 @@ export async function whyBlocked(ctx: BindingsContext): Promise<string | undefin
   return list.value.some((p) => names.has(p.name.toLowerCase())) ? WHY_CLOSED : undefined;
 }
 
-const buttonsInWords = (buttons: number[]): string =>
-  buttons.length === 0
-    ? 'Not bound'
-    : buttons.length === 1
-      ? `Button ${buttons[0]}`
-      : `Buttons ${buttons.slice(0, -1).join(', ')} and ${buttons.at(-1)}`;
+/** One thing an action is on, in RigReady's words: "Button 3", "Y axis", "Y axis, reversed". */
+function boundInWords(to: BoundTo, axes: string[]): string {
+  if (to.kind === 'button') return `Button ${to.button}`;
+  const name = axes[to.index];
+  const axis = name ? controlLabel({ kind: 'axis', axis: name }) : `Axis ${to.index}`;
+  return to.invert ? `${axis}, reversed` : axis;
+}
+
+const inWords = (to: BoundTo[], axes: string[]): string => {
+  if (to.length === 0) return 'Not bound';
+  const words = to.map((t) => boundInWords(t, axes));
+  return words.length === 1 ? words[0]! : `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
+};
 
 interface Plan {
   valueName: string;
@@ -64,6 +73,8 @@ interface Plan {
   after: string;
   same: boolean;
   alsoOnButton: string[];
+  /** The request clears the binding. */
+  clears: boolean;
 }
 
 /**
@@ -94,11 +105,32 @@ async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Resul
   const exact = await exactBytes(ctx, stored.value.valueName, stored.value.text);
   if (!exact.ok) return exact;
   const text = exact.value;
-  const edited = editMapText(stored.value.text, {
+  const axes = await axisNamesOf(ctx, request.device);
+  if (!axes.ok) return axes;
+  // The axis is asked for by the name RigReady shows; the game knows it by its number.
+  let axis: BindingEdit['axis'];
+  if (request.axis === null) axis = null;
+  else if (request.axis) {
+    const wanted = request.axis.name.toUpperCase();
+    const index = axes.value.findIndex((name) => name.toUpperCase() === wanted);
+    if (index < 0) {
+      return err(
+        'nuclear-option.edit.noAxis',
+        `This controller has no axis called ${request.axis.name}. Its axes are ${axes.value.join(', ')}.`
+      );
+    }
+    axis = { index, invert: request.axis.invert };
+  }
+  const edit: BindingEdit = {
     actionId: request.actionId,
-    button: request.button,
-  });
+    ...(request.side ? { side: request.side } : {}),
+    ...(request.button !== undefined ? { button: request.button } : {}),
+    ...(axis !== undefined ? { axis } : {}),
+  };
+  const edited = editMapText(stored.value.text, edit);
   if (!edited.ok) return edited;
+  const clears = request.button === null || request.axis === null;
+  const action = actionOf(request.actionId);
   return ok({
     valueName: stored.value.valueName,
     address: registryValuePath('HKCU', REGISTRY_KEY, stored.value.valueName),
@@ -106,11 +138,17 @@ async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Resul
     // What the preview was made from: the value's name and its bytes.
     seen: sha256(`${stored.value.valueName}\n${sha256(text)}`),
     deviceName: stored.value.deviceName,
-    actionName: actionOf(request.actionId).name,
-    before: buttonsInWords(edited.value.before),
-    after: request.button === null ? 'Not bound' : `Button ${request.button}`,
+    // One side of an axis action goes by the side's own name: "Zoom In".
+    actionName: bindingName(action, request.side === undefined, request.side === '-' ? 1 : 0),
+    before: inWords(edited.value.before, axes.value),
+    after: clears
+      ? 'Not bound'
+      : axis
+        ? boundInWords({ kind: 'axis', ...axis }, axes.value)
+        : `Button ${request.button}`,
     same: edited.value.same,
-    alsoOnButton: edited.value.alsoOnButton.map((id) => actionOf(id).name),
+    alsoOnButton: edited.value.alsoOn,
+    clears,
   });
 }
 
@@ -188,14 +226,13 @@ async function applyNow(
   if (p.same) {
     return ok({
       changed: false,
-      message:
-        request.button === null
-          ? `Nothing was changed: ${p.actionName} is not bound on ${p.deviceName}.`
-          : `Nothing was changed: ${p.actionName} is already on ${p.after} of ${p.deviceName}.`,
+      message: p.clears
+        ? `Nothing was changed: ${p.actionName} is not bound on ${p.deviceName}.`
+        : `Nothing was changed: ${p.actionName} is already on ${p.after} of ${p.deviceName}.`,
     });
   }
   const group = ctx.ports.files.beginGroup(
-    request.button === null
+    p.clears
       ? `${GAME_NAME} bindings: ${p.actionName} cleared on ${p.deviceName}`
       : `${GAME_NAME} bindings: ${p.actionName} bound to ${p.after} on ${p.deviceName}`
   );
@@ -215,10 +252,9 @@ async function applyNow(
   }
   return ok({
     changed: true,
-    message:
-      request.button === null
-        ? `Saved: ${p.actionName} is no longer bound on ${p.deviceName}. Undo is on the Safety page.`
-        : `Saved: ${p.actionName} is now on ${p.after} of ${p.deviceName}. Undo is on the Safety page.`,
+    message: p.clears
+      ? `Saved: ${p.actionName} is no longer bound on ${p.deviceName}. Undo is on the Safety page.`
+      : `Saved: ${p.actionName} is now on ${p.after} of ${p.deviceName}. Undo is on the Safety page.`,
   });
 }
 

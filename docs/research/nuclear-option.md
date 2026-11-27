@@ -255,7 +255,13 @@ A binding the player made on the game's controls screen is one `ActionElementMap
 - **Clear**: the element is taken out. A list that loses its last element is written `<buttonMaps />`, as the game writes an empty one. **[V]** the form. The game, finding a default action with no binding, does not put its default back: **[V]** for a whole controller ("Clearing a whole controller" below).
 - Everything else in the document stays character for character, including the zero byte at the end.
 
-Refused, with the reason: an axis action, one side of an axis action on a button, a key, a mouse button, an action not in the table, an action that already has a binding the writer does not understand (a button with a modifier key, an axis), a controller with no saved map, a button outside 1 to 128. The writer parses its own result and checks it is the map it meant before it returns it.
+Since 27 November 2026 it also writes these, each seen in the owner's saved maps as the game writes one the player made:
+
+- **A button on one side of an axis action** ("Zoom In", "Apply Brakes"): the same element as for a button action, with `axisContribution` 0 for the positive side and 1 for the negative. **[V]** the positive side (Zoom In on the stick, `actionCategoryId` -1); **[V]** a negative side written with `actionCategoryId` 0 and `axisContribution` 1 (Zoom Out). That the game takes a negative side written with -1 was **[I]** until the proof below; now **[V]**. One side is told from the other by `axisContribution`, so each is moved and cleared on its own.
+- **A whole axis of the controller on an axis action**: `actionCategoryId` -1, `elementType` 0, `elementIdentifierId` the axis's number (0 the first), `axisRange` 0, `invert` true or false, `axisContribution` 0, in `axisMaps`. **[V]** two such bindings (Yaw Axis on axis 2; Brake Axis on axis 0, inverted). The axis is asked for by the name RigReady shows it under and turned into its number from the plugged-in controller's own list of axes, the same order the reader names them by.
+- An axis action can have its whole-axis binding and buttons on its sides at once: they are separate elements in separate lists.
+
+Refused, with the reason: half an axis on an action (`axisRange` 1 or 2 in `axisMaps`, never seen written by the player), an axis on a button action, a key, a mouse button, an action not in the table, an action that already has a binding the writer does not understand (a button with a modifier key, an axis), a controller with no saved map, a button outside 1 to 128. The writer parses its own result and checks it is the map it meant before it returns it.
 
 Also refused, each because the result could not be trusted: a saved map whose bytes are not the UTF-8 of the text read from them (writing the text back would lose a byte); a map this code would not write back character for character as it stands (a number written "005"), since a save writes every binding again; and a controller Rewired has a definition of its own for (a `hardwareGuid` that is not all zeros), whose buttons are numbered by that definition. Saves run one at a time, each reading, checking and writing on its own, so two at once cannot both start from the same map.
 
@@ -270,7 +276,7 @@ The game's registry key is listed among the game module's settings locations. Th
 
 ### The second look, 26 November 2026
 
-On the owner's rig, the game (0.34.6, build 26327221) from Steam, this branch built and run with a data folder of its own. A copy of the whole key was exported with `reg export` first.
+On the owner's rig, the game (0.34.6, build 26327221) from Steam, this branch built and run with a data folder of its own. A copy of the key was exported with `reg export` first (which, it turned out later, leaves out the saved maps: see "Axes and axis sides in the game").
 
 | Step | What was done | What was seen | Result |
 |---|---|---|---|
@@ -284,6 +290,23 @@ On the owner's rig, the game (0.34.6, build 26327221) from Steam, this branch bu
 The steps were driven by Claude Code on the owner's PC overnight, with the owner's permission; nobody was at the controls.
 
 Not tried: pressing the button in a flight to see the lights toggle (the game's controls screen showing the binding is the evidence that the game read it); moving or clearing a binding in the real game (only binding an unbound action); a controller other than the stick; an action added by a game update.
+
+### Axes and axis sides in the game, 27 November 2026
+
+On the owner's rig (0.34.6, build 26327221), driven by Claude Code with the owner's permission, on the WINWING ICP panel:
+
+| Step | What was done | What was seen | Result |
+|---|---|---|---|
+| Before | Every value of the key read through PowerShell into a file; `RIGREADY_RIG_NUCLEAR_OPTION=before` | The snapshot of 145 values | Pass |
+| An axis | Game closed. **Change** on Pitch Axis (X axis), **Reversed** ticked, the review said "X axis" to "X axis, reversed"; **Save** | "Saved: Pitch Axis is now on X axis, reversed of WINWING ICP." | Pass |
+| A side | **Bind an action**, Zoom Out, button 20; **Save** | "Saved: Zoom Out is now on Button 20 of WINWING ICP." | Pass |
+| In the game | Started the game, its control bindings menu, WINWING ICP | Pitch Axis on axis 0 with its reverse mark lit (Roll Axis beside it not); controller button 19 on the Zoom Out row, nothing on Zoom In | Pass |
+| The game closes | Closed it without changing anything there | Of the key's 85 binary values, three differed from the snapshot: Unity's two session counters and the ICP's map, which held exactly the two elements RigReady wrote | Pass |
+| Undo | Safety page, **Undo** on both entries, newer first | Only Unity's two counters differed from the snapshot | Pass |
+
+Not tried: an axis bound to an action that had none (only one reversed in place, which writes the same element); an axis moved to another axis; a positive side (seen in the owner's own maps); pressing or moving either in a flight.
+
+**`reg export` does not copy this key whole.** The "copy of the whole key" taken with `reg export` before each proof (26 and 27 November) holds 40 of the key's 145 values: `reg.exe` leaves out values whose names are long, and every saved map has such a name. **[V]** on 27 November, when a comparison made from such an export saw no difference where there was one. The comparisons the rig test makes (through the registry port) were not affected, and RigReady's own backups, which Undo restores from, hold the values' bytes: the MFD1-L map cleared and undone above is byte for byte the backup taken before it was cleared. **[V]** A full copy for safety is made by reading every value (PowerShell's `Get-Item` and `GetValue`), not by `reg export`.
 
 ### In a flight, 27 November 2026
 
