@@ -6664,6 +6664,7 @@ requirements:
       - "src/features/nuclear-option-bindings/core/view.test.ts#an axis past the ones a plugged-in controller has is not given another axis’s name"
       - "src/features/nuclear-option-bindings/core/view.test.ts#is the reader the cheat sheets, the trainer and the overlay ask: one set for every aircraft"
       - "src/features/nuclear-option-bindings/core/view.test.ts#a saved map that cannot be read is said so, and the others are still shown"
+      - "src/features/nuclear-option-bindings/core/view.test.ts#when no saved map can be read, the page still says the game has saved bindings and why they cannot be read"
       - "src/features/nuclear-option-bindings/core/view.test.ts#with the game installed but never run, and on a PC without the game, nothing is shown and nothing fails"
       - "src/features/nuclear-option-bindings/core/view.test.ts#the scenario’s registry values are the fixture files, byte for byte"
       - "src/features/nuclear-option-bindings/renderer/rows.test.ts#matches every word against the action, its group, the input and the modifier keys"
@@ -6688,6 +6689,8 @@ requirements:
     evidence:
       - "src/features/nuclear-option-bindings/core/backup.test.ts#keeps every registry value of the game as one record, with a table a person can read"
       - "src/features/nuclear-option-bindings/core/backup.test.ts#keeps nothing when the game has saved nothing"
+      - "src/features/nuclear-option-bindings/core/backup.test.ts#a registry that cannot be read is an error the backup hears, not an empty record list"
+      - "src/features/nuclear-option-bindings/core/backup.test.ts#a string setting of eight bytes is shown as its text, not as a number"
       - "src/features/nuclear-option-bindings/core/backup.test.ts#shows a float setting as a number, a map that cannot be read as such, and long data by its size"
       - "src/features/backup/core/sources.test.ts#keeps the Fanatec driver settings from the registry as a record that is shown and never restored"
     notes: "The record goes through the backup feature's existing path for registry records (the Fanatec test above is that path's evidence). Not tried: opening such a record on the owner's rig."
