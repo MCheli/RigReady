@@ -250,7 +250,7 @@ const PAGES: ConfigurePage[] = [
     name: 'ai-assist',
     route: '/configure/ai-assist',
     testId: 'ai-guide-page',
-    says: ['Neither DCS World nor iRacing was found on this PC'],
+    says: ['None of DCS World, iRacing and Nuclear Option was found on this PC'],
   },
   {
     name: 'diagnostics',

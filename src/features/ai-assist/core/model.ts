@@ -172,6 +172,25 @@ export const IracingReviewViewSchema = z.object({
 });
 export type IracingReviewView = z.infer<typeof IracingReviewViewSchema>;
 
+/** One Nuclear Option binding as it would change, from that feature's own preview. */
+export const NuclearOptionReviewViewSchema = z.object({
+  actionId: z.string(),
+  label: z.string(),
+  /** The controller's name as the game saved it. */
+  device: z.string(),
+  before: z.string(),
+  after: z.string(),
+  /** Saving would change nothing: the action is on exactly this button already. */
+  same: z.boolean(),
+  /** What else that button already does: one press will do those too. */
+  alsoOnButton: z.array(z.string()),
+  blocked: z.string().optional(),
+  preview: ChangePreviewSchema,
+  /** The saved map as the preview read it: handed back to bind, which refuses one that changed. */
+  seen: z.string(),
+});
+export type NuclearOptionReviewView = z.infer<typeof NuclearOptionReviewViewSchema>;
+
 export const PlanSchema = z.object({
   summary: z.string(),
   files: z.array(

@@ -173,12 +173,12 @@ const guidePages = (titles: string[], pages: string[]): string[] => [
 ];
 
 describe('NAV-GAMES-006 an entry or a page about a game is offered where the game is found', () => {
-  it('the binding guide is the one menu entry about a game, and it is about DCS and iRacing', async () => {
+  it('the binding guide is the one menu entry about a game, and it is about DCS, iRacing and Nuclear Option', async () => {
     const manifests = await realManifests();
     const aboutAGame = manifests.flatMap((m) =>
       (m.nav ?? []).filter((entry) => entry.games).map((entry) => [entry.title, entry.games])
     );
-    expect(aboutAGame).toEqual([['Binding guide', ['dcs', 'iracing']]]);
+    expect(aboutAGame).toEqual([['Binding guide', ['dcs', 'iracing', 'nuclear-option']]]);
     // Its route stays, so a link to it still opens the page, which says DCS was not found.
     const guide = manifests.find((m) => m.id === 'ai-assist')!;
     expect(guide.routes?.map((r) => r.path)).toEqual(['/configure/ai-assist/:tab?']);

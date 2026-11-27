@@ -9,6 +9,7 @@ import { findPrograms } from './core/programs';
 import { loggedHttp } from './core/providerLog';
 import { assistantTools } from './core/tools';
 import { iracingThroughChannels } from './core/iracing';
+import { nuclearOptionThroughChannels } from './core/nuclearOption';
 import { plainLabels } from './core/pack';
 import { AiAssist } from './core/service';
 import { shippedPack } from './core/shipped';
@@ -28,6 +29,8 @@ export default defineFeatureMain({
       // iRacing's bindings belong to the iRacing bindings feature: the guide reads and binds
       // them through its channels, validated as a window's calls are, never its files.
       iracing: iracingThroughChannels((channel, input) => ctx.invoke(channel, input)),
+      // Nuclear Option's the same way: its bindings feature owns what the game saved.
+      nuclearOption: nuclearOptionThroughChannels((channel, input) => ctx.invoke(channel, input)),
       settings: ctx.settings,
       onProgress: (progress) => ctx.emit(aiAssistContract, 'sendProgress', progress),
       onCounted: (month) => ctx.emit(aiAssistContract, 'monthChanged', month),
@@ -92,6 +95,10 @@ export default defineFeatureMain({
           ai.iracingPreview(aircraftId, actionId, binding),
         iracingBind: ({ aircraftId, actionId, binding, seen }) =>
           ai.iracingBind(aircraftId, actionId, binding, seen),
+        nuclearOptionBindPreview: ({ aircraftId, actionId, binding }) =>
+          ai.nuclearOptionPreview(aircraftId, actionId, binding),
+        nuclearOptionBind: ({ aircraftId, actionId, binding, seen }) =>
+          ai.nuclearOptionBind(aircraftId, actionId, binding, seen),
         async listenStart() {
           const started = await ctx.ports.input.start();
           if (!started.ok) return started;

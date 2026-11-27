@@ -4,18 +4,23 @@ import type { AircraftBindings, BoundAction, BoundInput } from '../../../core/bi
 import { err, ok, type Result } from '../../../core/result';
 
 /**
- * Binding guides ("knowledge packs"): for one aircraft, or one class of iRacing cars, every
+ * Binding guides ("knowledge packs"): for one aircraft, one class of iRacing cars, or a game
+ * with one set of bindings for every aircraft (Nuclear Option), every
  * important action in plain language, in priority tiers, with where it belongs and a plan per
  * kind of device. They are data files (packs/*.yaml, documented in packs/README.md) so anyone
  * can add one without writing code. They work without any AI key.
  */
 
 /** The games a guide can be for. A file without `game` is for DCS, as every guide was before. */
-export const GUIDE_GAMES = ['dcs', 'iracing'] as const;
+export const GUIDE_GAMES = ['dcs', 'iracing', 'nuclear-option'] as const;
 export const GuideGameSchema = z.enum(GUIDE_GAMES);
 export type GuideGame = z.infer<typeof GuideGameSchema>;
 
-export const GUIDE_GAME_NAMES: Record<GuideGame, string> = { dcs: 'DCS World', iracing: 'iRacing' };
+export const GUIDE_GAME_NAMES: Record<GuideGame, string> = {
+  dcs: 'DCS World',
+  iracing: 'iRacing',
+  'nuclear-option': 'Nuclear Option',
+};
 
 export const TIERS = ['must', 'should', 'nice'] as const;
 export const TierSchema = z.enum(TIERS);
@@ -79,10 +84,12 @@ export const roleTitle = (game: GuideGame, role: PackRole): string =>
 export const GAME_PLACES: Record<GuideGame, readonly Place[]> = {
   dcs: ['hotas', 'panel', 'keyboard'],
   iracing: ['rim', 'panel', 'keyboard'],
+  'nuclear-option': ['hotas', 'panel', 'keyboard'],
 };
 export const GAME_ROLES: Record<GuideGame, readonly PackRole[]> = {
   dcs: ['stick', 'throttle', 'pedals', 'mfd', 'panel', 'keyboard'],
   iracing: ['wheel', 'pedals', 'shifter', 'panel', 'keyboard'],
+  'nuclear-option': ['stick', 'throttle', 'pedals', 'panel', 'keyboard'],
 };
 
 const text = (max: number) => z.string().trim().min(1).max(max);
@@ -241,15 +248,19 @@ export type Pack = z.infer<typeof PackObjectSchema>;
 export const guideKey = (game: GuideGame, id: string): string =>
   game === 'dcs' ? id.toLowerCase() : `${game}:${id.toLowerCase()}`;
 
-/** The game a guide key is for: "iracing:gt3" is iRacing, anything else DCS. */
+/** The game a guide key is for: "iracing:gt3" is iRacing, a key with no game in it DCS. */
 export const gameOfKey = (key: string): GuideGame =>
-  key.toLowerCase().startsWith('iracing:') ? 'iracing' : 'dcs';
+  GUIDE_GAMES.find((game) => game !== 'dcs' && key.toLowerCase().startsWith(`${game}:`)) ?? 'dcs';
 
 /** The guide as a file: an iRacing guide says `car`, a DCS one has no `game` line, as before. */
 export function packText(pack: Pack, head = ''): string {
   const { format, game, aircraft, ...rest } = pack;
   const shaped =
-    game === 'dcs' ? { format, aircraft, ...rest } : { format, game, car: aircraft, ...rest };
+    game === 'dcs'
+      ? { format, aircraft, ...rest }
+      : game === 'iracing'
+        ? { format, game, car: aircraft, ...rest }
+        : { format, game, aircraft, ...rest };
   return `${head}${yaml.dump(shaped, { lineWidth: 100 })}`;
 }
 
