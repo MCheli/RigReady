@@ -123,8 +123,21 @@ async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Resul
   const exact = await exactBytes(ctx, stored.value.valueName, stored.value.text);
   if (!exact.ok) return exact;
   const text = exact.value;
-  const axes = onKeyboard ? ok<string[]>([]) : await axisNamesOf(ctx, request.device);
-  if (!axes.ok) return axes;
+  // The keyboard has no axes to ask about.
+  const asked = onKeyboard
+    ? ok({ names: [] as string[], asked: true })
+    : await axisNamesOf(ctx, request.device);
+  if (!asked.ok) return asked;
+  const axes = { value: asked.value.names };
+  // Which number the game has for "Slider 1" depends on the controller's own list of axes.
+  // Without it the number would be a guess from the usual order, so a new axis binding
+  // waits for the controller; clearing one needs no number.
+  if (request.axis && !asked.value.asked) {
+    return err(
+      'nuclear-option.edit.unplugged',
+      'Plug this controller in to bind an axis: RigReady asks it which axes it has, and the game numbers them in that order.'
+    );
+  }
   // The key is asked for by the browser's name for it; the game knows it by two numbers.
   let key: BindingEdit['key'];
   if (request.key === null) key = null;
@@ -175,8 +188,13 @@ async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Resul
     valueName: stored.value.valueName,
     address: registryValuePath('HKCU', REGISTRY_KEY, stored.value.valueName),
     bytes: new Uint8Array(Buffer.from(edited.value.text, 'utf8')),
-    // What the preview was made from: the value's name and its bytes.
-    seen: sha256(`${stored.value.valueName}\n${sha256(text)}`),
+    // What the preview was made from and what it showed would be written: the value's name,
+    // its bytes now, and the bytes it would become. An axis asked for by name is turned into
+    // a number here; if that came out differently at Save (the controller unplugged
+    // meanwhile), the bytes differ and the save is refused.
+    seen: sha256(
+      `${stored.value.valueName}\n${sha256(text)}\n${sha256(Buffer.from(edited.value.text, 'utf8'))}`
+    ),
     deviceName: stored.value.deviceName,
     // One side of an axis action goes by the side's own name: "Zoom In".
     actionName: bindingName(action, request.side === undefined, request.side === '-' ? 1 : 0),

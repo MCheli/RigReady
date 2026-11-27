@@ -63,7 +63,7 @@ For an axis action the dialog asks for the axis instead of a button. Move the ax
 
 ![An axis chosen by moving it](../../../artifacts/screens/nuclear-option-bindings-axes/02-moved.png)
 
-A controller that is not plugged in has its axes listed in the usual order (X, Y, Z, then the rotations and two sliders), because RigReady cannot ask it for their names.
+The controller must be plugged in to bind an axis: the game numbers a controller's axes in the controller's own order, and RigReady asks the controller for it. For one that is not plugged in the review says so and nothing can be saved; clearing an axis binding works either way. Once an axis is chosen, moving another does not change it: clear the field to move another.
 
 ### A key
 

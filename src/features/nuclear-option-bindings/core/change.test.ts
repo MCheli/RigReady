@@ -192,7 +192,8 @@ describe('changing a Nuclear Option binding', () => {
     const a = await start();
     const first = await review(a, { device: STICK, actionId: 49, button: 12 });
     const second = await review(a, { device: STICK, actionId: 52, button: 13 });
-    expect(second.seen).toBe(first.seen);
+    // Both were shown the same map; each also holds what it would write.
+    expect(second.seen).not.toBe(first.seen);
     const results = await Promise.allSettled([
       change(a, { device: STICK, actionId: 49, button: 12, seen: first.seen }),
       change(a, { device: STICK, actionId: 52, button: 13, seen: second.seen }),
@@ -377,6 +378,91 @@ describe('changing a Nuclear Option binding', () => {
       ]);
     });
 
+    it('numbers an axis by the controller’s own list of axes, not by the usual order', async () => {
+      const a = await start();
+      const THROTTLE = 'controller:044F:0404:0';
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      // The scenario's throttle has X, Y, Z, RZ and SLIDER1: its slider is the fifth axis
+      // (number 4), though in the usual order a first slider is the seventh (6).
+      expect(view.devices.find((d) => d.id === THROTTLE)!.controls!.axes).toEqual([
+        'X',
+        'Y',
+        'Z',
+        'RZ',
+        'SLIDER1',
+      ]);
+      await change(a, {
+        device: THROTTLE,
+        actionId: 2,
+        axis: { name: 'SLIDER1', invert: false },
+      });
+      const after = await a.ports.registry.listValues('HKCU', REGISTRY_KEY);
+      if (!after.ok) throw new Error(after.error.message);
+      const text = Object.entries(after.value)
+        .filter(([name]) => /JoystickMap\|categoryId=0\|.*Throttle/.test(name))
+        .map(([, v]) => Buffer.from((v as { value: string }).value, 'hex').toString('utf8'))
+        .join('');
+      expect(text).toContain(
+        '<actionId>2</actionId><elementType>0</elementType><elementIdentifierId>4</elementIdentifierId>'
+      );
+      // RZ is the fourth (3), not the sixth (5).
+      const rz = await review(a, {
+        device: THROTTLE,
+        actionId: 0,
+        axis: { name: 'rz', invert: false },
+      });
+      expect(rz.after).toBe('Z rotation');
+    });
+
+    it('a controller that is not plugged in gets no new axis binding, only a clear; and one unplugged after the review is refused at Save', async () => {
+      const a = await start();
+      const THROTTLE = 'controller:044F:0404:0';
+      const values = async (): Promise<string> =>
+        JSON.stringify((await a.ports.registry.listValues('HKCU', REGISTRY_KEY)) as unknown);
+      // Shown while plugged in: SLIDER1 is the throttle's axis number 4.
+      const shown = await review(a, {
+        device: THROTTLE,
+        actionId: 2,
+        axis: { name: 'SLIDER1', invert: false },
+      });
+      const before = await values();
+      await mutate(a, [{ op: 'unplugDevice', match: { name: 'Throttle - HOTAS Warthog' } }]);
+      // At Save the controller cannot say which axes it has: the number would be a guess.
+      await expect(
+        change(a, {
+          device: THROTTLE,
+          actionId: 2,
+          axis: { name: 'SLIDER1', invert: false },
+          seen: shown.seen,
+        })
+      ).rejects.toThrow('Plug this controller in to bind an axis');
+      await expect(
+        review(a, { device: THROTTLE, actionId: 2, axis: { name: 'X', invert: false } })
+      ).rejects.toThrow('Plug this controller in to bind an axis');
+      expect(await values()).toBe(before);
+      // Clearing needs no number, and a button is a button whether plugged in or not.
+      const throttleAxis = await review(a, { device: THROTTLE, actionId: 4, axis: null });
+      expect(throttleAxis.after).toBe('Not bound');
+      expect(throttleAxis.same).toBe(false);
+      expect((await review(a, { device: THROTTLE, actionId: 49, button: 30 })).after).toBe(
+        'Button 30'
+      );
+    });
+
+    it('what the review showed would be written is part of what Save checks', async () => {
+      const a = await start();
+      const one = await review(a, { device: STICK, actionId: 49, button: 12 });
+      const other = await review(a, { device: STICK, actionId: 49, button: 13 });
+      // The same map, another change: a Save of one with the other's review is refused.
+      expect(one.seen).not.toBe(other.seen);
+      await expect(
+        change(a, { device: STICK, actionId: 49, button: 12, seen: other.seen })
+      ).rejects.toThrow('changed after the change was shown');
+      expect(
+        (await change(a, { device: STICK, actionId: 49, button: 12, seen: one.seen })).changed
+      ).toBe(true);
+    });
+
     it('binds a button to one side of an axis action under the side’s own name', async () => {
       const a = await start();
       const shown = await review(a, { device: STICK, actionId: 25, side: '+', button: 20 });
@@ -409,10 +495,12 @@ describe('changing a Nuclear Option binding', () => {
       await expect(
         review(a, { device: STICK, actionId: 2, axis: { name: 'NOPE', invert: false } })
       ).rejects.toThrow('This controller has no axis called NOPE');
-      await expect(review(a, { device: STICK, actionId: 2 })).rejects.toThrow();
+      await expect(review(a, { device: STICK, actionId: 2 })).rejects.toThrow(
+        'Give a button, an axis or a key: exactly one of them.'
+      );
       await expect(
         review(a, { device: STICK, actionId: 2, button: 3, axis: { name: 'X', invert: false } })
-      ).rejects.toThrow();
+      ).rejects.toThrow('Give a button, an axis or a key: exactly one of them.');
       await expect(
         review(a, { device: STICK, actionId: 49, axis: { name: 'X', invert: false } })
       ).rejects.toThrow('Toggle Navigation Lights is a button');

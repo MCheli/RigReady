@@ -143,7 +143,7 @@ const offered = computed(() =>
 const keyItems = GAME_KEYS.map((k) => ({ value: k.dom, title: keyName(k.keyCode) }));
 /** The axes of the controller shown, for the picker: the name the game numbers, and RigReady's words. */
 const axisItems = computed(() =>
-  (device.value?.controls?.axes ?? USUAL_AXES).map((name) => ({
+  (device.value?.controls?.axes.length ? device.value.controls.axes : USUAL_AXES).map((name) => ({
     value: name,
     title: axisLabel(name),
   }))
@@ -228,6 +228,9 @@ function onMoved(move: Moved): void {
     elsewhere.value = `That was an axis on ${move.deviceName}. This change is for ${device.value.name}.`;
     return;
   }
+  // Only while no axis is chosen: one that was moved, picked from the list or opened from
+  // its row stays until it is cleared, so a stick that is still moving does not change it.
+  if (e.axis) return;
   const known = axisItems.value.find((a) => a.value.toUpperCase() === move.axis.toUpperCase());
   if (!known) return;
   elsewhere.value = '';
@@ -760,9 +763,10 @@ const editTitle = computed(() => {
             label="Axis"
             density="compact"
             variant="outlined"
+            clearable
             :hint="
               listening
-                ? 'Move the axis on the controller, or choose it here.'
+                ? 'Move the axis on the controller, or choose it here. Clear the field to move another.'
                 : 'The axis of this controller, as on its cheat sheet.'
             "
             persistent-hint
