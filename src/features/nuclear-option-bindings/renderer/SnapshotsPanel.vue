@@ -358,9 +358,6 @@ const listed = (names: string[]): string =>
   cursor: pointer;
   color: var(--rr-muted);
 }
-.snap-back {
-  color: var(--rr-ok);
-}
 .snap-goes {
   color: var(--rr-muted);
 }
