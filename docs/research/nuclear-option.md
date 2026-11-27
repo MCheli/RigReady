@@ -18,7 +18,8 @@ Everything here was learned read-only: by listing folders and registry value nam
 - Steam app id **2168680**, name "Nuclear Option", type game, "Developed and published by Shockfront Studios Pty Ltd." **[W]** `https://store.steampowered.com/api/appdetails?appids=2168680&filters=basic`
 - Installed at `<Steam library>\steamapps\common\Nuclear Option`, manifest `appmanifest_2168680.acf` with `installdir` "Nuclear Option". **[V]**
 - The folder holds `NuclearOption.exe`, `UnityPlayer.dll`, `UnityCrashHandler64.exe`, `NuclearOption_Data`, `MonoBleedingEdge`, `build-hash.txt` and `steam_appid.txt`. **[V]**
-- The process that means the game runs: `NuclearOption.exe`. **[I]** from the program's name; the game was not started for this note. Confirmed in the proof below.
+- The process that means the game runs: `NuclearOption.exe`. **[V]** Steam's own `gameprocess_log.txt` names it as the tracked process of app 2168680 (with `UnityCrashHandler64.exe` beside it), and the proof below saw it.
+- After a game update Steam may show the game's licence agreement before it starts it (its log says "LaunchApp waiting for user response to ShowEula"). **[V]** on 26 Nov 2026. Until the user answers it in Steam nothing runs; RigReady's Play page says "Waiting for Nuclear Option to start" for as long as that takes, and the same launch request goes through once it is answered.
 - Whether the game is sold outside Steam is not known. **[?]** PCGamingWiki refused the request (HTTP 403), so nothing here comes from it. A copy from elsewhere is found through **Choose folder…**.
 
 ## 2. Files
@@ -175,7 +176,8 @@ Stage 1, the game module. Run the branch from source with a data folder of its o
 
 ```
 $env:RIGREADY_HOME = "$env:USERPROFILE\.rigready-contrib"
-npm run dev
+npm run build
+npx electron-vite preview --skipBuild
 ```
 
 | Step | What to do | What you should see |
@@ -186,4 +188,16 @@ npm run dev
 | 4 | With the game at its menu, look at the Games page again | Nuclear Option is shown as running |
 | 5 | Close the game, look again | No longer shown as running |
 
-Results: not run yet.
+### Results, 26 November 2026
+
+On the owner's rig: Nuclear Option from Steam, build 26327221, Windows 11, this branch at `077d2307`, built with `npm run build` and run with `npx electron-vite preview --skipBuild` and `RIGREADY_HOME` set to a folder of its own. (`npm run dev` was tried first and showed blank Play and Bindings pages; that is a fault of the development server after the Vite 8 update, not of this change, and is being fixed apart from it.)
+
+| Step | What was done | What was seen | Result |
+|---|---|---|---|
+| 1 | **Configure > Setups > New setup from this rig** | Nuclear Option offered as a game tile, "Steam"; choosing it filled in "Through Steam" and app id 2168680, and proposed the check "Nuclear Option not updated since verified (now Build 26327221)" | Pass |
+| 2 | The game's own page under **Configure > Games** | Not opened on the rig; the scenario screenshot `artifacts/screens/games-nuclear-option/02-nuclear-option.png` is the evidence for its wording | Not tried |
+| 3 | **Launch** on Play, with a setup for the game (Ready, 16 of 16) | RigReady started `steam.exe -applaunch 2168680`. The first time Steam waited for the licence agreement and Play said "Waiting for Nuclear Option to start"; once the owner accepted it, the game started. A second launch started the game within two seconds | Pass |
+| 4 | With the game running | RigReady began the session one second after `NuclearOption.exe` appeared, both times | Pass |
+| 5 | The owner closed the game | RigReady ended the session by itself (2 min 16 s), showed "Welcome back" and the stand-down countdown | Pass |
+
+Not tried: the game's page on the rig (step 2), **Choose folder…** for a copy outside Steam, and a restore being refused while the game runs (the module offers no file to restore).
