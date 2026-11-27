@@ -4,6 +4,8 @@ import { errorText, useClient } from '../../../renderer/ipc';
 import { notifyMachineChanged } from '../../../renderer/machine';
 import { aiAssistContract } from '../contract';
 import type { IracingWanted } from '../core/iracing';
+import type { NuclearOptionReviewView } from '../core/model';
+import type { NuclearOptionWanted } from '../core/nuclearOption';
 import type {
   AiStatus,
   AircraftList,
@@ -25,6 +27,15 @@ export interface IracingBinding {
   actionId: string;
   binding: IracingWanted;
   review?: IracingReviewView;
+  error?: string;
+  busy: boolean;
+}
+
+/** One Nuclear Option binding the walkthrough is about to save, after the user pressed it. */
+export interface NuclearOptionBinding {
+  actionId: string;
+  binding: NuclearOptionWanted;
+  review?: NuclearOptionReviewView;
   error?: string;
   busy: boolean;
 }
@@ -53,6 +64,9 @@ export const useAiStore = defineStore('ai-assist', () => {
   const iracingBinding = ref<IracingBinding>();
   /** iRacing: what the last save said ("Saved in iRacing's file ..."). */
   const iracingSaved = ref<string>();
+  /** Nuclear Option: the button just pressed, shown before it is saved; and what the save said. */
+  const nuclearOptionBinding = ref<NuclearOptionBinding>();
+  const nuclearOptionSaved = ref<string>();
   const list = ref<AircraftList>();
   const aircraftId = ref<string>();
   const guide = ref<GuideView>();
@@ -179,6 +193,8 @@ export const useAiStore = defineStore('ai-assist', () => {
     guideNote.value = undefined;
     iracingBinding.value = undefined;
     iracingSaved.value = undefined;
+    nuclearOptionBinding.value = undefined;
+    nuclearOptionSaved.value = undefined;
     pressNote.value = undefined;
   }
 
@@ -277,6 +293,7 @@ export const useAiStore = defineStore('ai-assist', () => {
   // ---------------------------------------------------------------- pressing a control
 
   const iracingShown = (): boolean => guide.value?.game === 'iracing';
+  const nuclearOptionShown = (): boolean => guide.value?.game === 'nuclear-option';
 
   /**
    * Counts the listens and their ends. The controllers can take a moment to start: a listen
@@ -287,6 +304,7 @@ export const useAiStore = defineStore('ai-assist', () => {
   async function listen(actionId: string): Promise<void> {
     pressNote.value = undefined;
     iracingSaved.value = undefined;
+    nuclearOptionSaved.value = undefined;
     const mine = ++listens;
     const iracing = iracingShown();
     // Set before the controllers answer, so that leaving the page meanwhile stops it.
@@ -394,6 +412,60 @@ export const useAiStore = defineStore('ai-assist', () => {
     iracingBinding.value = undefined;
   }
 
+  /** Nuclear Option: asks what this binding would change, for the user to look at. Writes nothing. */
+  async function previewNuclearOption(
+    actionId: string,
+    binding: NuclearOptionWanted
+  ): Promise<void> {
+    const id = aircraftId.value;
+    if (!id) return;
+    await stopListening();
+    pressNote.value = undefined;
+    nuclearOptionBinding.value = { actionId, binding, busy: true };
+    const result = await api.nuclearOptionBindPreview({ aircraftId: id, actionId, binding });
+    // Closed, or another action chosen, meanwhile.
+    if (nuclearOptionBinding.value?.actionId !== actionId || aircraftId.value !== id) return;
+    if (!result.ok) {
+      nuclearOptionBinding.value = undefined;
+      pressNote.value = errorText(result.error);
+      return;
+    }
+    nuclearOptionBinding.value = { actionId, binding, review: result.value, busy: false };
+  }
+
+  /** Nuclear Option: saves the binding shown, through the Nuclear Option bindings feature. */
+  async function saveNuclearOption(): Promise<void> {
+    const current = nuclearOptionBinding.value;
+    const id = aircraftId.value;
+    if (!current?.review || current.busy || !id) return;
+    const saving: NuclearOptionBinding = { ...current, busy: true, error: undefined };
+    nuclearOptionBinding.value = saving;
+    const result = await api.nuclearOptionBind({
+      aircraftId: id,
+      actionId: current.actionId,
+      binding: current.binding,
+      seen: current.review.seen,
+    });
+    // The dialog was closed, or another game chosen, while it saved.
+    const still = toRaw(nuclearOptionBinding.value) === saving && aircraftId.value === id;
+    if (!result.ok) {
+      if (still) {
+        nuclearOptionBinding.value = { ...current, busy: false, error: errorText(result.error) };
+      }
+      return;
+    }
+    // Saved either way: the pages that show bindings read them again.
+    notifyMachineChanged();
+    if (!still) return;
+    nuclearOptionBinding.value = undefined;
+    nuclearOptionSaved.value = result.value.message;
+    await loadGuide(id);
+  }
+
+  function cancelNuclearOption(): void {
+    nuclearOptionBinding.value = undefined;
+  }
+
   async function pressed(press: {
     guid: string;
     input: string;
@@ -418,6 +490,19 @@ export const useAiStore = defineStore('ai-assist', () => {
           device: press.guid,
           button: Number(button[1]),
         });
+      }
+      return;
+    }
+    if (nuclearOptionShown()) {
+      const button = /^JOY_BTN(\d+)$/.exec(press.input);
+      if (press.kind === 'axis') {
+        pressNote.value = `That was an axis on ${press.deviceName}. This action needs a button; an axis is bound in the game.`;
+      } else if (press.kind !== 'button' || !button) {
+        pressNote.value = `That was a hat switch on ${press.deviceName}. RigReady binds buttons in Nuclear Option. Bind a hat switch in the game: Settings, then Controls.`;
+      } else if (Number(button[1]) > 128) {
+        pressNote.value = 'A controller has buttons 1 to 128.';
+      } else {
+        await previewNuclearOption(actionId, { device: press.guid, button: Number(button[1]) });
       }
       return;
     }
@@ -651,6 +736,10 @@ export const useAiStore = defineStore('ai-assist', () => {
     game,
     iracingBinding,
     iracingSaved,
+    nuclearOptionBinding,
+    nuclearOptionSaved,
+    saveNuclearOption,
+    cancelNuclearOption,
     selectGame,
     saveIracing,
     cancelIracing,

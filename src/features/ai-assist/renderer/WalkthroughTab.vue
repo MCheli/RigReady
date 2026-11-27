@@ -5,8 +5,8 @@ import GuideFile from './GuideFile.vue';
 import { useAiStore } from './store';
 
 /**
- * "Bind this aircraft": tier by tier, one item at a time. (For Nuclear Option it goes
- * through the items and says where each is bound; nothing is bound from here.) Shows what the item does, when
+ * "Bind this aircraft": tier by tier, one item at a time. (For iRacing and Nuclear
+ * Option a press is shown and saved one at a time instead.) Shows what the item does, when
  * you use it and where it belongs, what it is bound to now, and lets the user press the
  * control they want. Presses are staged; nothing is written until the review.
  */
@@ -15,7 +15,7 @@ const emit = defineEmits<{ open: [tab: string] }>();
 
 const guide = computed(() => store.guide!);
 const iracing = computed(() => guide.value.game === 'iracing');
-/** Nuclear Option: the walkthrough goes through the items; binding is done elsewhere. */
+/** Nuclear Option: the walkthrough binds a controller button; the rest is bound in the game. */
 const nuclearOption = computed(() => guide.value.game === 'nuclear-option');
 const settled = computed(
   () => new Set([...guide.value.progress.done, ...guide.value.progress.skipped])
@@ -25,7 +25,9 @@ const settled = computed(
  * an item is never marked done here, and the count is of the items RigReady binds with you.
  */
 const inGameOnly = (i: ItemView): boolean =>
-  iracing.value && i.actions.length > 0 && i.actions.every((a) => !a.editable);
+  (iracing.value || nuclearOption.value) &&
+  i.actions.length > 0 &&
+  i.actions.every((a) => !a.editable);
 const bindable = computed(() => store.items.filter((i) => !inGameOnly(i)));
 const inGameCount = computed(() => store.items.length - bindable.value.length);
 const doneCount = computed(
@@ -68,9 +70,11 @@ const position = computed(() => {
 function cannot(kind: 'button' | 'axis', actionId: string): string {
   if (nuclearOption.value) {
     // One side of an axis ("Zoom In", id "25:+") on a button is bound in the game too.
-    return kind === 'axis' || actionId.includes(':')
-      ? 'Bind it in the game: Settings, then Controls'
-      : 'A controller button: bind it on the Nuclear Option bindings page';
+    return kind === 'axis'
+      ? 'An axis: bind it in the game, Settings, then Controls'
+      : actionId.includes(':')
+        ? 'One side of an axis: bind it in the game, Settings, then Controls'
+        : 'Bind it in the game: Settings, then Controls';
   }
   if (!iracing.value) return 'Bind in DCS: RigReady cannot write this one yet';
   return kind === 'axis'
@@ -143,7 +147,8 @@ function next(): void {
         {{ doneCount }} of {{ bindable.length }} done
         <span class="rr-muted">· saved as you go</span>
         <span v-if="inGameCount > 0" class="rr-muted" data-testid="ai-progress-in-game">
-          · {{ inGameCount }} more {{ inGameCount === 1 ? 'is' : 'are' }} set up in iRacing itself
+          · {{ inGameCount }} more {{ inGameCount === 1 ? 'is' : 'are' }} set up in
+          {{ nuclearOption ? 'the game' : 'iRacing' }} itself
         </span>
       </div>
       <!-- A meter of how far the walkthrough is, not a sign that something is loading. -->
@@ -232,12 +237,22 @@ function next(): void {
         <div v-if="inGameOnly(item)" class="walk-in-game rr-panel" data-testid="ai-in-game">
           <v-icon icon="mdi-open-in-app" size="18" class="rr-muted" />
           <div>
-            <div class="rr-row-title">Bind this in iRacing: Options, then Controls</div>
-            <div class="rr-row-sub">
-              RigReady binds buttons and keys in iRacing. An axis, such as the wheel or a pedal, is
-              bound and calibrated in iRacing itself, and so is a hat switch. iRacing writes its
-              bindings when it closes; this page then shows what you bound.
-            </div>
+            <template v-if="nuclearOption">
+              <div class="rr-row-title">Bind this in the game: Settings, then Controls</div>
+              <div class="rr-row-sub">
+                RigReady binds controller buttons in Nuclear Option. An axis, such as the stick or
+                the throttle, is bound in the game itself. The game saves what you bind there; this
+                page then shows it.
+              </div>
+            </template>
+            <template v-else>
+              <div class="rr-row-title">Bind this in iRacing: Options, then Controls</div>
+              <div class="rr-row-sub">
+                RigReady binds buttons and keys in iRacing. An axis, such as the wheel or a pedal,
+                is bound and calibrated in iRacing itself, and so is a hat switch. iRacing writes
+                its bindings when it closes; this page then shows what you bound.
+              </div>
+            </template>
           </div>
         </div>
 
@@ -316,7 +331,13 @@ function next(): void {
               </v-btn>
               <div v-else class="walk-listening" data-testid="ai-listening">
                 <v-progress-circular indeterminate size="16" width="2" color="primary" />
-                {{ iracing ? 'Press a button or a key… Esc stops.' : 'Press the control' }}
+                {{
+                  iracing
+                    ? 'Press a button or a key… Esc stops.'
+                    : nuclearOption
+                      ? 'Press a button on the controller'
+                      : 'Press the control'
+                }}
                 <v-btn
                   size="x-small"
                   variant="text"
@@ -348,7 +369,7 @@ function next(): void {
           </v-btn>
           <v-spacer />
           <template v-if="inGameOnly(item)">
-            <!-- Bound in iRacing: RigReady never marks it done; the status comes from the file. -->
+            <!-- Bound in the game itself: RigReady never marks it done; the status is what was saved. -->
             <v-btn
               v-if="position.at < position.total - 1"
               color="primary"

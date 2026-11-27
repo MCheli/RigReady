@@ -6,6 +6,7 @@ import { onMachineChanged } from '../../../renderer/machine';
 import { GUIDE_GAMES, type GuideGame } from '../core/pack';
 import AiTab from './AiTab.vue';
 import IracingBindDialog from './IracingBindDialog.vue';
+import NuclearOptionBindDialog from './NuclearOptionBindDialog.vue';
 import PayloadDialog from './PayloadDialog.vue';
 import PrioritiesTab from './PrioritiesTab.vue';
 import ReviewDialog from './ReviewDialog.vue';
@@ -31,7 +32,7 @@ const gameItems = computed(() =>
     .map((g) => ({ title: g.name, value: g.id }))
 );
 const iracing = computed(() => store.game === 'iracing');
-/** Nuclear Option: one guide for every aircraft, no AI help, and no binding from this page. */
+/** Nuclear Option: one guide for every aircraft, and no AI help. */
 const nuclearOption = computed(() => store.game === 'nuclear-option');
 
 /** The address keeps the game; the watch below follows it, so a link and the picker agree. */
@@ -122,7 +123,7 @@ onBeforeUnmount(() => {
         </p>
         <p v-else-if="nuclearOption" class="rr-page-sub">
           For Nuclear Option: what matters when you fly it, in plain language and in priority order,
-          with what is bound now and what is not.
+          and a walkthrough that binds it with you.
         </p>
         <p v-else-if="store.game === 'dcs'" class="rr-page-sub">
           For DCS World: what matters in each aircraft, in plain language and in priority order, and
@@ -289,9 +290,9 @@ onBeforeUnmount(() => {
           </router-link>
         </p>
         <p class="guide-iracing-line rr-muted">
-          The guide shows what is bound and what is not. To bind a controller button, use the
-          Nuclear Option bindings page; an axis or a key is bound in the game, under Settings, then
-          Controls.
+          The walkthrough binds a controller button with you: press it, look at the change, then
+          save it. An axis or a key is bound in the game, under Settings, then Controls. Close the
+          game first: it reads its bindings when it starts.
         </p>
       </div>
 
@@ -416,9 +417,35 @@ onBeforeUnmount(() => {
       />
     </div>
 
+    <div
+      v-if="store.nuclearOptionSaved"
+      class="guide-saved rr-panel"
+      data-testid="ai-nuclear-option-saved"
+    >
+      <v-icon icon="mdi-check" size="18" class="rr-ok" />
+      <span class="guide-saved-text">{{ store.nuclearOptionSaved }}</span>
+      <v-btn
+        size="small"
+        variant="tonal"
+        prepend-icon="mdi-shield-check-outline"
+        to="/configure/safety"
+        data-testid="ai-nuclear-option-safety"
+      >
+        Open the Safety page
+      </v-btn>
+      <v-btn
+        icon="mdi-close"
+        size="x-small"
+        variant="text"
+        aria-label="Dismiss"
+        @click="store.nuclearOptionSaved = undefined"
+      />
+    </div>
+
     <ReviewDialog />
     <PayloadDialog />
     <IracingBindDialog />
+    <NuclearOptionBindDialog />
   </div>
 </template>
 

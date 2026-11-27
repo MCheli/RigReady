@@ -142,8 +142,9 @@ items:
   an axis "Zoom In". `nuclearOptionGuide.test.ts` checks that every name is found among the
   actions RigReady reads, so a game update that renames one is caught once RigReady's table
   of actions is updated.
-- The guide binds nothing and no AI request is made for it: the page says where each action is
-  bound (a controller button on the Nuclear Option bindings page, the rest in the game).
+- The walkthrough binds an action that is a button as a whole ("Toggle Gear") to a controller
+  button, through the Nuclear Option bindings feature. An axis, and one side of an axis on a
+  button ("Zoom In"), are bound in the game. No AI request is made for this game.
 - There is no guide of a user's own for it: RigReady uses this file.
 
 ## Guides drafted by AI

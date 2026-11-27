@@ -30,6 +30,15 @@ import {
   type IracingOverview,
   type IracingWanted,
 } from './iracing';
+import {
+  bindsHere,
+  isNuclearOptionId,
+  NUCLEAR_OPTION,
+  NUCLEAR_OPTION_GUIDE,
+  NUCLEAR_OPTION_SET,
+  type NuclearOptionBindings,
+  type NuclearOptionWanted,
+} from './nuclearOption';
 import { guideProblem, MAX_GUIDE_BYTES, starterGuide } from './ownGuide';
 import {
   GAME_ROLES,
@@ -68,6 +77,7 @@ import {
   type GuideGames,
   type GuideView,
   type IracingReviewView,
+  type NuclearOptionReviewView,
   type PlanView,
   type Prepared,
   type Progress,
@@ -120,6 +130,12 @@ export interface AiAssistContext {
    * where that feature is not wired: the guide then has nothing for iRacing.
    */
   iracing?: IracingBindings;
+  /**
+   * Nuclear Option's bindings as the guide changes them, from the Nuclear Option bindings
+   * feature (its channels, in main.ts). Absent where that feature is not wired: the guide then
+   * shows what is bound and binds nothing.
+   */
+  nuclearOption?: NuclearOptionBindings;
   /** Told how a streamed request is coming along; the app passes it on to the page. */
   onProgress?: (progress: SendProgress) => void;
   /** Told what the month is estimated at each time a request was counted, for Settings. */
@@ -140,17 +156,6 @@ const PROGRESS_EVERY_MS = 150;
 
 const GAME = 'dcs';
 
-/**
- * Nuclear Option: one set of bindings for every aircraft, read through the bindings registry
- * like DCS's. The guide shows what is bound and what is not; a binding is changed on the
- * Nuclear Option bindings page or in the game, not from here.
- */
-const NUCLEAR_OPTION = 'nuclear-option';
-/** The one entry the guide lists for it, and the reader's id for the one set of bindings. */
-const NUCLEAR_OPTION_GUIDE = `${NUCLEAR_OPTION}:all`;
-const NUCLEAR_OPTION_SET = 'all';
-const isNuclearOptionId = (id: string): boolean =>
-  id.toLowerCase().startsWith(`${NUCLEAR_OPTION}:`);
 const NUCLEAR_OPTION_NO_AI =
   'AI help is for DCS aircraft and iRacing cars. For Nuclear Option the guide and the walkthrough work without it.';
 
@@ -591,8 +596,12 @@ export class AiAssist {
     const found = await this.guideFor(NUCLEAR_OPTION_GUIDE);
     const taken = await takeSnapshot(reader, NUCLEAR_OPTION_SET, found?.pack);
     if (!taken.ok) return taken;
+    const binds = this.ctx.nuclearOption !== undefined;
     return ok({
       ...taken.value,
+      // The reader writes nothing itself; the guide binds a button through the bindings
+      // feature, so here "editable" says what the walkthrough can bind with you.
+      actions: taken.value.actions.map((a) => ({ ...a, editable: binds && bindsHere(a) })),
       game: NUCLEAR_OPTION,
       aircraftId: NUCLEAR_OPTION_GUIDE,
       aircraftName: found?.pack.aircraft.name ?? 'All aircraft',
@@ -883,7 +892,7 @@ export class AiAssist {
     if (isNuclearOptionId(aircraftId)) {
       return err(
         'ai.nuclearOptionStage',
-        'The guide does not bind in Nuclear Option. Bind a button on the Nuclear Option bindings page, and an axis in the game.'
+        'In Nuclear Option the guide binds one button at a time: press it, look at the change, then save it.'
       );
     }
     const snapshot = await this.snapshot(aircraftId);
@@ -1012,6 +1021,111 @@ export class AiAssist {
     if (!proposals.ok) return proposals;
     const undone = await proposals.value.undo(groupId);
     return undone.ok ? ok({ undone: true }) : undone;
+  }
+
+  // -------------------------------------------------------------------------
+  // Nuclear Option: one button at a time, through the Nuclear Option bindings feature
+  // -------------------------------------------------------------------------
+
+  /**
+   * The controller and the guide's label for an action the guide offers to bind here. Only an
+   * action of the guide, only one that goes on a button, and only on a controller the game has
+   * saved bindings for (the bindings feature replaces a saved map; it cannot make one).
+   */
+  private async nuclearOptionTarget(
+    aircraftId: string,
+    actionId: string,
+    binding: NuclearOptionWanted
+  ): Promise<Result<{ source: NuclearOptionBindings; device: string; label: string }>> {
+    const source = this.ctx.nuclearOption;
+    if (!isNuclearOptionId(aircraftId) || !source) {
+      return err('ai.nuclearOptionOnly', 'This binds Nuclear Option actions only.');
+    }
+    const snapshot = await this.nuclearOptionSnapshot(aircraftId);
+    if (!snapshot.ok) return snapshot;
+    const s = snapshot.value;
+    const action = s.pack
+      ? resolvePack(s.pack, s.actions, s.bindings)
+          .flatMap((i) => i.actions)
+          .find((a) => a.actionId === actionId)
+      : undefined;
+    if (!action)
+      return err('ai.nuclearOptionAction', 'That action is not in the guide shown here.');
+    if (!action.editable) {
+      return err(
+        'ai.nuclearOptionInGame',
+        `${action.label} is not something RigReady binds to a button. Bind it in the game: Settings, then Controls.`
+      );
+    }
+    const overview = await source.overview();
+    if (!overview.ok) return overview;
+    const wanted = binding.device.toUpperCase();
+    const device = overview.value.devices.find(
+      (d) => d.kind === 'controller' && d.guid?.toUpperCase() === wanted
+    );
+    if (!device) {
+      return err(
+        'ai.nuclearOptionDevice',
+        'Nuclear Option has saved no bindings for that controller yet, so RigReady cannot bind on it. Start the game once with it plugged in.'
+      );
+    }
+    return ok({ source, device: device.id, label: action.label });
+  }
+
+  /** What binding one action of the guide to this button would change. Writes nothing. */
+  async nuclearOptionPreview(
+    aircraftId: string,
+    actionId: string,
+    binding: NuclearOptionWanted
+  ): Promise<Result<NuclearOptionReviewView>> {
+    const target = await this.nuclearOptionTarget(aircraftId, actionId, binding);
+    if (!target.ok) return target;
+    const { source, device, label } = target.value;
+    const review = await source.changePreview({
+      device,
+      actionId: Number(actionId),
+      button: binding.button,
+    });
+    if (!review.ok) return review;
+    const r = review.value;
+    return ok({
+      actionId,
+      label,
+      device: r.device,
+      before: r.before,
+      after: r.after,
+      same: r.same,
+      alsoOnButton: r.alsoOnButton,
+      ...(r.blocked ? { blocked: r.blocked } : {}),
+      preview: r.preview,
+      seen: r.seen,
+    });
+  }
+
+  /**
+   * Writes it, through the Nuclear Option bindings feature: a backup first and Undo on the
+   * Safety page. `seen` is the saved map as the preview read it; one that changed is refused.
+   */
+  async nuclearOptionBind(
+    aircraftId: string,
+    actionId: string,
+    binding: NuclearOptionWanted,
+    seen: string
+  ): Promise<Result<{ changed: boolean; message: string }>> {
+    const target = await this.nuclearOptionTarget(aircraftId, actionId, binding);
+    if (!target.ok) return target;
+    const { source, device } = target.value;
+    const changed = await source.change({
+      device,
+      actionId: Number(actionId),
+      button: binding.button,
+      seen,
+    });
+    if (!changed.ok) return changed;
+    this.ctx.log.info(
+      `ai-assist: Nuclear Option action ${actionId} ${changed.value.changed ? 'bound' : 'left as it was'} from the guide`
+    );
+    return ok({ changed: changed.value.changed, message: changed.value.message });
   }
 
   // -------------------------------------------------------------------------

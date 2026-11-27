@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
-import type { AircraftList, GuideGames, GuideView } from './model';
+import type { AircraftList, GuideGames, GuideView, NuclearOptionReviewView } from './model';
 import { GAME_ROLES, gameOfKey, guideKey, packText, parsePack, TIERS } from './pack';
 import { shippedPack } from './shipped';
 
 /**
  * The binding guide for Nuclear Option: one guide for every aircraft, on the bindings the
  * game saved (fixtures/scenarios/nuclear-option-bindings.yaml). It shows what is bound and
- * what is not; nothing is bound from the guide, and no AI request is made for it.
+ * what is not, and binds a controller button through the Nuclear Option bindings feature.
  */
 const GUIDE = 'nuclear-option:all';
 
@@ -129,11 +129,11 @@ describe('the binding guide page’s data for Nuclear Option', () => {
         shown.actions.map((x) => x.dcsName),
         item.id
       ).toEqual(item.actions.map((spec) => ('name' in spec ? spec.name : spec.re)));
-      // Nothing is bound from the guide.
-      expect(
-        shown.actions.every((x) => !x.editable),
-        item.id
-      ).toBe(true);
+      // The walkthrough binds a button-type action; an axis, and one side of an axis
+      // ("Zoom In", "Apply Brakes"), are bound in the game.
+      for (const x of shown.actions) {
+        expect(x.editable, x.dcsName).toBe(x.kind === 'button' && /^\d+$/.test(x.actionId));
+      }
     }
     expect(view.guide?.roles.map((r) => r.title)).toEqual([
       'Stick',
@@ -172,7 +172,121 @@ describe('the binding guide page’s data for Nuclear Option', () => {
     ]);
   });
 
-  it('keeps the walkthrough’s progress, binds nothing, and makes no AI request', async () => {
+  describe('binding from the walkthrough', () => {
+    /** The scenario's stick, by its DirectInput instance GUID as a press gives it. */
+    const stickGuid = async (a: WiredApp): Promise<string> => {
+      const view = await a.invoke<{ devices: { name: string; guid?: string }[] }>(
+        'nuclear-option-bindings:overview'
+      );
+      return view.devices.find((d) => d.name === 'Joystick - HOTAS Warthog')!.guid!;
+    };
+    const preview = (a: WiredApp, actionId: string, binding: object) =>
+      a.invoke<NuclearOptionReviewView>('ai-assist:nuclearOptionBindPreview', {
+        aircraftId: GUIDE,
+        actionId,
+        binding,
+      });
+    const bind = (a: WiredApp, actionId: string, binding: object, seen: string) =>
+      a.invoke<{ changed: boolean; message: string }>('ai-assist:nuclearOptionBind', {
+        aircraftId: GUIDE,
+        actionId,
+        binding,
+        seen,
+      });
+
+    it('shows the change first, then saves it through the bindings feature, with Undo on the Safety page', async () => {
+      const a = await start();
+      const device = await stickGuid(a);
+      // Toggle Navigation Lights (49) to button 1, where Fire is.
+      const onFire = await preview(a, '49', { device, button: 1 });
+      expect(onFire).toMatchObject({
+        actionId: '49',
+        label: 'Navigation lights on or off',
+        device: 'Joystick - HOTAS Warthog',
+        before: 'Not bound',
+        after: 'Button 1',
+        same: false,
+        alsoOnButton: ['Fire'],
+      });
+      const shown = await preview(a, '49', { device, button: 12 });
+      expect(shown).toMatchObject({ after: 'Button 12', alsoOnButton: [] });
+      expect(shown.preview.files).toHaveLength(1);
+      // Nothing is written by looking.
+      let journal = await a.ports.files.journalGroups();
+      expect(journal.ok && journal.value).toEqual([]);
+
+      const saved = await bind(a, '49', { device, button: 12 }, shown.seen);
+      expect(saved).toEqual({
+        changed: true,
+        message:
+          'Saved: Toggle Navigation Lights is now on Button 12 of Joystick - HOTAS Warthog. Undo is on the Safety page.',
+      });
+      const item = itemsOf(await guideOf(a)).find((i) => i.id === 'nav-lights')!;
+      expect(item.status).toBe('bound');
+      journal = await a.ports.files.journalGroups();
+      if (!journal.ok) throw new Error(journal.error.message);
+      expect(journal.value.map((g) => g.reason)).toEqual([
+        'Nuclear Option bindings: Toggle Navigation Lights bound to Button 12 on Joystick - HOTAS Warthog',
+      ]);
+      // The same press again: nothing to save.
+      expect((await preview(a, '49', { device, button: 12 })).same).toBe(true);
+      await a.invoke('safety:undo', { groupId: journal.value[0]!.id, force: false });
+      expect(itemsOf(await guideOf(a)).find((i) => i.id === 'nav-lights')!.status).toBe('unbound');
+    });
+
+    it('is refused, with nothing written: an axis, one side of an axis, an action outside the guide, a controller the game saved nothing for, a map that changed, and while the game runs', async () => {
+      const a = await start();
+      const device = await stickGuid(a);
+      // Pitch Axis (0) is an axis; Zoom In (25:+) is one side of one.
+      await expect(preview(a, '0', { device, button: 3 })).rejects.toThrow(
+        'Bind it in the game: Settings, then Controls'
+      );
+      await expect(preview(a, '25:+', { device, button: 3 })).rejects.toThrow(
+        'Bind it in the game: Settings, then Controls'
+      );
+      // Toggle debug graphs (39) is an action of the game, not of the guide.
+      await expect(preview(a, '39', { device, button: 3 })).rejects.toThrow(
+        'That action is not in the guide shown here.'
+      );
+      await expect(
+        preview(a, '49', { device: '11111111-2222-3333-4444-555555555555', button: 3 })
+      ).rejects.toThrow('Nuclear Option has saved no bindings for that controller yet');
+      await expect(
+        a.invoke('ai-assist:nuclearOptionBindPreview', {
+          aircraftId: 'iracing:gt3',
+          actionId: '49',
+          binding: { device, button: 3 },
+        })
+      ).rejects.toThrow('This binds Nuclear Option actions only.');
+
+      // The saved map changed after the change was shown.
+      const shown = await preview(a, '49', { device, button: 12 });
+      await a.invoke('nuclear-option-bindings:change', {
+        device: 'controller:044F:0402:0',
+        actionId: 52,
+        button: 20,
+      });
+      await expect(bind(a, '49', { device, button: 12 }, shown.seen)).rejects.toThrow(
+        'changed after the change was shown'
+      );
+      // While the game runs the review says why, and the save is refused.
+      await mutate(a, [
+        { op: 'startProcess', name: 'NuclearOption.exe', path: 'C:/Games/NuclearOption.exe' },
+      ]);
+      const running = await preview(a, '49', { device, button: 12 });
+      expect(running.blocked).toContain('Close Nuclear Option first');
+      await expect(bind(a, '49', { device, button: 12 }, running.seen)).rejects.toThrow(
+        'Close Nuclear Option first'
+      );
+      const journal = await a.ports.files.journalGroups();
+      if (!journal.ok) throw new Error(journal.error.message);
+      // Only the change made on the bindings page itself.
+      expect(journal.value).toHaveLength(1);
+      expect(itemsOf(await guideOf(a)).find((i) => i.id === 'nav-lights')!.status).toBe('unbound');
+    });
+  });
+
+  it('keeps the walkthrough’s progress, stages nothing, and makes no AI request', async () => {
     const a = await start();
     await a.invoke('ai-assist:setProgress', { aircraftId: GUIDE, itemId: 'fire', state: 'done' });
     expect((await guideOf(a)).progress.done).toEqual(['fire']);
@@ -183,7 +297,7 @@ describe('the binding guide page’s data for Nuclear Option', () => {
         deviceGuid: '00000000-0000-0000-0000-000000000000',
         input: 'JOY_BTN2',
       })
-    ).rejects.toThrow('The guide does not bind in Nuclear Option');
+    ).rejects.toThrow('In Nuclear Option the guide binds one button at a time');
     for (const kind of ['suggest', 'draft', 'explain', 'ask'] as const) {
       await expect(
         a.invoke('ai-assist:prepare', { kind, aircraftId: GUIDE, question: 'x', actionId: '5' }),
