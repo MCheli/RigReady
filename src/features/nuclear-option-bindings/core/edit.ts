@@ -16,8 +16,10 @@ import {
  * screen:
  *   - a button of the controller on a button-type action;
  *   - a button on one side of an axis action ("Zoom In", "Apply Brakes");
- *   - an axis of the controller on an axis action, as it is or reversed.
- * Everything else is refused with the reason: a key, a mouse button, half an axis, a hat.
+ *   - an axis of the controller on an axis action, as it is or reversed;
+ *   - a key of the keyboard, alone or with Ctrl, Alt or Shift, on a button action or on one
+ *     side of an axis action, in the keyboard's own map.
+ * Everything else is refused with the reason: a mouse button, half an axis, a hat.
  */
 
 /** Rewired numbers the buttons of a controller it has no definition for from 32. */
@@ -43,11 +45,19 @@ export interface BindingEdit {
    * counts axes (0 is the first), and whether the game is to reverse it; null clears it.
    */
   axis?: { index: number; invert: boolean } | null;
+  /**
+   * In the keyboard's map: the key to bind a button action, or one side of an axis action,
+   * to: Rewired's number for the key, Unity's KeyCode, and the modifier keys held with it
+   * (Rewired's numbers: 1 Control, 2 Alt, 3 Shift), at most three; null clears it.
+   */
+  key?: { element: number; keyCode: number; modifiers: number[] } | null;
 }
 
 /** What an action, or a side of one, is on: a button (1 the first) or an axis (0 the first). */
 export type BoundTo =
-  { kind: 'button'; button: number } | { kind: 'axis'; index: number; invert: boolean };
+  | { kind: 'button'; button: number }
+  | { kind: 'axis'; index: number; invert: boolean }
+  | { kind: 'key'; keyCode: number; modifiers: number[] };
 
 export interface EditOutcome {
   /** The document to store; the same text as before when nothing had to change. */
@@ -128,10 +138,17 @@ type Edited = Result<EditOutcome & { map: ControllerMap }>;
 
 /** Applies one edit to a parsed map; the map given is not changed. */
 export function editMap(map: ControllerMap, edit: BindingEdit): Edited {
+  if (map.kind === 'KeyboardMap') return editKey(map, edit);
   if (map.kind !== 'JoystickMap') {
     return err(
       'nuclear-option.edit.kind',
-      'RigReady changes bindings on a controller only. Change a key or a mouse button in the game.'
+      'RigReady changes bindings on a controller and on the keyboard. Change a mouse button in the game.'
+    );
+  }
+  if (edit.key !== undefined) {
+    return err(
+      'nuclear-option.edit.keyHere',
+      'A key is bound on the keyboard, not on a controller.'
     );
   }
   // A controller Rewired has a definition of its own for (a gamepad) carries that
@@ -391,6 +408,124 @@ function editAxis(
       ...map,
       axisMaps,
       source: { ...map.source, axes: axisMaps.length === 0 ? 'self-closed' : 'open' },
+    },
+    before,
+    alsoOn
+  );
+}
+
+/**
+ * A key on a button action or on one side of an axis action, in the keyboard's map. The game
+ * writes a key the player binds as it writes its own defaults: the action's category 0, the
+ * key's number and KeyCode, axisRange 0 (seen on the owner's rig, 27 November 2026).
+ */
+function editKey(map: ControllerMap, edit: BindingEdit): Edited {
+  if (edit.button !== undefined || edit.axis !== undefined) {
+    return err(
+      'nuclear-option.edit.notKey',
+      'The keyboard has keys: a button or an axis is bound on a controller.'
+    );
+  }
+  if (edit.key === undefined) {
+    return err('nuclear-option.edit.nothing', 'Nothing was chosen to bind it to.');
+  }
+  const action = actionOf(edit.actionId);
+  if (action.name === `Action ${edit.actionId}`) {
+    return err(
+      'nuclear-option.edit.action',
+      'RigReady does not know this action, so it does not bind it.'
+    );
+  }
+  const side = edit.side;
+  if (action.kind === 'axis' && side === undefined) {
+    return err(
+      'nuclear-option.edit.axis',
+      `${action.name} is an axis: bind a key to one of its sides (${action.positive} or ${action.negative}).`
+    );
+  }
+  if (action.kind !== 'axis' && side !== undefined) {
+    return err('nuclear-option.edit.side', `${action.name} is a button and has no sides.`);
+  }
+  const name = side === undefined ? action.name : side === '-' ? action.negative : action.positive;
+  if (!name) {
+    return err('nuclear-option.edit.side', `${action.name} has no such side in the game.`);
+  }
+  if (map.source.buttons === 'absent') {
+    return err(
+      'nuclear-option.edit.shape',
+      'This saved map has no list of key bindings to change.'
+    );
+  }
+  const key = edit.key;
+  if (key !== null) {
+    const whole = (n: number): boolean => Number.isInteger(n) && n > 0;
+    if (
+      !whole(key.element) ||
+      !whole(key.keyCode) ||
+      key.modifiers.length > 3 ||
+      key.modifiers.some((m) => ![1, 2, 3].includes(m)) ||
+      new Set(key.modifiers).size !== key.modifiers.length
+    ) {
+      return err('nuclear-option.edit.key', 'That is not a key RigReady can bind.');
+    }
+  }
+  const contribution = side === '-' ? 1 : 0;
+  const mine = (e: ElementMap): boolean =>
+    e.actionId === edit.actionId && (side === undefined || e.axisContribution === contribution);
+  const had = map.buttonMaps.filter(mine);
+  // A key binding as the game writes one: a key code, not half of anything, not reversed.
+  const isPlainKey = (e: ElementMap): boolean =>
+    e.elementType === 1 && e.keyboardKeyCode > 0 && e.axisRange === 0 && !e.invert;
+  if (had.some((e) => !isPlainKey(e)) || map.axisMaps.some((e) => e.actionId === edit.actionId)) {
+    return err(
+      'nuclear-option.edit.unknown',
+      `${name} has a binding here that RigReady does not understand, so it was left alone.`
+    );
+  }
+  const held = (e: ElementMap): number[] => e.modifierKeys.filter((m) => m !== 0);
+  const before = had.map((e): BoundTo => ({
+    kind: 'key',
+    keyCode: e.keyboardKeyCode,
+    modifiers: held(e),
+  }));
+  const modifiers = key === null ? [] : [...key.modifiers].sort((a, b) => a - b);
+  const sameKey = (e: ElementMap): boolean =>
+    key !== null &&
+    e.elementIdentifierId === key.element &&
+    e.keyboardKeyCode === key.keyCode &&
+    JSON.stringify(held(e)) === JSON.stringify(modifiers);
+  const same =
+    key === null ? had.length === 0 : had.length === 1 && sameKey(had[0]!) && had[0]!.enabled;
+  const alsoOn =
+    key === null
+      ? []
+      : [
+          ...new Set(
+            map.buttonMaps.filter((e) => e.enabled && sameKey(e) && !mine(e)).map(doingOf)
+          ),
+        ];
+  if (same) return ok({ map, text: serializeControllerMap(map), before, same, alsoOn });
+  const made: ElementMap | undefined =
+    key === null
+      ? undefined
+      : {
+          actionCategoryId: 0,
+          actionId: edit.actionId,
+          elementType: 1,
+          elementIdentifierId: key.element,
+          axisRange: 0,
+          invert: false,
+          axisContribution: contribution,
+          keyboardKeyCode: key.keyCode,
+          modifierKeys: [modifiers[0] ?? 0, modifiers[1] ?? 0, modifiers[2] ?? 0],
+          enabled: true,
+        };
+  const buttonMaps = replaced(map.buttonMaps, mine, made);
+  return checked(
+    {
+      ...map,
+      buttonMaps,
+      source: { ...map.source, buttons: buttonMaps.length === 0 ? 'self-closed' : 'open' },
     },
     before,
     alsoOn

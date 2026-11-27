@@ -6735,6 +6735,33 @@ requirements:
       - "artifacts/screens/nuclear-option-bindings-edit/05-blocked.png"
     notes: "Stage 3 of docs/contributing/add-game.md; it needs NFR-013 (a registry value through FileStore). The second look on the owner's rig, 2026-11-26 (docs/research/nuclear-option.md, section 7): Toggle Navigation Lights bound to Button 12 of the stick by RigReady showed as button 11 on the game's controls screen (0.34.6), the game changed only Unity's session counters, and Undo restored every binding value; both rig steps passed. Driven overnight by Claude Code with the owner's permission, nobody at the controls. Not tried then: the button pressed in a flight, a move or a clear in the real game, another controller. 2026-11-27, the owner at the controls: Eject cleared and bound to Button 16 on the R-VPC panel, and the button worked in a flight. The button is chosen by pressing it or by typing its number; pressing is proven in the scenario test, and whether the owner pressed or typed was not recorded."
 
+  - id: BIND-NO-007
+    title: Bind, change or clear a key of the keyboard in Nuclear Option
+    job: configure
+    area: nuclear-option-bindings
+    priority: p2
+    done_means:
+      - "On the Keyboard tab of the Nuclear Option bindings page a button action, or one side of an axis action, is bound to a key (chosen from the list or by pressing it), alone or with Ctrl, Alt or Shift, changed or cleared. The review says what it is on now and will be on and what else that key with those modifier keys already does; nothing is written until Save. An axis action as a whole is not offered on the keyboard."
+      - "The key is written into the keyboard's saved map for the action's own tab of the game's controls screen (Game, Chat, Mission Editor, Debug), through FileStore, as the game writes a key the player binds; every other character stays. The backup, the Safety page entry and Undo are those of every other change here."
+      - "Refused, with the reason and nothing written: a key whose number in the game RigReady does not know, a button or an axis on the keyboard, a key on a controller, a whole axis on a key, and everything the other changes refuse (the game running, a changed map)."
+      - "Against the real game: what RigReady writes for a key is byte for byte what the game wrote for the same binding made on its own controls screen."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#binds an action that had no key exactly as the game wrote it: one binding at the end, nothing else changed"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#moves a key in place, with the modifier keys in the game’s order, and says what else that key with those modifiers does"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#binds each side of an axis action on its own, and clears one without the other"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#refuses a whole axis on a key, a button or an axis on the keyboard, and a key that is not one"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#the keyboard has the id the page changes it by"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#binds a key, with modifier keys, shows it first, and Undo puts the keyboard’s map back"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#binds one side of an axis action, and an action of another tab in that tab’s own map"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#refuses a whole axis on a key, a key RigReady cannot number, and everything while the game runs"
+      - "src/features/nuclear-option-bindings/renderer/rows.test.ts#is a key on what takes a button, whatever tab it is in and whatever is held with it"
+      - "tests/e2e/nuclear-option-bindings-keys.e2e.ts#nuclear option bindings: a key is bound by pressing it, changed with modifier keys and cleared"
+      - "artifacts/screens/nuclear-option-bindings-keys/01-pressed.png"
+      - "artifacts/screens/nuclear-option-bindings-keys/02-modifiers.png"
+      - "artifacts/screens/nuclear-option-bindings-keys/03-safety-page.png"
+    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does. How the game writes a key the player binds was read from a key bound on the game's own screen that day and removed again there (docs/research/nuclear-option.md, 'Keys'); RigReady's write of the same binding on the owner's real keyboard map was byte for byte the game's, and was undone. Driven by Claude Code with the owner's permission. The key numbers are seen for 40 keys and inferred for the rest of the table. Not tried against the game: Alt, a side of an axis, another tab's map, a second key for one action (RigReady keeps one). Not done: mouse buttons."
+
   - id: BIND-NO-006
     title: Bind, move or clear an axis of a controller, and a button on one side of an axis, in Nuclear Option
     job: configure

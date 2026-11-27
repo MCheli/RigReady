@@ -71,7 +71,12 @@ const OverviewSchema = z.object({
       key: z.string(),
       name: z.string(),
       category: z.string(),
-      /** What it is bound to: a button of the controller, or an axis. */
+      /** The tab of the game's controls screen its bindings are saved under: "Game", "Chat". */
+      mapCategory: z.string(),
+      /**
+       * What it is bound to on a controller: a button, or an axis. On the keyboard, what
+       * takes a button takes a key, and what takes an axis is not offered.
+       */
       takes: z.enum(['button', 'axis']),
     })
   ),
@@ -81,8 +86,9 @@ const OverviewSchema = z.object({
 export type Overview = z.infer<typeof OverviewSchema>;
 
 /**
- * One binding of a controller to change: a button action bound to a button, one side of an
- * axis action bound to a button, or an axis action bound to an axis; or any of them cleared.
+ * One binding to change. On a controller: a button action bound to a button, one side of an
+ * axis action bound to a button, or an axis action bound to an axis. On the keyboard: a
+ * button action, or one side of an axis action, bound to a key. Or any of them cleared.
  */
 export const ChangeRequestSchema = z
   .object({
@@ -103,6 +109,20 @@ export const ChangeRequestSchema = z
       .nullable()
       .optional(),
     /**
+     * On the keyboard (`device` "keyboard"): the key, by the browser's name for the physical
+     * key (KeyboardEvent.code: "KeyG", "F7", "Numpad5"), and the modifier keys held with it;
+     * null clears it.
+     */
+    key: z
+      .object({
+        code: z.string().min(1).max(40),
+        ctrl: z.boolean().default(false),
+        alt: z.boolean().default(false),
+        shift: z.boolean().default(false),
+      })
+      .nullable()
+      .optional(),
+    /**
      * The saved map as the preview read it (`seen` of changePreview). With it, change writes
      * nothing when the map is no longer that: what the user approved may not hold any more.
      */
@@ -111,8 +131,8 @@ export const ChangeRequestSchema = z
       .regex(/^[0-9a-f]{64}$/)
       .optional(),
   })
-  .refine((r) => (r.button !== undefined) !== (r.axis !== undefined), {
-    message: 'Give a button or an axis: one of them, not both.',
+  .refine((r) => [r.button, r.axis, r.key].filter((given) => given !== undefined).length === 1, {
+    message: 'Give a button, an axis or a key: exactly one of them.',
   });
 export type ChangeRequest = z.infer<typeof ChangeRequestSchema>;
 
@@ -193,7 +213,7 @@ export const nuclearOptionBindingsContract = defineContract(
   {
     /** One change as it would be: what the action is on now and would be on. Writes nothing. */
     changePreview: channel(ChangeRequestSchema, ChangeReviewSchema, {
-      describe: `Shows what binding one Nuclear Option action to a controller button or axis, or clearing it, would change. Writes nothing. ${ON_THE_PAGE}`,
+      describe: `Shows what binding one Nuclear Option action to a controller button or axis, or to a key, or clearing it, would change. Writes nothing. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
     /**
@@ -201,7 +221,7 @@ export const nuclearOptionBindingsContract = defineContract(
      * (a backup first, one entry on the Safety page). Refused while the game runs.
      */
     change: channel(ChangeRequestSchema, ChangeResultSchema, {
-      describe: `Binds one Nuclear Option action to a controller button or axis, or clears it, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
+      describe: `Binds one Nuclear Option action to a controller button or axis, or to a key, or clears it, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
     /** Clearing one controller as it would be: how many bindings would go. Writes nothing. */

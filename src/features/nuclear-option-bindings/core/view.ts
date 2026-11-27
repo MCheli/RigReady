@@ -13,7 +13,14 @@ import type { GameRegistry } from '../../../core/games';
 import { err, ok, type Result } from '../../../core/result';
 import type { InputDevice } from '../../../shared/models';
 import type { Overview, OverviewBinding, OverviewDevice } from '../contract';
-import { ACTIONS, actionOf, bindingActionId, bindingName, mapCategoryName } from './actions';
+import {
+  ACTIONS,
+  actionOf,
+  bindingActionId,
+  bindingName,
+  mapCategoryName,
+  mapCategoryOf,
+} from './actions';
 import { keyName, modifierName, mouseElementName } from './keys';
 import {
   parseControllerMap,
@@ -186,6 +193,33 @@ export async function storedGameMap(
     text: found.text,
     map: found.map,
     deviceName: found.map.hardwareName || 'the controller',
+  });
+}
+
+/** The id the page knows the keyboard by. */
+export const KEYBOARD = 'keyboard';
+
+/** The keyboard's saved map for one tab of the game's controls screen, as stored. */
+export async function storedKeyboardMap(
+  ctx: BindingsContext,
+  mapCategory: number
+): Promise<Result<StoredMap>> {
+  const saved = await readSaved(ctx);
+  if (!saved.ok) return saved;
+  const found = saved.value.maps.find(
+    (m) => m.map.kind === 'KeyboardMap' && m.map.categoryId === mapCategory
+  );
+  if (!found) {
+    return err(
+      'nuclear-option.noMap',
+      'Nuclear Option has saved no key bindings for that tab of its controls screen, so there is nothing to change. Start the game once.'
+    );
+  }
+  return ok({
+    valueName: found.valueName,
+    text: found.text,
+    map: found.map,
+    deviceName: 'the keyboard',
   });
 }
 
@@ -441,6 +475,7 @@ export async function overview(ctx: BindingsContext): Promise<Result<Overview>> 
         key: side ? `${a.id}:${side}` : String(a.id),
         name,
         category: a.category,
+        mapCategory: mapCategoryName(mapCategoryOf(a)),
         takes,
       });
       if (a.kind !== 'axis') return [entry('button', a.name)];

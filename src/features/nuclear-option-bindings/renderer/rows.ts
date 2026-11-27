@@ -16,7 +16,8 @@ export function shownBindings(
 }
 
 /**
- * A binding the page can change or clear, in the game's own map category: a plain button of
+ * A binding the page can change or clear. On the keyboard, a key. On a controller, in the
+ * game's own map category: a plain button of
  * the controller on a button action or on one side of an axis action, or a whole axis of the
  * controller on an axis action. `takes` says, by the binding's action id ("5", "25", "25:+"),
  * what each thing the page offers is bound to. Half an axis on one side of an action is not
@@ -26,6 +27,9 @@ export function canChange(
   binding: OverviewBinding,
   takes: ReadonlyMap<string, 'button' | 'axis'>
 ): boolean {
+  // On the keyboard: a key on anything that takes a button, in whichever tab it is saved,
+  // with or without modifier keys.
+  if (binding.kind === 'key') return takes.get(binding.actionId) === 'button';
   return (
     (binding.kind === 'button' || binding.kind === 'axis') &&
     binding.control?.kind === binding.kind &&

@@ -273,13 +273,21 @@ describe('changing a Nuclear Option binding', () => {
       const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
       const zoom = view.actions.filter((x) => x.id === 25);
       expect(zoom).toEqual([
-        { id: 25, key: '25', name: 'Zoom View', category: 'Camera Controls', takes: 'axis' },
+        {
+          id: 25,
+          key: '25',
+          name: 'Zoom View',
+          category: 'Camera Controls',
+          mapCategory: 'Game',
+          takes: 'axis',
+        },
         {
           id: 25,
           side: '+',
           key: '25:+',
           name: 'Zoom In',
           category: 'Camera Controls',
+          mapCategory: 'Game',
           takes: 'button',
         },
         {
@@ -288,6 +296,7 @@ describe('changing a Nuclear Option binding', () => {
           key: '25:-',
           name: 'Zoom Out',
           category: 'Camera Controls',
+          mapCategory: 'Game',
           takes: 'button',
         },
       ]);
@@ -297,6 +306,7 @@ describe('changing a Nuclear Option binding', () => {
           key: '49',
           name: 'Toggle Navigation Lights',
           category: 'Flight Controls',
+          mapCategory: 'Game',
           takes: 'button',
         },
       ]);
@@ -410,6 +420,141 @@ describe('changing a Nuclear Option binding', () => {
         'Pitch Axis is an axis'
       );
       expect((await stickValue(a)).text).toBe(before.text);
+    });
+  });
+
+  describe('a key of the keyboard', () => {
+    const KEYBOARD = 'keyboard';
+    const keyRows = async (a: WiredApp): Promise<string[]> => {
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      return view.devices
+        .find((d) => d.kind === 'keyboard')!
+        .bindings.map((b) => `${b.action} = ${[...b.modifiers, b.inputLabel].join(' + ')}`);
+    };
+    const values = async (a: WiredApp): Promise<Record<string, unknown>> => {
+      const all = await a.ports.registry.listValues('HKCU', REGISTRY_KEY);
+      if (!all.ok) throw new Error(all.error.message);
+      return all.value;
+    };
+    const differing = (before: Record<string, unknown>, after: Record<string, unknown>): string[] =>
+      Object.keys(before).filter(
+        (name) => JSON.stringify(before[name]) !== JSON.stringify(after[name])
+      );
+
+    it('the keyboard has the id the page changes it by', async () => {
+      const a = await start();
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      expect(view.devices.find((d) => d.kind === 'keyboard')?.id).toBe(KEYBOARD);
+    });
+
+    it('binds a key, with modifier keys, shows it first, and Undo puts the keyboard’s map back', async () => {
+      const a = await start();
+      const before = await values(a);
+      // Toggle Engine (50) has no key.
+      const shown = await review(a, { device: KEYBOARD, actionId: 50, key: { code: 'F7' } });
+      expect(shown).toMatchObject({
+        device: 'the keyboard',
+        action: 'Toggle Engine',
+        before: 'Not bound',
+        after: 'F7',
+        same: false,
+        alsoOnButton: [],
+      });
+      expect(await values(a)).toEqual(before);
+      const saved = await change(a, {
+        device: KEYBOARD,
+        actionId: 50,
+        key: { code: 'F7' },
+        seen: shown.seen,
+      });
+      expect(saved).toEqual({
+        changed: true,
+        message: 'Saved: Toggle Engine is now on F7 of the keyboard. Undo is on the Safety page.',
+      });
+      const after = await values(a);
+      // One value changed, the keyboard's map for the Game tab, by the binding the game writes.
+      const changed = differing(before, after);
+      expect(changed).toHaveLength(1);
+      expect(changed[0]).toContain('controllerMapType=KeyboardMap|categoryId=0');
+      const text = Buffer.from((after[changed[0]!] as { value: string }).value, 'hex').toString(
+        'utf8'
+      );
+      expect(text).toContain(
+        '<actionCategoryId>0</actionCategoryId><actionId>50</actionId><elementType>1</elementType><elementIdentifierId>104</elementIdentifierId><axisRange>0</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>288</keyboardKeyCode>'
+      );
+      expect(await keyRows(a)).toContain('Toggle Engine = F7');
+
+      // With modifier keys, and what else has that key with those modifiers.
+      const withMods = await review(a, {
+        device: KEYBOARD,
+        actionId: 50,
+        key: { code: 'KeyE', ctrl: true, shift: true },
+      });
+      expect(withMods).toMatchObject({
+        before: 'F7',
+        after: 'Ctrl + Shift + E',
+        alsoOnButton: ['Eject'],
+      });
+      await change(a, { device: KEYBOARD, actionId: 50, key: { code: 'KeyE', alt: true } });
+      expect(await keyRows(a)).toContain('Toggle Engine = Alt + E');
+
+      const journal = await a.ports.files.journalGroups();
+      if (!journal.ok) throw new Error(journal.error.message);
+      expect(journal.value.map((g) => g.reason).sort()).toEqual([
+        'Nuclear Option bindings: Toggle Engine bound to Alt + E on the keyboard',
+        'Nuclear Option bindings: Toggle Engine bound to F7 on the keyboard',
+      ]);
+      const cleared = await change(a, { device: KEYBOARD, actionId: 50, key: null });
+      expect(cleared.message).toBe(
+        'Saved: Toggle Engine is no longer bound on the keyboard. Undo is on the Safety page.'
+      );
+      expect(await values(a)).toEqual(before);
+    });
+
+    it('binds one side of an axis action, and an action of another tab in that tab’s own map', async () => {
+      const a = await start();
+      const before = await values(a);
+      const side = await change(a, {
+        device: KEYBOARD,
+        actionId: 25,
+        side: '+',
+        key: { code: 'NumpadAdd' },
+      });
+      expect(side.message).toBe(
+        'Saved: Zoom In is now on Num + of the keyboard. Undo is on the Safety page.'
+      );
+      const afterSide = await values(a);
+      expect(differing(before, afterSide)[0]).toContain('KeyboardMap|categoryId=0');
+      // Submit Chat is on the Chat tab: its key goes into the keyboard's Chat map.
+      const chat = await change(a, { device: KEYBOARD, actionId: 34, key: { code: 'F9' } });
+      expect(chat.changed).toBe(true);
+      const afterChat = await values(a);
+      const changed = differing(afterSide, afterChat);
+      expect(changed).toHaveLength(1);
+      expect(changed[0]).toContain('KeyboardMap|categoryId=1');
+    });
+
+    it('refuses a whole axis on a key, a key RigReady cannot number, and everything while the game runs', async () => {
+      const a = await start();
+      const before = await values(a);
+      await expect(
+        review(a, { device: KEYBOARD, actionId: 25, key: { code: 'F7' } })
+      ).rejects.toThrow(
+        'Zoom View is an axis: bind a key to one of its sides (Zoom In or Zoom Out)'
+      );
+      await expect(
+        review(a, { device: KEYBOARD, actionId: 50, key: { code: 'IntlBackslash' } })
+      ).rejects.toThrow('RigReady does not know how the game numbers that key');
+      await mutate(a, [
+        { op: 'startProcess', name: 'NuclearOption.exe', path: 'C:/Games/NuclearOption.exe' },
+      ]);
+      expect(
+        (await review(a, { device: KEYBOARD, actionId: 50, key: { code: 'F7' } })).blocked
+      ).toContain('Close Nuclear Option first');
+      await expect(
+        change(a, { device: KEYBOARD, actionId: 50, key: { code: 'F7' } })
+      ).rejects.toThrow('Close Nuclear Option first');
+      expect(await values(a)).toEqual(before);
     });
   });
 
@@ -649,7 +794,10 @@ describe('changing a Nuclear Option binding', () => {
       review(a, { device: 'controller:1234:5678:0', actionId: 49, button: 3 })
     ).rejects.toThrow('has saved no bindings for this controller');
     await expect(review(a, { device: 'keyboard', actionId: 49, button: 3 })).rejects.toThrow(
-      'has saved no bindings for this controller'
+      'On the keyboard an action is bound to a key.'
+    );
+    await expect(review(a, { device: STICK, actionId: 49, key: { code: 'F7' } })).rejects.toThrow(
+      'A key is bound on the keyboard, not on a controller.'
     );
     // The schema refuses a button out of range before anything is looked at.
     await expect(change(a, { device: STICK, actionId: 49, button: 129 })).rejects.toThrow();

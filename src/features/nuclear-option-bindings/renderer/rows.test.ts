@@ -52,6 +52,21 @@ describe('a binding the page can change', () => {
   const button = { kind: 'button', index: 3 } as const;
   const axis = { kind: 'axis', axis: 'X' } as const;
 
+  it('is a key on what takes a button, whatever tab it is in and whatever is held with it', () => {
+    expect(canChange(binding('Fire', 'Space', { actionId: '5', kind: 'key' }), takes)).toBe(true);
+    expect(
+      canChange(
+        binding('Zoom In', 'E', {
+          actionId: '25:+',
+          kind: 'key',
+          modifiers: ['Ctrl'],
+          mapCategory: 'Chat',
+        }),
+        takes
+      )
+    ).toBe(true);
+  });
+
   it('is a button on a button action or on a side of an axis action, and a whole axis on an axis action', () => {
     expect(canChange(binding('Fire', 'Button 3', { actionId: '5', control: button }), takes)).toBe(
       true
@@ -67,7 +82,7 @@ describe('a binding the page can change', () => {
     ).toBe(true);
   });
 
-  it('is not half an axis on a side, a key, a binding with a modifier key, another tab’s, an input RigReady does not understand, or an action it does not offer', () => {
+  it('is not half an axis on a side, a key on a whole axis, a button with a modifier key, another tab’s button, an input RigReady does not understand, or an action it does not offer', () => {
     // Half an axis driving one side: the side takes a button.
     expect(
       canChange(
@@ -75,7 +90,10 @@ describe('a binding the page can change', () => {
         takes
       )
     ).toBe(false);
-    expect(canChange(binding('Fire', 'Space', { actionId: '5', kind: 'key' }), takes)).toBe(false);
+    // A key on an axis action as a whole is not something the keyboard binds.
+    expect(canChange(binding('Zoom View', 'Z', { actionId: '25', kind: 'key' }), takes)).toBe(
+      false
+    );
     expect(
       canChange(
         binding('Fire', 'Button 3', { actionId: '5', control: button, modifiers: ['Ctrl'] }),
