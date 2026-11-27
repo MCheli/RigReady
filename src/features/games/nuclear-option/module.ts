@@ -45,7 +45,7 @@ const { module, extras } = simpleGame({
   noFiles: 'Nothing: Nuclear Option has no settings file. Its settings are in the registry.',
   manualLabel: 'the Nuclear Option folder (it contains NuclearOption.exe)',
   notes: [
-    'Nuclear Option keeps its settings and bindings in the Windows registry, not in files. RigReady does not back them up or list what is bound yet.',
+    'Nuclear Option keeps its settings and bindings in the Windows registry, not in files. RigReady shows the bindings on the Bindings page. A full backup keeps the registry values to read back; a restore cannot put them back.',
   ],
 });
 

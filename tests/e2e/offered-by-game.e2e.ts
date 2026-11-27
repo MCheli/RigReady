@@ -173,7 +173,9 @@ test('Bindings on a PC without a game whose bindings it reads says so, and opens
   await expect(none).toContainText(
     'No game whose bindings RigReady can read was found on this PC.'
   );
-  await expect(none).toContainText('RigReady reads the bindings of DCS and iRacing.');
+  await expect(none).toContainText(
+    'RigReady reads the bindings of DCS, iRacing and Nuclear Option.'
+  );
   await expect(page).toHaveURL(/#\/configure\/bindings$/);
   await expect(page.getByTestId('bindings-game-picker')).toHaveCount(0);
   await expect(page.getByTestId('nav-bindings')).toHaveAttribute('aria-current', 'page');

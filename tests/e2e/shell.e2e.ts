@@ -195,7 +195,11 @@ test('palette: Ctrl+K finds every page and the commands of the features, by keyb
     )
   );
   expect(all.length).toBeGreaterThan(25);
-  expect(all.filter((route) => !offered.has(route))).toEqual([]);
+  // A game's bindings page is offered only where the game is found (offered-by-game.e2e.ts),
+  // and the recorded rig does not have Nuclear Option: its page is the one route left out
+  // here. nuclear-option-bindings.e2e.ts finds it in the palette on a PC with the game.
+  const notOnThisRig = ['/configure/nuclear-option-bindings'];
+  expect(all.filter((route) => !offered.has(route))).toEqual(notOnThisRig);
   // And nothing it offers leads nowhere: every link is a route of the app.
   const targets = await rows(page).evaluateAll((list) =>
     list.map((row) => row.getAttribute('data-to') ?? '').filter(Boolean)

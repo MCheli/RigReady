@@ -58,6 +58,8 @@ Each key is `RewiredSaveData`, then `|name=value` pairs. **[V]**
 
 For every controller on this rig `hardwareGuid` is all zeros (Rewired has no definition of its own for it) and `hardwareIdentifier` is, with no separators: `WindowsRawInput`, the product name with its spaces removed, the USB product id in decimal, and the DirectInput product GUID (`<pid><vid>-0000-0000-0000-504944564944`, hex). **[V]** on eleven controllers. For example a device named "T-Pendular-Rudder" with product id B68F and vendor id 044F is `WindowsRawInputT-Pendular-Rudder46735b68f044f-0000-0000-0000-504944564944`.
 
+**A later build writes the identifier another way.** After the game ran on 26 Nov 2026 (build 26327221; the values above were from March), every controller it saw had a new map saved under a shorter identifier: `WindowsRawInput`, the compact name, then the product id and the vendor id as four upper-case hex digits each (`WindowsRawInputT-Pendular-RudderB68F044F`), with no decimal number and no GUID. **[V]** on eleven controllers. The game's `ControllerAssignments` value names controllers by the shorter form. **[V]** Most of the March values were gone, but not all: one controller kept its March map for the Game category beside the new one, and the pedals kept their empty March maps for the other three categories. **[V]** RigReady reads both forms, and where both are there for one controller and one map category it shows the later one only. **[I]** that the game reads the later one: its assignments name it, and for the ten controllers with one map the controls screen agreed with it.
+
 So a map belongs to a model of controller, not to one unit: nothing in the key is an instance GUID or a serial number. Two units of the same model are told apart by `duplicate=0`, `duplicate=1`. **[I]** from the key; this rig has no two of one model. The XML's root element also carries `hardwareName`, the product name with its spaces.
 
 The keyboard and the mouse each have a fixed `hardwareGuid` and no `hardwareIdentifier`. **[V]** on this PC; that it is the same on every PC is **[I]**.
@@ -193,6 +195,52 @@ Every one agrees: the number on the screen is the saved id for an axis and the s
 - The write is a registry value. `FileStore` backs up, journals and undoes files; the `Registry` port (`src/core/ports/index.ts`) can only read. A backed-up, journaled, undoable registry write is a new piece of shared code.
 - Whether the game takes an edited value at its next start is not documented by Rewired. It has to be proven in the game before anything is called supported.
 - Unity's `_h<number>` suffix is a hash of the key. Changing an existing value keeps its name; a binding for a controller that has no saved map yet would need a new value name, so the hash would have to be computed. **[?]** which hash.
+
+## 6. The reader (stage 2)
+
+`src/features/nuclear-option-bindings` reads the saved maps and registers a `BindingReader` for the game, so the bindings page, the cheat sheets, the trainer and the overlay show them. It only reads.
+
+- **The parser** (`core/rewired.ts`) takes a map document apart into its bindings and the text around them, and puts it together again. All 22 maps saved on the rig came back character for character **[V]**, as do the made-up maps in `fixtures/nuclear-option`. A document that is not a map, or holds a binding written another way, is refused with the reason, and damaged input never throws (`tests/unit/fuzzParsers.test.ts`).
+- **Buttons.** Element id 32 is shown as Button 1, 33 as Button 2, and so on: the game's own number plus one. **[V]** for the stick's Fire button, pressed on the cheat sheet on 26 Nov 2026; **[I]** for the other controllers.
+- **Axes.** Element id n is the nth axis the plugged-in controller reports (its `axisNames`, from DirectInput), or the nth of X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2 when the controller is not plugged in. **[V]** for the stick's pitch axis, moved on the cheat sheet on 26 Nov 2026. For other controllers **[I]**: Rewired reads the controller through Raw Input and its axis order is assumed to be the same. Where a controller reports its axes in another order through DirectInput, an axis would be named wrongly; a move of a known axis in the trainer or the input tester shows it.
+- **Two forms of the identifier** (section 4) are both read. A map an earlier build left behind is left out when a later one is there for the same controller and category, judged from the value names alone, so it is also left out when the later map cannot be read.
+- **An axis the plugged-in controller does not have** (an id past its axes) is shown by the game's number only, not by another axis's name. The game gives every controller the same default bindings, so a panel with four axes can have a binding on a fifth.
+- **Which unit.** A map names a model (vendor and product id), and `duplicate` the nth unit of it. RigReady takes the nth plugged-in controller of that model in the order Windows lists them. **[I]** for a second unit; one unit of a model needs no guess.
+- **A binding that is switched off** (`enabled` false) is left out. **A hat direction** has not been seen and may show as a button. **An action not in the table** shows as "Action" and its number.
+
+- **In a full backup.** The feature registers a backup source with no files and one record: every value of the game's registry key as read, with a table for reading (each saved map by controller and category with its number of bindings, then the game's own settings). It is the same mechanism as the Fanatec driver settings: shown on the backup's page, never restored.
+
+### Proof on a rig, stage 2
+
+Run the branch as for stage 1, with the game closed or open (reading does not disturb it).
+
+| Step | What to do | What you should see |
+|---|---|---|
+| 1 | **Configure > Bindings**, Game: Nuclear Option | Each controller the game's controls screen lists under Assigned Controllers, the keyboard and the mouse |
+| 2 | Open the stick and compare five rows with the game's controls screen | The same actions on the same inputs; the game's number in the last column, one less than RigReady's button number |
+| 3 | **Cheat sheet** at the top of the page | The stick's and the throttle's bindings on their drawings or lists |
+| 4 | On the cheat sheet, press the button the game uses for Fire | The label that lights up is the one that says Fire (this is what proves the button order) |
+| 5 | Move the stick forward and back | The label that lights up is the one that says Pitch Axis (this is what proves the axis order) |
+| 6 | Start the trainer for Nuclear Option and answer one question by pressing the control | The press counts as right |
+| 7 | With the overlay on, start the game and press the Fire button | The overlay names Fire |
+
+### Results, 26 November 2026
+
+On the owner's rig, the game running (build 26327221), this branch built and run as for stage 1.
+
+| Step | What was seen | Result |
+|---|---|---|
+| 1 | Eleven controllers, the keyboard (51 bindings) and the mouse, each controller once and marked plugged in. The first try showed two controllers twice and most as not plugged in: that is how the shorter identifier was found, and the reader was changed | Pass, after the change |
+| 2 | The stick: Pitch Axis on axis 1 reversed, Roll Axis on axis 0, Fire 4, Target Select 31, Target Cancel 33, Next Weapon 37, Next Countermeasure 39, Open Radial Menu 5, Switch View 14, Open Weapon Wheel 13 in the game's column, the same as the game's controls screen read earlier that evening | Pass |
+| 3 | The cheat sheet for Nuclear Option, opened from the page | Pass, as the owner reported |
+| 4 | The owner pressed the Fire button with the cheat sheet open: the label that lit was Fire | Pass, as the owner reported |
+| 5 | The owner moved the stick forward and back: the label that lit was Pitch Axis | Pass, as the owner reported |
+| 6 | The trainer for Nuclear Option counted a press as the answer | Pass, as the owner reported |
+| 7 | With the overlay on and the game running, the overlay named the Fire press | Pass, as the owner reported |
+
+Steps 3 to 7 were done by the owner at the controls, who reported that all of them worked; no screenshot was kept. Steps 4 and 5 are what the numbering rests on: on this stick the game's button 4 is the device's fifth button, and the game's axis 1 is the axis Windows calls Y.
+
+Not tried: a second unit of one model, a controller Rewired has a definition of its own for (a gamepad), a binding on a hat, and a press on any controller other than the stick.
 
 ## Proof on a rig
 

@@ -103,6 +103,7 @@ export const MANUAL_LINKS: Record<string, ManualLink> = {
   '/configure/racing': { page: 'games/index' },
   '/configure/racing/iracing': { page: 'games/iracing' },
   '/configure/iracing-bindings': { page: 'games/iracing-bindings' },
+  '/configure/nuclear-option-bindings': { page: 'games/nuclear-option-bindings' },
   '/configure/racing/lmu': { page: 'games/le-mans-ultimate' },
   '/configure/racing/beamng': { page: 'games/beamng' },
   '/configure/racing/assetto-corsa': { page: 'games/assetto-corsa' },
