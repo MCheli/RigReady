@@ -142,6 +142,9 @@ export interface TuneOutcome {
 const within = (value: number, limits: { min: number; max: number }): boolean =>
   Number.isFinite(value) && value >= limits.min && value <= limits.max;
 
+/** A setting as the page shows it: whole percents, hundredths of the sensitivity. */
+const shown = (value: number): number => Math.round(value * 100) / 100;
+
 /** Sets the dead zones and the sensitivity of one axis in the stored text of a calibration. */
 export function tuneAxisText(
   document: string,
@@ -162,10 +165,21 @@ export function tuneAxisText(
       'This axis is saved in a way RigReady does not understand (switched off, or with a sensitivity curve), so it was left alone. Change it in the game: Settings, Controls, then Calibrate.'
     );
   }
+  // A setting asked for as the page shows the one saved (the game's slider left 0.498286575,
+  // the page shows 50 %) is not a change: the saved number stays, digit for digit.
+  const keeps = {
+    deadZone: shown(wanted.deadZone) === shown(axis.deadZone),
+    upperDeadZone:
+      wanted.upperDeadZone === undefined ||
+      (axis.upperDeadZone !== undefined &&
+        shown(wanted.upperDeadZone) === shown(axis.upperDeadZone)),
+    sensitivity: shown(wanted.sensitivity) === shown(axis.sensitivity),
+  };
   if (
-    !within(wanted.deadZone, TUNING_LIMITS.deadZone) ||
-    !within(wanted.sensitivity, TUNING_LIMITS.sensitivity) ||
-    (wanted.upperDeadZone !== undefined &&
+    (!keeps.deadZone && !within(wanted.deadZone, TUNING_LIMITS.deadZone)) ||
+    (!keeps.sensitivity && !within(wanted.sensitivity, TUNING_LIMITS.sensitivity)) ||
+    (!keeps.upperDeadZone &&
+      wanted.upperDeadZone !== undefined &&
       !within(wanted.upperDeadZone, TUNING_LIMITS.upperDeadZone))
   ) {
     return err(
@@ -181,7 +195,10 @@ export function tuneAxisText(
   }
   // The two dead zones together leave some of the axis to move in.
   const upper = wanted.upperDeadZone ?? axis.upperDeadZone ?? 0;
-  if (wanted.deadZone + upper > DEAD_ZONES_TOGETHER + 1e-9) {
+  if (
+    !(keeps.deadZone && keeps.upperDeadZone) &&
+    wanted.deadZone + upper > DEAD_ZONES_TOGETHER + 1e-9
+  ) {
     return err(
       'nuclear-option.calibration.range',
       'The two dead zones together are at most 90 percent, as in the game’s Calibrate window.'
@@ -197,9 +214,12 @@ export function tuneAxisText(
       new RegExp(`<${name}>${NUMBER}</${name}>`),
       `<${name}>${gameNumber(value)}</${name}>`
     );
-  let text = field(axis.text, 'deadZone', wanted.deadZone);
-  if (wanted.upperDeadZone !== undefined) text = field(text, 'upperDeadZone', wanted.upperDeadZone);
-  text = field(text, 'sensitivity', wanted.sensitivity);
+  let text = axis.text;
+  if (!keeps.deadZone) text = field(text, 'deadZone', wanted.deadZone);
+  if (!keeps.upperDeadZone && wanted.upperDeadZone !== undefined) {
+    text = field(text, 'upperDeadZone', wanted.upperDeadZone);
+  }
+  if (!keeps.sensitivity) text = field(text, 'sensitivity', wanted.sensitivity);
   if (text === axis.text) {
     return ok({ text: document, before, after: before, same: true });
   }
@@ -220,10 +240,14 @@ export function tuneAxisText(
     again.value.axes.length !== calibration.axes.length ||
     again.value.axes.some((a) => a.index !== index && a.text !== calibration.axes[a.index]!.text) ||
     now.invert !== axis.invert ||
-    single(now.deadZone) !== single(wanted.deadZone) ||
-    single(now.sensitivity) !== single(wanted.sensitivity) ||
-    (wanted.upperDeadZone !== undefined &&
-      single(now.upperDeadZone ?? -1) !== single(wanted.upperDeadZone)) ||
+    single(now.deadZone) !== single(keeps.deadZone ? axis.deadZone : wanted.deadZone) ||
+    single(now.sensitivity) !== single(keeps.sensitivity ? axis.sensitivity : wanted.sensitivity) ||
+    single(now.upperDeadZone ?? -1) !==
+      single(
+        keeps.upperDeadZone || wanted.upperDeadZone === undefined
+          ? (axis.upperDeadZone ?? -1)
+          : wanted.upperDeadZone
+      ) ||
     // Only the numbers asked for differ within the axis.
     text.replace(new RegExp(NUMBER, 'g'), '#').length !==
       axis.text.replace(new RegExp(NUMBER, 'g'), '#').length

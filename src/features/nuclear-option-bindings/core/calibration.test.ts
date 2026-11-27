@@ -96,6 +96,33 @@ describe('the calibration Nuclear Option saved for a controller', () => {
     expect(kept.after).toEqual({ deadZone: 0.2, upperDeadZone: 0.02, sensitivity: 0.8 });
   });
 
+  it('a number the game’s slider left between whole percents stays digit for digit when another setting of the axis is changed', async () => {
+    const text = (await fixture('calibration-stick.xml')).replace(
+      '<deadZone>0.1</deadZone><upperDeadZone>0</upperDeadZone>',
+      '<deadZone>0.498286575</deadZone><upperDeadZone>0.234286219</upperDeadZone>'
+    );
+    // As the page sends it: the dead zones as it shows them (50 % and 23 %), a new sensitivity.
+    const tuned = ok(
+      tuneAxisText(text, 0, { deadZone: 0.5, upperDeadZone: 0.23, sensitivity: 0.75 })
+    );
+    expect(tuned.text).toBe(
+      text.replace('<sensitivity>1</sensitivity>', '<sensitivity>0.75</sensitivity>')
+    );
+    expect(tuned.after).toEqual({
+      deadZone: 0.498286575,
+      upperDeadZone: 0.234286219,
+      sensitivity: 0.75,
+    });
+    // Asked for as shown and nothing else: nothing to write.
+    expect(
+      ok(tuneAxisText(text, 0, { deadZone: 0.5, upperDeadZone: 0.23, sensitivity: 1 })).same
+    ).toBe(true);
+    // A real change of the dead zone is written.
+    expect(
+      ok(tuneAxisText(text, 0, { deadZone: 0.4, upperDeadZone: 0.23, sensitivity: 1 })).text
+    ).toContain('<deadZone>0.4</deadZone><upperDeadZone>0.234286219</upperDeadZone>');
+  });
+
   it('an older calibration is tuned without an upper dead zone, and one asked for is refused with what to do', async () => {
     const text = await fixture('calibration-throttle.xml');
     const tuned = ok(tuneAxisText(text, 2, { deadZone: 0.02, sensitivity: 1.2 }));
