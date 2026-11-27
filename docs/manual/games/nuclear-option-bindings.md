@@ -1,10 +1,10 @@
 ---
 title: Nuclear Option bindings
-description: What each control does in Nuclear Option, per device, as the game saved it; binding a controller's buttons and axes, clearing a controller; cheat sheets.
+description: What each control does in Nuclear Option, per device, as the game saved it; binding buttons, axes and keys, clearing a controller; cheat sheets.
 order: 66
 ---
 
-The Nuclear Option bindings page shows what the game has bound on each controller, on the keyboard and on the mouse. RigReady reads this from what the game itself saved. It can bind a button or an axis of a controller to an action, move it or clear it, and clear everything on one controller at once; a key or a mouse button is bound in the game's own Settings, then Controls.
+The Nuclear Option bindings page shows what the game has bound on each controller, on the keyboard and on the mouse. RigReady reads this from what the game itself saved. It can bind a button or an axis of a controller, or a key of the keyboard, to an action, move it or clear it, and clear everything on one controller at once; a mouse button is bound in the game's own Settings, then Controls.
 
 Open it with **Configure > Bindings** and choose **Nuclear Option** in the **Game** picker above the page, or with [the command palette](../app/command-palette.md): press **Ctrl+K** and type "Nuclear Option bindings".
 
@@ -65,7 +65,17 @@ For an axis action the dialog asks for the axis instead of a button. Move the ax
 
 The controller must be plugged in to bind an axis: the game numbers a controller's axes in the controller's own order, and RigReady asks the controller for it. For one that is not plugged in the review says so and nothing can be saved; clearing an axis binding works either way. Once an axis is chosen, moving another does not change it: clear the field to move another.
 
-What RigReady will not do here, and says so when asked: bind a key or a mouse button; bind half an axis to one side of an action; bind a hat switch; change a binding it does not understand, such as an axis the controller does not report; bind anything on a controller the game has saved no bindings for yet.
+### A key
+
+On the **Keyboard** tab, **Change**, **Clear** and **Bind an action** work on keys. Choose the key in the list, or press **Press the key** and then the key itself (Esc stops waiting); tick **Ctrl**, **Alt** or **Shift** for a key that is held with them (pressing the key with them held ticks them for you). The review says what else that key, with those modifier keys, already does. An axis action is bound on the keyboard by its two sides (Pitch Up, Pitch Down), a key each; the axis as a whole is for a controller.
+
+![A key chosen by pressing it](../../../artifacts/screens/nuclear-option-bindings-keys/01-pressed.png)
+
+An action can have two keys, as on the game's controls screen. **Change** and **Clear** on a row work on that row's key and leave the action's other key alone. **Bind an action** gives an action that has one key a second one; for one that already has two it says so, and you change one of them from its row.
+
+The keys RigReady can bind are the letters and digits, the numeric keypad, F1 to F12, the arrows and the keys above them, Space, Enter, Tab, Backspace, Esc, Delete, the punctuation keys of a US keyboard, and Shift, Ctrl and Alt on either side. For another key it says that it does not know how the game numbers it.
+
+What RigReady will not do here, and says so when asked: bind a mouse button; bind half an axis to one side of an action; bind a hat switch; change a binding it does not understand, such as an axis the controller does not report; bind anything on a controller the game has saved no bindings for yet.
 
 ## Clearing a controller
 
@@ -93,7 +103,7 @@ The same bindings are what the [cheat sheets](../controls/cheat-sheets.md) draw 
 
 ## What RigReady does not do
 
-- **Bind a key, a mouse button or a hat switch.** Those are bound in the game.
+- **Bind a mouse button or a hat switch.** Those are bound in the game.
 - **Put the bindings back from a backup.** Every full backup keeps the game's registry values, bindings included, as a record you can read on the backup's page ([Backups](../protect/backups.md)). RigReady cannot write them back to the registry, so a restore does not include them.
 - **Show a binding on a hat switch by its direction.** How the game saves one is not known to RigReady yet; such a binding may be shown as a button.
 - **Know an action a game update added.** It is listed as "Action" and its number until RigReady learns its name.

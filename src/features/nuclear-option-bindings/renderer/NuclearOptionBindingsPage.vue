@@ -19,6 +19,7 @@ import {
   type Pressed,
 } from '../contract';
 import { controlLabel } from '../../../core/bindings';
+import { GAME_KEYS, keyName } from '../core/keys';
 import { canChange, shownBindings } from './rows';
 
 /** The usual axes, in the order the game numbers them, for a controller that is not plugged in. */
@@ -45,9 +46,9 @@ const device = computed<OverviewDevice | undefined>(
 const rows = computed(() =>
   device.value ? shownBindings(device.value.bindings, search.value) : []
 );
-/** What each thing the page offers to bind is bound to, by its binding id ("5", "25", "25:+"). */
-const takes = computed(
-  () => new Map((overview.value?.actions ?? []).map((a) => [a.key, a.takes] as const))
+/** What the page offers to bind, by its binding id ("5", "25", "25:+"). */
+const offeredById = computed(
+  () => new Map((overview.value?.actions ?? []).map((a) => [a.key, a] as const))
 );
 
 /** The controller a link asked for (`?guid=`), when it is one the game has bindings for. */
@@ -109,6 +110,16 @@ interface Editing {
   /** For an axis action: the controller's axis by its name, and whether it is reversed. */
   axis: string | null;
   invert: boolean;
+  /**
+   * On the keyboard, from a row: the key that row is, which is the one changed or cleared (an
+   * action can have two). Not set from "Bind an action", which adds a key.
+   */
+  replaces?: NonNullable<OverviewBinding['key']>;
+  /** On the keyboard: the key by the browser's name for it, and the modifier keys held with it. */
+  code: string | null;
+  ctrl: boolean;
+  alt: boolean;
+  shift: boolean;
   clear: boolean;
 }
 const editing = ref<Editing>();
@@ -123,7 +134,18 @@ let reviewTurn = 0;
 const entry = computed(() =>
   (overview.value?.actions ?? []).find((a) => a.key === editing.value?.key)
 );
-const wantsAxis = computed(() => entry.value?.takes === 'axis');
+const onKeyboard = computed(() => device.value?.kind === 'keyboard');
+/** A device whose bindings the page changes: a controller, or the keyboard. */
+const changeable = computed(
+  () => device.value?.kind === 'controller' || device.value?.kind === 'keyboard'
+);
+const wantsAxis = computed(() => !onKeyboard.value && entry.value?.takes === 'axis');
+/** What "Bind an action" offers here: on the keyboard only what a key can be bound to. */
+const offered = computed(() =>
+  (overview.value?.actions ?? []).filter((a) => !onKeyboard.value || a.takes === 'button')
+);
+/** The keys RigReady can bind, for the picker, by the names the page shows keys under. */
+const keyItems = GAME_KEYS.map((k) => ({ value: k.dom, title: keyName(k.keyCode) }));
 /** The axes of the controller shown, for the picker: the name the game numbers, and RigReady's words. */
 const axisItems = computed(() =>
   (device.value?.controls?.axes.length ? device.value.controls.axes : USUAL_AXES).map((name) => ({
@@ -142,6 +164,14 @@ const wanted = computed<Omit<ChangeRequest, 'seen'> | undefined>(() => {
     actionId: what.id,
     ...(what.side ? { side: what.side } : {}),
   };
+  if (onKeyboard.value) {
+    if (what.takes !== 'button') return undefined;
+    const which = e.replaces ? { replaces: e.replaces } : {};
+    if (e.clear) return { ...base, key: null, ...which };
+    return e.code
+      ? { ...base, key: { code: e.code, ctrl: e.ctrl, alt: e.alt, shift: e.shift }, ...which }
+      : undefined;
+  }
   if (what.takes === 'axis') {
     if (e.clear) return { ...base, axis: null };
     return e.axis ? { ...base, axis: { name: e.axis, invert: e.invert } } : undefined;
@@ -176,6 +206,10 @@ watch(
     editing.value?.button,
     editing.value?.axis,
     editing.value?.invert,
+    editing.value?.code,
+    editing.value?.ctrl,
+    editing.value?.alt,
+    editing.value?.shift,
     editing.value?.clear,
   ],
   refreshReview
@@ -256,9 +290,60 @@ async function stopListening(): Promise<void> {
 }
 onBeforeUnmount(() => void stopListening());
 
-const blank = { button: '', axis: null, invert: false };
+const blank = {
+  button: '',
+  axis: null,
+  invert: false,
+  code: null,
+  ctrl: false,
+  alt: false,
+  shift: false,
+};
+
+// ---- On the keyboard the key can be pressed instead of chosen, once "Press the key" is on ----
+
+/** The next key pressed is the one to bind. */
+const takingKey = ref(false);
+const MODIFIER_CODES = /^(Shift|Control|Alt|Meta)(Left|Right)$/;
+const keyNote = ref('');
+
+function onKeyDown(event: KeyboardEvent): void {
+  const e = editing.value;
+  if (!takingKey.value || !e) return;
+  // While it waits, a key is the answer: it must not close the dialog or press a button.
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  // Esc stops waiting and takes nothing; Esc itself is chosen from the list.
+  if (event.key === 'Escape') {
+    takingKey.value = false;
+    return;
+  }
+  // A modifier on its own is waited through: the key that follows comes with it.
+  if (event.repeat || MODIFIER_CODES.test(event.code)) return;
+  takingKey.value = false;
+  if (!GAME_KEYS.some((k) => k.dom === event.code)) {
+    keyNote.value =
+      'RigReady does not know how the game numbers that key. Choose another, or bind it in the game.';
+    return;
+  }
+  keyNote.value = '';
+  e.code = event.code;
+  // AltGr reports itself as Ctrl and Alt together: it is neither, for a binding.
+  const altGr = event.getModifierState('AltGraph');
+  e.ctrl = event.ctrlKey && !altGr;
+  e.alt = event.altKey && !altGr;
+  e.shift = event.shiftKey;
+}
+/** Starts waiting for a key, or stops when pressed again. */
+function takeKey(): void {
+  keyNote.value = '';
+  takingKey.value = !takingKey.value;
+}
+onMounted(() => window.addEventListener('keydown', onKeyDown, true));
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown, true));
 function startChange(binding: OverviewBinding): void {
   savedMessage.value = '';
+  keyNote.value = '';
   editing.value = {
     ...blank,
     key: binding.actionId,
@@ -267,20 +352,31 @@ function startChange(binding: OverviewBinding): void {
     ...(binding.control?.kind === 'axis'
       ? { axis: binding.control.axis, invert: binding.inverted }
       : {}),
+    // A key row opens on its key, and changes that key only.
+    ...(binding.key ? { replaces: binding.key, ...binding.key } : {}),
     clear: false,
   };
-  void startListening();
+  if (!binding.key) void startListening();
 }
 function startClear(binding: OverviewBinding): void {
   savedMessage.value = '';
-  editing.value = { ...blank, key: binding.actionId, fromRow: true, clear: true };
+  editing.value = {
+    ...blank,
+    key: binding.actionId,
+    fromRow: true,
+    ...(binding.key ? { replaces: binding.key } : {}),
+    clear: true,
+  };
 }
 function startBind(): void {
   savedMessage.value = '';
+  keyNote.value = '';
   editing.value = { ...blank, key: null, fromRow: false, clear: false };
-  void startListening();
+  // Controllers are listened to for a controller's dialog only.
+  if (!onKeyboard.value) void startListening();
 }
 function closeEdit(): void {
+  takingKey.value = false;
   void stopListening();
   reviewTurn++;
   editing.value = undefined;
@@ -355,6 +451,7 @@ const editTitle = computed(() => {
   const name = entry.value?.name;
   if (e.clear) return `Clear ${name ?? 'this binding'}?`;
   if (!name) return 'Bind an action?';
+  if (onKeyboard.value) return `Bind ${name} to a key?`;
   return wantsAxis.value ? `Bind ${name} to an axis?` : `Bind ${name} to a button?`;
 });
 </script>
@@ -440,12 +537,12 @@ const editTitle = computed(() => {
         <div class="rr-panel nb-note" data-testid="nuclear-option-bindings-note">
           <v-icon icon="mdi-pencil-outline" class="rr-muted" />
           <div>
-            You can bind a controller’s button or axis to an action here, move it or clear it, or
-            clear everything the game bound on a controller you do not use for it. RigReady shows
-            what will change and writes nothing until you press Save; it backs the saved bindings up
-            first, and Undo is on the
-            <router-link to="/configure/safety">Safety page</router-link>. A key or a mouse button
-            is bound in the game, under Settings, then Controls. The bindings are in
+            You can bind a controller’s button or axis, or a key, to an action here, move it or
+            clear it, or clear everything the game bound on a controller you do not use for it.
+            RigReady shows what will change and writes nothing until you press Save; it backs the
+            saved bindings up first, and Undo is on the
+            <router-link to="/configure/safety">Safety page</router-link>. A mouse button is bound
+            in the game, under Settings, then Controls. The bindings are in
             <span class="rr-mono">{{ overview.registryKey }}</span>.
           </div>
         </div>
@@ -487,7 +584,7 @@ const editTitle = computed(() => {
             </span>
             <v-spacer />
             <v-btn
-              v-if="device.kind === 'controller'"
+              v-if="changeable"
               variant="tonal"
               prepend-icon="mdi-plus"
               data-testid="nuclear-option-bindings-bind"
@@ -533,7 +630,7 @@ const editTitle = computed(() => {
                   <th scope="col">Group</th>
                   <th scope="col">Input</th>
                   <th scope="col">In the game</th>
-                  <th v-if="device.kind === 'controller'" scope="col">
+                  <th v-if="changeable" scope="col">
                     <span class="rr-sr-only">Change</span>
                   </th>
                 </tr>
@@ -555,8 +652,8 @@ const editTitle = computed(() => {
                     >{{ b.inputLabel }}<span v-if="b.inverted" class="rr-muted"> · reversed</span>
                   </td>
                   <td class="rr-mono rr-muted">{{ b.input }}</td>
-                  <td v-if="device.kind === 'controller'" class="nb-actions">
-                    <template v-if="canChange(b, takes)">
+                  <td v-if="changeable" class="nb-actions">
+                    <template v-if="canChange(b, offeredById)">
                       <v-btn
                         size="small"
                         variant="text"
@@ -578,7 +675,7 @@ const editTitle = computed(() => {
                 </tr>
                 <tr v-if="rows.length === 0">
                   <td
-                    :colspan="device.kind === 'controller' ? 5 : 4"
+                    :colspan="changeable ? 5 : 4"
                     class="rr-muted"
                     data-testid="nuclear-option-bindings-none"
                   >
@@ -620,7 +717,7 @@ const editTitle = computed(() => {
         <v-autocomplete
           v-if="!editing.fromRow"
           v-model="editing.key"
-          :items="overview?.actions ?? []"
+          :items="offered"
           item-title="name"
           item-value="key"
           label="Action"
@@ -630,7 +727,59 @@ const editTitle = computed(() => {
           class="mb-3"
           data-testid="nuclear-option-bindings-edit-action"
         />
-        <template v-if="!editing.clear && wantsAxis">
+        <template v-if="!editing.clear && onKeyboard">
+          <div class="nb-key mb-2">
+            <v-autocomplete
+              v-model="editing.code"
+              :items="keyItems"
+              label="Key"
+              density="compact"
+              variant="outlined"
+              hide-details
+              data-testid="nuclear-option-bindings-edit-key"
+            />
+            <v-btn
+              :variant="takingKey ? 'flat' : 'tonal'"
+              :color="takingKey ? 'primary' : undefined"
+              prepend-icon="mdi-keyboard-outline"
+              data-testid="nuclear-option-bindings-edit-press-key"
+              @click="takeKey"
+              >{{ takingKey ? 'Press the key now… (Esc stops)' : 'Press the key' }}</v-btn
+            >
+          </div>
+          <div class="nb-mods mb-3">
+            <v-checkbox
+              v-model="editing.ctrl"
+              label="Ctrl"
+              density="compact"
+              hide-details
+              data-testid="nuclear-option-bindings-edit-ctrl"
+            />
+            <v-checkbox
+              v-model="editing.alt"
+              label="Alt"
+              density="compact"
+              hide-details
+              data-testid="nuclear-option-bindings-edit-alt"
+            />
+            <v-checkbox
+              v-model="editing.shift"
+              label="Shift"
+              density="compact"
+              hide-details
+              data-testid="nuclear-option-bindings-edit-shift"
+            />
+          </div>
+          <div
+            v-if="keyNote"
+            class="nb-also mb-3"
+            data-testid="nuclear-option-bindings-edit-key-note"
+          >
+            <v-icon icon="mdi-information-outline" size="small" class="rr-muted" />
+            <span>{{ keyNote }}</span>
+          </div>
+        </template>
+        <template v-else-if="!editing.clear && wantsAxis">
           <v-select
             v-model="editing.axis"
             :items="axisItems"
@@ -689,7 +838,7 @@ const editTitle = computed(() => {
           <div v-if="review.alsoOnButton.length" class="nb-also">
             <v-icon icon="mdi-alert-outline" size="small" class="rr-warn" />
             <span
-              >That {{ wantsAxis ? 'axis' : 'button' }} already does
+              >That {{ onKeyboard ? 'key' : wantsAxis ? 'axis' : 'button' }} already does
               {{ review.alsoOnButton.join(', ') }}. One {{ wantsAxis ? 'movement' : 'press' }} will
               do both.</span
             >
@@ -828,6 +977,15 @@ const editTitle = computed(() => {
   display: grid;
   gap: 8px;
   margin-bottom: 12px;
+}
+.nb-key {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.nb-mods {
+  display: flex;
+  gap: 16px;
 }
 .nb-also {
   display: flex;

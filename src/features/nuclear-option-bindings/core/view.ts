@@ -13,8 +13,15 @@ import type { GameRegistry } from '../../../core/games';
 import { err, ok, type Result } from '../../../core/result';
 import type { InputDevice } from '../../../shared/models';
 import type { Overview, OverviewBinding, OverviewDevice } from '../contract';
-import { ACTIONS, actionOf, bindingActionId, bindingName, mapCategoryName } from './actions';
-import { keyName, modifierName, mouseElementName } from './keys';
+import {
+  ACTIONS,
+  actionOf,
+  bindingActionId,
+  bindingName,
+  mapCategoryName,
+  mapCategoryOf,
+} from './actions';
+import { gameKeyByNumbers, keyName, modifierName, MODIFIERS, mouseElementName } from './keys';
 import {
   parseControllerMap,
   parseHardwareIdentifier,
@@ -189,6 +196,41 @@ export async function storedGameMap(
   });
 }
 
+/** The id the page knows the keyboard by. */
+export const KEYBOARD = 'keyboard';
+
+/** The keyboard's saved map for one tab of the game's controls screen, as stored. */
+export async function storedKeyboardMap(
+  ctx: BindingsContext,
+  mapCategory: number
+): Promise<Result<StoredMap>> {
+  const saved = await readSaved(ctx);
+  if (!saved.ok) return saved;
+  const maps = saved.value.maps.filter(
+    (m) => m.map.kind === 'KeyboardMap' && m.map.categoryId === mapCategory
+  );
+  // Two maps for one tab: which of them the game reads is not known, so neither is changed.
+  if (maps.length > 1) {
+    return err(
+      'nuclear-option.edit.twoMaps',
+      'Nuclear Option has saved two sets of key bindings for that tab of its controls screen, and RigReady cannot tell which one it uses. Change the key in the game.'
+    );
+  }
+  const found = maps[0];
+  if (!found) {
+    return err(
+      'nuclear-option.noMap',
+      'Nuclear Option has saved no key bindings for that tab of its controls screen, so there is nothing to change. Start the game once.'
+    );
+  }
+  return ok({
+    valueName: found.valueName,
+    text: found.text,
+    map: found.map,
+    deviceName: 'the keyboard',
+  });
+}
+
 /**
  * Every saved map of a controller, as stored: the Game category's and the other
  * categories' (Chat, Mission Editor, Debug). What clearing a controller empties.
@@ -298,6 +340,7 @@ function joystickBinding(
 function keyBinding(element: ElementMap, mapCategory: number): OverviewBinding {
   const action = actionOf(element.actionId);
   const key = keyName(element.keyboardKeyCode);
+  const known = gameKeyByNumbers(element.elementIdentifierId, element.keyboardKeyCode);
   return {
     actionId: bindingActionId(action, false, element.axisContribution),
     action: bindingName(action, false, element.axisContribution),
@@ -308,6 +351,17 @@ function keyBinding(element: ElementMap, mapCategory: number): OverviewBinding {
     kind: 'key',
     modifiers: element.modifierKeys.flatMap((m) => modifierName(m) ?? []),
     inverted: false,
+    // Only for a key whose two numbers are the table's, held with modifier keys it knows.
+    ...(known && element.modifierKeys.every((m) => [0, 1, 2, 3].includes(m))
+      ? {
+          key: {
+            code: known.dom,
+            ctrl: element.modifierKeys.includes(MODIFIERS.ctrl),
+            alt: element.modifierKeys.includes(MODIFIERS.alt),
+            shift: element.modifierKeys.includes(MODIFIERS.shift),
+          },
+        }
+      : {}),
   };
 }
 
@@ -444,6 +498,7 @@ export async function overview(ctx: BindingsContext): Promise<Result<Overview>> 
         key: side ? `${a.id}:${side}` : String(a.id),
         name,
         category: a.category,
+        mapCategory: mapCategoryName(mapCategoryOf(a)),
         takes,
       });
       if (a.kind !== 'axis') return [entry('button', a.name)];

@@ -138,4 +138,16 @@ export const MAP_CATEGORIES: Record<number, string> = {
   3: 'Debug',
 };
 
+/**
+ * The map category an action's bindings are saved in: the tab of the controls screen it is
+ * on. Seen in the owner's saved keyboard maps: the chat actions in 1, the mission editor's in
+ * 2, the debug ones in 3, everything else in 0.
+ */
+export function mapCategoryOf(action: GameAction): number {
+  if (action.category === CHAT) return 1;
+  if (action.category === EDITOR) return 2;
+  if (action.category === DEBUG) return 3;
+  return 0;
+}
+
 export const mapCategoryName = (id: number): string => MAP_CATEGORIES[id] ?? `Category ${id}`;

@@ -9,7 +9,8 @@ import type {
   ClearDeviceRequest,
   ClearDeviceReview,
 } from '../contract';
-import { actionOf, bindingName } from './actions';
+import { actionOf, bindingName, mapCategoryOf } from './actions';
+import { gameKeyOf, keyName, MODIFIERS, modifierName } from './keys';
 import { controlLabel } from '../../../core/bindings';
 import { clearMapText, editMapText, type BindingEdit, type BoundTo } from './edit';
 import {
@@ -17,7 +18,9 @@ import {
   GAME_NAME,
   REGISTRY_KEY,
   axisNamesOf,
+  KEYBOARD,
   storedControllerMaps,
+  storedKeyboardMap,
   storedGameMap,
   type BindingsContext,
 } from './view';
@@ -51,6 +54,9 @@ export async function whyBlocked(ctx: BindingsContext): Promise<string | undefin
 /** One thing an action is on, in RigReady's words: "Button 3", "Y axis", "Y axis, reversed". */
 function boundInWords(to: BoundTo, axes: string[]): string {
   if (to.kind === 'button') return `Button ${to.button}`;
+  if (to.kind === 'key') {
+    return [...to.modifiers.flatMap((m) => modifierName(m) ?? []), keyName(to.keyCode)].join(' + ');
+  }
   const name = axes[to.index];
   const axis = name ? controlLabel({ kind: 'axis', axis: name }) : `Axis ${to.index}`;
   return to.invert ? `${axis}, reversed` : axis;
@@ -93,19 +99,34 @@ async function exactBytes(
   if (raw.value?.type !== 'binary' || raw.value.value.toLowerCase() !== bytes.toString('hex')) {
     return err(
       'nuclear-option.edit.bytes',
-      'The game’s saved bindings for this controller hold bytes RigReady cannot write back exactly, so it does not change them. Change the binding in the game.'
+      'The game’s saved bindings for this device hold bytes RigReady cannot write back exactly, so it does not change them. Change the binding in the game.'
     );
   }
   return ok(bytes);
 }
 
 async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Result<Plan>> {
-  const stored = await storedGameMap(ctx, request.device);
+  const onKeyboard = request.device === KEYBOARD;
+  if (onKeyboard !== (request.key !== undefined)) {
+    return err(
+      'nuclear-option.edit.where',
+      onKeyboard
+        ? 'On the keyboard an action is bound to a key.'
+        : 'A key is bound on the keyboard, not on a controller.'
+    );
+  }
+  // The keyboard has a map for each tab of the game's controls screen: the action's own.
+  const stored = onKeyboard
+    ? await storedKeyboardMap(ctx, mapCategoryOf(actionOf(request.actionId)))
+    : await storedGameMap(ctx, request.device);
   if (!stored.ok) return stored;
   const exact = await exactBytes(ctx, stored.value.valueName, stored.value.text);
   if (!exact.ok) return exact;
   const text = exact.value;
-  const asked = await axisNamesOf(ctx, request.device);
+  // The keyboard has no axes to ask about.
+  const asked = onKeyboard
+    ? ok({ names: [] as string[], asked: true })
+    : await axisNamesOf(ctx, request.device);
   if (!asked.ok) return asked;
   const axes = { value: asked.value.names };
   // Which number the game has for "Slider 1" depends on the controller's own list of axes.
@@ -116,6 +137,43 @@ async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Resul
       'nuclear-option.edit.unplugged',
       'Plug this controller in to bind an axis: RigReady asks it which axes it has, and the game numbers them in that order.'
     );
+  }
+  // The key is asked for by the browser's name for it; the game knows it by two numbers.
+  const numbered = (
+    asked: NonNullable<ChangeRequest['key']>
+  ): Result<{ element: number; keyCode: number; modifiers: number[] }> => {
+    const known = gameKeyOf(asked.code);
+    if (!known) {
+      return err(
+        'nuclear-option.edit.noKey',
+        'RigReady does not know how the game numbers that key, so it does not bind it. Bind it in the game.'
+      );
+    }
+    return ok({
+      element: known.element,
+      keyCode: known.keyCode,
+      modifiers: [
+        ...(asked.ctrl ? [MODIFIERS.ctrl] : []),
+        ...(asked.alt ? [MODIFIERS.alt] : []),
+        ...(asked.shift ? [MODIFIERS.shift] : []),
+      ],
+    });
+  };
+  let key: BindingEdit['key'];
+  if (request.key === null) key = null;
+  else if (request.key) {
+    const known = numbered(request.key);
+    if (!known.ok) return known;
+    key = known.value;
+  }
+  let replaces: BindingEdit['replaces'];
+  if (request.replaces) {
+    if (request.key === undefined) {
+      return err('nuclear-option.edit.where', 'Only a key change says which key it replaces.');
+    }
+    const known = numbered(request.replaces);
+    if (!known.ok) return known;
+    replaces = known.value;
   }
   // The axis is asked for by the name RigReady shows; the game knows it by its number.
   let axis: BindingEdit['axis'];
@@ -136,10 +194,17 @@ async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Resul
     ...(request.side ? { side: request.side } : {}),
     ...(request.button !== undefined ? { button: request.button } : {}),
     ...(axis !== undefined ? { axis } : {}),
+    ...(key !== undefined ? { key } : {}),
+    ...(replaces ? { replaces } : {}),
   };
   const edited = editMapText(stored.value.text, edit);
   if (!edited.ok) return edited;
-  const clears = request.button === null || request.axis === null;
+  // A key taken off an action that has another is a change of what it is on, not a clear.
+  const left = edited.value.after;
+  const clears =
+    request.button === null ||
+    request.axis === null ||
+    (request.key === null && (left === undefined || left.length === 0));
   const action = actionOf(request.actionId);
   return ok({
     valueName: stored.value.valueName,
@@ -160,7 +225,9 @@ async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Resul
       ? 'Not bound'
       : axis
         ? boundInWords({ kind: 'axis', ...axis }, axes.value)
-        : `Button ${request.button}`,
+        : left
+          ? inWords(left, [])
+          : `Button ${request.button}`,
     same: edited.value.same,
     alsoOnButton: edited.value.alsoOn,
     clears,

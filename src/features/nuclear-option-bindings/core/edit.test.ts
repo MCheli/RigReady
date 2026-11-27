@@ -347,6 +347,196 @@ describe('changing one binding in a saved map', () => {
     });
   });
 
+  describe('a key of the keyboard', () => {
+    /** A key binding as the game wrote one the player made (Toggle Engine on F7, 27 Nov 2026). */
+    const keyMade = (
+      actionId: number,
+      element: number,
+      keyCode: number,
+      mods: [number, number, number] = [0, 0, 0],
+      contribution = 0
+    ): string =>
+      `<ActionElementMap><actionCategoryId>0</actionCategoryId><actionId>${actionId}</actionId><elementType>1</elementType><elementIdentifierId>${element}</elementIdentifierId><axisRange>0</axisRange><invert>false</invert><axisContribution>${contribution}</axisContribution><keyboardKeyCode>${keyCode}</keyboardKeyCode><modifierKey1>${mods[0]}</modifierKey1><modifierKey2>${mods[1]}</modifierKey2><modifierKey3>${mods[2]}</modifierKey3><enabled>true</enabled></ActionElementMap>`;
+    const F7 = { element: 104, keyCode: 288, modifiers: [] };
+    const G = { element: 7, modifiers: [] };
+    const keysOf = (text: string, actionId: number): [number, number, number[]][] =>
+      ok(parseControllerMap(text))
+        .buttonMaps.filter((e) => e.actionId === actionId)
+        .map((e) => [e.elementIdentifierId, e.axisContribution, e.modifierKeys]);
+
+    it('binds an action that had no key exactly as the game wrote it: one binding at the end, nothing else changed', async () => {
+      const text = await fixture('keyboard.xml');
+      const edited = ok(editMapText(text, { actionId: 50, key: F7 }));
+      expect(edited).toMatchObject({ before: [], same: false, alsoOn: [] });
+      expect(edited.after).toEqual([{ kind: 'key', keyCode: 288, modifiers: [] }]);
+      expect(edited.text).toBe(
+        text.replace('</buttonMaps>', `${keyMade(50, 104, 288)}</buttonMaps>`)
+      );
+    });
+
+    it('changes the key a row is on in place, with the modifier keys in the game’s order, and says what else that key with those modifiers does', async () => {
+      const text = await fixture('keyboard.xml');
+      // Toggle Gear (11) is on G. Ctrl + Shift + E is Eject; E alone is nothing.
+      const toEject = ok(
+        editMapText(text, {
+          actionId: 11,
+          replaces: G,
+          key: { element: 5, keyCode: 101, modifiers: [3, 1] },
+        })
+      );
+      expect(toEject).toMatchObject({
+        before: [{ kind: 'key', keyCode: 103, modifiers: [] }],
+        after: [{ kind: 'key', keyCode: 101, modifiers: [1, 3] }],
+        same: false,
+        alsoOn: ['Eject'],
+      });
+      expect(toEject.text).toBe(text.replace(keyMade(11, 7, 103), keyMade(11, 5, 101, [1, 3, 0])));
+      const plain = ok(
+        editMapText(text, {
+          actionId: 11,
+          replaces: G,
+          key: { element: 5, keyCode: 101, modifiers: [] },
+        })
+      );
+      expect(plain.alsoOn).toEqual([]);
+      // The same key and modifiers it has is no change, whatever order they are given in.
+      expect(
+        ok(
+          editMapText(text, {
+            actionId: 16,
+            replaces: { element: 5, modifiers: [1, 3] },
+            key: { element: 5, keyCode: 101, modifiers: [3, 1] },
+          })
+        )
+      ).toMatchObject({ same: true, text });
+      // A clash is seen also when the saved map holds the modifier keys in another order.
+      const reordered = text.replace(
+        keyMade(16, 5, 101, [1, 3, 0]),
+        keyMade(16, 5, 101, [3, 1, 0])
+      );
+      expect(reordered).not.toBe(text);
+      expect(
+        ok(
+          editMapText(reordered, {
+            actionId: 11,
+            replaces: G,
+            key: { element: 5, keyCode: 101, modifiers: [1, 3] },
+          })
+        ).alsoOn
+      ).toEqual(['Eject']);
+    });
+
+    it('an action has up to two keys, as on the game’s screen: a bind adds one, a row changes or clears its own, and a third is refused', async () => {
+      const text = await fixture('keyboard.xml');
+      // Toggle Gear (11) is on G; F7 is added beside it.
+      const two = ok(editMapText(text, { actionId: 11, key: F7 }));
+      expect(two.before).toEqual([{ kind: 'key', keyCode: 103, modifiers: [] }]);
+      expect(two.after).toEqual([
+        { kind: 'key', keyCode: 103, modifiers: [] },
+        { kind: 'key', keyCode: 288, modifiers: [] },
+      ]);
+      expect(two.text).toBe(text.replace('</buttonMaps>', `${keyMade(11, 104, 288)}</buttonMaps>`));
+      // The key it already has, asked for again, is nothing to save.
+      expect(ok(editMapText(two.text, { actionId: 11, key: F7 }))).toMatchObject({
+        same: true,
+        text: two.text,
+      });
+      // A third key is refused.
+      const third = editMapText(two.text, {
+        actionId: 11,
+        key: { element: 8, keyCode: 104, modifiers: [] },
+      });
+      expect(third.ok).toBe(false);
+      if (!third.ok) expect(third.error.message).toContain('already has two keys');
+      // Change on the G row touches G only; F7 stays.
+      const changed = ok(
+        editMapText(two.text, {
+          actionId: 11,
+          replaces: G,
+          key: { element: 8, keyCode: 104, modifiers: [] },
+        })
+      );
+      expect(keysOf(changed.text, 11)).toEqual([
+        [8, 0, [0, 0, 0]],
+        [104, 0, [0, 0, 0]],
+      ]);
+      // Clear on the F7 row leaves G, and the map as it was before F7 was added.
+      const cleared = ok(
+        editMapText(two.text, {
+          actionId: 11,
+          replaces: { element: 104, modifiers: [] },
+          key: null,
+        })
+      );
+      expect(cleared.text).toBe(text);
+      expect(cleared.after).toEqual([{ kind: 'key', keyCode: 103, modifiers: [] }]);
+      // One row changed to the key the other row has: one binding of it is left, not two.
+      const merged = ok(editMapText(two.text, { actionId: 11, replaces: G, key: F7 }));
+      expect(keysOf(merged.text, 11)).toEqual([[104, 0, [0, 0, 0]]]);
+      // With no row named, a clear takes both.
+      const both = ok(editMapText(two.text, { actionId: 11, key: null }));
+      expect(keysOf(both.text, 11)).toEqual([]);
+      expect(both.after).toEqual([]);
+      // A row whose key is no longer there is said so.
+      const gone = editMapText(text, {
+        actionId: 11,
+        replaces: { element: 104, modifiers: [] },
+        key: F7,
+      });
+      expect(gone.ok).toBe(false);
+      if (!gone.ok) expect(gone.error.message).toContain('is no longer on that key');
+    });
+
+    it('binds each side of an axis action on its own, and clears one without the other', async () => {
+      const text = await fixture('keyboard.xml');
+      // Pitch Axis (0): the fixture has W on its negative side and S on its positive side.
+      const up = ok(
+        editMapText(text, {
+          actionId: 0,
+          side: '+',
+          replaces: { element: 19, modifiers: [] },
+          key: { element: 89, keyCode: 273, modifiers: [] },
+        })
+      );
+      expect(up.before).toEqual([{ kind: 'key', keyCode: 115, modifiers: [] }]);
+      expect(up.text).toBe(text.replace(keyMade(0, 19, 115), keyMade(0, 89, 273)));
+      const cleared = ok(editMapText(text, { actionId: 0, side: '-', key: null }));
+      expect(cleared.before).toEqual([{ kind: 'key', keyCode: 119, modifiers: [] }]);
+      expect(cleared.text).toBe(text.replace(keyMade(0, 23, 119, [0, 0, 0], 1), ''));
+      expect(ok(editMapText(text, { actionId: 50, key: null }))).toMatchObject({
+        same: true,
+        before: [],
+      });
+    });
+
+    it('refuses a whole axis on a key, a button or an axis on the keyboard, and a key that is not one', async () => {
+      const text = await fixture('keyboard.xml');
+      const refused = (edit: BindingEdit): string => {
+        const result = editMapText(text, edit);
+        expect(result.ok, JSON.stringify(edit)).toBe(false);
+        return result.ok ? '' : result.error.message;
+      };
+      expect(refused({ actionId: 0, key: F7 })).toContain(
+        'Pitch Axis is an axis: bind a key to one of its sides (Pitch Up or Pitch Down)'
+      );
+      expect(refused({ actionId: 50, side: '+', key: F7 })).toContain('has no sides');
+      expect(refused({ actionId: 50, axis: { index: 0, invert: false } })).toContain(
+        'The keyboard has keys'
+      );
+      expect(refused({ actionId: 99, key: F7 })).toContain('does not know this action');
+      expect(refused({ actionId: 50 })).toContain('Nothing was chosen');
+      for (const key of [
+        { element: 0, keyCode: 288, modifiers: [] },
+        { element: 104, keyCode: 0, modifiers: [] },
+        { element: 104, keyCode: 288, modifiers: [4] },
+        { element: 104, keyCode: 288, modifiers: [1, 1] },
+        { element: 104, keyCode: 288, modifiers: [1, 2, 3, 1] },
+      ]) {
+        expect(refused({ actionId: 50, key })).toContain('not a key RigReady can bind');
+      }
+    });
+  });
+
   it('refuses what it has not seen the game write: an axis, a key, an unknown action, a button out of range, a damaged map', async () => {
     const stick = await fixture('stick.xml');
     const refused = (text: string, edit: BindingEdit): string => {
@@ -381,11 +571,14 @@ describe('changing one binding in a saved map', () => {
     expect(refused(stick, { actionId: 49, button: 129 })).toContain('buttons 1 to 128');
     expect(refused(stick, { actionId: 49, button: 2.5 })).toContain('buttons 1 to 128');
     expect(refused(await fixture('keyboard.xml'), { actionId: 11, button: 3 })).toContain(
-      'on a controller only'
+      'The keyboard has keys'
     );
     expect(refused(await fixture('mouse.xml'), { actionId: 26, button: 3 })).toContain(
-      'on a controller only'
+      'Change a mouse button in the game'
     );
+    expect(
+      refused(stick, { actionId: 49, key: { element: 104, keyCode: 288, modifiers: [] } })
+    ).toContain('A key is bound on the keyboard, not on a controller');
     expect(refused('not a map', { actionId: 49, button: 3 })).toContain('not a controller map');
     // An action bound here in a way this code never saw (a button with a modifier key).
     const odd = stick.replace(

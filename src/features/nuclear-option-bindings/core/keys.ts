@@ -81,3 +81,108 @@ export function mouseElementName(elementType: number, id: number): string {
   };
   return buttons[id] ?? `Mouse button ${id}`;
 }
+
+/**
+ * A key as the game's keyboard map knows it: Rewired's number for the key (its element id),
+ * Unity's KeyCode beside it, and the browser's name for the physical key (KeyboardEvent.code),
+ * by which the page says which key was pressed.
+ *
+ * Rewired numbers the keys in the order of Unity's KeyCode list, from A = 1. Seen in the
+ * owner's saved keyboard maps for 40 keys (docs/research/nuclear-option.md, "Keys"), among
+ * them at least one in every run below but the digits, the keypad's signs and three single
+ * keys; the rest follow from the runs fitting exactly between the keys that were seen.
+ */
+export interface GameKey {
+  element: number;
+  keyCode: number;
+  /** KeyboardEvent.code: "KeyA", "Digit1", "Numpad5", "F7", "ShiftLeft". */
+  dom: string;
+}
+
+const run = (firstElement: number, firstKeyCode: number, dom: readonly string[]): GameKey[] =>
+  dom.map((code, i) => ({ element: firstElement + i, keyCode: firstKeyCode + i, dom: code }));
+const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const digits = '0123456789'.split('');
+
+export const GAME_KEYS: readonly GameKey[] = [
+  ...run(
+    1,
+    97,
+    letters.map((l) => `Key${l}`)
+  ),
+  ...run(
+    27,
+    48,
+    digits.map((d) => `Digit${d}`)
+  ),
+  ...run(
+    37,
+    256,
+    digits.map((d) => `Numpad${d}`)
+  ),
+  ...run(47, 266, [
+    'NumpadDecimal',
+    'NumpadDivide',
+    'NumpadMultiply',
+    'NumpadSubtract',
+    'NumpadAdd',
+    'NumpadEnter',
+  ]),
+  { element: 54, keyCode: 32, dom: 'Space' },
+  { element: 55, keyCode: 8, dom: 'Backspace' },
+  { element: 56, keyCode: 9, dom: 'Tab' },
+  { element: 58, keyCode: 13, dom: 'Enter' },
+  { element: 59, keyCode: 19, dom: 'Pause' },
+  { element: 60, keyCode: 27, dom: 'Escape' },
+  { element: 66, keyCode: 39, dom: 'Quote' },
+  { element: 71, keyCode: 44, dom: 'Comma' },
+  { element: 72, keyCode: 45, dom: 'Minus' },
+  { element: 73, keyCode: 46, dom: 'Period' },
+  { element: 74, keyCode: 47, dom: 'Slash' },
+  { element: 76, keyCode: 59, dom: 'Semicolon' },
+  { element: 78, keyCode: 61, dom: 'Equal' },
+  { element: 82, keyCode: 91, dom: 'BracketLeft' },
+  { element: 83, keyCode: 92, dom: 'Backslash' },
+  { element: 84, keyCode: 93, dom: 'BracketRight' },
+  { element: 87, keyCode: 96, dom: 'Backquote' },
+  { element: 88, keyCode: 127, dom: 'Delete' },
+  ...run(89, 273, [
+    'ArrowUp',
+    'ArrowDown',
+    'ArrowRight',
+    'ArrowLeft',
+    'Insert',
+    'Home',
+    'End',
+    'PageUp',
+    'PageDown',
+  ]),
+  ...run(
+    98,
+    282,
+    Array.from({ length: 12 }, (_, i) => `F${i + 1}`)
+  ),
+  ...run(113, 300, [
+    'NumLock',
+    'CapsLock',
+    'ScrollLock',
+    'ShiftRight',
+    'ShiftLeft',
+    'ControlRight',
+    'ControlLeft',
+    'AltRight',
+    'AltLeft',
+  ]),
+];
+
+const BY_DOM = new Map(GAME_KEYS.map((k) => [k.dom, k]));
+
+/** The game's key for a physical key the browser names; undefined for one RigReady does not bind. */
+export const gameKeyOf = (dom: string): GameKey | undefined => BY_DOM.get(dom);
+
+/** The key the game's two numbers mean; undefined unless both are the table's for one key. */
+export const gameKeyByNumbers = (element: number, keyCode: number): GameKey | undefined =>
+  GAME_KEYS.find((k) => k.element === element && k.keyCode === keyCode);
+
+/** Rewired's ModifierKey numbers, in the order the game writes them: Control, Alt, Shift. */
+export const MODIFIERS = { ctrl: 1, alt: 2, shift: 3 } as const;
