@@ -6619,6 +6619,61 @@ requirements:
       - "artifacts/screens/games-nuclear-option/02-nuclear-option.png"
     notes: "Stage 1 of docs/contributing/add-game.md. Sources and the proof on a rig: docs/research/nuclear-option.md. Checked on the owner's rig on 2026-11-26 with the game from Steam (build 26327221): offered and found in a new setup, launched through Steam twice from Play, the session began when NuclearOption.exe ran and ended when the game was closed. Not tried there: the game's own page, and Choose folder."
 
+  - id: BIND-NO-001
+    title: Read the bindings Nuclear Option saves, without losing a character
+    job: configure
+    area: nuclear-option-bindings
+    priority: p2
+    done_means:
+      - "A controller map the game's Rewired library saved (joystick, keyboard, mouse) is read into its bindings and the text around them, and writing it back gives the same characters, with or without the zero byte Unity ends a string with."
+      - "The names of the game's registry values are taken apart (what kind of data, which controller model and which unit of it, in both forms the game has written the controller's identifier), and the game's other values are left alone."
+      - "A document that is not a map, or holds a binding written another way, is refused with a plain message; damaged and random input never throws (fuzz)."
+      - "docs/research/nuclear-option.md records the format, what is verified and what is inferred, and the sources."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/core/rewired.test.ts#every fixture map is read and put together again character for character"
+      - "src/features/nuclear-option-bindings/core/rewired.test.ts#reads what a joystick map holds: the controller, the category and each binding"
+      - "src/features/nuclear-option-bindings/core/rewired.test.ts#reads a keyboard map with its key codes and modifier keys, and lists written empty"
+      - "src/features/nuclear-option-bindings/core/rewired.test.ts#a changed binding is written the way the game writes one, and nothing else moves"
+      - "src/features/nuclear-option-bindings/core/rewired.test.ts#refuses what is not a map, or holds a binding written another way, with the reason"
+      - "src/features/nuclear-option-bindings/core/rewired.test.ts#takes a registry value name apart, and leaves the game’s other values alone"
+      - "src/features/nuclear-option-bindings/core/rewired.test.ts#reads the controller model out of Rewired’s hardware identifier"
+      - "tests/unit/fuzzParsers.test.ts#Nuclear Option controller map (Rewired XML)"
+      - "docs/research/nuclear-option.md"
+    notes: "The 22 maps saved on the owner's rig were read from scratch copies on 2026-11-26 and came back character for character; the fixtures in the repository are made up in the same shape."
+
+  - id: BIND-NO-002
+    title: Nuclear Option's bindings on a page, on cheat sheets, in the trainer and in the overlay
+    job: configure
+    area: nuclear-option-bindings
+    priority: p2
+    done_means:
+      - "Configure > Bindings offers Nuclear Option in the game picker. Its page lists each device the game has bindings for (controllers, plugged-in ones first, then the keyboard and the mouse) and, for the chosen one, each action by the game's own name with its input in RigReady's words and as the game's controls screen shows it."
+      - "The game's button 0 is Button 1; an axis is named as the plugged-in controller reports it, or in the usual order when it is not plugged in; a reversed axis, a modifier key, one side of an axis and a binding from another tab of the game's screen are each said. A binding that is switched off is left out, and an action RigReady has no name for is shown by its number."
+      - "The page says that RigReady does not change these bindings and where it read them. Without the game it says so and where it looked; with the game installed but never run it says the game has saved none yet. A saved map that cannot be read is said so and the others are shown."
+      - "The feature registers the game's BindingReader (one set for every aircraft), so a cheat sheet draws the bindings with no change to the cheat sheets feature."
+      - "On a real rig with the game: the page agrees with the game's controls screen, a press of the Fire button and a move of the pitch axis light the right labels on the cheat sheet, the trainer counts a press, and the overlay names one."
+    status: in_progress
+    evidence:
+      - "src/features/nuclear-option-bindings/core/view.test.ts#shows each device the game has bindings for, the plugged-in controllers first"
+      - "src/features/nuclear-option-bindings/core/view.test.ts#names the stick’s bindings: the game’s button 0 is button 1, and a binding switched off is left out"
+      - "src/features/nuclear-option-bindings/core/view.test.ts#names the throttle’s axes as the controller reports them, an axis side by its own name, and an action it does not know by number"
+      - "src/features/nuclear-option-bindings/core/view.test.ts#names the keys with their modifier keys, and the mouse"
+      - "src/features/nuclear-option-bindings/core/view.test.ts#where a later game build saved a controller again, the map the earlier build left behind is not shown"
+      - "src/features/nuclear-option-bindings/core/view.test.ts#an axis past the ones a plugged-in controller has is not given another axis’s name"
+      - "src/features/nuclear-option-bindings/core/view.test.ts#is the reader the cheat sheets, the trainer and the overlay ask: one set for every aircraft"
+      - "src/features/nuclear-option-bindings/core/view.test.ts#a saved map that cannot be read is said so, and the others are still shown"
+      - "src/features/nuclear-option-bindings/core/view.test.ts#with the game installed but never run, and on a PC without the game, nothing is shown and nothing fails"
+      - "src/features/nuclear-option-bindings/core/view.test.ts#the scenario’s registry values are the fixture files, byte for byte"
+      - "src/features/nuclear-option-bindings/renderer/rows.test.ts#matches every word against the action, its group, the input and the modifier keys"
+      - "tests/e2e/nuclear-option-bindings.e2e.ts#nuclear option bindings: each device’s bindings as the game saved them, and on a cheat sheet"
+      - "tests/e2e/generic-rig.e2e.ts#generic rig: every Configure page renders an honest empty state, never an error"
+      - "artifacts/screens/nuclear-option-bindings/01-throttle.png"
+      - "artifacts/screens/nuclear-option-bindings/02-stick-search.png"
+      - "artifacts/screens/nuclear-option-bindings/03-keyboard.png"
+      - "artifacts/screens/nuclear-option-bindings/04-cheat-sheet.png"
+    notes: "Stage 2 of docs/contributing/add-game.md. On the owner's rig on 2026-11-26 the page listed the eleven controllers, the keyboard and the mouse, and the stick's ten bindings agreed with the game's controls screen; the first try there is how the game's shorter controller identifier was found. In progress until the rest of the proof on a rig in docs/research/nuclear-option.md is run: that a button and an axis are numbered the way Windows numbers them is inferred until a press and a move show it. Changing a binding is not part of this: it is a registry write, which RigReady cannot make undoable yet."
+
   - id: RACE-IRACING-002
     title: iRacing config locations and tracked defaults
     job: configure

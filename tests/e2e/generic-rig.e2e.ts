@@ -314,9 +314,17 @@ const PAGES: ConfigurePage[] = [
     testId: 'bindings-none',
     says: [
       'No game whose bindings RigReady can read was found on this PC.',
-      'RigReady reads the bindings of DCS and iRacing.',
+      'RigReady reads the bindings of DCS, iRacing and Nuclear Option.',
       'Open Games',
     ],
+  },
+  // After the ones above, so that their numbered screenshots keep their names.
+  {
+    name: 'nuclear-option-bindings',
+    route: '/configure/nuclear-option-bindings',
+    testId: 'nuclear-option-bindings-page',
+    says: ['Nuclear Option was not found on this PC', 'Nuclear Option game page'],
+    notFound: 'Nuclear Option',
   },
 ];
 

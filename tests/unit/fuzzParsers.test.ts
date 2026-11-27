@@ -15,6 +15,7 @@ import { parseVdf, steamLibraryPaths } from '../../src/core/vdf';
 import { parseGaming } from '../../src/core/hidhide';
 import { readCalibration } from '../../src/features/iracing-bindings/core/calibration';
 import { parseControlsFile } from '../../src/features/iracing-bindings/core/controlsFile';
+import { parseControllerMap } from '../../src/features/nuclear-option-bindings/core/rewired';
 import { parseIni } from '../../src/features/racing/core/assettoCorsa';
 import { parseRelaxedJson } from '../../src/features/racing/core/beamng/beamng';
 import { parseControlsCfg } from '../../src/features/racing/core/iracing/controlsCfg';
@@ -111,6 +112,13 @@ const PARSERS: Parser[] = [
     parse: (bytes) => parseControlsFile(bytes),
     accepted: isOk,
     bomIsDamage: true,
+  },
+  {
+    name: 'Nuclear Option controller map (Rewired XML)',
+    // A made-up map in the game's shape: the recorded rig has none (it is a registry value).
+    sample: ['..', '..', '..', 'nuclear-option', 'throttle.xml'],
+    parse: (bytes) => parseControllerMap(text(bytes)),
+    accepted: isOk,
   },
   {
     name: 'iRacing joyCalib.yaml, device and axis names',
