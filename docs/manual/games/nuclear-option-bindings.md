@@ -45,7 +45,7 @@ Close Nuclear Option first: the game reads its bindings when it starts and saves
 - **Clear** on a row takes the binding away.
 - **Bind an action** above the list binds an action that has none on this controller: choose the action, then the button.
 
-The button is a number, the one on the controller's [cheat sheet](../controls/cheat-sheets.md) and in the **Input** column (the first button is 1). RigReady shows the change before anything is written: what the action is on now and will be on, anything else that button already does ("One press will do both"), and the saved bindings it will change. Only **Save** writes.
+Press the button on the controller, or type its number: the one on the controller's [cheat sheet](../controls/cheat-sheets.md) and in the **Input** column (the first button is 1). A press on another controller is not taken; the dialog says which controller it was. A controller that is not plugged in can only have the number typed. RigReady shows the change before anything is written: what the action is on now and will be on, anything else that button already does ("One press will do both"), and the saved bindings it will change. Only **Save** writes.
 
 ![The review before a binding is saved](../../../artifacts/screens/nuclear-option-bindings-edit/01-review.png)
 
@@ -66,7 +66,6 @@ The same bindings are what the [cheat sheets](../controls/cheat-sheets.md) draw 
 ## What RigReady does not do
 
 - **Bind an axis, a key or a mouse button.** Those are bound in the game.
-- **Listen for a press to choose the button.** You type its number.
 - **Put the bindings back from a backup.** Every full backup keeps the game's registry values, bindings included, as a record you can read on the backup's page ([Backups](../protect/backups.md)). RigReady cannot write them back to the registry, so a restore does not include them.
 - **Show a binding on a hat switch by its direction.** How the game saves one is not known to RigReady yet; such a binding may be shown as a button.
 - **Know an action a game update added.** It is listed as "Action" and its number until RigReady learns its name.

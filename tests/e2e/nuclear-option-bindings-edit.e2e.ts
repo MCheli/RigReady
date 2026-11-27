@@ -1,5 +1,37 @@
-import type { Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './harness';
+
+interface Controller {
+  index: number;
+  name: string;
+  guid: string;
+  numAxes: number;
+  numButtons: number;
+  numHats: number;
+}
+
+/** The plugged-in controllers, asked of the app as a page asks. */
+const controllers = async (page: Page): Promise<Controller[]> =>
+  (
+    (await page.evaluate(() =>
+      (
+        globalThis as unknown as {
+          rigready: { invoke(channel: string, input: unknown): Promise<unknown> };
+        }
+      ).rigready.invoke('devices:inputDevices', undefined)
+    )) as { value?: Controller[] }
+  ).value ?? [];
+
+let clock = 20_000;
+/** A controller with the given buttons held (the first is 1), the rest at rest. */
+const stateOf = (c: Controller, buttons: number[] = []) => ({
+  index: c.index,
+  name: c.name,
+  axes: Array.from({ length: c.numAxes }, () => 0),
+  buttons: Array.from({ length: c.numButtons }, (_, i) => buttons.includes(i + 1)),
+  hats: Array.from({ length: c.numHats }, (): [number, number] => [0, 0]),
+  timestamp: clock++,
+});
 
 /**
  * Changing a Nuclear Option binding on fixtures/scenarios/nuclear-option-bindings.yaml:
@@ -63,12 +95,30 @@ test('nuclear option bindings: bind, move and clear a button after a review, und
   await expect(row('Toggle Navigation Lights')).toContainText('Button 11');
   await shot('saved');
 
-  // 2. Move a binding from its row.
+  // 2. Move a binding from its row, choosing the button by pressing it. A press on another
+  //    controller is said to be elsewhere and changes nothing.
+  const all = await controllers(page);
+  const stick = all.find((c) => c.name === 'Joystick - HOTAS Warthog')!;
+  const throttle = all.find((c) => c.name === 'Throttle - HOTAS Warthog')!;
   await row('Next Weapon').getByTestId('nuclear-option-bindings-change').click();
   await expect(confirm).toContainText('Bind Next Weapon to a button?');
-  await page.getByTestId('nuclear-option-bindings-edit-button').locator('input').fill('9');
+  await expect(confirm).toContainText('Press the button on the controller, or type its number.');
+  await run.sendInput([stateOf(stick), stateOf(throttle)]);
+  await run.sendInput([stateOf(throttle, [4])]);
+  await expect(page.getByTestId('nuclear-option-bindings-edit-elsewhere')).toHaveText(
+    'That was Button 4 on Throttle - HOTAS Warthog. This change is for Joystick - HOTAS Warthog.'
+  );
+  await expect(go).toBeDisabled();
+  await run.sendInput([stateOf(throttle)]);
+  await run.sendInput([stateOf(stick, [9])]);
+  await expect(
+    page.getByTestId('nuclear-option-bindings-edit-button').locator('input')
+  ).toHaveValue('9');
+  await expect(page.getByTestId('nuclear-option-bindings-edit-elsewhere')).toHaveCount(0);
   await expect(review).toContainText('Button 3');
   await expect(review).toContainText('Button 9');
+  await shot('pressed');
+  await run.sendInput([stateOf(stick)]);
   await go.click();
   await expect(row('Next Weapon')).toContainText('Button 9');
 

@@ -105,26 +105,53 @@ export type ChangeReview = z.infer<typeof ChangeReviewSchema>;
 export const ChangeResultSchema = z.object({ changed: z.boolean(), message: z.string() });
 export type ChangeResult = z.infer<typeof ChangeResultSchema>;
 
+/** A controller button the user just pressed, while the page listens. */
+export const PressedSchema = z.object({
+  /** The controller's DirectInput instance GUID. */
+  device: z.string(),
+  deviceName: z.string(),
+  /** The button's number, the first being 1. */
+  button: z.number().int(),
+});
+export type Pressed = z.infer<typeof PressedSchema>;
+
 const ON_THE_PAGE =
   'Changing a game binding is done on the Nuclear Option bindings page, where the person sees the change and presses Save.';
 
-export const nuclearOptionBindingsContract = defineContract('nuclear-option-bindings', {
-  /** One change as it would be: what the action is on now and would be on. Writes nothing. */
-  changePreview: channel(ChangeRequestSchema, ChangeReviewSchema, {
-    describe: `Shows what binding one Nuclear Option action to a controller button, or clearing it, would change. Writes nothing. ${ON_THE_PAGE}`,
-    tier: 'off',
-  }),
-  /**
-   * Binds or clears one action on one controller in what the game saved, through FileStore
-   * (a backup first, one entry on the Safety page). Refused while the game runs.
-   */
-  change: channel(ChangeRequestSchema, ChangeResultSchema, {
-    describe: `Binds one Nuclear Option action to a controller button, or clears it, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
-    tier: 'off',
-  }),
-  overview: channel(noInput, OverviewSchema, {
-    describe:
-      'Nuclear Option’s bindings as the game saved them: every controller, the keyboard and the mouse, with the action each input does. Read from the registry; changes nothing. The game has one set of bindings for every aircraft.',
-    tier: 'read',
-  }),
-});
+export const nuclearOptionBindingsContract = defineContract(
+  'nuclear-option-bindings',
+  {
+    /** One change as it would be: what the action is on now and would be on. Writes nothing. */
+    changePreview: channel(ChangeRequestSchema, ChangeReviewSchema, {
+      describe: `Shows what binding one Nuclear Option action to a controller button, or clearing it, would change. Writes nothing. ${ON_THE_PAGE}`,
+      tier: 'off',
+    }),
+    /**
+     * Binds or clears one action on one controller in what the game saved, through FileStore
+     * (a backup first, one entry on the Safety page). Refused while the game runs.
+     */
+    change: channel(ChangeRequestSchema, ChangeResultSchema, {
+      describe: `Binds one Nuclear Option action to a controller button, or clears it, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
+      tier: 'off',
+    }),
+    overview: channel(noInput, OverviewSchema, {
+      describe:
+        'Nuclear Option’s bindings as the game saved them: every controller, the keyboard and the mouse, with the action each input does. Read from the registry; changes nothing. The game has one set of bindings for every aircraft.',
+      tier: 'read',
+    }),
+    /** Starts reporting button presses on any controller as `pressed` events. */
+    listenStart: channel(noInput, z.object({ listening: z.boolean() }), {
+      describe:
+        'Starts sending pressed events for every controller button press, for choosing a button by pressing it on the Nuclear Option bindings page.',
+      tier: 'off',
+    }),
+    listenStop: channel(noInput, z.object({ listening: z.boolean() }), {
+      describe: 'Stops the pressed events started by listenStart.',
+      tier: 'off',
+    }),
+  },
+  {
+    /** A controller button the user just pressed, while the page listens. */
+    pressed: PressedSchema,
+  }
+);

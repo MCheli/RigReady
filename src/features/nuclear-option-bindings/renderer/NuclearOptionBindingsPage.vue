@@ -13,6 +13,7 @@ import {
   type Overview,
   type OverviewBinding,
   type OverviewDevice,
+  type Pressed,
 } from '../contract';
 import { canChange, shownBindings } from './rows';
 
@@ -110,7 +111,7 @@ const wantedButton = computed<number | null | undefined>(() => {
 const buttonHint = computed(() => {
   const count = device.value?.controls?.buttons;
   return count
-    ? `This controller has buttons 1 to ${count}. The numbers are the ones on its cheat sheet.`
+    ? `${listening.value ? 'Press the button on the controller, or type its number. ' : ''}This controller has buttons 1 to ${count}. The numbers are the ones on its cheat sheet.`
     : 'A number from 1 to 128: the one on the controller’s cheat sheet.';
 });
 
@@ -128,9 +129,57 @@ async function refreshReview(): Promise<void> {
 }
 watch(() => [editing.value?.actionId, editing.value?.button, editing.value?.clear], refreshReview);
 
+// ---- The button can be pressed instead of typed, while the dialog asks for one ----
+
+const listening = ref(false);
+/** A press on another controller than the one being changed, to say so. */
+const elsewhere = ref('');
+let offPressed: (() => void) | undefined;
+/** Counts the starts and stops: an answer to a start that was cut short is dropped. */
+let listens = 0;
+
+function onPressed(press: Pressed): void {
+  const e = editing.value;
+  if (!e || e.clear || !device.value) return;
+  if (press.device.toUpperCase() !== (device.value.guid ?? '').toUpperCase()) {
+    elsewhere.value = `That was Button ${press.button} on ${press.deviceName}. This change is for ${device.value.name}.`;
+    return;
+  }
+  elsewhere.value = '';
+  e.button = String(press.button);
+}
+
+async function startListening(): Promise<void> {
+  const mine = ++listens;
+  elsewhere.value = '';
+  // Only a plugged-in controller can be pressed; the number can always be typed.
+  if (!device.value?.connected) return;
+  offPressed?.();
+  offPressed = api.on('pressed', onPressed);
+  const started = await api.listenStart();
+  if (mine !== listens) return;
+  listening.value = started.ok && started.value.listening;
+  if (!listening.value) {
+    offPressed?.();
+    offPressed = undefined;
+  }
+}
+
+async function stopListening(): Promise<void> {
+  listens++;
+  offPressed?.();
+  offPressed = undefined;
+  elsewhere.value = '';
+  if (!listening.value) return;
+  listening.value = false;
+  await api.listenStop();
+}
+onBeforeUnmount(() => void stopListening());
+
 function startChange(binding: OverviewBinding): void {
   savedMessage.value = '';
   editing.value = { actionId: Number(binding.actionId), fromRow: true, button: '', clear: false };
+  void startListening();
 }
 function startClear(binding: OverviewBinding): void {
   savedMessage.value = '';
@@ -139,8 +188,10 @@ function startClear(binding: OverviewBinding): void {
 function startBind(): void {
   savedMessage.value = '';
   editing.value = { actionId: null, fromRow: false, button: '', clear: false };
+  void startListening();
 }
 function closeEdit(): void {
+  void stopListening();
   reviewTurn++;
   editing.value = undefined;
   review.value = undefined;
@@ -453,6 +504,14 @@ const editTitle = computed(() => {
           class="mb-3"
           data-testid="nuclear-option-bindings-edit-button"
         />
+        <div
+          v-if="elsewhere"
+          class="nb-also mb-3"
+          data-testid="nuclear-option-bindings-edit-elsewhere"
+        >
+          <v-icon icon="mdi-information-outline" size="small" class="rr-muted" />
+          <span>{{ elsewhere }}</span>
+        </div>
         <div v-if="review" class="nb-review" data-testid="nuclear-option-bindings-edit-review">
           <div>
             <strong>{{ review.action }}</strong>: {{ review.before }}
