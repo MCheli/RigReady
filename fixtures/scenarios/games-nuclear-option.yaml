@@ -1,0 +1,49 @@
+description: A generic PC with Nuclear Option installed through Steam, played at least once
+rig: generic-rig
+extends: generic-fresh.yaml
+# Written by hand for the Nuclear Option game module (docs/research/nuclear-option.md).
+# Every file is small and synthetic, in the layout the game uses: the program in Steam's
+# library, and the Unity data folder in AppData\LocalLow with the log the game writes.
+mutations:
+  - op: setRegistryValue
+    hive: HKCU
+    key: Software\Valve\Steam
+    name: SteamPath
+    value: { type: string, value: 'C:\Program Files (x86)\Steam' }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steam.exe"
+    content: ''
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/libraryfolders.vdf"
+    rehome: true
+    content: |
+      "libraryfolders"
+      {
+      	"0"
+      	{
+      		"path"		"C:\\Program Files (x86)\\Steam"
+      		"apps"
+      		{
+      			"2168680"		"1000000"
+      		}
+      	}
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/appmanifest_2168680.acf"
+    content: |
+      "AppState"
+      {
+      	"appid"		"2168680"
+      	"name"		"Nuclear Option"
+      	"StateFlags"		"4"
+      	"installdir"		"Nuclear Option"
+      	"LastUpdated"		"1791058477"
+      	"buildid"		"20000021"
+      }
+  - op: writeFile
+    path: "Program Files (x86)/Steam/steamapps/common/Nuclear Option/NuclearOption.exe"
+    content: ''
+  - op: writeFile
+    path: "AppData/LocalLow/Shockfront/NuclearOption/Player.log"
+    content: |
+      log

@@ -6598,6 +6598,28 @@ requirements:
       - "artifacts/screens/generic-configure/06-game-iracing.png"
       - "artifacts/screens/generic-configure/15-racing-iracing.png"
 
+  - id: GAME-NO-001
+    title: Find and launch Nuclear Option, and say where it keeps its settings
+    job: configure
+    area: games
+    priority: p3
+    done_means:
+      - "Nuclear Option is found in every Steam library (app 2168680) when NuclearOption.exe is there, shown with its Steam build, launched through Steam, and counted as running by NuclearOption.exe; a copy elsewhere is taken through Choose folder… only when it holds that program."
+      - "Its page lists the game's folder in AppData\\LocalLow, offers no file for backup, and says why: the game keeps its settings and bindings in the Windows registry, which RigReady does not back up yet."
+      - "On a real rig with the game: the Games page lists the real install, Launch starts it, and it is shown as running only while it runs."
+    status: done
+    evidence:
+      - "src/features/games/nuclear-option/module.test.ts#is found in Steam as a flight game, with its build and its data folder"
+      - "src/features/games/nuclear-option/module.test.ts#offers no file for backup and says why: the settings are in the registry"
+      - "src/features/games/nuclear-option/module.test.ts#the game-updated warning offers no backup, because there is nothing to back up, and says why"
+      - "src/features/games/nuclear-option/module.test.ts#is launched through Steam with its own app id"
+      - "src/features/games/nuclear-option/module.test.ts#counts as running by NuclearOption.exe"
+      - "src/features/games/nuclear-option/module.test.ts#is not found without its program, and a folder chosen by hand must hold it"
+      - "tests/e2e/games-nuclear-option.e2e.ts#games: Nuclear Option is found in Steam, launched, and says where its settings are"
+      - "artifacts/screens/games-nuclear-option/01-games.png"
+      - "artifacts/screens/games-nuclear-option/02-nuclear-option.png"
+    notes: "Stage 1 of docs/contributing/add-game.md. Sources and the proof on a rig: docs/research/nuclear-option.md. Checked on the owner's rig on 2026-11-26 with the game from Steam (build 26327221): offered and found in a new setup, launched through Steam twice from Play, the session began when NuclearOption.exe ran and ended when the game was closed. Not tried there: the game's own page, and Choose folder."
+
   - id: RACE-IRACING-002
     title: iRacing config locations and tracked defaults
     job: configure

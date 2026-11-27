@@ -53,6 +53,8 @@ export interface SimpleGameSpec {
   otherVersion?(ctx: CheckContext, install: GameInstall): Promise<string | undefined>;
   /** What to choose when the game is pointed at by hand ("the X-Plane 12 folder"); needs `exe`. */
   manualLabel?: string;
+  /** Why the game has no file to back up, when it never will have one. */
+  noFiles?: string;
   notes: string[];
   facts?(ctx: CheckContext, installs: GameInstall[]): Promise<string[]>;
 }
@@ -123,6 +125,7 @@ export function simpleGame(spec: SimpleGameSpec): { module: GameModule; extras: 
     ...(spec.exe && spec.manualLabel
       ? { manualFolder: { exe: spec.exe, label: spec.manualLabel } }
       : {}),
+    ...(spec.noFiles ? { noFiles: spec.noFiles } : {}),
     notes: spec.notes,
     ...(spec.facts ? { facts: async (ctx) => spec.facts!(ctx, await findInstalls(ctx)) } : {}),
   };

@@ -377,9 +377,11 @@ async function forget(): Promise<void> {
           </div>
           <div v-if="game.trackedFiles.length === 0" class="rr-row rr-muted">
             {{
-              game.installs.length
-                ? 'No settings files were found yet; start the game once.'
-                : 'Nothing to back up until the game is found.'
+              game.noFiles
+                ? game.noFiles
+                : game.installs.length
+                  ? 'No settings files were found yet; start the game once.'
+                  : 'Nothing to back up until the game is found.'
             }}
           </div>
         </div>

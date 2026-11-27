@@ -1,6 +1,6 @@
 ---
 title: More flight and racing games
-description: How RigReady finds, launches and backs up MSFS 2020, X-Plane, IL-2, Falcon BMS, ACC, rFactor 2, AMS2, EA WRC, F1, DiRT Rally 2.0 and RaceRoom.
+description: How RigReady finds, launches and backs up MSFS 2020, X-Plane, IL-2, Falcon BMS, Nuclear Option, ACC, rFactor 2, AMS2, EA WRC, F1, DiRT Rally 2.0 and RaceRoom.
 order: 65
 ---
 
@@ -18,6 +18,7 @@ Where each id and folder comes from is recorded in `docs/research/game-modules-2
 | X-Plane 12 and X-Plane 11 | Steam (apps 2014780 and 269950); standalone installs from the list X-Plane keeps in `%LOCALAPPDATA%\x-plane_install_12.txt` (or `_11.txt`) | Steam installs through Steam; standalone installs by starting `X-Plane.exe` | `Output\preferences`: every `*.prf` file (joystick, keys, graphics) and the `control profiles` folder | The preferences live inside the X-Plane folder, so deleting it deletes them. |
 | IL-2 Sturmovik: Great Battles | Steam (app 307960, which holds every Great Battles title), when `bin\game\Il-2.exe` is there; a standalone install through **Choose folder…** | Through Steam | `data\input` (bindings, axis responses and curves, the controller list `devices.txt`), `data\startup.cfg`, `storeddevices.txt` | The bindings live inside the game folder. RigReady does not repair `devices.txt` when Windows renumbers a controller. |
 | Falcon BMS | The registry key its installer writes (`Benchmark Sims\Falcon BMS <version>`), newest version first, when `Bin\x64\Falcon BMS.exe` is in the folder | Starts `Launcher.exe` in the BMS folder | `User\Config`: the settings files, every keyfile, `axismapping.dat`, `joystick.cal`, `DeviceSorting.txt` and the pilot files; the launcher's own `Backup` folder is left out | The version is the one in the registry key. The page says when Falcon 4.0, which BMS needs to install, is in the Steam library. |
+| Nuclear Option | Steam (app 2168680), when `NuclearOption.exe` is there | Through Steam | Nothing: the game has no settings file | Nuclear Option keeps its settings and bindings in the Windows registry (`HKEY_CURRENT_USER\Software\Shockfront\NuclearOption`), not in files, so RigReady does not back them up yet. Its page lists the folder with the game's logs. |
 
 ![The games found on a PC with these games](../../../artifacts/screens/games-more-sims/01-games.png)
 

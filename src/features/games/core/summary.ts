@@ -24,6 +24,7 @@ export async function summarizeGame(
     running: false,
     configLocations: [],
     trackedFiles: [],
+    ...(extras?.noFiles ? { noFiles: extras.noFiles } : {}),
     notes: extras?.notes ?? [],
     facts: [],
     problems: [...(extras?.problems ?? [])],

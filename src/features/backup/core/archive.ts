@@ -382,6 +382,22 @@ async function itemRefs(ctx: Ctx, scope: BackupScope): Promise<Result<ItemRef[]>
   return ok(refs);
 }
 
+/**
+ * True when a backup of the game would hold at least one file: something the user tracks
+ * for it or its module suggests exists on this PC. When that cannot be told, true, so the
+ * backup itself says what is wrong.
+ */
+export async function gameHasFiles(ctx: Ctx, gameId: string): Promise<boolean> {
+  const refs = await itemRefs(ctx, { kind: 'game', gameId });
+  if (!refs.ok) return true;
+  const variables = await pathVariables(ctx);
+  for (const ref of refs.value) {
+    const resolved = await resolveTrackedItem(ctx.ports.files, ref.item, variables);
+    if (resolved.files.length > 0) return true;
+  }
+  return false;
+}
+
 /** Reads everything a backup of `scope` contains into memory, with the manifest. */
 async function collect(
   ctx: Ctx,

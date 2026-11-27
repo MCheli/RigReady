@@ -21,6 +21,11 @@ export interface GameModuleExtras {
   manualFolder?: { exe: string; label: string };
   /** Plain-language facts shown on the game's page (what RigReady can and cannot read). */
   notes?: string[];
+  /**
+   * Why the game has no file to back up, when it never will have one (its settings are
+   * registry values): shown in place of "start the game once".
+   */
+  noFiles?: string;
   /** Short product family, shown as a chip: "Racing", "Flight". */
   kind?: 'racing' | 'flight';
   /** Facts about this PC worth a line on the game's page ("Last run with 0.38.5"). */
