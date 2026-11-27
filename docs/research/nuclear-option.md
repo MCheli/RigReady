@@ -71,7 +71,7 @@ One line, declared `encoding="utf-16"` but stored as UTF-8 (the reader must igno
 | `actionCategoryId` | The action's category, or -1 | [V] seen, [?] why some are -1 |
 | `actionId` | The action (table below) | [V] |
 | `elementType` | 0 an axis, 1 a button | [V] |
-| `elementIdentifierId` | Which control. On a joystick Rewired has no definition for: 0 to 31 are the axes in device order, 32 and up the buttons, so 32 is button 1 | [I]: every axis binding on the rig is 0 to 5 and every button binding 32 to 86; to be proven against the game's own controls screen in stage 2 |
+| `elementIdentifierId` | Which control. On a joystick Rewired has no definition for: 0 to 31 are the axes in device order, 32 and up the buttons, so 32 is button 1 | [V] against the game's controls screen (below): the screen shows an axis by this id and a button by this id minus 32, counting from 0. That the game's button 0 is the device's first button (RigReady's button 1), and that axes 0 to 5 are X, Y, Z, RX, RY, RZ, is [I] until a press in the trainer proves it |
 | `axisRange` | 0 the whole axis, 1 its positive half, 2 its negative half | [I] |
 | `invert` | The axis is reversed | [V] the stick's pitch axis is inverted, as expected |
 | `axisContribution` | 0 the action's positive side, 1 its negative side (W is "Pitch Down", S "Pitch Up") | [I] from the keyboard map |
@@ -153,15 +153,39 @@ Action categories: 1 Flight Controls, 2 Camera Controls, 3 Gameplay, 4 Debug, 5 
 | 63 | Rotate Unit Mode | Mission Editor |
 | 64 | Toggle Left Panel | Mission Editor |
 
-The ids are **[V]** as read from the data file, and agree with the keyboard map saved on this PC wherever the default key is obvious: W and S on action 0, A and D on 1, Q and E on 2, left Shift and left Ctrl on 4, Space on 5, B on 6, G on 11, N on 13, R on 15, Esc on 19, M on 21, T on 31. The category of each action is **[I]**: it was read from the position of numbers between the names, and the game's own controls screen is the check.
+The ids are **[V]** as read from the data file, and agree with the keyboard map saved on this PC wherever the default key is obvious: W and S on action 0, A and D on 1, Q and E on 2, left Shift and left Ctrl on 4, Space on 5, B on 6, G on 11, N on 13, R on 15, Esc on 19, M on 21, T on 31. The names are the ones the game's controls screen shows, and the screen lists the actions under the same headings ("Flight Controls" from Pitch Axis to Axis Modifier, then "Camera Controls"), so the categories seen there are **[V]**; the rest stay **[I]**.
 
-One set of bindings serves every aircraft; the game has no per-aircraft bindings. **[I]** nothing in any key names an aircraft.
+One set of bindings serves every aircraft; the game has no per-aircraft bindings. **[V]** the controls screen has no aircraft to choose, only the map categories Game, Chat, Mission Editor and Debug.
+
+### Checked against the game's controls screen, 26 November 2026
+
+With the game running (build 26327221), its controls screen (Rewired's control mapper: a list of assigned controllers, the four categories, and columns Keyboard, Mouse, Controller) was read beside the saved values. Nothing was changed there. **[V]**
+
+| Controller | Action | The screen shows | Saved as |
+|---|---|---|---|
+| WINWING Orion Joystick Base 2 + JGRIP-F16 | Pitch Axis | axis 1 | axis id 1, inverted |
+| | Roll Axis | axis 0 | axis id 0 |
+| | Fire | 4 | button id 36 |
+| | Target Select | 31 | button id 63 |
+| | Target Cancel | 33 | button id 65 |
+| | Open Weapon Wheel | 13 | button id 45 |
+| | Next Weapon | 37 | button id 69 |
+| | Next Countermeasure | 39 | button id 71 |
+| | Open Radial Menu | 5 | button id 37 |
+| | Switch View | 14 | button id 46 |
+| WINWING THROTTLE BASE1 + F15EX HANDLE L + F15EX HANDLE R | Toggle Gear | 17 | button id 49 |
+| | Eject | 54 | button id 86 |
+| | Custom Axis 1 | axis 5 | axis id 5 |
+| Keyboard | Pitch Down / Pitch Up | W / S | key codes 119 (negative side) and 115 |
+| | Toggle Gear, Fire, Eject | G, Space, Ctrl+Shift+E | key codes 103, 32, and 101 with modifiers |
+
+Every one agrees: the number on the screen is the saved id for an axis and the saved id minus 32 for a button. The current build reads these registry values and shows them. The screen does not show that an axis is inverted, and no binding on a hat was seen.
 
 ### Open questions for stage 2
 
-1. Is `elementIdentifierId` 32 really button 1, and are axes 0 to 5 X, Y, Z, RX, RY, RZ in DirectInput's order? The owner reads five bindings off the game's controls screen.
+1. The game's button 0 (id 32) is taken to be the device's first button, and axes 0 to 5 to be X, Y, Z, RX, RY, RZ in DirectInput's order. The controls screen cannot show that; a press of a known button in the trainer does.
 2. How is a hat direction stored?
-3. Does the current game build still read these keys, or has an update moved the bindings? The registry values here were last written in March 2026 by an older build.
+3. Answered: build 26327221 reads these keys (the table above).
 4. A controller Rewired does know (a gamepad) has a non-zero `hardwareGuid` and its own element ids; none is on this rig.
 
 ## 5. Changing the bindings (stage 3): what stands in the way
