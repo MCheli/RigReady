@@ -9367,7 +9367,7 @@ requirements:
     priority: p1
     done_means:
       - "A binary registry value has an address FileStore carries (registryValuePath). A write to it copies the value's bytes to the automatic backups first, is in the journal under its group and reason, and Undo puts the bytes back; Undo is refused when the value was changed again since."
-      - "Only the bytes of an existing REG_BINARY value under HKEY_CURRENT_USER\\Software are replaced. Another hive, a key outside Software, a value that does not exist, a value of another type and a delete are refused, and nothing is changed by a refused write."
+      - "Only the bytes of an existing REG_BINARY value under HKEY_CURRENT_USER\\Software are replaced. Another hive, a key outside Software, a value that does not exist, a value of another type, a delete, and an address with a dot or two-dot part are refused before anything is backed up or journaled: a refused change leaves no entry on the Safety page. A path in the registry namespace that is not an address is never handed to the file system."
       - "The registry port features read with has no write. Files are read and written exactly as before."
       - "On real Windows, on a key the test makes and removes: the bytes are replaced, the value's type and the key's other value stay, Windows still reports REG_BINARY, and Undo restores the bytes."
     status: done
@@ -9376,6 +9376,9 @@ requirements:
       - "src/core/files/registryValues.test.ts#a write replaces the value’s bytes after a backup, is journaled with its reason, and Undo puts the bytes back"
       - "src/core/files/registryValues.test.ts#Undo is refused when the value was changed again by something else"
       - "src/core/files/registryValues.test.ts#refuses everything wider: another hive, outside Software, a value that is not there or not binary, a delete"
+      - "src/core/files/registryValues.test.ts#a refused write or delete leaves nothing behind: no journal entry and no backup"
+      - "src/core/files/registryValues.test.ts#refuses an address Windows would read as another place, before anything is backed up"
+      - "src/core/files/registryValues.test.ts#a path in the registry’s namespace that is not an address never reaches the file system"
       - "src/core/files/registryValues.test.ts#files are read and written exactly as before"
       - "tests/rig/registryValues.rig.test.ts#replaces the bytes after a backup, keeps the type and the other value, and Undo restores them"
       - "tests/rig/registryValues.rig.test.ts#refuses a value that is not binary, one that is not there, and a delete"

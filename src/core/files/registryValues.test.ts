@@ -175,6 +175,96 @@ describe('registry values through FileStore', () => {
     expect(machine.ok && machine.value).toEqual({ type: 'binary', value: hex('machine') });
   });
 
+  it('a refused write or delete leaves nothing behind: no journal entry and no backup', async () => {
+    const a = await start();
+    const change = { reason: 'not allowed' };
+    const backups = `${a.ports.folders.dataRoot()}\\backups\\auto`;
+    const group = a.ports.files.beginGroup('A change that will be refused');
+    for (const address of [
+      registryValuePath('HKLM', 'Software\\Example Studio\\Machine', 'Blob'),
+      registryValuePath('HKCU', 'Environment', 'Path'),
+      registryValuePath('HKCU', KEY, 'Not there_h1'),
+      registryValuePath('HKCU', KEY, 'Volume_h9'),
+    ]) {
+      const written = await a.ports.files.write(address, 'x', { ...change, group });
+      expect(written.ok, address).toBe(false);
+      if (!written.ok) expect(written.error.code, address).toBe('file.refused');
+    }
+    const removed = await a.ports.files.remove(registryValuePath('HKCU', KEY, NAME), {
+      ...change,
+      group,
+    });
+    expect(removed.ok).toBe(false);
+    if (!removed.ok) {
+      expect(removed.error).toMatchObject({
+        code: 'file.refused',
+        message: 'RigReady does not delete registry values.',
+      });
+    }
+    const journal = await a.ports.files.journalGroups();
+    expect(journal.ok && journal.value).toEqual([]);
+    expect(await a.ports.files.exists(backups)).toBe(false);
+  });
+
+  it('refuses an address Windows would read as another place, before anything is backed up', async () => {
+    const a = await start();
+    // "Other" has a value of the same name: the normalised path would be that one.
+    await mutate(a, [
+      {
+        op: 'setRegistryValue',
+        hive: 'HKCU',
+        key: 'Software\\Example Studio\\Other',
+        name: NAME,
+        value: { type: 'binary', value: hex('the other one') },
+      },
+    ]);
+    const leaf = registryLeaf(NAME);
+    for (const address of [
+      `\\\\registry\\HKCU\\Software\\Example Studio\\Example Game\\..\\Other\\${leaf}`,
+      `\\\\registry\\HKCU\\Software\\Example Studio\\.\\Example Game\\${leaf}`,
+      `\\\\registry\\HKCU\\Software\\Example Studio\\\\Example Game\\${leaf}`,
+      `//registry/HKCU/Software/Example Studio/Example Game/../Other/${leaf}`,
+    ]) {
+      const written = await a.ports.files.write(address, 'x', { reason: 'not allowed' });
+      expect(written.ok, address).toBe(false);
+      if (!written.ok) {
+        expect(written.error.code, address).toBe('file.refused');
+        expect(written.error.message, address).toContain('another place');
+      }
+    }
+    expect(await stored(a)).toEqual({ type: 'binary', value: hex('before') });
+    const other = await a.ports.registry.getValue('HKCU', 'Software\\Example Studio\\Other', NAME);
+    expect(other.ok && other.value).toEqual({ type: 'binary', value: hex('the other one') });
+    const journal = await a.ports.files.journalGroups();
+    expect(journal.ok && journal.value).toEqual([]);
+  });
+
+  it('a path in the registry’s namespace that is not an address never reaches the file system', async () => {
+    const a = await start();
+    const leaf = registryLeaf(NAME);
+    for (const address of [
+      `\\\\registry\\HKCR\\Software\\X\\${leaf}`,
+      `\\\\registry\\share\\folder\\file.txt`,
+      `\\\\registry\\`,
+    ]) {
+      expect(await a.ports.files.exists(address), address).toBe(false);
+      expect((await a.ports.files.readBytes(address)).ok, address).toBe(false);
+      const written = await a.ports.files.write(address, 'x', { reason: 'not allowed' });
+      expect(written.ok, address).toBe(false);
+      if (!written.ok) {
+        expect(written.error.code, address).toBe('file.refused');
+        expect(written.error.message, address).toMatch(/not a registry address|another place/);
+      }
+      const removed = await a.ports.files.remove(address, { reason: 'not allowed' });
+      // There is nothing there to remove, so nothing is tried (and nothing reaches a disk).
+      expect(removed, address).toEqual({ ok: true, value: null });
+      const listed = await a.ports.files.list(address);
+      expect(listed.ok && listed.value, address).toEqual([]);
+    }
+    const journal = await a.ports.files.journalGroups();
+    expect(journal.ok && journal.value).toEqual([]);
+  });
+
   it('files are read and written exactly as before', async () => {
     const a = await start();
     const file = `${a.home}\\Documents\\note.txt`;
