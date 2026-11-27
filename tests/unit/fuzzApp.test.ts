@@ -67,6 +67,7 @@ const GAMES = [
   'f1-24',
   'dirt-rally-2',
   'raceroom',
+  'nuclear-option',
 ];
 
 /** Requests with input that read files: what the pages ask for after their first load. */

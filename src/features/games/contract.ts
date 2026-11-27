@@ -19,6 +19,8 @@ export const GameSummarySchema = z.object({
   running: z.boolean().default(false),
   configLocations: z.array(z.object({ id: z.string(), label: z.string(), path: z.string() })),
   trackedFiles: z.array(z.object({ label: z.string(), path: z.string() })).default([]),
+  /** Why the game has no file to back up, when it never will have one. */
+  noFiles: z.string().optional(),
   /** What RigReady can and cannot do for this game, in plain words. */
   notes: z.array(z.string()).default([]),
   /** Facts about this PC ("Last run as 0.38.5"). */
