@@ -46,6 +46,24 @@ describe('Nuclear Option game module', () => {
     expect(game.notes.join(' ')).toContain('in the Windows registry, not in files');
   });
 
+  it('the game-updated warning offers no backup, because there is nothing to back up, and says why', async () => {
+    app = await wiredApp('games-nuclear-option');
+    const backup = app.wiring.context.checks.remediation('backup.gameFiles')!;
+    expect(await backup.available!({ game: 'nuclear-option' }, app.ctx)).toEqual({
+      ok: false,
+      reason: 'Nothing to back up: no settings files of Nuclear Option were found on this PC.',
+    });
+    // A game with a settings file on this PC is still offered its backup.
+    await app.cleanup();
+    app = await wiredApp('generic-more-sims');
+    expect(
+      await app.wiring.context.checks.remediation('backup.gameFiles')!.available!(
+        { game: 'ams2' },
+        app.ctx
+      )
+    ).toEqual({ ok: true });
+  });
+
   it('is launched through Steam with its own app id', async () => {
     app = await wiredApp('games-nuclear-option');
     expect(await app.invoke('games:launch', { gameId: 'nuclear-option' })).toEqual({
