@@ -30,5 +30,17 @@
   {
     "name": "RewiredSaveData|playerName=Player0|dataType=ControllerMap|kv=2|controllerMapType=MouseMap|categoryId=0|layoutId=0|hardwareGuid=ad60107c-ea39-4d9c-b906-56d39d07be95_h1100000007",
     "file": "mouse.xml"
+  },
+  {
+    "name": "RewiredSaveData|dataType=CalibrationMap|controllerType=Joystick|hardwareIdentifier=WindowsRawInputJoystick-HOTASWarthog0402044F|hardwareGuid=00000000-0000-0000-0000-000000000000_h1100000011",
+    "file": "calibration-stick.xml"
+  },
+  {
+    "name": "RewiredSaveData|dataType=CalibrationMap|controllerType=Joystick|hardwareIdentifier=WindowsRawInputJoystick-HOTASWarthog10260402044f-0000-0000-0000-504944564944|hardwareGuid=00000000-0000-0000-0000-000000000000_h1100000012",
+    "file": "calibration-stick-older.xml"
+  },
+  {
+    "name": "RewiredSaveData|dataType=CalibrationMap|controllerType=Joystick|hardwareIdentifier=WindowsRawInputThrottle-HOTASWarthog10280404044f-0000-0000-0000-504944564944|hardwareGuid=00000000-0000-0000-0000-000000000000_h1100000013",
+    "file": "calibration-throttle.xml"
   }
 ]

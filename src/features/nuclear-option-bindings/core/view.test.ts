@@ -42,7 +42,7 @@ describe('Nuclear Option bindings', () => {
     const values = JSON.parse(
       await fs.readFile(path.join(fixtures, 'nuclear-option', 'values.json'), 'utf8')
     ) as { name: string; file: string }[];
-    expect(values).toHaveLength(8);
+    expect(values).toHaveLength(11);
     for (const { name, file } of values) {
       const text = await fs.readFile(path.join(fixtures, 'nuclear-option', file), 'utf8');
       const stored = scenario.mutations.find((m) => m.op === 'setRegistryValue' && m.name === name);

@@ -199,6 +199,65 @@ export const ClearDeviceReviewSchema = z.object({
 });
 export type ClearDeviceReview = z.infer<typeof ClearDeviceReviewSchema>;
 
+/** How the axes of one controller are tuned in the game's saved calibration. */
+export const TuningSchema = z.object({
+  /** The controller's name. */
+  device: z.string(),
+  /** The controller is plugged in and said which axes it has; otherwise they go by number. */
+  named: z.boolean(),
+  axes: z.array(
+    z.object({
+      /** The game's number for the axis: 0 the first. */
+      index: z.number().int(),
+      /** "Y axis", "Slider 1"; "Axis 3" when the controller is not plugged in. */
+      name: z.string(),
+      /** False when the axis is saved in a way RigReady does not change. */
+      tunable: z.boolean(),
+      /** 0 to 1 of the way from the axis's zero. */
+      deadZone: z.number(),
+      /** 0 to 1 of the way back from the axis's end; absent in an older calibration. */
+      upperDeadZone: z.number().optional(),
+      /** 1 is as the controller reports. */
+      sensitivity: z.number(),
+      /** Reversed in the calibration, for everything bound to the axis. */
+      reversed: z.boolean(),
+    })
+  ),
+});
+export type Tuning = z.infer<typeof TuningSchema>;
+
+/** One axis of one controller tuned: its dead zones and its sensitivity. */
+export const TuneRequestSchema = z.object({
+  /** The controller, by its id in the overview. */
+  device: z.string().min(1).max(300),
+  /** The game's number for the axis, from `tuning`. */
+  axis: z.number().int().min(0).max(31),
+  deadZone: z.number().min(0).max(1),
+  upperDeadZone: z.number().min(0).max(1).optional(),
+  sensitivity: z.number().min(0).max(10),
+  /** The calibration as the preview read it (`seen` of tunePreview). */
+  seen: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
+});
+export type TuneRequest = z.infer<typeof TuneRequestSchema>;
+
+/** One axis's tuning as it would be, before anything is written. */
+export const TuneReviewSchema = z.object({
+  device: z.string(),
+  axis: z.string(),
+  /** "dead zone 10 %, upper dead zone 0 %, sensitivity 1" */
+  before: z.string(),
+  after: z.string(),
+  same: z.boolean(),
+  /** Why it cannot be saved right now (the game is running), when it cannot. */
+  blocked: z.string().optional(),
+  preview: ChangePreviewSchema,
+  seen: z.string(),
+});
+export type TuneReview = z.infer<typeof TuneReviewSchema>;
+
 /** A named snapshot of the bindings, kept in RigReady's own folder. */
 export const SnapshotSchema = z.object({
   id: z.string(),
@@ -285,6 +344,25 @@ export const nuclearOptionBindingsContract = defineContract(
      */
     clearDevice: channel(ClearDeviceRequestSchema, ChangeResultSchema, {
       describe: `Takes every Nuclear Option binding off one controller, buttons and axes, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
+      tier: 'off',
+    }),
+    tuning: channel(z.object({ device: z.string().min(1).max(300) }), TuningSchema, {
+      describe:
+        "The dead zones and the sensitivity of each axis of one controller, as Nuclear Option saved them in its calibration. device is a controller's id from nuclear-option-bindings:overview. Read from the registry; changes nothing.",
+      tier: 'read',
+    }),
+    /** One axis's tuning as it would be. Writes nothing. */
+    tunePreview: channel(TuneRequestSchema, TuneReviewSchema, {
+      describe: `Shows what setting the dead zones and the sensitivity of one controller axis for Nuclear Option would change. Writes nothing. ${ON_THE_PAGE}`,
+      tier: 'off',
+    }),
+    /**
+     * Sets the dead zones and the sensitivity of one axis in the calibration the game saved,
+     * through FileStore (a backup first, one entry on the Safety page). Refused while the
+     * game runs.
+     */
+    tune: channel(TuneRequestSchema, ChangeResultSchema, {
+      describe: `Sets the dead zones and the sensitivity of one controller axis in Nuclear Option's saved calibration, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
     snapshots: channel(noInput, z.array(SnapshotSchema), {

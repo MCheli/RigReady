@@ -6844,6 +6844,38 @@ requirements:
       - "artifacts/screens/nuclear-option-bindings-edit/05-blocked.png"
     notes: "Stage 3 of docs/contributing/add-game.md; it needs NFR-013 (a registry value through FileStore). The second look on the owner's rig, 2026-11-26 (docs/research/nuclear-option.md, section 7): Toggle Navigation Lights bound to Button 12 of the stick by RigReady showed as button 11 on the game's controls screen (0.34.6), the game changed only Unity's session counters, and Undo restored every binding value; both rig steps passed. Driven overnight by Claude Code with the owner's permission, nobody at the controls. Not tried then: the button pressed in a flight, a move or a clear in the real game, another controller. 2026-11-27, the owner at the controls: Eject cleared and bound to Button 16 on the R-VPC panel, and the button worked in a flight. The button is chosen by pressing it or by typing its number; pressing is proven in the scenario test, and whether the owner pressed or typed was not recorded."
 
+  - id: BIND-NO-009
+    title: "Axis tuning for Nuclear Option: dead zone, upper dead zone and sensitivity of an axis, with a preview and Undo"
+    job: configure
+    area: nuclear-option-bindings
+    priority: p2
+    done_means:
+      - "On the Nuclear Option bindings page, Tune axes shows for each axis of a controller the dead zone, the upper dead zone and the sensitivity the game saved in its calibration for the controller, with the axes by name when the controller is plugged in. Where the game saved two calibrations (an earlier build's beside the current one), the current one is read and written."
+      - "One axis's settings are changed after a review that says them before and after in words; nothing is written until Save. The write goes through FileStore (a backup, one entry on the Safety page, Undo), is read back, is refused while the game runs and when the calibration changed after the review."
+      - "Only the three numbers change, written as the game writes a number, within the ends of the game's own sliders (each dead zone 0 to 80 percent, 90 together, sensitivity 0.1 to 2); every other character of the value is as it was. An axis saved in a form RigReady does not know (switched off, a sensitivity curve, another shape) is shown and not changed; an earlier calibration without an upper dead zone is tuned without one; two controllers of one model, a controller without a saved calibration, and two calibrations of one form are refused with the reason."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/core/calibration.test.ts#reads every axis: dead zone, upper dead zone, sensitivity and reversal"
+      - "src/features/nuclear-option-bindings/core/calibration.test.ts#writes a number as the game does: the shortest of seven or nine digits that reads back as the same float"
+      - "src/features/nuclear-option-bindings/core/calibration.test.ts#sets the dead zones and the sensitivity of one axis and changes nothing else"
+      - "src/features/nuclear-option-bindings/core/calibration.test.ts#says \"the same\" and returns the text as it was when the axis is tuned so already"
+      - "src/features/nuclear-option-bindings/core/calibration.test.ts#an older calibration is tuned without an upper dead zone, and one asked for is refused with what to do"
+      - "src/features/nuclear-option-bindings/core/calibration.test.ts#refuses what it has not seen the game write, and values outside what its sliders give"
+      - "src/features/nuclear-option-bindings/core/tuning.test.ts#lists a plugged-in controller’s own axes by name with how each is tuned, from the calibration the game uses"
+      - "src/features/nuclear-option-bindings/core/tuning.test.ts#shows the change first and writes nothing; Save writes one value after a backup, and Undo puts it back"
+      - "src/features/nuclear-option-bindings/core/tuning.test.ts#tunes an axis of an older calibration without an upper dead zone"
+      - "src/features/nuclear-option-bindings/core/tuning.test.ts#is refused while the game runs, when the calibration changed after it was shown, and writes nothing then"
+      - "src/features/nuclear-option-bindings/core/tuning.test.ts#refuses a controller without a saved calibration, the keyboard, an axis the calibration lacks and values out of range"
+      - "src/features/nuclear-option-bindings/core/tuning.test.ts#two saved calibrations of one form for a controller are not chosen between"
+      - "tests/e2e/nuclear-option-bindings-tuning.e2e.ts#nuclear option bindings: the dead zones and the sensitivity of an axis are shown, changed after a review, and undone"
+      - "artifacts/screens/nuclear-option-bindings-tuning/01-axes.png"
+      - "artifacts/screens/nuclear-option-bindings-tuning/02-review.png"
+      - "artifacts/screens/nuclear-option-bindings-tuning/03-saved.png"
+      - "artifacts/screens/nuclear-option-bindings-tuning/04-blocked.png"
+      - "artifacts/screens/nuclear-option-bindings-tuning/05-older-calibration.png"
+      - "artifacts/screens/nuclear-option-bindings-tuning/06-safety-page.png"
+    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does, whose bindings page tunes an axis. On the owner's rig, 2026-11-27, driven by Claude Code with the owner's permission (docs/research/nuclear-option.md, 'Axis tuning'): the game's own Calibrate window was seen to change exactly these numbers and the ends of its sliders were read; a build of this branch set a dead zone of 25 % and a sensitivity of 1.4 on one axis of a panel, the game showed them in its window and saved the same bytes, and Undo put the key back. Not tried: the effect in a flight; an upper dead zone written by RigReady; a calibration of the earlier form written and read. Not done: the zero, the range and the reversal of an axis, which stay in the game's window."
+
   - id: BIND-NO-008
     title: Snapshots of Nuclear Option's bindings, taken and put back with a preview and Undo
     job: configure

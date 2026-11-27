@@ -344,6 +344,32 @@ An axis action that is on an axis reversed keeps the reversal when a proposal pu
 
 Not tried on a rig: a proposal written to the real registry and the game started on it. The bytes are the writer's own (section 7), which the game has loaded.
 
+### Axis tuning
+
+The game's controls screen has a **Calibrate** window for each controller: for each axis a dead zone, an upper dead zone, a zero, a sensitivity, an Invert button and a Calibrate button that measures the range. **[V]** It saves them in the controller's `CalibrationMap` value (section 4), one `AxisCalibration` for each of 32 axes:
+
+`<AxisCalibration><enabled>true</enabled><deadZone>0.1</deadZone><upperDeadZone>0</upperDeadZone><calibratedZero>0</calibratedZero><calibratedMin>-1</calibratedMin><calibratedMax>1</calibratedMax><invert>false</invert><sensitivity>1</sensitivity><applyRangeCalibration>true</applyRangeCalibration><sensitivityType>0</sensitivityType><sensitivityCurve /></AxisCalibration>`
+
+That is the default, and on the owner's rig all 22 values held nothing else. As for the saved maps, each of the 11 controllers has two: one under the earlier, longer identifier (`dataVersion="4"`, no `upperDeadZone`) and one under the shorter one the current build uses (`dataVersion="5"`, with it). **[V]**
+
+Seen on the owner's rig, 27 November 2026 (driven by Claude Code, with the owner's permission), on the first axis of a panel, by moving one slider at a time in the game's window, pressing Done twice and reading the key: **[V]**
+
+| In the game's window | In the value | Ends of the slider |
+| --- | --- | --- |
+| Dead Zone | `deadZone` | 0 to 0.8 |
+| Upper Dead Zone | `upperDeadZone` | 0 to 0.8; with the dead zone at most 0.9 together |
+| Zero | `calibratedZero` | not tried |
+| Sensitivity | `sensitivity` | 0.1 to 2 |
+| Invert | `invert` | |
+
+Nothing else in the value changed, and nothing else in the key. A number is written as a 32-bit float in the shortest of seven or nine digits that reads back as itself (`0.1`, `0.8`, `0.498286575`, `1.53551137`, and `0.09999999` where the game held the two dead zones to 0.9). **Default** in the window put the axis back, and the key was then byte for byte as before.
+
+RigReady (`core/calibration.ts`, `core/tuning.ts`) changes `deadZone`, `upperDeadZone` and `sensitivity` of one axis, within the ends of the game's sliders, in the value under the shorter identifier when there are both, through FileStore. It does not write the zero or the range (the game measures them) or the reversal (a binding has its own). An axis that is switched off, has a `sensitivityType` other than 0, a sensitivity curve, or any other shape, is left alone. The value's name says the model, not the unit, so with two controllers of one model nothing is written.
+
+Proof, the same day: with the game closed, a build of this branch with a data folder of its own set the first axis of that panel to a dead zone of 25 % and a sensitivity of 1.4. Only those two numbers of that one value changed. The game was started: its Calibrate window showed that axis with the wider dead zone and the raised sensitivity, and the next axis as before. Done was pressed twice there and the game closed: the value was byte for byte what RigReady had written. Undo on the Safety page put the key back as it was before, but for Unity's two session counters. **[V]**
+
+Not tried: the effect in a flight (it needs a hand on the axis); an upper dead zone written by RigReady and read by the game; a calibration of the earlier form written and read; the game's Zero slider.
+
 ### In a flight, 27 November 2026
 
 The owner, at the controls, with the same build: Eject cleared on the R-VPC panel and bound to its Button 16 on the Bindings page (two entries on the Safety page), then the game started and the button pressed in a flight. It worked. **[V]** by the owner. That is a clear and a bind in the real game, on a second controller, and the press that the second look left out.

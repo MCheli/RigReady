@@ -31,7 +31,7 @@ describe('Nuclear Option in a full backup', () => {
     });
     // The raw values, exactly as read: what a restore would need.
     const raw = (record.data as { values: Record<string, { type: string }> }).values;
-    expect(Object.keys(raw)).toHaveLength(10);
+    expect(Object.keys(raw)).toHaveLength(13);
     expect(raw.UseTrackIR_h3800713042).toEqual({ type: 'number', value: 0 });
 
     const rows = record.values!.map((v) => `${v.group}: ${v.label} = ${v.value}`);
@@ -46,6 +46,10 @@ describe('Nuclear Option in a full backup', () => {
       'Bindings: Throttle - HOTAS Warthog (Chat) = 0 bindings',
       'Bindings: Throttle - HOTAS Warthog (Game) = 8 bindings',
       'Settings: UseTrackIR = 0',
+      // The calibrations (dead zones, sensitivity): the stick's two and the throttle's.
+      'Other input data: CalibrationMap = 12146 bytes',
+      'Other input data: CalibrationMap = 11116 bytes',
+      'Other input data: CalibrationMap = 11113 bytes',
       'Other input data: ControllerMap_KnownActionIds = 39 bytes',
     ]);
     // It offers no file: the game has none.
