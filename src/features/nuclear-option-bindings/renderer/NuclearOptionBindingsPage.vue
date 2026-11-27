@@ -21,6 +21,7 @@ import {
 import { controlLabel } from '../../../core/bindings';
 import { GAME_KEYS, keyName } from '../core/keys';
 import { canChange, shownBindings } from './rows';
+import AxisTuningPanel from './AxisTuningPanel.vue';
 import SnapshotsPanel from './SnapshotsPanel.vue';
 
 /** The usual axes, in the order the game numbers them, for a controller that is not plugged in. */
@@ -400,6 +401,13 @@ async function save(): Promise<void> {
   await load();
 }
 
+// ---- The dead zones and the sensitivity of the controller's axes ----
+
+const tuningOpen = ref(false);
+function tuned(message: string): void {
+  savedMessage.value = message;
+}
+
 // ---- Every binding of the controller cleared at once: the same review first ----
 
 /** The controller being cleared, by its id; unset while the dialog is closed. */
@@ -618,6 +626,14 @@ const editTitle = computed(() => {
               data-testid="nuclear-option-bindings-bind"
               @click="startBind"
               >Bind an action</v-btn
+            >
+            <v-btn
+              v-if="device.kind === 'controller'"
+              variant="text"
+              prepend-icon="mdi-tune-variant"
+              data-testid="nuclear-option-bindings-tune"
+              @click="tuningOpen = true"
+              >Tune axes</v-btn
             >
             <v-btn
               v-if="device.kind === 'controller'"
@@ -882,6 +898,15 @@ const editTitle = computed(() => {
         </div>
       </template>
     </ConfirmChanges>
+
+    <AxisTuningPanel
+      v-if="device?.kind === 'controller'"
+      :open="tuningOpen"
+      :device="device.id"
+      :device-name="device.name"
+      @close="tuningOpen = false"
+      @saved="tuned"
+    />
 
     <ConfirmChanges
       :open="clearing !== undefined"

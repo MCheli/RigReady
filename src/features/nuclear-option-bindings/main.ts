@@ -13,6 +13,7 @@ import {
   reviewRestore,
 } from './core/snapshots';
 import { createProposals } from './core/proposals';
+import { applyTune, reviewTune, tuningOf } from './core/tuning';
 import { createBindingReader, GAME, overview, type BindingsContext } from './core/view';
 
 /**
@@ -49,6 +50,9 @@ export default defineFeatureMain({
           if (changed.ok && changed.value.changed) ctx.bindings.notifyChanged({ game: GAME });
           return changed;
         },
+        tuning: ({ device }) => tuningOf(bctx, device),
+        tunePreview: (request) => reviewTune(bctx, request),
+        tune: (request) => applyTune(bctx, request),
         clearDevicePreview: (request) => reviewClearDevice(bctx, request),
         async clearDevice(request) {
           const cleared = await applyClearDevice(bctx, request);

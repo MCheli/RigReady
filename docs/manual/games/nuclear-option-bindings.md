@@ -1,6 +1,6 @@
 ---
 title: Nuclear Option bindings
-description: What each control does in Nuclear Option, per device, as the game saved it; binding buttons, axes and keys, clearing a controller; cheat sheets.
+description: What each control does in Nuclear Option, per device, as the game saved it; binding buttons, axes and keys, tuning an axis, clearing a controller.
 order: 66
 ---
 
@@ -76,6 +76,26 @@ An action can have two keys, as on the game's controls screen. **Change** and **
 The keys RigReady can bind are the letters and digits, the numeric keypad, F1 to F12, the arrows and the keys above them, Space, Enter, Tab, Backspace, Esc, Delete, the punctuation keys of a US keyboard, and Shift, Ctrl and Alt on either side. For another key it says that it does not know how the game numbers it.
 
 What RigReady will not do here, and says so when asked: bind a mouse button; bind half an axis to one side of an action; bind a hat switch; change a binding it does not understand, such as an axis the controller does not report; bind anything on a controller the game has saved no bindings for yet.
+
+## Tuning an axis
+
+**Tune axes**, above a controller's list, shows what the game saved for each of the controller's axes: its dead zone, its upper dead zone and its sensitivity. These are the settings of the game's own **Calibrate** window (Settings, Controls, Open Control Bindings Menu, Calibrate), and they hold for every action bound to the axis.
+
+![The axes of a controller with their dead zones and sensitivity](../../../artifacts/screens/nuclear-option-bindings-tuning/01-axes.png)
+
+- **Dead zone**: how far the axis moves from its centre before the game takes notice, in percent. The game gives every axis of a new controller 10 percent. A stick that rests exactly at its centre can do with less; a worn one that drifts needs more.
+- **Upper dead zone**: how far before its end the axis already counts as fully moved, in percent. For a lever that does not quite reach its stop.
+- **Sensitivity**: 1 is as the controller reports. Less makes the same movement do less; more makes it do more.
+
+Change the numbers of one axis and press **Review**. RigReady shows the settings before and after, and writes nothing until you press **Save**:
+
+![The review before an axis is tuned](../../../artifacts/screens/nuclear-option-bindings-tuning/02-review.png)
+
+The limits are the ones of the game's own sliders: each dead zone 0 to 80 percent, the two together at most 90, and the sensitivity 0.1 to 2. The save is one entry on the **Safety** page with Undo, the calibration is backed up first, and nothing is written while the game runs. The game reads the change the next time it starts.
+
+The page shows whole percents and two decimals of the sensitivity. A number the game's slider left in between (49.8 percent, say) is shown rounded and is left exactly as the game saved it unless you change it to another value.
+
+What stays in the game's Calibrate window: the zero and the range of an axis, which the game measures while you move it, and reversing an axis for everything bound to it (a single binding is reversed on this page, under **Change**). An axis the game saved with a setting RigReady does not know is shown and not changed. A calibration saved by an earlier version of the game has no upper dead zone; the dead zone and the sensitivity are still set. With two controllers of the same model, RigReady cannot tell which of them a saved calibration is for, and leaves both to the game. With the controller unplugged, its axes go by the game's own numbers.
 
 ## Clearing a controller
 
