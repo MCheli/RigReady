@@ -50,9 +50,14 @@ test('nuclear option bindings: the dead zones and the sensitivity of an axis are
   await expect(row('X axis').getByTestId('nuclear-option-tuning-invalid')).toBeVisible();
   await expect(row('X axis').getByTestId('nuclear-option-tuning-review')).toBeDisabled();
 
+  // An emptied field is not a dead zone of 0.
+  await field('X axis', 'dead-zone').fill('');
+  await expect(row('X axis').getByTestId('nuclear-option-tuning-review')).toBeDisabled();
+
   // 3. The review: before and after in words, and nothing written yet.
   await field('X axis', 'dead-zone').fill('3');
   await field('X axis', 'sensitivity').fill('0.75');
+  await field('Y axis', 'sensitivity').fill('0.9');
   await row('X axis').getByTestId('nuclear-option-tuning-review').click();
   await expect(confirm).toBeVisible();
   await expect(confirm).toContainText('Tune X axis of Joystick - HOTAS Warthog?');
@@ -78,6 +83,10 @@ test('nuclear option bindings: the dead zones and the sensitivity of an axis are
   await expect(field('X axis', 'dead-zone')).toHaveValue('3');
   await expect(field('X axis', 'sensitivity')).toHaveValue('0.75');
   await expect(row('X axis').getByTestId('nuclear-option-tuning-review')).toBeDisabled();
+  // What was typed for the other axis and not saved is still in its field.
+  await expect(field('Y axis', 'sensitivity')).toHaveValue('0.9');
+  await expect(row('Y axis').getByTestId('nuclear-option-tuning-review')).toBeEnabled();
+  await field('Y axis', 'sensitivity').fill('0.8');
   await shot('saved');
 
   // 4. While the game runs the review says why, and Save is off.

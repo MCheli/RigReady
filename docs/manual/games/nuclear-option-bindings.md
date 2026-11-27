@@ -93,6 +93,8 @@ Change the numbers of one axis and press **Review**. RigReady shows the settings
 
 The limits are the ones of the game's own sliders: each dead zone 0 to 80 percent, the two together at most 90, and the sensitivity 0.1 to 2. The save is one entry on the **Safety** page with Undo, the calibration is backed up first, and nothing is written while the game runs. The game reads the change the next time it starts.
 
+The page shows whole percents and two decimals of the sensitivity. A number the game's slider left in between (49.8 percent, say) is shown rounded and is left exactly as the game saved it unless you change it to another value.
+
 What stays in the game's Calibrate window: the zero and the range of an axis, which the game measures while you move it, and reversing an axis for everything bound to it (a single binding is reversed on this page, under **Change**). An axis the game saved with a setting RigReady does not know is shown and not changed. A calibration saved by an earlier version of the game has no upper dead zone; the dead zone and the sensitivity are still set. With two controllers of the same model, RigReady cannot tell which of them a saved calibration is for, and leaves both to the game. With the controller unplugged, its axes go by the game's own numbers.
 
 ## Clearing a controller

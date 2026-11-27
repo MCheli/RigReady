@@ -18,6 +18,7 @@ interface Row {
   index: number;
   name: string;
   tunable: boolean;
+  unread: boolean;
   reversed: boolean;
   hasUpper: boolean;
   deadZone: number;
@@ -36,7 +37,7 @@ let turn = 0;
 const percent = (value: number): number => Math.round(value * 100);
 const hundredths = (value: number): number => Math.round(value * 100) / 100;
 
-async function load(): Promise<void> {
+async function load(keepTyped = false): Promise<void> {
   const mine = ++turn;
   error.value = '';
   const result = await api.tuning({ device: props.device });
@@ -48,6 +49,7 @@ async function load(): Promise<void> {
     return;
   }
   tuning.value = result.value;
+  const typed = new Map(rows.value.filter(changed).map((row) => [row.index, row]));
   rows.value = result.value.axes.map((a): Row => {
     const now = {
       deadZone: percent(a.deadZone),
@@ -58,9 +60,18 @@ async function load(): Promise<void> {
       index: a.index,
       name: a.name,
       tunable: a.tunable,
+      unread: a.unread,
       reversed: a.reversed,
       hasUpper: a.upperDeadZone !== undefined,
       ...now,
+      // Another axis's numbers, typed and not saved yet, stay in their fields.
+      ...(keepTyped && typed.has(a.index)
+        ? {
+            deadZone: typed.get(a.index)!.deadZone,
+            upperDeadZone: typed.get(a.index)!.upperDeadZone,
+            sensitivity: typed.get(a.index)!.sensitivity,
+          }
+        : {}),
       was: { ...now },
     };
   });
@@ -77,10 +88,9 @@ watch(
   }
 );
 
-const number = (value: unknown): number => {
-  const n = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(n) ? n : Number.NaN;
-};
+/** A field's number; an emptied field is not 0. */
+const number = (value: unknown): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : Number.NaN;
 const valid = (row: Row): boolean =>
   Number.isInteger(number(row.deadZone)) &&
   number(row.deadZone) >= 0 &&
@@ -113,7 +123,7 @@ const requestOf = (row: Row) => ({
 });
 
 async function startReview(row: Row): Promise<void> {
-  if (!valid(row) || !changed(row)) return;
+  if (!valid(row) || !changed(row) || saving.value) return;
   savedText.value = '';
   const mine = ++reviewTurn;
   review.value = undefined;
@@ -125,6 +135,8 @@ async function startReview(row: Row): Promise<void> {
   else reviewError.value = errorText(result.error);
 }
 function closeReview(): void {
+  // Not while a Save is on its way: its answer, a failure too, is shown in this dialog.
+  if (saving.value) return;
   reviewTurn++;
   reviewing.value = undefined;
   review.value = undefined;
@@ -140,10 +152,16 @@ async function save(): Promise<void> {
     reviewError.value = errorText(result.error);
     return;
   }
+  // The row now holds what was saved; the others keep what was typed in them.
+  row.was = {
+    deadZone: number(row.deadZone),
+    upperDeadZone: number(row.upperDeadZone),
+    sensitivity: number(row.sensitivity),
+  };
   closeReview();
   savedText.value = result.value.message;
   emit('saved', result.value.message);
-  await load();
+  await load(true);
 }
 </script>
 
@@ -176,7 +194,8 @@ async function save(): Promise<void> {
           class="rr-muted at-lead"
           data-testid="nuclear-option-tuning-unnamed"
         >
-          The controller is not plugged in, so its axes go by the game's own numbers here.
+          The controller did not say which axes it has (it may not be plugged in), so they go by the
+          game's own numbers here.
         </div>
         <table v-if="rows.length > 0" class="at-table">
           <thead>
@@ -204,70 +223,81 @@ async function save(): Promise<void> {
                   Saved in a way RigReady does not change
                 </div>
               </td>
-              <td>
-                <v-text-field
-                  v-model.number="row.deadZone"
-                  type="number"
-                  min="0"
-                  max="80"
-                  step="1"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  :disabled="!row.tunable"
-                  :aria-label="`Dead zone of ${row.name}, percent`"
-                  data-testid="nuclear-option-tuning-dead-zone"
-                />
+              <td
+                v-if="row.unread"
+                colspan="4"
+                class="rr-muted at-note"
+                data-testid="nuclear-option-tuning-unread"
+              >
+                RigReady cannot read this axis's settings. Look at them in the game: Settings,
+                Controls, then Calibrate.
               </td>
-              <td>
-                <v-text-field
-                  v-if="row.hasUpper"
-                  v-model.number="row.upperDeadZone"
-                  type="number"
-                  min="0"
-                  max="80"
-                  step="1"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  :disabled="!row.tunable"
-                  :aria-label="`Upper dead zone of ${row.name}, percent`"
-                  data-testid="nuclear-option-tuning-upper"
-                />
-                <span v-else class="rr-muted at-note">Not in this calibration</span>
-              </td>
-              <td>
-                <v-text-field
-                  v-model.number="row.sensitivity"
-                  type="number"
-                  min="0.1"
-                  max="2"
-                  step="0.05"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  :disabled="!row.tunable"
-                  :aria-label="`Sensitivity of ${row.name}`"
-                  data-testid="nuclear-option-tuning-sensitivity"
-                />
-              </td>
-              <td class="at-act">
-                <v-btn
-                  size="small"
-                  variant="tonal"
-                  :disabled="!row.tunable || !changed(row) || !valid(row)"
-                  data-testid="nuclear-option-tuning-review"
-                  @click="startReview(row)"
-                  >Review</v-btn
-                >
-                <div
-                  v-if="row.tunable && !valid(row)"
-                  class="rr-warn at-note"
-                  data-testid="nuclear-option-tuning-invalid"
-                >
-                  0 to 80 percent each, 90 together; 0.1 to 2
-                </div>
-              </td>
+              <template v-else>
+                <td>
+                  <v-text-field
+                    v-model.number="row.deadZone"
+                    type="number"
+                    min="0"
+                    max="80"
+                    step="1"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    :disabled="!row.tunable"
+                    :aria-label="`Dead zone of ${row.name}, percent`"
+                    data-testid="nuclear-option-tuning-dead-zone"
+                  />
+                </td>
+                <td>
+                  <v-text-field
+                    v-if="row.hasUpper"
+                    v-model.number="row.upperDeadZone"
+                    type="number"
+                    min="0"
+                    max="80"
+                    step="1"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    :disabled="!row.tunable"
+                    :aria-label="`Upper dead zone of ${row.name}, percent`"
+                    data-testid="nuclear-option-tuning-upper"
+                  />
+                  <span v-else class="rr-muted at-note">Not in this calibration</span>
+                </td>
+                <td>
+                  <v-text-field
+                    v-model.number="row.sensitivity"
+                    type="number"
+                    min="0.1"
+                    max="2"
+                    step="0.05"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    :disabled="!row.tunable"
+                    :aria-label="`Sensitivity of ${row.name}`"
+                    data-testid="nuclear-option-tuning-sensitivity"
+                  />
+                </td>
+                <td class="at-act">
+                  <v-btn
+                    size="small"
+                    variant="tonal"
+                    :disabled="!row.tunable || !changed(row) || !valid(row)"
+                    data-testid="nuclear-option-tuning-review"
+                    @click="startReview(row)"
+                    >Review</v-btn
+                  >
+                  <div
+                    v-if="row.tunable && !valid(row)"
+                    class="rr-warn at-note"
+                    data-testid="nuclear-option-tuning-invalid"
+                  >
+                    0 to 80 percent each, 90 together; 0.1 to 2
+                  </div>
+                </td>
+              </template>
             </tr>
           </tbody>
         </table>
