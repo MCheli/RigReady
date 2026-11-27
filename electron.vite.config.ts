@@ -28,5 +28,13 @@ export default defineConfig({
       rollupOptions: { input: { index: resolve(__dirname, 'src/renderer/index.html') } },
     },
     plugins: [vue(), vuetify({ autoImport: true })],
+    // The Vuetify plugin adds its imports (`vuetify/components/VBtn`, ...) while a page is
+    // transformed, so the dev server's scan of the sources never sees them. Found one page at a
+    // time instead, each makes Vite bundle the dependencies again and ask the window to reload,
+    // and a window caught between two bundles runs two copies of Vue and Pinia: blank pages.
+    // Naming them all here bundles them once, before the first page.
+    optimizeDeps: {
+      include: ['vuetify/components/*', 'vuetify/directives'],
+    },
   },
 });
