@@ -804,7 +804,7 @@ const STATUS = {
         v-if="fanatec"
         game="fanatec"
         what="Fanatec App settings"
-        closed-hint="The Fanatec App's window settings and choices are restored. The Fanatec Service registry settings are kept as a record only: RigReady never writes the registry."
+        closed-hint="The Fanatec App's window settings and choices are restored. The Fanatec Service registry settings are kept as a record only: RigReady does not write them back."
       />
       <BackupsPanel
         v-else-if="backupGame"
