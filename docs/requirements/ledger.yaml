@@ -6611,6 +6611,7 @@ requirements:
     evidence:
       - "src/features/games/nuclear-option/module.test.ts#is found in Steam as a flight game, with its build and its data folder"
       - "src/features/games/nuclear-option/module.test.ts#offers no file for backup and says why: the settings are in the registry"
+      - "src/features/games/nuclear-option/module.test.ts#the game-updated warning offers no backup, because there is nothing to back up, and says why"
       - "src/features/games/nuclear-option/module.test.ts#is launched through Steam with its own app id"
       - "src/features/games/nuclear-option/module.test.ts#counts as running by NuclearOption.exe"
       - "src/features/games/nuclear-option/module.test.ts#is not found without its program, and a folder chosen by hand must hold it"

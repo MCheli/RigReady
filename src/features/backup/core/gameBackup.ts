@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { RemediationDefinition } from '../../../core/checks/registry';
 import { err, ok } from '../../../core/result';
-import { createBackup } from './archive';
+import { createBackup, gameHasFiles } from './archive';
 import type { Ctx, MachineIdentity } from './store';
 
 export const BACKUP_GAME_FILES = 'backup.gameFiles';
@@ -42,9 +42,17 @@ export function createGameFilesBackup(
     params: GameFilesParamsSchema,
     describe: (params) => `Back up ${nameOf(params.game)} settings and bindings now`,
     async available(params) {
-      return ctx.games.get(params.game)
+      if (!ctx.games.get(params.game)) {
+        return { ok: false, reason: `This version of RigReady does not know "${params.game}".` };
+      }
+      // A game that keeps no settings files (or none yet) has nothing to back up: the button
+      // is not offered, and the row says why. Marking the version verified stays possible.
+      return (await gameHasFiles(ctx, params.game))
         ? { ok: true }
-        : { ok: false, reason: `This version of RigReady does not know "${params.game}".` };
+        : {
+            ok: false,
+            reason: `Nothing to back up: no settings files of ${nameOf(params.game)} were found on this PC.`,
+          };
     },
     async run(params) {
       const made = await createBackup(ctx, { kind: 'game', gameId: params.game }, options());
