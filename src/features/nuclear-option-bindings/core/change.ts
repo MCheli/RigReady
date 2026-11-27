@@ -2,10 +2,23 @@ import { sha256 } from '../../../core/files/fileStore';
 import { changePreview } from '../../../core/files/preview';
 import { registryValuePath } from '../../../core/files/registryValues';
 import { err, ok, type Result } from '../../../core/result';
-import type { ChangeRequest, ChangeResult, ChangeReview } from '../contract';
+import type {
+  ChangeRequest,
+  ChangeResult,
+  ChangeReview,
+  ClearDeviceRequest,
+  ClearDeviceReview,
+} from '../contract';
 import { actionOf } from './actions';
-import { editMapText } from './edit';
-import { GAME, GAME_NAME, REGISTRY_KEY, storedGameMap, type BindingsContext } from './view';
+import { clearMapText, editMapText } from './edit';
+import {
+  GAME,
+  GAME_NAME,
+  REGISTRY_KEY,
+  storedControllerMaps,
+  storedGameMap,
+  type BindingsContext,
+} from './view';
 
 /**
  * One binding of a controller changed in what the game saved: shown first, then written
@@ -53,20 +66,34 @@ interface Plan {
   alsoOnButton: string[];
 }
 
-async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Result<Plan>> {
-  const stored = await storedGameMap(ctx, request.device);
-  if (!stored.ok) return stored;
-  // The value's own bytes, not the text made from them: bytes that are not UTF-8 read as
-  // text with a replacement character, and writing that text back would lose them for good.
-  const raw = await ctx.ports.registry.getValue('HKCU', REGISTRY_KEY, stored.value.valueName);
+/**
+ * The stored value's own bytes, when they are exactly the text the map was read from. Bytes
+ * that are not UTF-8 read as text with a replacement character, and writing that text back
+ * would lose them for good.
+ */
+async function exactBytes(
+  ctx: BindingsContext,
+  valueName: string,
+  text: string
+): Promise<Result<Buffer>> {
+  const raw = await ctx.ports.registry.getValue('HKCU', REGISTRY_KEY, valueName);
   if (!raw.ok) return raw;
-  const text = Buffer.from(stored.value.text, 'utf8');
-  if (raw.value?.type !== 'binary' || raw.value.value.toLowerCase() !== text.toString('hex')) {
+  const bytes = Buffer.from(text, 'utf8');
+  if (raw.value?.type !== 'binary' || raw.value.value.toLowerCase() !== bytes.toString('hex')) {
     return err(
       'nuclear-option.edit.bytes',
       'The game’s saved bindings for this controller hold bytes RigReady cannot write back exactly, so it does not change them. Change the binding in the game.'
     );
   }
+  return ok(bytes);
+}
+
+async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Result<Plan>> {
+  const stored = await storedGameMap(ctx, request.device);
+  if (!stored.ok) return stored;
+  const exact = await exactBytes(ctx, stored.value.valueName, stored.value.text);
+  if (!exact.ok) return exact;
+  const text = exact.value;
   const edited = editMapText(stored.value.text, {
     actionId: request.actionId,
     button: request.button,
@@ -192,5 +219,139 @@ async function applyNow(
       request.button === null
         ? `Saved: ${p.actionName} is no longer bound on ${p.deviceName}. Undo is on the Safety page.`
         : `Saved: ${p.actionName} is now on ${p.after} of ${p.deviceName}. Undo is on the Safety page.`,
+  });
+}
+
+// ---- Every binding of one controller cleared ----
+
+interface ClearPlan {
+  deviceName: string;
+  /** The saved maps that have bindings, each with what it becomes. */
+  writes: { valueName: string; address: string; bytes: Uint8Array }[];
+  bindings: number;
+  seen: string;
+}
+
+/**
+ * A controller has one saved map for each tab of the game's controls screen (Game, Chat,
+ * Mission Editor, Debug). Each one with bindings is emptied; when one of them cannot be,
+ * none is: a controller half cleared is not what was asked for.
+ */
+async function planClear(ctx: BindingsContext, deviceId: string): Promise<Result<ClearPlan>> {
+  const stored = await storedControllerMaps(ctx, deviceId);
+  if (!stored.ok) return stored;
+  const writes: ClearPlan['writes'] = [];
+  const seen: string[] = [];
+  let bindings = 0;
+  for (const map of stored.value) {
+    const exact = await exactBytes(ctx, map.valueName, map.text);
+    if (!exact.ok) return exact;
+    seen.push(`${map.valueName}\n${sha256(exact.value)}`);
+    const cleared = clearMapText(map.text);
+    if (!cleared.ok) return cleared;
+    if (cleared.value.removed === 0) continue;
+    bindings += cleared.value.removed;
+    writes.push({
+      valueName: map.valueName,
+      address: registryValuePath('HKCU', REGISTRY_KEY, map.valueName),
+      bytes: new Uint8Array(Buffer.from(cleared.value.text, 'utf8')),
+    });
+  }
+  return ok({
+    deviceName: stored.value[0]!.deviceName,
+    writes,
+    bindings,
+    seen: sha256(seen.join('\n')),
+  });
+}
+
+const bindingsInWords = (count: number): string =>
+  count === 1 ? '1 binding' : `${count} bindings`;
+
+/** Clearing one controller as it would be. Writes nothing. */
+export async function reviewClearDevice(
+  ctx: BindingsContext,
+  request: ClearDeviceRequest
+): Promise<Result<ClearDeviceReview>> {
+  const planned = await planClear(ctx, request.device);
+  if (!planned.ok) return planned;
+  const p = planned.value;
+  const preview = await changePreview(
+    ctx.ports.files,
+    p.writes.map((w) => ({ path: w.address, content: w.bytes })),
+    () => `${GAME_NAME}’s saved bindings for ${p.deviceName} (registry)`
+  );
+  if (!preview.ok) return preview;
+  const blocked = await whyBlocked(ctx);
+  return ok({
+    device: p.deviceName,
+    bindings: p.bindings,
+    same: p.bindings === 0,
+    ...(blocked ? { blocked } : {}),
+    preview: preview.value,
+    seen: p.seen,
+  });
+}
+
+/**
+ * Takes every binding off one controller: refused while the game runs, a backup first, one
+ * entry on the Safety page, and each value is read back before anything is called done.
+ */
+export function applyClearDevice(
+  ctx: BindingsContext,
+  request: ClearDeviceRequest
+): Promise<Result<ChangeResult>> {
+  return oneAtATime(() => clearNow(ctx, request));
+}
+
+async function clearNow(
+  ctx: BindingsContext,
+  request: ClearDeviceRequest
+): Promise<Result<ChangeResult>> {
+  const blocked = await whyBlocked(ctx);
+  if (blocked) return err('nuclear-option.edit.blocked', blocked);
+  const planned = await planClear(ctx, request.device);
+  if (!planned.ok) return planned;
+  const p = planned.value;
+  if (request.seen !== undefined && request.seen !== p.seen) {
+    return err(
+      'nuclear-option.edit.changed',
+      'The game’s saved bindings changed after the change was shown, so nothing was written. Look at the change again.'
+    );
+  }
+  if (p.bindings === 0) {
+    return ok({
+      changed: false,
+      message: `Nothing was changed: nothing is bound on ${p.deviceName}.`,
+    });
+  }
+  const group = ctx.ports.files.beginGroup(
+    `${GAME_NAME} bindings: all ${bindingsInWords(p.bindings)} cleared on ${p.deviceName}`
+  );
+  let done = 0;
+  // Said with any failure once a value was written: the controller is then partly cleared.
+  const partly = (message: string): string =>
+    done === 0
+      ? message
+      : `${message} Part of ${p.deviceName}’s bindings was already cleared; Undo on the Safety page puts them back.`;
+  for (const write of p.writes) {
+    const written = await ctx.ports.files.write(write.address, write.bytes, {
+      reason: `Clear a controller’s bindings in what ${GAME_NAME} saved in the registry`,
+      group,
+    });
+    if (!written.ok) return err(written.error.code, partly(written.error.message));
+    done++;
+    const back = await ctx.ports.registry.getValue('HKCU', REGISTRY_KEY, write.valueName);
+    if (!back.ok) return err(back.error.code, partly(back.error.message));
+    const kept =
+      back.value?.type === 'binary' &&
+      back.value.value.toLowerCase() === Buffer.from(write.bytes).toString('hex');
+    if (!kept) {
+      return err('nuclear-option.edit.notKept', partly('The registry did not keep the change.'));
+    }
+  }
+  return ok({
+    changed: true,
+    message: `Saved: ${bindingsInWords(p.bindings)} cleared on ${p.deviceName}. Undo is on the Safety page.`,
   });
 }

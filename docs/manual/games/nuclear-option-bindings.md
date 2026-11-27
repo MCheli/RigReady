@@ -1,10 +1,10 @@
 ---
 title: Nuclear Option bindings
-description: What each control does in Nuclear Option, per device, as the game saved it; binding a controller button; on cheat sheets and in the trainer too.
+description: What each control does in Nuclear Option, per device, as the game saved it; binding a controller button, clearing a controller; cheat sheets and the trainer.
 order: 66
 ---
 
-The Nuclear Option bindings page shows what the game has bound on each controller, on the keyboard and on the mouse. RigReady reads this from what the game itself saved. It can bind a button of a controller to an action, move it or clear it; an axis, a key or a mouse button is bound in the game's own Settings, then Controls.
+The Nuclear Option bindings page shows what the game has bound on each controller, on the keyboard and on the mouse. RigReady reads this from what the game itself saved. It can bind a button of a controller to an action, move it or clear it, and clear everything on one controller at once; an axis, a key or a mouse button is bound in the game's own Settings, then Controls.
 
 Open it with **Configure > Bindings** and choose **Nuclear Option** in the **Game** picker above the page, or with [the command palette](../app/command-palette.md): press **Ctrl+K** and type "Nuclear Option bindings".
 
@@ -56,6 +56,20 @@ RigReady copies the saved bindings of that controller first. The change is one e
 The game picks the change up the next time it starts; its own controls screen then shows it. The game counts buttons from 0, so Button 12 here is "11" there.
 
 What RigReady will not do here, and says so when asked: bind an axis, a key or a mouse button; bind one side of an axis action (Zoom In) to a button; change a binding it does not understand; bind anything on a controller the game has saved no bindings for yet.
+
+## Clearing a controller
+
+The first time Nuclear Option sees a controller it binds its own defaults to it: pitch and roll on the first two axes, Fire on the first button, and so on. It does that for every controller, so a button box, a panel or a set of racing pedals ends up flying the aircraft too. **Clear all**, beside **Bind an action**, takes every binding off the controller you are looking at: its buttons and its axes, in every tab of the game's controls screen.
+
+Close the game first, as for one binding. RigReady shows how many bindings will go and which saved bindings it will change; nothing is written until you press **Clear all** in that dialog. Your other controllers, the keyboard and the mouse are not changed.
+
+![The review before a controller is cleared](../../../artifacts/screens/nuclear-option-bindings-clear-all/01-review.png)
+
+It is one entry on the [Safety page](../protect/safety-page.md), named for example "Nuclear Option bindings: all 8 bindings cleared on Throttle - HOTAS Warthog", and **Undo** there puts every one of them back.
+
+![A controller with nothing bound](../../../artifacts/screens/nuclear-option-bindings-clear-all/02-cleared.png)
+
+The game leaves a cleared controller alone: at its next start its controls screen shows the controller with nothing bound, and it does not put its defaults back. The controller stays in the game's list, so you can bind it again there or here. **Restore Defaults** in the game binds every controller again.
 
 ## Cheat sheets, the trainer and the overlay
 

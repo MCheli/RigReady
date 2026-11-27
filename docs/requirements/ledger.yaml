@@ -6733,7 +6733,38 @@ requirements:
       - "artifacts/screens/nuclear-option-bindings-edit/03-pressed.png"
       - "artifacts/screens/nuclear-option-bindings-edit/04-safety-page.png"
       - "artifacts/screens/nuclear-option-bindings-edit/05-blocked.png"
-    notes: "Stage 3 of docs/contributing/add-game.md; it needs NFR-013 (a registry value through FileStore). The second look on the owner's rig, 2026-11-26 (docs/research/nuclear-option.md, section 7): Toggle Navigation Lights bound to Button 12 of the stick by RigReady showed as button 11 on the game's controls screen (0.34.6), the game changed only Unity's session counters, and Undo restored every binding value; both rig steps passed. Driven overnight by Claude Code with the owner's permission, nobody at the controls. Not tried: the button pressed in a flight, a move or a clear in the real game, another controller. The button is chosen by pressing it or by typing its number; pressing is proven in the scenario test, not on the rig."
+    notes: "Stage 3 of docs/contributing/add-game.md; it needs NFR-013 (a registry value through FileStore). The second look on the owner's rig, 2026-11-26 (docs/research/nuclear-option.md, section 7): Toggle Navigation Lights bound to Button 12 of the stick by RigReady showed as button 11 on the game's controls screen (0.34.6), the game changed only Unity's session counters, and Undo restored every binding value; both rig steps passed. Driven overnight by Claude Code with the owner's permission, nobody at the controls. Not tried then: the button pressed in a flight, a move or a clear in the real game, another controller. 2026-11-27, the owner at the controls: Eject cleared and bound to Button 16 on the R-VPC panel, and the button worked in a flight. The button is chosen by pressing it or by typing its number; pressing is proven in the scenario test, and whether the owner pressed or typed was not recorded."
+
+  - id: BIND-NO-005
+    title: Clear every binding of one controller in Nuclear Option, with a preview and Undo
+    job: configure
+    area: nuclear-option-bindings
+    priority: p2
+    done_means:
+      - "On the Nuclear Option bindings page, Clear all takes every binding off the controller shown: its buttons and its axes, in every tab of the game's controls screen. The review says how many bindings go and what will be changed; nothing is written until it is confirmed. The keyboard and the mouse have no Clear all, and it is off for a controller with nothing bound."
+      - "Each saved map of the controller that has bindings is replaced in the registry through FileStore under one entry on the Safety page; Undo puts every binding back. Each value is read back before success is reported, and the cheat sheets, the trainer and the overlay are told. Other controllers' values are not touched."
+      - "What is written is the map as the game itself saves one with nothing bound; nothing but bindings leaves the document."
+      - "It is refused, with the reason and with nothing written: while the game runs or when the programs cannot be listed; when the saved bindings changed after the review; for a map RigReady would not write back exactly or a controller the game has a definition of its own for. When one of the controller's maps cannot be cleared or cannot be read at all, none is; another controller is not held up by it."
+      - "When a write fails after an earlier map of the controller was cleared, the error says that part is cleared and that Undo puts it back, the cheat sheets, the trainer and the overlay are told, and the page drops the review it showed and reads the bindings again."
+      - "In the real game: a cleared controller has nothing bound on the game's own controls screen at its next start, the game does not put its defaults back, and Undo puts the saved bindings back byte for byte."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#clears a whole controller: what is left is the map as the game saves one with nothing bound"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#does not clear the keyboard, the mouse, a controller the game has a definition for, or a map it would not write back exactly"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#is shown first, then cleared in one entry on the Safety page, and Undo puts every binding back"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#a controller bound in two tabs of the game’s screen: both maps are shown, cleared in one entry, and Undo puts both back"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#a failure after the first map was cleared says that part is cleared, and Undo puts it back"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#a controller with a saved map that cannot be read is not cleared at all; another controller still is"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#a controller with nothing bound is left alone, and says so"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#is refused while the game runs, when the bindings changed since it was shown, and for the keyboard"
+      - "tests/e2e/nuclear-option-bindings-clear-all.e2e.ts#nuclear option bindings: clear every binding of one controller after a review, and undo it"
+      - "tests/rig/nuclearOptionBindingsEdit.rig.test.ts#a controller map cleared on a copy is the map as the game itself saves one with nothing bound"
+      - "tests/rig/nuclearOptionBindingsEdit.rig.test.ts#only maps of one controller differ from the snapshot, and each is the map it was with nothing bound"
+      - "artifacts/screens/nuclear-option-bindings-clear-all/01-review.png"
+      - "artifacts/screens/nuclear-option-bindings-clear-all/02-cleared.png"
+      - "artifacts/screens/nuclear-option-bindings-clear-all/03-safety-page.png"
+      - "artifacts/screens/nuclear-option-bindings-clear-all/04-blocked.png"
+    notes: "Asked for by the owner on 2026-11-27: the game binds its defaults to every controller it finds. Proof on the owner's rig the same day (docs/research/nuclear-option.md, 'Clearing a whole controller'): WINWING MFD1-L cleared of 11 bindings by RigReady had nothing bound on the game's controls screen (0.34.6), the game did not write its defaults again when it closed, and Undo restored every value; both rig steps passed. Driven by Claude Code with the owner's permission. Not tried: a controller with bindings outside the Game tab, a second start of the game, the controller plugged in again, Restore Defaults in the game. What the page does after a failed clear (the review dropped, the bindings read again) and the notice to the other readers have no test of their own: there is no component test harness, and the scenario cannot make the second write fail."
 
   - id: RACE-IRACING-002
     title: iRacing config locations and tracked defaults

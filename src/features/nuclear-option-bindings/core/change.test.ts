@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
-import type { ChangeResult, ChangeReview, Overview } from '../contract';
+import type { ChangeResult, ChangeReview, ClearDeviceReview, Overview } from '../contract';
 import { err, ok } from '../../../core/result';
 import { whyBlocked } from './change';
 import { REGISTRY_KEY, type BindingsContext } from './view';
@@ -260,6 +260,217 @@ describe('changing a Nuclear Option binding', () => {
     expect(now.ok && now.value).toEqual({ type: 'binary', value: bytes.toString('hex') });
     const journal = await a.ports.files.journalGroups();
     expect(journal.ok && journal.value).toEqual([]);
+  });
+
+  describe('every binding of one controller', () => {
+    const THROTTLE = 'controller:044F:0404:0';
+    const clearReview = (a: WiredApp, request: object): Promise<ClearDeviceReview> =>
+      a.invoke<ClearDeviceReview>('nuclear-option-bindings:clearDevicePreview', request);
+    const clear = (a: WiredApp, request: object): Promise<ChangeResult> =>
+      a.invoke<ChangeResult>('nuclear-option-bindings:clearDevice', request);
+    const bound = async (a: WiredApp, id: string): Promise<number> => {
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      return view.devices.find((d) => d.id === id)!.bindings.length;
+    };
+    const allValues = async (a: WiredApp): Promise<Record<string, unknown>> => {
+      const values = await a.ports.registry.listValues('HKCU', REGISTRY_KEY);
+      if (!values.ok) throw new Error(values.error.message);
+      return values.value;
+    };
+
+    it('is shown first, then cleared in one entry on the Safety page, and Undo puts every binding back', async () => {
+      const a = await start();
+      const before = await allValues(a);
+      expect(await bound(a, THROTTLE)).toBe(8);
+      const stickBound = await bound(a, STICK);
+
+      const shown = await clearReview(a, { device: THROTTLE });
+      expect(shown).toMatchObject({
+        device: 'Throttle - HOTAS Warthog',
+        bindings: 8,
+        same: false,
+      });
+      expect(shown.blocked).toBeUndefined();
+      // The throttle's Chat map has nothing bound, so only its Game map is written.
+      expect(shown.preview.files).toHaveLength(1);
+      expect(await allValues(a)).toEqual(before);
+
+      const result = await clear(a, { device: THROTTLE, seen: shown.seen });
+      expect(result).toEqual({
+        changed: true,
+        message:
+          'Saved: 8 bindings cleared on Throttle - HOTAS Warthog. Undo is on the Safety page.',
+      });
+      expect(await bound(a, THROTTLE)).toBe(0);
+      expect(await bound(a, STICK)).toBe(stickBound);
+      // Exactly one value differs, and it has no binding left in it.
+      const after = await allValues(a);
+      const differing = Object.keys(before).filter(
+        (name) => JSON.stringify(before[name]) !== JSON.stringify(after[name])
+      );
+      expect(Object.keys(after).sort()).toEqual(Object.keys(before).sort());
+      expect(differing).toHaveLength(1);
+      const value = after[differing[0]!] as { type: string; value: string };
+      const text = Buffer.from(value.value, 'hex').toString('utf8');
+      expect(text).toContain('<buttonMaps /><axisMaps />');
+      expect(text.endsWith('\0')).toBe(true);
+
+      const journal = await a.ports.files.journalGroups();
+      if (!journal.ok) throw new Error(journal.error.message);
+      expect(journal.value).toHaveLength(1);
+      expect(journal.value[0]!.reason).toBe(
+        'Nuclear Option bindings: all 8 bindings cleared on Throttle - HOTAS Warthog'
+      );
+      await a.invoke('safety:undo', { groupId: journal.value[0]!.id, force: false });
+      expect(await allValues(a)).toEqual(before);
+      expect(await bound(a, THROTTLE)).toBe(8);
+    });
+
+    /** The throttle's Chat map (categoryId=1) with one binding put into it, or with other bytes. */
+    const CHAT = /JoystickMap\|categoryId=1\|.*Throttle/;
+    const chatName = async (a: WiredApp): Promise<string> =>
+      Object.keys(await allValues(a)).find((name) => CHAT.test(name))!;
+    const setChat = async (a: WiredApp, text: string): Promise<void> => {
+      await mutate(a, [
+        {
+          op: 'setRegistryValue',
+          hive: 'HKCU',
+          key: REGISTRY_KEY,
+          name: await chatName(a),
+          value: { type: 'binary', value: Buffer.from(text, 'utf8').toString('hex') },
+        },
+      ]);
+    };
+    const chatWithBinding = async (a: WiredApp): Promise<void> => {
+      const value = (await allValues(a))[await chatName(a)] as { value: string };
+      const text = Buffer.from(value.value, 'hex').toString('utf8');
+      expect(text).toContain('<buttonMaps />');
+      // Submit Chat (34) on button 5, written as the game writes a binding the player made.
+      await setChat(
+        a,
+        text.replace(
+          '<buttonMaps />',
+          '<buttonMaps><ActionElementMap><actionCategoryId>-1</actionCategoryId><actionId>34</actionId><elementType>1</elementType><elementIdentifierId>36</elementIdentifierId><axisRange>1</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>0</modifierKey1><modifierKey2>0</modifierKey2><modifierKey3>0</modifierKey3><enabled>true</enabled></ActionElementMap></buttonMaps>'
+        )
+      );
+    };
+
+    it('a controller bound in two tabs of the game’s screen: both maps are shown, cleared in one entry, and Undo puts both back', async () => {
+      const a = await start();
+      await chatWithBinding(a);
+      const before = await allValues(a);
+      expect(await bound(a, THROTTLE)).toBe(9);
+
+      const shown = await clearReview(a, { device: THROTTLE });
+      expect(shown).toMatchObject({ bindings: 9, same: false });
+      expect(shown.preview.files).toHaveLength(2);
+      expect(shown.preview.files.every((f) => f.change === 'modified')).toBe(true);
+
+      expect((await clear(a, { device: THROTTLE, seen: shown.seen })).message).toBe(
+        'Saved: 9 bindings cleared on Throttle - HOTAS Warthog. Undo is on the Safety page.'
+      );
+      const after = await allValues(a);
+      const differing = Object.keys(before).filter(
+        (name) => JSON.stringify(before[name]) !== JSON.stringify(after[name])
+      );
+      expect(differing).toHaveLength(2);
+      for (const name of differing) {
+        const text = Buffer.from((after[name] as { value: string }).value, 'hex').toString('utf8');
+        expect(text, name).toContain('<buttonMaps /><axisMaps />');
+        expect(name).toContain('Throttle');
+      }
+      // One entry on the Safety page holds both values; Undo puts both back byte for byte.
+      const journal = await a.ports.files.journalGroups();
+      if (!journal.ok) throw new Error(journal.error.message);
+      expect(journal.value).toHaveLength(1);
+      expect(journal.value[0]!.entries).toHaveLength(2);
+      await a.invoke('safety:undo', { groupId: journal.value[0]!.id, force: false });
+      expect(await allValues(a)).toEqual(before);
+    });
+
+    it('a failure after the first map was cleared says that part is cleared, and Undo puts it back', async () => {
+      const a = await start();
+      await chatWithBinding(a);
+      const before = await allValues(a);
+      // The second write to the registry fails.
+      const files = a.ports.files;
+      const write = files.write.bind(files);
+      let writes = 0;
+      files.write = (async (...args: Parameters<typeof write>) =>
+        ++writes === 2
+          ? err('file.write', 'The value could not be written.')
+          : write(...args)) as typeof write;
+      await expect(clear(a, { device: THROTTLE })).rejects.toThrow(
+        /The value could not be written\. Part of Throttle - HOTAS Warthog’s bindings was already cleared; Undo on the Safety page puts them back\./
+      );
+      files.write = write;
+      // The Game map is cleared, the Chat map is as it was.
+      expect(await bound(a, THROTTLE)).toBe(1);
+      const journal = await a.ports.files.journalGroups();
+      if (!journal.ok) throw new Error(journal.error.message);
+      expect(journal.value).toHaveLength(1);
+      await a.invoke('safety:undo', { groupId: journal.value[0]!.id, force: false });
+      expect(await allValues(a)).toEqual(before);
+    });
+
+    it('a controller with a saved map that cannot be read is not cleared at all; another controller still is', async () => {
+      const a = await start();
+      await setChat(a, 'not a map');
+      const before = await allValues(a);
+      await expect(clearReview(a, { device: THROTTLE })).rejects.toThrow(
+        'One of the game’s saved maps for this controller could not be read'
+      );
+      await expect(clear(a, { device: THROTTLE })).rejects.toThrow(
+        'One of the game’s saved maps for this controller could not be read'
+      );
+      expect(await allValues(a)).toEqual(before);
+      const journal = await a.ports.files.journalGroups();
+      expect(journal.ok && journal.value).toEqual([]);
+      // The stick has nothing to do with it.
+      expect((await clear(a, { device: STICK })).changed).toBe(true);
+      expect(await bound(a, STICK)).toBe(0);
+    });
+
+    it('a controller with nothing bound is left alone, and says so', async () => {
+      const a = await start();
+      await clear(a, { device: THROTTLE });
+      const again = await clearReview(a, { device: THROTTLE });
+      expect(again).toMatchObject({ bindings: 0, same: true });
+      expect(again.preview.files).toEqual([]);
+      expect(await clear(a, { device: THROTTLE })).toEqual({
+        changed: false,
+        message: 'Nothing was changed: nothing is bound on Throttle - HOTAS Warthog.',
+      });
+      const journal = await a.ports.files.journalGroups();
+      expect(journal.ok && journal.value).toHaveLength(1);
+    });
+
+    it('is refused while the game runs, when the bindings changed since it was shown, and for the keyboard', async () => {
+      const a = await start();
+      const before = await allValues(a);
+      const shown = await clearReview(a, { device: THROTTLE });
+      await mutate(a, [
+        { op: 'startProcess', name: 'NuclearOption.exe', path: 'C:/Games/NuclearOption.exe' },
+      ]);
+      expect((await clearReview(a, { device: THROTTLE })).blocked).toContain(
+        'Close Nuclear Option first'
+      );
+      await expect(clear(a, { device: THROTTLE, seen: shown.seen })).rejects.toThrow(
+        'Close Nuclear Option first'
+      );
+      await mutate(a, [{ op: 'stopProcess', name: 'NuclearOption.exe' }]);
+      // A binding saved on the throttle meanwhile: what was shown no longer holds.
+      await change(a, { device: THROTTLE, actionId: 49, button: 30 });
+      const changed = await allValues(a);
+      await expect(clear(a, { device: THROTTLE, seen: shown.seen })).rejects.toThrow(
+        'changed after the change was shown'
+      );
+      expect(await allValues(a)).toEqual(changed);
+      expect(changed).not.toEqual(before);
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      const keyboard = view.devices.find((d) => d.kind === 'keyboard')!;
+      await expect(clear(a, { device: keyboard.id })).rejects.toThrow('nothing to clear');
+    });
   });
 
   it('writes nothing when the saved bindings changed after the change was shown', async () => {

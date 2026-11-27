@@ -26,8 +26,8 @@ import {
 
 /**
  * Nuclear Option's bindings as the game saved them, read from the registry values the
- * Rewired library writes (HKEY_CURRENT_USER\Software\Shockfront\NuclearOption). Read
- * only: nothing here, or anywhere in this feature, writes to the registry.
+ * Rewired library writes (HKEY_CURRENT_USER\Software\Shockfront\NuclearOption). This
+ * file only reads; what the feature writes goes through FileStore, in change.ts.
  *
  * What is verified and what is inferred: docs/research/nuclear-option.md, section 4.
  */
@@ -68,6 +68,11 @@ interface Saved {
   maps: SavedMap[];
   /** Values that are Rewired's but could not be read, in words. */
   problems: string[];
+  /**
+   * The controllers (by the id the page knows them by) with a saved map that could not be
+   * read. What such a map holds is not known, so the controller is not cleared as a whole.
+   */
+  unread: Set<string>;
   /** The key holds values of the game at all. */
   found: boolean;
 }
@@ -75,7 +80,12 @@ interface Saved {
 async function readSaved(ctx: BindingsContext): Promise<Result<Saved>> {
   const values = await ctx.ports.registry.listValues('HKCU', REGISTRY_KEY);
   if (!values.ok) return values;
-  const saved: Saved = { maps: [], problems: [], found: Object.keys(values.value).length > 0 };
+  const saved: Saved = {
+    maps: [],
+    problems: [],
+    unread: new Set(),
+    found: Object.keys(values.value).length > 0,
+  };
 
   // What each value is, from its name alone.
   const entries = Object.entries(values.value).flatMap(([name, value]) => {
@@ -104,16 +114,26 @@ async function readSaved(ctx: BindingsContext): Promise<Result<Saved>> {
   // the earlier one is left out, also when the later one cannot be read.
   const later = new Set(entries.filter((e) => e.identity?.form === 'short').map(unit));
 
+  // The controller a value is for is in its name, so it is known also when the value is not read.
+  const unread = (entry: (typeof entries)[number]): void => {
+    if (entry.type === 'JoystickMap' && entry.identity) {
+      saved.unread.add(
+        `controller:${entry.identity.vendorId}:${entry.identity.productId}:${entry.duplicate}`
+      );
+    }
+  };
   for (const entry of entries) {
     if (entry.identity?.form === 'guid' && later.has(unit(entry))) continue;
     const text = entry.value.type === 'binary' ? textOfBinary(entry.value.value) : undefined;
     if (text === undefined) {
       saved.problems.push(`A saved ${entry.type} is not stored as text, so it was left out.`);
+      unread(entry);
       continue;
     }
     const map = parseControllerMap(text);
     if (!map.ok) {
       saved.problems.push(`A saved ${entry.type} could not be read: ${map.error.message}`);
+      unread(entry);
       continue;
     }
     saved.maps.push({
@@ -167,6 +187,45 @@ export async function storedGameMap(
     map: found.map,
     deviceName: found.map.hardwareName || 'the controller',
   });
+}
+
+/**
+ * Every saved map of a controller, as stored: the Game category's and the other
+ * categories' (Chat, Mission Editor, Debug). What clearing a controller empties.
+ */
+export async function storedControllerMaps(
+  ctx: BindingsContext,
+  deviceId: string
+): Promise<Result<StoredMap[]>> {
+  const saved = await readSaved(ctx);
+  if (!saved.ok) return saved;
+  // One of its maps could not be read: clearing the others would leave the controller partly
+  // cleared and say it was done.
+  if (saved.value.unread.has(deviceId)) {
+    return err(
+      'nuclear-option.edit.unread',
+      'One of the game’s saved maps for this controller could not be read, so RigReady does not clear the controller: it could not tell what would be left. Clear its bindings in the game.'
+    );
+  }
+  const found = saved.value.maps.filter(
+    (m) => m.map.kind === 'JoystickMap' && controllerId(m) === deviceId
+  );
+  if (found.length === 0) {
+    return err(
+      'nuclear-option.noMap',
+      'Nuclear Option has saved no bindings for this controller, so there is nothing to clear.'
+    );
+  }
+  return ok(
+    found
+      .sort((a, b) => a.map.categoryId - b.map.categoryId)
+      .map((m) => ({
+        valueName: m.valueName,
+        text: m.text,
+        map: m.map,
+        deviceName: m.map.hardwareName || 'the controller',
+      }))
+  );
 }
 
 /** The control of a controller an element id means; undefined for one that is not understood. */
