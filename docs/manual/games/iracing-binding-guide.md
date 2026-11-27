@@ -4,7 +4,7 @@ description: iRacing guides by class of car, with priorities, a walkthrough that
 order: 16
 ---
 
-**Configure > Binding guide** explains what matters in a class of car, in plain language and in priority order, and walks you through binding it. For iRacing the guides are by class, not by car: every car in iRacing has the same list of actions, and what matters differs by the kind of racing. The page is in the menu when DCS World or iRacing is found on this PC. Choose **iRacing** in the **Game** picker at the top, then the class. Everything on the Walkthrough and Priorities tabs works without any key.
+**Configure > Binding guide** explains what matters in a class of car, in plain language and in priority order, and walks you through binding it. For iRacing the guides are by class, not by car: every car in iRacing has the same list of actions, and what matters differs by the kind of racing. The page is in the menu when DCS World, iRacing or Nuclear Option is found on this PC. Choose **iRacing** in the **Game** picker at the top, then the class. Everything on the Walkthrough and Priorities tabs works without any key.
 
 The guide for DCS aircraft works the same way and is described in [Binding guide and AI help](../dcs/binding-guide-and-ai.md).
 

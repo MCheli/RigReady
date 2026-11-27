@@ -5422,7 +5422,7 @@ requirements:
       - "src/features/ai-assist/core/iracingGuides.test.ts#suggests a class only from what a car folder name says"
       - "src/features/ai-assist/renderer/storeIracing.test.ts#the game chosen last wins, even while the one before it is still being read"
       - "src/features/ai-assist/renderer/storeIracing.test.ts#a guide read for the game shown before is not put on screen after a switch"
-      - "tests/unit/offeredByGame.test.ts#the binding guide is the one menu entry about a game, and it is about DCS and iRacing"
+      - "tests/unit/offeredByGame.test.ts#the binding guide is the one menu entry about a game, and it is about DCS, iRacing and Nuclear Option"
       - "tests/unit/offeredByGame.test.ts#a PC whose only game is iRacing: no DCS, and the racing pages and the binding guide are there"
       - "tests/e2e/ai-assist-iracing.e2e.ts#ai-assist-iracing: pick iRacing and a class, see the priorities, and an axis to bind in iRacing"
       - "tests/e2e/ai-assist-iracing.e2e.ts#ai-assist-iracing: a car whose folder name says GT3 uses that guide, and says why"
@@ -5506,6 +5506,41 @@ requirements:
       - "src/features/ai-assist/core/service.test.ts#says apart what the binding guide sends and what the assistant sends, and where it goes"
       - "tests/e2e/ai-assist-iracing.e2e.ts#ai-assist-iracing: a car whose folder name says GT3 uses that guide, and says why"
       - "artifacts/screens/ai-assist-iracing-car/02-own-guide.png"
+
+  - id: AI-NO-001
+    title: A binding guide for Nuclear Option, on what the game saved, with a walkthrough that binds buttons
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "RigReady ships one binding guide for Nuclear Option, for every aircraft: thirty items in three tiers, each with a plain title, what it does, when you use it, where it belongs (stick, throttle, pedals, a panel, the keyboard) and the game's actions it stands for, named as the game's controls screen names them. It says it was written from general knowledge, not reviewed by the developers or an experienced player, and not affiliated with Shockfront Studios."
+      - "A test checks that every action the guide names is found among the actions RigReady reads from the game, and that the guide format takes game: nuclear-option with DCS's places and its own roles and refuses the racing ones."
+      - "The Binding guide page lists Nuclear Option in its Game picker where the game has saved bindings, with one entry, All aircraft; the menu entry is offered where DCS World, iRacing or Nuclear Option is found. Walkthrough and Priorities show each item as bound, partly bound or not bound on a controller, from the same saved bindings as the Nuclear Option bindings page, and a change made there shows in the guide."
+      - "The walkthrough binds a button-type action to the controller button the user presses: the change is shown first (the controller, what the action is on now and would be on, what else that button does, the saved bindings changed), and Save writes it through the Nuclear Option bindings feature's own change channel, so the backup, the Safety page entry and Undo are that feature's. Refused, with the reason and nothing written: while the game runs, when the saved bindings changed after the review, for an action outside the guide, and on a controller the game has saved nothing for."
+      - "An axis, and one side of an axis on a button, have no Bind: the walkthrough says they are bound in the game, an item made only of them is never marked done, and an axis or a hat pressed while it listens is said to be one. Staging a binding the DCS way is refused."
+      - "No AI request is made for Nuclear Option: there is no AI help tab, no Explain and no link to set AI help up, and a request for it is refused before a provider or key is looked at. A guide of the user's own is refused, because RigReady uses the one it includes."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#is one guide for every aircraft, found by the game and \"all\""
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#has every tier, a plan for the stick, the throttle and the pedals, explains each item and says who did not review it"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#refuses the racing places and roles, and `input`, in a Nuclear Option guide"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#names Nuclear Option as a game it has a guide for, where the game has saved bindings"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#where the game is installed but has saved no bindings yet, says so plainly instead of a walkthrough that cannot bind"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#every action the walkthrough offers to bind is one the bindings feature takes on a button"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#every action the guide names is one the game has: no item is missing, and each name is found"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#says of each item whether it is bound on a controller, from what the game saved"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#shows the change first, then saves it through the bindings feature, with Undo on the Safety page"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#is refused, with nothing written: an axis, one side of an axis, an action outside the guide, a controller the game saved nothing for, a map that changed, and while the game runs"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#keeps the walkthrough’s progress, stages nothing, and makes no AI request"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#reads the same whether the game is open or closed: it only reads"
+      - "tests/unit/offeredByGame.test.ts#the binding guide is the one menu entry about a game, and it is about DCS, iRacing and Nuclear Option"
+      - "tests/e2e/ai-assist-nuclear-option.e2e.ts#binding guide for nuclear option: the walkthrough binds a pressed button after a review, the priorities, and Undo"
+      - "artifacts/screens/ai-assist-nuclear-option/01-walkthrough.png"
+      - "artifacts/screens/ai-assist-nuclear-option/02-review.png"
+      - "artifacts/screens/ai-assist-nuclear-option/03-bound.png"
+      - "artifacts/screens/ai-assist-nuclear-option/04-priorities.png"
+      - "artifacts/screens/ai-assist-nuclear-option/05-blocked.png"
+    notes: "Asked for by the owner on 2026-11-27. The guide's advice was written by Claude from general knowledge of the game and the names on its controls screen; nobody who plays the game has reviewed it, and the guide and the manual say so. The owner asked the same day for it to bind from the walkthrough as the other guides do, and for Nuclear Option to work as DCS does throughout; binding axes and keys, AI help and snapshots follow in their own entries. Not done here: AI help, a guide of the user's own, and plain names on the cheat sheets (the game's own names are plain). Binding from the walkthrough was tried in the scenario test, not yet on the owner's rig. Copilot could not review the pull request (no quota left); an independent review by a second Claude agent found no blocking defect and these, fixed before the merge: a save that finished after Cancel said nothing, an older preview could replace a newer one, and a game that was installed but never run got a walkthrough whose every Bind failed. Known and left: with two controllers of one model, which saved map belongs to which is inferred, never seen (docs/research/nuclear-option.md), and the dialog names both alike; a saved map RigReady cannot read is not mentioned on the guide page; that the AI help tab and Explain stay hidden with a key stored has no test (the scenario has no key)."
 
   # ---------------------------------------------------------------------------
   # THE BUILT-IN ASSISTANT: app-wide, on the MCP catalogue and gate

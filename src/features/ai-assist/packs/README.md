@@ -113,6 +113,40 @@ items:
 - A new class needs its id added to `IRACING_CLASSES` in `core/iracing.ts` (the page's order)
   and to the test's list.
 
+## The Nuclear Option guide
+
+Nuclear Option has one set of bindings for every aircraft, so it has one guide,
+`nuclear-option.yaml` (not reviewed by the game's developers or an experienced player). The
+format is the one at the top, with these differences:
+
+```yaml
+format: 1
+game: nuclear-option            # required
+aircraft:
+  id: all                       # the one set of bindings; the guide's key is "nuclear-option:all"
+  name: All aircraft
+roles:                          # any of: stick, throttle, pedals, panel, keyboard
+  stick: { summary: ..., items: [...] }
+items:
+  - id: zoom
+    place: hotas                # hotas | panel | keyboard, as for DCS
+    role: throttle
+    need: any
+    actions:
+      - { name: Zoom View, label: Zoom (axis) }   # the name on the game's controls screen
+      - { name: Zoom In, label: Zoom in }         # one side of an axis, as the screen names it
+```
+
+- An action is named as the game's controls screen names it, which is what the Nuclear Option
+  bindings feature gives as the action's name: "Toggle Gear", "Pitch Axis", and for one side of
+  an axis "Zoom In". `nuclearOptionGuide.test.ts` checks that every name is found among the
+  actions RigReady reads, so a game update that renames one is caught once RigReady's table
+  of actions is updated.
+- The walkthrough binds an action that is a button as a whole ("Toggle Gear") to a controller
+  button, through the Nuclear Option bindings feature. An axis, and one side of an axis on a
+  button ("Zoom In"), are bound in the game. No AI request is made for this game.
+- There is no guide of a user's own for it: RigReady uses this file.
+
 ## Guides drafted by AI
 
 For an aircraft without a guide, a user with an Anthropic API key can have one drafted. It
