@@ -232,6 +232,16 @@ onBeforeUnmount(() => {
     </div>
 
     <div
+      v-else-if="store.list && nuclearOption && store.list.problem"
+      class="rr-panel rr-empty"
+      data-testid="ai-nuclear-option-unread"
+    >
+      <v-icon icon="mdi-airplane" size="36" class="mb-3" />
+      <div class="rr-row-title">Nuclear Option has no bindings to guide yet</div>
+      <div class="rr-row-sub">{{ store.list.problem }}</div>
+    </div>
+
+    <div
       v-else-if="store.list && store.list.aircraft.length === 0"
       class="rr-panel rr-empty"
       data-testid="ai-no-aircraft"

@@ -112,6 +112,47 @@ describe('the binding guide page’s data for Nuclear Option', () => {
     });
   });
 
+  it('where the game is installed but has saved no bindings yet, says so plainly instead of a walkthrough that cannot bind', async () => {
+    const a = await start('games-nuclear-option');
+    const games = await a.invoke<GuideGames>('ai-assist:games');
+    expect(games.games.find((g) => g.id === 'nuclear-option')?.available).toBe(true);
+    expect(await a.invoke<AircraftList>('ai-assist:aircraft', { game: 'nuclear-option' })).toEqual({
+      game: 'nuclear-option',
+      available: true,
+      gameName: 'Nuclear Option',
+      aircraft: [],
+      problem:
+        'Nuclear Option has saved no bindings yet. Start the game once, and the guide fills in.',
+    });
+  });
+
+  it('every action the walkthrough offers to bind is one the bindings feature takes on a button', async () => {
+    const a = await start();
+    const overview = await a.invoke<{ devices: { name: string; guid?: string }[] }>(
+      'nuclear-option-bindings:overview'
+    );
+    const device = overview.devices.find((d) => d.name === 'Joystick - HOTAS Warthog')!.guid!;
+    const offered = itemsOf(await guideOf(a)).flatMap((i) => i.actions.filter((x) => x.editable));
+    expect(offered.length).toBeGreaterThan(15);
+    for (const action of offered) {
+      // A preview that the bindings feature refused would reject here.
+      const shown = await a.invoke<NuclearOptionReviewView>('ai-assist:nuclearOptionBindPreview', {
+        aircraftId: GUIDE,
+        actionId: action.actionId,
+        binding: { device, button: 19 },
+      });
+      expect(shown.after, action.dcsName).toBe('Button 19');
+    }
+    // The controller is found whatever case the press gives its id in.
+    await expect(
+      a.invoke('ai-assist:nuclearOptionBindPreview', {
+        aircraftId: GUIDE,
+        actionId: '49',
+        binding: { device: device.toLowerCase(), button: 19 },
+      })
+    ).resolves.toMatchObject({ after: 'Button 19' });
+  });
+
   it('every action the guide names is one the game has: no item is missing, and each name is found', async () => {
     const a = await start();
     const view = await guideOf(a);

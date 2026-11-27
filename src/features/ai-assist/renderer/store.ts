@@ -421,10 +421,12 @@ export const useAiStore = defineStore('ai-assist', () => {
     if (!id) return;
     await stopListening();
     pressNote.value = undefined;
-    nuclearOptionBinding.value = { actionId, binding, busy: true };
+    const asking: NuclearOptionBinding = { actionId, binding, busy: true };
+    nuclearOptionBinding.value = asking;
     const result = await api.nuclearOptionBindPreview({ aircraftId: id, actionId, binding });
-    // Closed, or another action chosen, meanwhile.
-    if (nuclearOptionBinding.value?.actionId !== actionId || aircraftId.value !== id) return;
+    // Closed, or another press taken (for this action or another), meanwhile: this answer is
+    // for a press that is no longer the one on screen.
+    if (toRaw(nuclearOptionBinding.value) !== asking || aircraftId.value !== id) return;
     if (!result.ok) {
       nuclearOptionBinding.value = undefined;
       pressNote.value = errorText(result.error);
@@ -451,13 +453,18 @@ export const useAiStore = defineStore('ai-assist', () => {
     if (!result.ok) {
       if (still) {
         nuclearOptionBinding.value = { ...current, busy: false, error: errorText(result.error) };
+      } else if (aircraftId.value === id) {
+        // The dialog is gone: the failure is said where a press is answered.
+        pressNote.value = errorText(result.error);
       }
       return;
     }
     // Saved either way: the pages that show bindings read them again.
     notifyMachineChanged();
-    if (!still) return;
-    nuclearOptionBinding.value = undefined;
+    // The dialog was closed while it saved (Cancel does not call a save back): the binding
+    // was written all the same, so the page says so while the same guide is on screen.
+    if (aircraftId.value !== id) return;
+    if (still) nuclearOptionBinding.value = undefined;
     nuclearOptionSaved.value = result.value.message;
     await loadGuide(id);
   }

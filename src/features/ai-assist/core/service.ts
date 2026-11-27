@@ -557,7 +557,7 @@ export class AiAssist {
     return overview?.ok === true && overview.value.installed;
   }
 
-  /** Nuclear Option counts as found once it has saved bindings: the guide works on those. */
+  /** Nuclear Option counts as found when the game or its saved bindings are on this PC. */
   private async nuclearOptionAvailable(): Promise<boolean> {
     const reader = this.ctx.bindings.get(NUCLEAR_OPTION);
     return reader !== undefined && (await reader.available());
@@ -568,6 +568,19 @@ export class AiAssist {
     const gameName = GUIDE_GAME_NAMES[NUCLEAR_OPTION];
     if (!(await this.nuclearOptionAvailable())) {
       return ok({ game: NUCLEAR_OPTION, available: false, gameName, aircraft: [] });
+    }
+    // Found, but never started: it has saved no bindings, and RigReady can only replace a
+    // saved map. A plain state, said on the page, not a walkthrough whose every Bind fails.
+    const bound = await this.ctx.bindings.get(NUCLEAR_OPTION)?.bindings(NUCLEAR_OPTION_SET);
+    if (bound?.ok && bound.value.devices.every((d) => d.bindings.length === 0)) {
+      return ok({
+        game: NUCLEAR_OPTION,
+        available: true,
+        gameName,
+        aircraft: [],
+        problem:
+          'Nuclear Option has saved no bindings yet. Start the game once, and the guide fills in.',
+      });
     }
     const pack = shippedPack(NUCLEAR_OPTION_GUIDE);
     return ok({
