@@ -180,5 +180,9 @@ const BY_DOM = new Map(GAME_KEYS.map((k) => [k.dom, k]));
 /** The game's key for a physical key the browser names; undefined for one RigReady does not bind. */
 export const gameKeyOf = (dom: string): GameKey | undefined => BY_DOM.get(dom);
 
+/** The key the game's two numbers mean; undefined unless both are the table's for one key. */
+export const gameKeyByNumbers = (element: number, keyCode: number): GameKey | undefined =>
+  GAME_KEYS.find((k) => k.element === element && k.keyCode === keyCode);
+
 /** Rewired's ModifierKey numbers, in the order the game writes them: Control, Alt, Shift. */
 export const MODIFIERS = { ctrl: 1, alt: 2, shift: 3 } as const;

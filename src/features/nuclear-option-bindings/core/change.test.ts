@@ -513,12 +513,14 @@ describe('changing a Nuclear Option binding', () => {
 
   describe('a key of the keyboard', () => {
     const KEYBOARD = 'keyboard';
-    const keyRows = async (a: WiredApp): Promise<string[]> => {
+    const keyboard = async (a: WiredApp): Promise<Overview['devices'][number]> => {
       const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
-      return view.devices
-        .find((d) => d.kind === 'keyboard')!
-        .bindings.map((b) => `${b.action} = ${[...b.modifiers, b.inputLabel].join(' + ')}`);
+      return view.devices.find((d) => d.kind === 'keyboard')!;
     };
+    const keyRows = async (a: WiredApp): Promise<string[]> =>
+      (await keyboard(a)).bindings.map(
+        (b) => `${b.action} = ${[...b.modifiers, b.inputLabel].join(' + ')}`
+      );
     const values = async (a: WiredApp): Promise<Record<string, unknown>> => {
       const all = await a.ports.registry.listValues('HKCU', REGISTRY_KEY);
       if (!all.ok) throw new Error(all.error.message);
@@ -529,13 +531,25 @@ describe('changing a Nuclear Option binding', () => {
         (name) => JSON.stringify(before[name]) !== JSON.stringify(after[name])
       );
 
-    it('the keyboard has the id the page changes it by', async () => {
+    it('the keyboard has the id the page changes it by, and each row says which key it is', async () => {
       const a = await start();
-      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
-      expect(view.devices.find((d) => d.kind === 'keyboard')?.id).toBe(KEYBOARD);
+      const device = await keyboard(a);
+      expect(device.id).toBe(KEYBOARD);
+      expect(device.bindings.find((b) => b.action === 'Toggle Gear')?.key).toEqual({
+        code: 'KeyG',
+        ctrl: false,
+        alt: false,
+        shift: false,
+      });
+      expect(device.bindings.find((b) => b.action === 'Eject')?.key).toEqual({
+        code: 'KeyE',
+        ctrl: true,
+        alt: false,
+        shift: true,
+      });
     });
 
-    it('binds a key, with modifier keys, shows it first, and Undo puts the keyboard’s map back', async () => {
+    it('binds a key, shows it first, changes and clears it from its row, and leaves the keyboard’s map as it was', async () => {
       const a = await start();
       const before = await values(a);
       // Toggle Engine (50) has no key.
@@ -572,10 +586,12 @@ describe('changing a Nuclear Option binding', () => {
       );
       expect(await keyRows(a)).toContain('Toggle Engine = F7');
 
-      // With modifier keys, and what else has that key with those modifiers.
+      // From its row: to a key with modifier keys that Eject has, which the review says.
+      const f7 = { code: 'F7', ctrl: false, alt: false, shift: false };
       const withMods = await review(a, {
         device: KEYBOARD,
         actionId: 50,
+        replaces: f7,
         key: { code: 'KeyE', ctrl: true, shift: true },
       });
       expect(withMods).toMatchObject({
@@ -583,8 +599,14 @@ describe('changing a Nuclear Option binding', () => {
         after: 'Ctrl + Shift + E',
         alsoOnButton: ['Eject'],
       });
-      await change(a, { device: KEYBOARD, actionId: 50, key: { code: 'KeyE', alt: true } });
+      await change(a, {
+        device: KEYBOARD,
+        actionId: 50,
+        replaces: f7,
+        key: { code: 'KeyE', alt: true },
+      });
       expect(await keyRows(a)).toContain('Toggle Engine = Alt + E');
+      expect((await keyRows(a)).filter((row) => row.startsWith('Toggle Engine'))).toHaveLength(1);
 
       const journal = await a.ports.files.journalGroups();
       if (!journal.ok) throw new Error(journal.error.message);
@@ -592,11 +614,47 @@ describe('changing a Nuclear Option binding', () => {
         'Nuclear Option bindings: Toggle Engine bound to Alt + E on the keyboard',
         'Nuclear Option bindings: Toggle Engine bound to F7 on the keyboard',
       ]);
-      const cleared = await change(a, { device: KEYBOARD, actionId: 50, key: null });
+      const cleared = await change(a, {
+        device: KEYBOARD,
+        actionId: 50,
+        replaces: { code: 'KeyE', ctrl: false, alt: true, shift: false },
+        key: null,
+      });
       expect(cleared.message).toBe(
         'Saved: Toggle Engine is no longer bound on the keyboard. Undo is on the Safety page.'
       );
       expect(await values(a)).toEqual(before);
+    });
+
+    it('gives an action a second key, and a row’s Clear takes only its own', async () => {
+      const a = await start();
+      const before = await values(a);
+      // Toggle Gear is on G: F7 goes beside it.
+      const second = await review(a, { device: KEYBOARD, actionId: 11, key: { code: 'F7' } });
+      expect(second).toMatchObject({ before: 'G', after: 'G and F7', same: false });
+      expect(
+        (await change(a, { device: KEYBOARD, actionId: 11, key: { code: 'F7' } })).message
+      ).toBe('Saved: Toggle Gear is now on G and F7 of the keyboard. Undo is on the Safety page.');
+      const rows = await keyRows(a);
+      expect(rows).toContain('Toggle Gear = G');
+      expect(rows).toContain('Toggle Gear = F7');
+      await expect(
+        review(a, { device: KEYBOARD, actionId: 11, key: { code: 'F8' } })
+      ).rejects.toThrow('already has two keys');
+      // Clear on the G row: F7 is what is left, and the message says so.
+      const one = await change(a, {
+        device: KEYBOARD,
+        actionId: 11,
+        replaces: { code: 'KeyG', ctrl: false, alt: false, shift: false },
+        key: null,
+      });
+      expect(one.message).toBe(
+        'Saved: Toggle Gear is now on F7 of the keyboard. Undo is on the Safety page.'
+      );
+      expect((await keyRows(a)).filter((row) => row.startsWith('Toggle Gear'))).toEqual([
+        'Toggle Gear = F7',
+      ]);
+      expect(await values(a)).not.toEqual(before);
     });
 
     it('binds one side of an axis action, and an action of another tab in that tab’s own map', async () => {
@@ -613,8 +671,17 @@ describe('changing a Nuclear Option binding', () => {
       );
       const afterSide = await values(a);
       expect(differing(before, afterSide)[0]).toContain('KeyboardMap|categoryId=0');
-      // Submit Chat is on the Chat tab: its key goes into the keyboard's Chat map.
-      const chat = await change(a, { device: KEYBOARD, actionId: 34, key: { code: 'F9' } });
+      // Keypad plus is the game's key 51 with KeyCode 270.
+      expect(
+        Buffer.from(
+          (afterSide[differing(before, afterSide)[0]!] as { value: string }).value,
+          'hex'
+        ).toString('utf8')
+      ).toContain(
+        '<actionId>25</actionId><elementType>1</elementType><elementIdentifierId>51</elementIdentifierId><axisRange>0</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>270</keyboardKeyCode>'
+      );
+      // A chat action's key goes into the keyboard's Chat map.
+      const chat = await change(a, { device: KEYBOARD, actionId: 59, key: { code: 'F9' } });
       expect(chat.changed).toBe(true);
       const afterChat = await values(a);
       const changed = differing(afterSide, afterChat);
@@ -622,7 +689,7 @@ describe('changing a Nuclear Option binding', () => {
       expect(changed[0]).toContain('KeyboardMap|categoryId=1');
     });
 
-    it('refuses a whole axis on a key, a key RigReady cannot number, and everything while the game runs', async () => {
+    it('refuses a whole axis on a key, a key RigReady cannot number, a replaced key without a key, and everything while the game runs', async () => {
       const a = await start();
       const before = await values(a);
       await expect(
@@ -633,6 +700,14 @@ describe('changing a Nuclear Option binding', () => {
       await expect(
         review(a, { device: KEYBOARD, actionId: 50, key: { code: 'IntlBackslash' } })
       ).rejects.toThrow('RigReady does not know how the game numbers that key');
+      await expect(
+        review(a, {
+          device: KEYBOARD,
+          actionId: 11,
+          replaces: { code: 'F7' },
+          key: { code: 'F8' },
+        })
+      ).rejects.toThrow('is no longer on that key');
       await mutate(a, [
         { op: 'startProcess', name: 'NuclearOption.exe', path: 'C:/Games/NuclearOption.exe' },
       ]);

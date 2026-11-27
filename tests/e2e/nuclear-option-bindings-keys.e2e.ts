@@ -3,8 +3,8 @@ import { expect, test } from './harness';
 
 /**
  * A key of the keyboard on fixtures/scenarios/nuclear-option-bindings.yaml: bound by pressing
- * it, changed with modifier keys, and cleared, each after a review and with Undo on the
- * Safety page. An axis action as a whole is not offered on the keyboard; its sides are.
+ * it, changed with modifier keys, given a second key, and cleared, each after a review and
+ * with Undo on the Safety page. An axis action as a whole is not offered on the keyboard; its sides are.
  */
 test('nuclear option bindings: a key is bound by pressing it, changed with modifier keys and cleared', async ({
   rig,
@@ -65,8 +65,9 @@ test('nuclear option bindings: a key is bound by pressing it, changed with modif
   // 3. Changed from its row to a key with modifier keys that Eject already has: said first.
   await row('Toggle Engine').getByTestId('nuclear-option-bindings-change').click();
   await expect(confirm).toContainText('Bind Toggle Engine to a key?');
-  await key.locator('input').click();
-  await page.keyboard.type('E');
+  // The row opens on the key it has.
+  await expect(key).toContainText('F7');
+  await key.locator('input[type="text"]').fill('E');
   await page.getByRole('option', { name: 'E', exact: true }).click();
   await page.getByTestId('nuclear-option-bindings-edit-ctrl').locator('input').check();
   await page.getByTestId('nuclear-option-bindings-edit-shift').locator('input').check();
@@ -81,20 +82,59 @@ test('nuclear option bindings: a key is bound by pressing it, changed with modif
   await expect(saved).toHaveText(/Saved: Toggle Engine is now on Ctrl \+ E of the keyboard\./);
   await expect(row('Toggle Engine')).toContainText('Ctrl + E');
 
-  // 4. Cleared from its row.
+  // 4. A second key for an action that has one, as the game's screen has two columns; and
+  //    "Press the key" stops on Esc without taking it.
+  await page.getByTestId('nuclear-option-bindings-bind').click();
+  await action.click();
+  await page.keyboard.type('Toggle Gear');
+  await page.getByRole('option', { name: 'Toggle Gear', exact: true }).click();
+  await page.getByTestId('nuclear-option-bindings-edit-press-key').click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('nuclear-option-bindings-edit-press-key')).toHaveText(
+    'Press the key'
+  );
+  await expect(confirm).toBeVisible();
+  await expect(go).toBeDisabled();
+  await page.getByTestId('nuclear-option-bindings-edit-press-key').click();
+  await page.keyboard.press('Shift+F8');
+  await expect(key).toContainText('F8');
+  await expect(
+    page.getByTestId('nuclear-option-bindings-edit-shift').locator('input')
+  ).toBeChecked();
+  await expect(review).toContainText('G and Shift + F8');
+  await shot('second-key');
+  await go.click();
+  await expect(saved).toHaveText(
+    /Saved: Toggle Gear is now on G and Shift \+ F8 of the keyboard\./
+  );
+  await expect(row('Toggle Gear')).toHaveCount(2);
+  // Clear on the new key's row takes that key only.
+  await row('Toggle Gear')
+    .filter({ hasText: 'F8' })
+    .getByTestId('nuclear-option-bindings-clear')
+    .click();
+  await expect(review).toContainText('G and Shift + F8');
+  await go.click();
+  await expect(saved).toHaveText(/Saved: Toggle Gear is now on G of the keyboard\./);
+  await expect(row('Toggle Gear')).toHaveCount(1);
+  await expect(row('Toggle Gear')).toContainText('G');
+
+  // 5. Cleared from its row.
   await row('Toggle Engine').getByTestId('nuclear-option-bindings-clear').click();
   await expect(confirm).toContainText('Clear Toggle Engine?');
   await go.click();
   await expect(saved).toHaveText(/Saved: Toggle Engine is no longer bound on the keyboard\./);
   await expect(rows).toHaveCount(6);
 
-  // 5. Each is one entry on the Safety page.
+  // 6. Each is one entry on the Safety page.
   await page.getByTestId('nav-safety').click();
   await expect(page.getByTestId('safety-page')).toBeVisible();
   for (const reason of [
     'Nuclear Option bindings: Toggle Engine bound to F7 on the keyboard',
     'Nuclear Option bindings: Toggle Engine bound to Ctrl + E on the keyboard',
     'Nuclear Option bindings: Toggle Engine cleared on the keyboard',
+    'Nuclear Option bindings: Toggle Gear bound to G and Shift + F8 on the keyboard',
+    'Nuclear Option bindings: Toggle Gear bound to G on the keyboard',
   ]) {
     await expect(
       page.locator(`[data-testid="change-group"][data-reason="${reason}"]`),

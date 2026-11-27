@@ -21,7 +21,7 @@ import {
   mapCategoryName,
   mapCategoryOf,
 } from './actions';
-import { keyName, modifierName, mouseElementName } from './keys';
+import { gameKeyByNumbers, keyName, modifierName, MODIFIERS, mouseElementName } from './keys';
 import {
   parseControllerMap,
   parseHardwareIdentifier,
@@ -206,9 +206,17 @@ export async function storedKeyboardMap(
 ): Promise<Result<StoredMap>> {
   const saved = await readSaved(ctx);
   if (!saved.ok) return saved;
-  const found = saved.value.maps.find(
+  const maps = saved.value.maps.filter(
     (m) => m.map.kind === 'KeyboardMap' && m.map.categoryId === mapCategory
   );
+  // Two maps for one tab: which of them the game reads is not known, so neither is changed.
+  if (maps.length > 1) {
+    return err(
+      'nuclear-option.edit.twoMaps',
+      'Nuclear Option has saved two sets of key bindings for that tab of its controls screen, and RigReady cannot tell which one it uses. Change the key in the game.'
+    );
+  }
+  const found = maps[0];
   if (!found) {
     return err(
       'nuclear-option.noMap',
@@ -332,6 +340,7 @@ function joystickBinding(
 function keyBinding(element: ElementMap, mapCategory: number): OverviewBinding {
   const action = actionOf(element.actionId);
   const key = keyName(element.keyboardKeyCode);
+  const known = gameKeyByNumbers(element.elementIdentifierId, element.keyboardKeyCode);
   return {
     actionId: bindingActionId(action, false, element.axisContribution),
     action: bindingName(action, false, element.axisContribution),
@@ -342,6 +351,17 @@ function keyBinding(element: ElementMap, mapCategory: number): OverviewBinding {
     kind: 'key',
     modifiers: element.modifierKeys.flatMap((m) => modifierName(m) ?? []),
     inverted: false,
+    // Only for a key whose two numbers are the table's, held with modifier keys it knows.
+    ...(known && element.modifierKeys.every((m) => [0, 1, 2, 3].includes(m))
+      ? {
+          key: {
+            code: known.dom,
+            ctrl: element.modifierKeys.includes(MODIFIERS.ctrl),
+            alt: element.modifierKeys.includes(MODIFIERS.alt),
+            shift: element.modifierKeys.includes(MODIFIERS.shift),
+          },
+        }
+      : {}),
   };
 }
 

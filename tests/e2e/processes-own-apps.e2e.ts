@@ -74,7 +74,9 @@ test('processes: an app RigReady does not know is offered in every new setup onc
   await own.getByTestId('own-app-title').locator('input').fill('Sim Tool');
   await own.getByTestId('own-app-title').locator('input').press('Enter');
   await expect(own.getByTestId('own-app-title').locator('input')).toHaveValue('Sim Tool');
-  await own.getByTestId('own-app-close').locator('input').check();
+  // The switch shows what main read back from the file, so it turns once the save has
+  // answered: a click and then the wait, not check(), which wants it turned at once.
+  await own.getByTestId('own-app-close').locator('input').click();
   await expect(own.getByTestId('own-app-close').locator('input')).toBeChecked();
   await section.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   expect([...(await axeViolations(page)), ...(await colourOnlyStatus(page))]).toEqual([]);

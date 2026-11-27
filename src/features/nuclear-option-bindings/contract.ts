@@ -29,6 +29,14 @@ const BindingSchema = z.object({
   modifiers: z.array(z.string()),
   /** The axis is reversed in the game. */
   inverted: z.boolean(),
+  /**
+   * For a key RigReady can bind: the key as a change names it (the browser's name for the
+   * physical key, and the modifier keys held with it). A row's Change and Clear send it back
+   * as `replaces`, so that only this key of the action is touched.
+   */
+  key: z
+    .object({ code: z.string(), ctrl: z.boolean(), alt: z.boolean(), shift: z.boolean() })
+    .optional(),
 });
 export type OverviewBinding = z.infer<typeof BindingSchema>;
 
@@ -85,6 +93,14 @@ const OverviewSchema = z.object({
 });
 export type Overview = z.infer<typeof OverviewSchema>;
 
+/** A key by the browser's name for the physical key, and the modifier keys held with it. */
+const KeySchema = z.object({
+  code: z.string().min(1).max(40),
+  ctrl: z.boolean().default(false),
+  alt: z.boolean().default(false),
+  shift: z.boolean().default(false),
+});
+
 /**
  * One binding to change. On a controller: a button action bound to a button, one side of an
  * axis action bound to a button, or an axis action bound to an axis. On the keyboard: a
@@ -113,15 +129,13 @@ export const ChangeRequestSchema = z
      * key (KeyboardEvent.code: "KeyG", "F7", "Numpad5"), and the modifier keys held with it;
      * null clears it.
      */
-    key: z
-      .object({
-        code: z.string().min(1).max(40),
-        ctrl: z.boolean().default(false),
-        alt: z.boolean().default(false),
-        shift: z.boolean().default(false),
-      })
-      .nullable()
-      .optional(),
+    key: KeySchema.nullable().optional(),
+    /**
+     * With `key`: the one of the action's keys this is about (the game's controls screen
+     * shows two per action), as the overview gave it on the row. Without it, a clear takes
+     * every key of the action and a bind adds a key beside what is there.
+     */
+    replaces: KeySchema.optional(),
     /**
      * The saved map as the preview read it (`seen` of changePreview). With it, change writes
      * nothing when the map is no longer that: what the user approved may not hold any more.
