@@ -4,6 +4,14 @@ import { ok } from '../../core/result';
 import { nuclearOptionBindingsContract } from './contract';
 import { nuclearOptionBackupSource } from './core/backup';
 import { applyChange, applyClearDevice, reviewChange, reviewClearDevice } from './core/change';
+import {
+  applyRestore,
+  createSnapshot,
+  deleteSnapshot,
+  listSnapshots,
+  renameSnapshot,
+  reviewRestore,
+} from './core/snapshots';
 import { createBindingReader, GAME, overview, type BindingsContext } from './core/view';
 
 /**
@@ -43,6 +51,17 @@ export default defineFeatureMain({
           // it, and the cheat sheets and the overlay must not go on showing its bindings.
           if (!cleared.ok || cleared.value.changed) ctx.bindings.notifyChanged({ game: GAME });
           return cleared;
+        },
+        snapshots: () => listSnapshots(bctx),
+        snapshotCreate: ({ name }) => createSnapshot(bctx, name),
+        snapshotRename: ({ id, name }) => renameSnapshot(bctx, id, name),
+        snapshotDelete: ({ id }) => deleteSnapshot(bctx, id),
+        snapshotRestorePreview: ({ id }) => reviewRestore(bctx, id),
+        async snapshotRestore({ id, seen }) {
+          const restored = await applyRestore(bctx, id, seen);
+          // Also after a failure: part of the snapshot may have been put back before it.
+          if (!restored.ok || restored.value.changed) ctx.bindings.notifyChanged({ game: GAME });
+          return restored;
         },
         async listenStart() {
           const mine = ++listenTurn;

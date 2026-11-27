@@ -595,3 +595,35 @@ export function createBindingReader(ctx: BindingsContext): BindingReader {
     },
   };
 }
+
+/** A saved map the game uses now and RigReady can read: what it is of, by its value's name. */
+export interface MapInUse {
+  kind: ControllerMap['kind'];
+  /** The controller's name as the game saved it; empty for the keyboard and the mouse. */
+  hardwareName: string;
+  categoryId: number;
+  bindings: number;
+}
+
+/**
+ * The saved maps the game uses now, by the name of their registry value. A map an earlier
+ * build left behind under the older identifier, beside the one the game saves now, is not
+ * among them, and neither is a value that cannot be read.
+ */
+export async function mapsInUse(ctx: BindingsContext): Promise<Result<Map<string, MapInUse>>> {
+  const saved = await readSaved(ctx);
+  if (!saved.ok) return saved;
+  return ok(
+    new Map(
+      saved.value.maps.map((m) => [
+        m.valueName,
+        {
+          kind: m.map.kind,
+          hardwareName: m.map.hardwareName,
+          categoryId: m.map.categoryId,
+          bindings: m.map.buttonMaps.length + m.map.axisMaps.length,
+        },
+      ])
+    )
+  );
+}

@@ -91,6 +91,24 @@ It is one entry on the [Safety page](../protect/safety-page.md), named for examp
 
 The game leaves a cleared controller alone: at its next start its controls screen shows the controller with nothing bound, and it does not put its defaults back. The controller stays in the game's list, so you can bind it again there or here. **Restore Defaults** in the game binds every controller again.
 
+## Snapshots
+
+A snapshot is a named copy of every binding the game has saved: all controllers, the keyboard and the mouse. Take one before you change a lot, or when the bindings are as you like them; put it back when you want those bindings again. **Snapshots** at the top of the page opens the panel.
+
+![A snapshot taken](../../../artifacts/screens/nuclear-option-bindings-snapshots/01-taken.png)
+
+- **Take a snapshot** needs a name. It only reads what the game saved and keeps the copy in RigReady's own folder.
+- **Restore…** shows first what would change: each device whose bindings differ now, with how many bindings it has now and in the snapshot. Nothing is written until **Restore** in that dialog. Close the game first, as for every change here.
+- **Rename** and **Delete** work on RigReady's copy only.
+
+![The review before a snapshot is put back](../../../artifacts/screens/nuclear-option-bindings-snapshots/02-review.png)
+
+A restore is one entry on the [Safety page](../protect/safety-page.md), and **Undo** there takes it out again. Only what differs is written; a device whose bindings are as in the snapshot is not touched.
+
+Two things a restore does not do, and the review and the result say so when they apply. It does not bring back the bindings of a controller the game no longer has saved bindings for under the name the snapshot holds (RigReady replaces what the game saved; it cannot make it). And it leaves alone a controller the game has bindings for now that the snapshot does not hold. A snapshot keeps the bindings the game uses; a map an earlier version of the game left behind is not among them.
+
+A snapshot whose file was changed or cut short is listed as damaged. RigReady writes nothing from it; it can be deleted.
+
 ## Cheat sheets, the trainer and the overlay
 
 The same bindings are what the [cheat sheets](../controls/cheat-sheets.md) draw for Nuclear Option, what the [trainer](../controls/trainer.md) asks, and what the [overlay](../play/overlay.md) names when you press a control. **Cheat sheet** at the top of the page opens the sheet.
@@ -104,7 +122,7 @@ The same bindings are what the [cheat sheets](../controls/cheat-sheets.md) draw 
 ## What RigReady does not do
 
 - **Bind a mouse button or a hat switch.** Those are bound in the game.
-- **Put the bindings back from a backup.** Every full backup keeps the game's registry values, bindings included, as a record you can read on the backup's page ([Backups](../protect/backups.md)). RigReady cannot write them back to the registry, so a restore does not include them.
+- **Put the bindings back from a full backup.** Every full backup keeps the game's registry values, bindings included, as a record you can read on the backup's page ([Backups](../protect/backups.md)); a restore of a backup does not include them. To keep bindings and put them back, use a snapshot on this page.
 - **Show a binding on a hat switch by its direction.** How the game saves one is not known to RigReady yet; such a binding may be shown as a button.
 - **Know an action a game update added.** It is listed as "Action" and its number until RigReady learns its name.
 
