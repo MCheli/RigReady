@@ -268,15 +268,30 @@ function editButton(
       `${name} is bound to an axis here. Change that in the game.`
     );
   }
+  // Half an axis can drive a side too. The side would then be shown as "not bound" here
+  // while it is bound, so it is left to the game.
+  if (side !== undefined && map.axisMaps.some((e) => e.actionId === actionId && !isPlainAxis(e))) {
+    return err(
+      'nuclear-option.edit.unknown',
+      `${action.name} has half an axis bound here, which RigReady does not change. Change ${name} in the game.`
+    );
+  }
   const before = had.map((e): BoundTo => ({
     kind: 'button',
     button: e.elementIdentifierId - FIRST_BUTTON + 1,
   }));
   const target = button === null ? null : button - 1 + FIRST_BUTTON;
+  // The same binding already: every field as it would be written, but for the two in which
+  // the game's own default for a button differs from one the player makes (category 0 and
+  // axisRange 0, against -1 and 1): a default on the button asked for is that button.
+  const wanted = target === null ? undefined : buttonBinding(actionId, target, contribution);
   const same =
-    target === null
+    wanted === undefined
       ? had.length === 0
-      : had.length === 1 && had[0]!.elementIdentifierId === target && had[0]!.enabled;
+      : had.length === 1 &&
+        fields([
+          { ...had[0]!, actionCategoryId: wanted.actionCategoryId, axisRange: wanted.axisRange },
+        ]) === fields([wanted]);
   const alsoOn =
     target === null
       ? []
@@ -291,11 +306,7 @@ function editButton(
           ),
         ];
   if (same) return ok({ map, text: serializeControllerMap(map), before, same, alsoOn });
-  const buttonMaps = replaced(
-    map.buttonMaps,
-    mine,
-    target === null ? undefined : buttonBinding(actionId, target, contribution)
-  );
+  const buttonMaps = replaced(map.buttonMaps, mine, wanted);
   return checked(
     {
       ...map,
@@ -357,13 +368,12 @@ function editAxis(
     index: e.elementIdentifierId,
     invert: e.invert,
   }));
+  const wanted = axis === null ? undefined : axisBinding(actionId, axis.index, axis.invert);
   const same =
-    axis === null
+    wanted === undefined
       ? had.length === 0
       : had.length === 1 &&
-        had[0]!.elementIdentifierId === axis.index &&
-        had[0]!.invert === axis.invert &&
-        had[0]!.enabled;
+        fields([{ ...had[0]!, actionCategoryId: wanted.actionCategoryId }]) === fields([wanted]);
   const alsoOn =
     axis === null
       ? []
@@ -381,11 +391,7 @@ function editAxis(
           ),
         ];
   if (same) return ok({ map, text: serializeControllerMap(map), before, same, alsoOn });
-  const axisMaps = replaced(
-    map.axisMaps,
-    mine,
-    axis === null ? undefined : axisBinding(actionId, axis.index, axis.invert)
-  );
+  const axisMaps = replaced(map.axisMaps, mine, wanted);
   return checked(
     {
       ...map,

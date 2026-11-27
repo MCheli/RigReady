@@ -230,17 +230,20 @@ export async function storedControllerMaps(
 
 /**
  * The axes of a controller by the names RigReady shows them under, in the order the game
- * numbers them (0 first): the plugged-in controller's own, or the usual order when it is not.
+ * numbers them (0 first): the plugged-in controller's own, or the usual order when it is not
+ * plugged in or reports none.
  */
 export async function axisNamesOf(
   ctx: BindingsContext,
   deviceId: string
-): Promise<Result<string[]>> {
+): Promise<Result<{ names: string[]; asked: boolean }>> {
   const view = await overview(ctx);
   if (!view.ok) return view;
   const device = view.value.devices.find((d) => d.id === deviceId);
-  const live = device?.controls?.axes ?? [];
-  return ok(live.length > 0 ? live : AXIS_ORDER);
+  const live = device?.connected ? (device.controls?.axes ?? []) : [];
+  // `asked`: the controller is plugged in and said which axes it has. Otherwise the names
+  // are the usual order, good enough to name what is bound, not to choose where to bind.
+  return ok(live.length > 0 ? { names: live, asked: true } : { names: AXIS_ORDER, asked: false });
 }
 
 /** The control of a controller an element id means; undefined for one that is not understood. */

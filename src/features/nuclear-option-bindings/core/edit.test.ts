@@ -275,6 +275,70 @@ describe('changing one binding in a saved map', () => {
       expect(cleared.text).toBe(zoomIn.text);
     });
 
+    it('changing or clearing the whole axis leaves the buttons on its sides as they are, character for character', async () => {
+      const text = await fixture('stick.xml');
+      const withSides = ok(
+        editMapText(ok(editMapText(text, { actionId: 0, side: '+', button: 30 })).text, {
+          actionId: 0,
+          side: '-',
+          button: 31,
+        })
+      ).text;
+      const buttons = (document: string): string => document.split('<axisMaps')[0]!;
+      const moved = ok(editMapText(withSides, { actionId: 0, axis: { index: 0, invert: false } }));
+      expect(buttons(moved.text)).toBe(buttons(withSides));
+      const cleared = ok(editMapText(withSides, { actionId: 0, axis: null }));
+      expect(buttons(cleared.text)).toBe(buttons(withSides));
+      expect(ok(parseControllerMap(cleared.text)).axisMaps.map((e) => e.actionId)).toEqual([1]);
+    });
+
+    it('leaves a side alone when half an axis drives the action, or when the side has a binding it does not understand', async () => {
+      const text = await fixture('stick.xml');
+      const half = text.replace(
+        '<actionId>0</actionId><elementType>0</elementType><elementIdentifierId>1</elementIdentifierId><axisRange>0</axisRange>',
+        '<actionId>0</actionId><elementType>0</elementType><elementIdentifierId>1</elementIdentifierId><axisRange>1</axisRange>'
+      );
+      expect(half).not.toBe(text);
+      const onHalf = editMapText(half, { actionId: 0, side: '+', button: 30 });
+      expect(onHalf.ok).toBe(false);
+      if (!onHalf.ok) expect(onHalf.error.message).toContain('has half an axis bound here');
+      // A side whose button is held with a modifier key.
+      const sided = ok(editMapText(text, { actionId: 25, side: '+', button: 20 })).text;
+      const odd = sided.replace(
+        '<actionId>25</actionId><elementType>1</elementType><elementIdentifierId>51</elementIdentifierId><axisRange>1</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>0<',
+        '<actionId>25</actionId><elementType>1</elementType><elementIdentifierId>51</elementIdentifierId><axisRange>1</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>1<'
+      );
+      expect(odd).not.toBe(sided);
+      const onOdd = editMapText(odd, { actionId: 25, side: '+', button: 21 });
+      expect(onOdd.ok).toBe(false);
+      if (!onOdd.ok) expect(onOdd.error.message).toContain('does not understand');
+      // The other side is not held up by it.
+      expect(editMapText(odd, { actionId: 25, side: '-', button: 21 }).ok).toBe(true);
+    });
+
+    it('"already so" means every field as it would be written: a binding that differs in one is written again', async () => {
+      const text = await fixture('stick.xml');
+      // Fire (5) is the game's default on button 1 (category 0): asked for again, nothing to save.
+      expect(ok(editMapText(text, { actionId: 5, button: 1 }))).toMatchObject({ same: true, text });
+      // The same button, switched off in the saved map: asking for it is a change.
+      const off = text.replace(
+        '<actionId>5</actionId><elementType>1</elementType><elementIdentifierId>32</elementIdentifierId><axisRange>1</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>0</modifierKey1><modifierKey2>0</modifierKey2><modifierKey3>0</modifierKey3><enabled>true</enabled>',
+        '<actionId>5</actionId><elementType>1</elementType><elementIdentifierId>32</elementIdentifierId><axisRange>1</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>0</modifierKey1><modifierKey2>0</modifierKey2><modifierKey3>0</modifierKey3><enabled>false</enabled>'
+      );
+      expect(off).not.toBe(text);
+      expect(ok(editMapText(off, { actionId: 5, button: 1 })).same).toBe(false);
+      // The game's real defaults have axisRange 0 on a button: still the same button.
+      const real = text.replace(
+        '<actionId>5</actionId><elementType>1</elementType><elementIdentifierId>32</elementIdentifierId><axisRange>1</axisRange>',
+        '<actionId>5</actionId><elementType>1</elementType><elementIdentifierId>32</elementIdentifierId><axisRange>0</axisRange>'
+      );
+      expect(real).not.toBe(text);
+      expect(ok(editMapText(real, { actionId: 5, button: 1 }))).toMatchObject({
+        same: true,
+        text: real,
+      });
+    });
+
     it('a side and the whole axis are bound side by side', async () => {
       const text = await fixture('stick.xml');
       // Pitch Axis is on an axis here; Pitch Up also goes on a button.
