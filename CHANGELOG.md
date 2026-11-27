@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.1.0 (2026-11-27)
+
+Nuclear Option joins DCS World and iRacing as a game whose bindings RigReady reads and changes.
+
+### New
+
+**Nuclear Option**
+- The game is found in Steam, launched through Steam, and known to be running. It can be the game of a setup.
+- Its bindings are read from what the game saved (the game keeps them in the Windows registry, not in a file): a bindings page with a tab per controller, the keyboard and the mouse, cheat sheets, the trainer and the overlay. **Bindings** in the menu has Nuclear Option in its game picker.
+- A controller's button or axis, a button on one side of an axis, and a key (with Ctrl, Alt or Shift) can be bound to an action, moved or cleared. RigReady shows the change first, writes nothing until you press Save, keeps the value as it was, and lists the change on the Safety page with Undo. Nothing is written while the game runs. A button bound this way was used in a flight.
+- **Clear all** takes every binding off one controller, for the panels and screens the game bound its defaults to when it first saw them.
+- **All actions**: every action of the game in one list with each place it is bound, and a mark where more than one controller drives the same action.
+- **Tune axes**: an axis's dead zone, upper dead zone and sensitivity, within the limits of the game's own Calibrate window. A value set this way was shown by the game as set.
+- Snapshots keep all the bindings under a name and put them back after a review that says, binding by binding, what comes back and what goes.
+- A binding guide (**Configure > Binding guide**): what to bind first, in plain language, and a walkthrough that binds buttons, axes and keys with you. With an AI provider set up, it explains an action, answers questions and suggests a setup for your controllers, which is checked, shown to you and written as one change you can undo.
+- A full backup keeps the game's saved bindings to read back.
+
+**The app**
+- A change to a registry value now goes the same way as a change to a file: a copy of the value as it was first, an entry on the Safety page, and Undo.
+
+### Known limitations
+
+- Nuclear Option: a hat direction, a mouse button and half of an axis used as a whole one are bound in the game itself. So are the zero point, the range and the reversing of a whole axis in the game's Calibrate window.
+- Nuclear Option: a controller appears once the game has saved bindings for it, which it does when it first sees the controller. With two controllers of the same model plugged in, their axes cannot be tuned from RigReady.
+- Nuclear Option: not tried in the game are the upper dead zone, how a tuned axis feels in a flight, a suggested setup written and then flown, and a suggestion from a real AI provider (it was tested with recorded answers). Each has its entry in `docs/requirements/ledger.yaml` under BIND-NO and AI-NO.
+
 ## 2.0.1 (2026-11-22)
 
 [security] A security update, and a fix for monitors turned sideways. Update now.
