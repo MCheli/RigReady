@@ -51,7 +51,7 @@ Press the button on the controller, or type its number: the one on the controlle
 
 RigReady copies the saved bindings of that controller first. The change is one entry on the [Safety page](../protect/safety-page.md), named for example "Nuclear Option bindings: Toggle Navigation Lights bound to Button 12 on Joystick - HOTAS Warthog", and **Undo** there puts the bindings back as they were. Undo is refused when the game has changed them again since, so that it cannot throw away something you did in the game.
 
-![The changes on the Safety page](../../../artifacts/screens/nuclear-option-bindings-edit/03-safety-page.png)
+![The changes on the Safety page](../../../artifacts/screens/nuclear-option-bindings-edit/04-safety-page.png)
 
 The game picks the change up the next time it starts; its own controls screen then shows it. The game counts buttons from 0, so Button 12 here is "11" there.
 
