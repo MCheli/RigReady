@@ -37,7 +37,9 @@ test('nuclear option bindings: every action with where it is bound, those on sev
 
   // A search looks in the devices and the inputs too.
   await search.fill('throttle button');
-  await expect(actions).toHaveCount(4);
+  // The gear, eject, the two zooms, and an action a game update added, by its number.
+  await expect(actions).toHaveCount(5);
+  await expect(action('Action 99')).toContainText('Throttle - HOTAS Warthog · Button 9');
   await search.fill('nothing like it');
   await expect(page.getByTestId('nuclear-option-bindings-actions-none')).toBeVisible();
   await search.fill('');
@@ -70,6 +72,7 @@ test('nuclear option bindings: every action with where it is bound, those on sev
   await expect(actions).toHaveCount(1);
   await shot('on-several');
 
+  // The list's search is its own: the device's box is as it was.
   // A place leads to its device with the action in the search box: Change and Clear are there.
   await action('Fire')
     .getByTestId('nuclear-option-bindings-place')

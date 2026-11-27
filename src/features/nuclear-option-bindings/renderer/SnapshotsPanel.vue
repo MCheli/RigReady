@@ -297,11 +297,14 @@ const listed = (names: string[]): string =>
               >
                 <td>
                   {{ d.name }}
-                  <details
-                    v-if="d.back.length + d.goes.length > 0"
-                    class="snap-detail"
-                    data-testid="nuclear-option-snapshot-detail"
+                  <div
+                    v-if="d.back.length + d.goes.length === 0"
+                    class="rr-muted snap-detail"
+                    data-testid="nuclear-option-snapshot-same-bindings"
                   >
+                    The same bindings, saved differently (their order, or one that is switched off)
+                  </div>
+                  <details v-else class="snap-detail" data-testid="nuclear-option-snapshot-detail">
                     <summary>
                       {{ d.back.length }} {{ d.back.length === 1 ? 'comes' : 'come' }} back,
                       {{ d.goes.length }} {{ d.goes.length === 1 ? 'goes' : 'go' }}

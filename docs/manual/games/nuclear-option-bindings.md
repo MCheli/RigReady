@@ -43,7 +43,7 @@ A controller that is not plugged in is still listed, marked **Not plugged in**. 
 
 ![Every action with where it is bound](../../../artifacts/screens/nuclear-option-bindings-actions/01-all-actions.png)
 
-Nuclear Option binds every controller it finds when it first sees it, so an action is often on several controllers at once, and each of them then drives it: a panel's unused axis can pull on the pitch. An action bound on more than one controller is marked **On 2 controllers** (or more), the line above the list says how many such actions there are, and **Only those on more than one controller** leaves just those.
+Nuclear Option binds every controller it finds when it first sees it, so an action is often on several controllers at once, and each of them then drives it: a panel's unused axis can pull on the pitch. An action bound on more than one controller is marked **On 2 controllers** (or more), the line above the list says how many such actions there are, and **Only those on more than one controller** leaves just those. An axis action is listed with each of its two sides (Brake Axis, and Apply Brakes for a button), and the three are counted together: the brake on the pedals' axis and on a throttle button is the brake on two controllers. An action a game update added, which RigReady has no name for yet, is listed by its number.
 
 ![An action on two controllers](../../../artifacts/screens/nuclear-option-bindings-actions/02-on-several.png)
 
@@ -130,7 +130,7 @@ A snapshot is a named copy of every binding the game has saved: all controllers,
 ![A snapshot taken](../../../artifacts/screens/nuclear-option-bindings-snapshots/01-taken.png)
 
 - **Take a snapshot** needs a name. It only reads what the game saved and keeps the copy in RigReady's own folder.
-- **Restore…** shows first what would change: each device whose bindings differ now, with how many bindings it has now and in the snapshot. Under a device's name, a line such as "8 come back, 0 go" opens the list, binding by binding: what the restore brings back and what it takes away again. Nothing is written until **Restore** in that dialog. Close the game first, as for every change here.
+- **Restore…** shows first what would change: each device whose bindings differ now, with how many bindings it has now and in the snapshot. Under a device's name, a line such as "8 come back, 0 go" opens the list, binding by binding: what the restore brings back and what it takes away again. A device that differs only in how the game saved the same bindings says so. Two controllers of the same model are listed under their one name. Nothing is written until **Restore** in that dialog. Close the game first, as for every change here.
 - **Rename** and **Delete** work on RigReady's copy only.
 
 ![The review before a snapshot is put back](../../../artifacts/screens/nuclear-option-bindings-snapshots/02-review.png)

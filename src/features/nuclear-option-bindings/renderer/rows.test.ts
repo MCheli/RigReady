@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { OverviewBinding } from '../contract';
-import { actionRows, canChange, shownBindings } from './rows';
+import { actionRows, canChange, gameActionCount, shownBindings } from './rows';
 
 const binding = (
   action: string,
@@ -208,5 +208,50 @@ describe('every action with where it is bound', () => {
     expect(actionRows(overview, null, true).map((r) => r.name)).toEqual(['Fire', 'Pitch Axis']);
     expect(actionRows(overview, 'axis', true).map((r) => r.name)).toEqual(['Pitch Axis']);
     expect(actionRows(overview, 'nothing like it')).toEqual([]);
+  });
+
+  it('an axis and its sides count together: the pedals’ brake axis and a button for the brake on the throttle are two controllers', () => {
+    const brakes = {
+      actions: [action('6', 'Brake Axis'), action('6:+', 'Apply Brakes'), action('5', 'Fire')],
+      devices: [
+        device('pedals', 'Pedals', 'controller', [binding('6', 'Z axis', { kind: 'axis' })]),
+        device('throttle', 'Throttle', 'controller', [
+          binding('6:+', 'Button 3'),
+          binding('5', 'Button 1'),
+        ]),
+      ],
+    };
+    const rows = actionRows(brakes, '');
+    expect(rows.map((r) => [r.name, r.controllers, r.withFamily])).toEqual([
+      ['Brake Axis', 2, true],
+      ['Apply Brakes', 2, true],
+      ['Fire', 1, false],
+    ]);
+    // Both rows stay under "several", and they are one action of the game.
+    const several = actionRows(brakes, '', true);
+    expect(several.map((r) => r.name)).toEqual(['Brake Axis', 'Apply Brakes']);
+    expect(gameActionCount(several)).toBe(1);
+    expect(gameActionCount(rows)).toBe(2);
+  });
+
+  it('what is bound to an action RigReady has no name for is listed under the name its bindings carry', () => {
+    const later = {
+      actions: [action('5', 'Fire')],
+      devices: [
+        device('c1', 'Stick', 'controller', [
+          binding('99', 'Button 9', { action: 'Action 99', category: 'Not known to RigReady' }),
+        ]),
+        device('c2', 'Panel', 'controller', [
+          binding('99', 'Button 2', { action: 'Action 99', category: 'Not known to RigReady' }),
+        ]),
+      ],
+    };
+    expect(
+      actionRows(later, '').map((r) => [r.name, r.category, r.controllers, r.places.length])
+    ).toEqual([
+      ['Fire', 'Flight Controls', 0, 0],
+      ['Action 99', 'Not known to RigReady', 2, 2],
+    ]);
+    expect(actionRows(later, '', true).map((r) => r.name)).toEqual(['Action 99']);
   });
 });

@@ -20,7 +20,7 @@ import {
 } from '../contract';
 import { controlLabel } from '../../../core/bindings';
 import { GAME_KEYS, keyName } from '../core/keys';
-import { actionRows, canChange, shownBindings } from './rows';
+import { actionRows, canChange, gameActionCount, shownBindings } from './rows';
 import AxisTuningPanel from './AxisTuningPanel.vue';
 import SnapshotsPanel from './SnapshotsPanel.vue';
 
@@ -52,11 +52,17 @@ const rows = computed(() =>
 const byAction = ref(false);
 /** In that list: only the actions bound on more than one controller. */
 const onlySeveral = ref(false);
+/** The list's own search: a device's stays what it was. */
+const actionSearch = ref('');
 const allActions = computed(() =>
-  overview.value ? actionRows(overview.value, search.value, onlySeveral.value) : []
+  overview.value ? actionRows(overview.value, actionSearch.value, onlySeveral.value) : []
 );
-const severalCount = computed(
-  () => (overview.value ? actionRows(overview.value, '', true) : []).length
+/** The game's actions (an axis with its sides once) that more than one controller drives. */
+const severalCount = computed(() =>
+  overview.value ? gameActionCount(actionRows(overview.value, '', true)) : 0
+);
+const actionCount = computed(() =>
+  overview.value ? gameActionCount(actionRows(overview.value, '')) : 0
 );
 /** From a place in that list to the device it is on, with the action in the search box. */
 function openPlace(deviceId: string, action: string): void {
@@ -98,7 +104,10 @@ watch(
   () => route.query.guid,
   () => {
     const wanted = overview.value ? fromLink(overview.value) : undefined;
-    if (wanted) selected.value = wanted;
+    if (wanted) {
+      selected.value = wanted;
+      byAction.value = false;
+    }
   }
 );
 
@@ -611,7 +620,7 @@ const editTitle = computed(() => {
             @click="byAction = true"
           >
             All actions
-            <span class="nb-count rr-muted">{{ overview.actions.length }}</span>
+            <span class="nb-count rr-muted">{{ actionCount }}</span>
           </v-btn>
           <v-btn
             v-for="d in overview.devices"
@@ -654,7 +663,7 @@ const editTitle = computed(() => {
               data-testid="nuclear-option-bindings-only-several"
             />
             <v-text-field
-              v-model="search"
+              v-model="actionSearch"
               density="compact"
               variant="outlined"
               hide-details
@@ -668,7 +677,8 @@ const editTitle = computed(() => {
           <p class="rr-muted nb-hint">
             Every action of the game with each place it is bound. The game binds every controller it
             finds when it first sees it, so an action is often on several at once: every one of them
-            then drives it. Choose a place to go to that device, where it is changed or cleared.
+            then drives it. An axis action is listed with each of its two sides, and the three are
+            counted together. Choose a place to go to that device, where it is changed or cleared.
           </p>
           <div class="rr-panel">
             <table class="nb-table" data-testid="nuclear-option-bindings-actions-table">
@@ -693,7 +703,12 @@ const editTitle = computed(() => {
                       class="rr-warn nb-several"
                       data-testid="nuclear-option-bindings-several"
                     >
-                      On {{ row.controllers }} controllers
+                      <v-icon icon="mdi-alert-outline" size="x-small" />
+                      {{
+                        row.withFamily
+                          ? `With its axis and sides: on ${row.controllers} controllers`
+                          : `On ${row.controllers} controllers`
+                      }}
                     </div>
                   </td>
                   <td class="rr-muted">{{ row.category }}</td>
