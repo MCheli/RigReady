@@ -4,7 +4,7 @@ description: One guide for every aircraft in Nuclear Option, with what to bind f
 order: 67
 ---
 
-**Configure > Binding guide** explains what matters when you fly Nuclear Option, in plain language and in priority order, and walks you through binding it. The page is in the menu when DCS World, iRacing or Nuclear Option is found on this PC. Choose **Nuclear Option** in the **Game** picker at the top. Nothing on it needs an AI key.
+**Configure > Binding guide** explains what matters when you fly Nuclear Option, in plain language and in priority order, and walks you through binding it. The page is in the menu when DCS World, iRacing or Nuclear Option is found on this PC. Choose **Nuclear Option** in the **Game** picker at the top. Nothing on the Walkthrough and Priorities tabs needs an AI key.
 
 The guides for DCS aircraft and for iRacing are described in [Binding guide and AI help](../dcs/binding-guide-and-ai.md) and [Binding guide for iRacing](iracing-binding-guide.md).
 
@@ -51,9 +51,13 @@ What the walkthrough says instead of offering it: an axis moved for a button act
 
 **Done, next** and **Skip** keep your place, and the progress is saved as you go.
 
+## AI help
+
+With an AI provider set up in **Settings** ([Choose who answers](../ai/providers.md)), the page has an **AI help** tab for questions about your Nuclear Option setup, and each action in the walkthrough has **Explain**. Before anything is sent a dialog shows the complete request. It holds the game's list of actions with what each is bound to now, the product names and layout of your connected controllers, the guide's text and your question; no file path, device id or serial number. The answer is the model's: the guide it reads was not reviewed by anyone who plays the game, and the request says so.
+
 ## What RigReady does not do here
 
 - **Bind a hat switch or a mouse button.** Those are bound in the game, under Settings, then Controls.
-- **AI help.** Suggest a setup, Explain and the questions are for DCS aircraft and iRacing cars. The built-in assistant in the app bar is not affected.
+- **Suggest a setup with AI.** That is for DCS aircraft. Explain and the questions work here: see below.
 - **A guide of your own.** RigReady uses the guide it includes; importing or writing one is for a DCS aircraft or an iRacing car without a guide.
 - **Plain names on the cheat sheets.** The game's own action names are already plain, so the cheat sheets keep them.

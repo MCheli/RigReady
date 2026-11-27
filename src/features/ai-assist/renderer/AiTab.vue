@@ -13,19 +13,26 @@ const question = ref('');
 const guide = computed(() => store.guide!);
 const round = computed(() => store.round);
 const iracing = computed(() => guide.value.game === 'iracing');
+const nuclearOption = computed(() => guide.value.game === 'nuclear-option');
 
 const EXAMPLES = computed(() =>
-  iracing.value
+  nuclearOption.value
     ? [
-        'What should I bind first for my first race?',
-        'Which of these belong on my button box?',
-        'Why does one button do two things?',
+        'What should I bind first for my first sortie?',
+        'Which of my panels could take the switches I use once a flight?',
+        'What do I need on the stick for a hover?',
       ]
-    : [
-        'What am I missing for carrier landings?',
-        'Why is the pitch axis bound on more than one device?',
-        'Which of my panels should take the start-up switches?',
-      ]
+    : iracing.value
+      ? [
+          'What should I bind first for my first race?',
+          'Which of these belong on my button box?',
+          'Why does one button do two things?',
+        ]
+      : [
+          'What am I missing for carrier landings?',
+          'Why is the pitch axis bound on more than one device?',
+          'Which of my panels should take the start-up switches?',
+        ]
 );
 /**
  * A draft is offered where no checked guide is used: a DCS aircraft or an iRacing car without
@@ -74,7 +81,7 @@ const selectedCount = computed(() => store.selected.size);
       {{ store.aiNote }}
     </v-alert>
 
-    <div v-if="!iracing" class="rr-panel ai-block">
+    <div v-if="!iracing && !nuclearOption" class="rr-panel ai-block">
       <div class="ai-block-head">
         <div>
           <div class="rr-row-title">

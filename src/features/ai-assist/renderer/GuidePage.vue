@@ -32,7 +32,7 @@ const gameItems = computed(() =>
     .map((g) => ({ title: g.name, value: g.id }))
 );
 const iracing = computed(() => store.game === 'iracing');
-/** Nuclear Option: one guide for every aircraft, and no AI help. */
+/** Nuclear Option: one guide for every aircraft. */
 const nuclearOption = computed(() => store.game === 'nuclear-option');
 
 /** The address keeps the game; the watch below follows it, so a link and the picker agree. */
@@ -44,7 +44,7 @@ function chooseGame(id: GuideGame): void {
 const tabs = computed(() => [
   { id: 'walkthrough', title: 'Walkthrough' },
   { id: 'priorities', title: 'Priorities' },
-  ...(store.aiReady && !nuclearOption.value ? [{ id: 'ai', title: 'AI help' }] : []),
+  ...(store.aiReady ? [{ id: 'ai', title: 'AI help' }] : []),
 ]);
 
 const tab = computed(() => {
@@ -320,7 +320,7 @@ onBeforeUnmount(() => {
           </v-tab>
         </v-tabs>
         <router-link
-          v-if="store.status && !store.aiReady && !nuclearOption"
+          v-if="store.status && !store.aiReady"
           to="/configure/settings"
           class="guide-setup-ai"
           data-testid="ai-setup-link"

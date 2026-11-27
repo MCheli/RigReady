@@ -308,7 +308,7 @@ function next(): void {
               </p>
             </div>
             <v-btn
-              v-if="store.aiReady && !nuclearOption && !store.explanations[a.actionId]"
+              v-if="store.aiReady && !store.explanations[a.actionId]"
               size="small"
               variant="text"
               prepend-icon="mdi-creation-outline"

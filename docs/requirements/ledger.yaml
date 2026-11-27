@@ -5518,7 +5518,7 @@ requirements:
       - "The Binding guide page lists Nuclear Option in its Game picker where the game has saved bindings, with one entry, All aircraft; the menu entry is offered where DCS World, iRacing or Nuclear Option is found. Walkthrough and Priorities show each item as bound, partly bound or not bound on a controller, from the same saved bindings as the Nuclear Option bindings page, and a change made there shows in the guide."
       - "The walkthrough binds a button-type action to the controller button the user presses: the change is shown first (the controller, what the action is on now and would be on, what else that button does, the saved bindings changed), and Save writes it through the Nuclear Option bindings feature's own change channel, so the backup, the Safety page entry and Undo are that feature's. Refused, with the reason and nothing written: while the game runs, when the saved bindings changed after the review, for an action outside the guide, and on a controller the game has saved nothing for."
       - "Superseded by AI-NO-002 the same day: an axis, and one side of an axis, had no Bind in the first version. Staging a binding the DCS way is refused."
-      - "No AI request is made for Nuclear Option: there is no AI help tab, no Explain and no link to set AI help up, and a request for it is refused before a provider or key is looked at. A guide of the user's own is refused, because RigReady uses the one it includes."
+      - "Superseded in part by AI-NO-003 the same day: in the first version no AI request was made for Nuclear Option at all. A guide of the user's own is refused, because RigReady uses the one it includes."
     status: done
     evidence:
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#is one guide for every aircraft, found by the game and \"all\""
@@ -5531,7 +5531,7 @@ requirements:
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#says of each item whether it is bound on a controller, from what the game saved"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#shows the change first, then saves it through the bindings feature, with Undo on the Safety page"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#is refused, with nothing written: the wrong kind of control for the action, an axis or a key the game has no number for, an action outside the guide, a controller the game saved nothing for, a map that changed, and while the game runs"
-      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#keeps the walkthrough’s progress, stages nothing, and makes no AI request"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#keeps the walkthrough’s progress, stages nothing, and neither suggests a setup nor drafts a guide"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#reads the same whether the game is open or closed: it only reads"
       - "tests/unit/offeredByGame.test.ts#the binding guide is the one menu entry about a game, and it is about DCS, iRacing and Nuclear Option"
       - "tests/e2e/ai-assist-nuclear-option.e2e.ts#binding guide for nuclear option: the walkthrough binds a moved axis, a pressed button and a pressed key after a review; the priorities; Undo"
@@ -5560,6 +5560,23 @@ requirements:
       - "artifacts/screens/ai-assist-nuclear-option/02-axis.png"
       - "artifacts/screens/ai-assist-nuclear-option/05-key.png"
     notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does: 'bind from the walkthrough just like everything else'. It needs BIND-NO-006 (axes and sides) and BIND-NO-007 (keys). Tried in the scenario test, not on the owner's rig. Not done: hat switches and mouse buttons (the bindings feature does not write them), AI help for this game."
+
+  - id: AI-NO-003
+    title: "AI help for Nuclear Option in the binding guide: Explain and questions, with what is sent shown first"
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "With an AI provider set up, the Binding guide page has its AI help tab for Nuclear Option and each action of the walkthrough has Explain. A question and an explanation are prepared from the game's own data: the game named as Nuclear Option, its actions with what each is bound to now, the connected controllers' product names and layout, and the shipped guide, said in the request to be unreviewed. No DCS wording, no device id, no registry value name."
+      - "The request is shown in full before it is sent, as for the other games, and Settings' and the manual's account of what AI help sends names Nuclear Option and what is sent for it."
+      - "Suggest a setup and a drafted guide are refused for Nuclear Option before a provider or a key is looked at, each with its reason, and the page does not offer them."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#with a key, explains an action and answers a question from the game’s own data: the game named, no device id, the guide said to be unreviewed"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#keeps the walkthrough’s progress, stages nothing, and neither suggests a setup nor drafts a guide"
+      - "src/features/ai-assist/core/service.test.ts#says apart what the binding guide sends and what the assistant sends, and where it goes"
+      - "tests/e2e/ai-assist.e2e.ts#ai-assist: the key is entered in Settings, tested, never shown again, and what is sent is stated"
+    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does. Not done: Suggest a setup for Nuclear Option. For DCS a suggestion is applied by staging many bindings and writing them as one change; the Nuclear Option bindings feature changes one binding at a time, so it needs a many-at-once change there first. That the AI help tab and Explain show on the page with a key stored is not in a scenario test of this game (its scenario has no key); the service test covers what is prepared and sent."
 
   # ---------------------------------------------------------------------------
   # THE BUILT-IN ASSISTANT: app-wide, on the MCP catalogue and gate

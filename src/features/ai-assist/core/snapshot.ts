@@ -150,6 +150,10 @@ export function contextText(snapshot: Snapshot): string {
       `iRacing: ${oneLine(snapshot.aircraftName)}; the bindings for ${oneLine(snapshot.iracing?.setName ?? 'All cars')}`
     );
     lines.push(`</car>`);
+  } else if (snapshot.game === 'nuclear-option') {
+    lines.push(`<game>`);
+    lines.push(`Nuclear Option: one set of bindings for every aircraft`);
+    lines.push(`</game>`);
   } else {
     lines.push(`<aircraft>`);
     lines.push(
@@ -158,7 +162,10 @@ export function contextText(snapshot: Snapshot): string {
     lines.push(`</aircraft>`);
   }
   if (snapshot.pack) {
-    const source = (iracing ? IRACING_GUIDE_SOURCE : GUIDE_SOURCE)[snapshot.guideKind ?? 'shipped'];
+    const source =
+      snapshot.game === 'nuclear-option'
+        ? "RigReady's binding guide for this game; not reviewed by the game's developers or an experienced player"
+        : (iracing ? IRACING_GUIDE_SOURCE : GUIDE_SOURCE)[snapshot.guideKind ?? 'shipped'];
     lines.push(`<guide source="${source}">`);
     lines.push(oneLine(snapshot.pack.summary, 800));
     for (const item of snapshot.pack.items) {

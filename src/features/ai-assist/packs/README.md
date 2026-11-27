@@ -144,7 +144,8 @@ items:
   of actions is updated.
 - The walkthrough binds every action of the guide through the Nuclear Option bindings feature:
   a button or a key for a button action and for one side of an axis ("Zoom In"), an axis for an
-  axis action ("Pitch Axis"). No AI request is made for this game.
+  axis action ("Pitch Axis"). AI help explains an action and answers questions for this game;
+  it does not suggest a setup or draft a guide.
 - There is no guide of a user's own for it: RigReady uses this file.
 
 ## Guides drafted by AI

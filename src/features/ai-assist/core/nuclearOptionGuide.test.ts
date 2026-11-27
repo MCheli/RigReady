@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
-import type { AircraftList, GuideGames, GuideView, NuclearOptionReviewView } from './model';
+import type {
+  AircraftList,
+  GuideGames,
+  GuideView,
+  NuclearOptionReviewView,
+  Prepared,
+  Sent,
+} from './model';
 import { GAME_ROLES, gameOfKey, guideKey, packText, parsePack, TIERS } from './pack';
 import { shippedPack } from './shipped';
 
@@ -413,7 +420,71 @@ describe('the binding guide page’s data for Nuclear Option', () => {
     });
   });
 
-  it('keeps the walkthrough’s progress, stages nothing, and makes no AI request', async () => {
+  it('with a key, explains an action and answers a question from the game’s own data: the game named, no device id, the guide said to be unreviewed', async () => {
+    const a = await start();
+    await a.invoke('settings:setAiKey', { key: 'sk-ant-api03-SECRETSECRETSECRET-abcdEFGH' });
+    const text = (t: string) => ({
+      json: {
+        model: 'claude-opus-5-5',
+        stop_reason: 'end_turn',
+        content: [{ type: 'text', text: t }],
+        usage: { input_tokens: 10, output_tokens: 5 },
+      },
+    });
+    a.ports.http.scripts.push({
+      match: { url: '/v1/messages', body: 'Task: explain the Nuclear Option action' },
+      response: { status: 200, headers: {}, ...text('It raises and lowers the wheels.') },
+    });
+    a.ports.http.scripts.push({
+      match: { url: '/v1/messages', body: 'The player asks about their Nuclear Option setup' },
+      response: { status: 200, headers: {}, ...text('Bind the gear first.') },
+    });
+    const explain = await a.invoke<Prepared>('ai-assist:prepare', {
+      aircraftId: GUIDE,
+      kind: 'explain',
+      actionId: '11',
+    });
+    expect(explain.contents[0]).toMatch(
+      /^\d+ Nuclear Option actions, with what each is bound to now$/
+    );
+    expect(explain.contents[2]).toBe("RigReady's binding guide for Nuclear Option");
+    expect(explain.body).toContain('You help a player of the combat flight game Nuclear Option');
+    expect(explain.body).toContain('Nuclear Option: one set of bindings for every aircraft');
+    expect(explain.body).toContain('not reviewed by the game');
+    expect(explain.body).toContain('Toggle Gear');
+    expect(explain.body).not.toContain('DCS');
+    // No controller id, and nothing of the registry's value names.
+    const overview = await a.invoke<{ devices: { guid?: string }[] }>(
+      'nuclear-option-bindings:overview'
+    );
+    for (const device of overview.devices) {
+      if (device.guid) expect(explain.body).not.toContain(device.guid);
+    }
+    expect(explain.body).not.toContain('RewiredSaveData');
+    const explained = await a.invoke<Extract<Sent, { kind: 'answer' }>>('ai-assist:send', {
+      requestId: explain.requestId,
+    });
+    expect(explained).toMatchObject({
+      kind: 'answer',
+      question: 'What does "Toggle Gear" do?',
+      text: 'It raises and lowers the wheels.',
+    });
+    const ask = await a.invoke<Prepared>('ai-assist:prepare', {
+      aircraftId: GUIDE,
+      kind: 'ask',
+      question: 'What should I bind first?',
+    });
+    expect(ask.contents).toContain('Your question: "What should I bind first?"');
+    const answered = await a.invoke<Extract<Sent, { kind: 'answer' }>>('ai-assist:send', {
+      requestId: ask.requestId,
+    });
+    expect(answered.text).toBe('Bind the gear first.');
+    await expect(
+      a.invoke('ai-assist:prepare', { aircraftId: GUIDE, kind: 'explain', actionId: '999' })
+    ).rejects.toThrow('has no such action');
+  });
+
+  it('keeps the walkthrough’s progress, stages nothing, and neither suggests a setup nor drafts a guide', async () => {
     const a = await start();
     await a.invoke('ai-assist:setProgress', { aircraftId: GUIDE, itemId: 'fire', state: 'done' });
     expect((await guideOf(a)).progress.done).toEqual(['fire']);
@@ -425,12 +496,13 @@ describe('the binding guide page’s data for Nuclear Option', () => {
         input: 'JOY_BTN2',
       })
     ).rejects.toThrow('In Nuclear Option the guide binds one control at a time');
-    for (const kind of ['suggest', 'draft', 'explain', 'ask'] as const) {
-      await expect(
-        a.invoke('ai-assist:prepare', { kind, aircraftId: GUIDE, question: 'x', actionId: '5' }),
-        kind
-      ).rejects.toThrow('AI help is for DCS aircraft and iRacing cars');
-    }
+    // Suggest a setup and a drafted guide are not for this game, said before any key is looked at.
+    await expect(
+      a.invoke('ai-assist:prepare', { kind: 'suggest', aircraftId: GUIDE })
+    ).rejects.toThrow('Suggest a setup is for DCS aircraft');
+    await expect(
+      a.invoke('ai-assist:prepare', { kind: 'draft', aircraftId: GUIDE })
+    ).rejects.toThrow('RigReady includes the guide for Nuclear Option');
     await expect(a.invoke('ai-assist:startOwnGuide', { aircraftId: GUIDE })).rejects.toThrow(
       'RigReady includes the guide for Nuclear Option'
     );
