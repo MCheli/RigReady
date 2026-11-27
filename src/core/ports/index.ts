@@ -622,6 +622,12 @@ export interface RawFs {
   removeDir(path: string): Promise<void>;
   /** Removes a directory only when it is empty. False when it holds something or is not there. */
   removeEmptyDir(path: string): Promise<boolean>;
+  /**
+   * Optional: why a change to this path will not be made, when it will not. FileStore asks
+   * before it copies a backup or writes the journal, with the path exactly as it was given,
+   * so that a change that is refused leaves nothing behind.
+   */
+  refuses?(path: string, action: 'write' | 'remove'): Promise<string | undefined>;
 }
 
 export interface FileEntry {
