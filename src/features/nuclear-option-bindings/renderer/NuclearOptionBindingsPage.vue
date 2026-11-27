@@ -46,9 +46,9 @@ const device = computed<OverviewDevice | undefined>(
 const rows = computed(() =>
   device.value ? shownBindings(device.value.bindings, search.value) : []
 );
-/** What each thing the page offers to bind is bound to, by its binding id ("5", "25", "25:+"). */
-const takes = computed(
-  () => new Map((overview.value?.actions ?? []).map((a) => [a.key, a.takes] as const))
+/** What the page offers to bind, by its binding id ("5", "25", "25:+"). */
+const offeredById = computed(
+  () => new Map((overview.value?.actions ?? []).map((a) => [a.key, a] as const))
 );
 
 /** The controller a link asked for (`?guid=`), when it is one the game has bindings for. */
@@ -110,6 +110,11 @@ interface Editing {
   /** For an axis action: the controller's axis by its name, and whether it is reversed. */
   axis: string | null;
   invert: boolean;
+  /**
+   * On the keyboard, from a row: the key that row is, which is the one changed or cleared (an
+   * action can have two). Not set from "Bind an action", which adds a key.
+   */
+  replaces?: NonNullable<OverviewBinding['key']>;
   /** On the keyboard: the key by the browser's name for it, and the modifier keys held with it. */
   code: string | null;
   ctrl: boolean;
@@ -161,9 +166,10 @@ const wanted = computed<Omit<ChangeRequest, 'seen'> | undefined>(() => {
   };
   if (onKeyboard.value) {
     if (what.takes !== 'button') return undefined;
-    if (e.clear) return { ...base, key: null };
+    const which = e.replaces ? { replaces: e.replaces } : {};
+    if (e.clear) return { ...base, key: null, ...which };
     return e.code
-      ? { ...base, key: { code: e.code, ctrl: e.ctrl, alt: e.alt, shift: e.shift } }
+      ? { ...base, key: { code: e.code, ctrl: e.ctrl, alt: e.alt, shift: e.shift }, ...which }
       : undefined;
   }
   if (what.takes === 'axis') {
@@ -307,6 +313,11 @@ function onKeyDown(event: KeyboardEvent): void {
   // While it waits, a key is the answer: it must not close the dialog or press a button.
   event.preventDefault();
   event.stopImmediatePropagation();
+  // Esc stops waiting and takes nothing; Esc itself is chosen from the list.
+  if (event.key === 'Escape') {
+    takingKey.value = false;
+    return;
+  }
   // A modifier on its own is waited through: the key that follows comes with it.
   if (event.repeat || MODIFIER_CODES.test(event.code)) return;
   takingKey.value = false;
@@ -317,13 +328,16 @@ function onKeyDown(event: KeyboardEvent): void {
   }
   keyNote.value = '';
   e.code = event.code;
-  e.ctrl = event.ctrlKey;
-  e.alt = event.altKey;
+  // AltGr reports itself as Ctrl and Alt together: it is neither, for a binding.
+  const altGr = event.getModifierState('AltGraph');
+  e.ctrl = event.ctrlKey && !altGr;
+  e.alt = event.altKey && !altGr;
   e.shift = event.shiftKey;
 }
+/** Starts waiting for a key, or stops when pressed again. */
 function takeKey(): void {
   keyNote.value = '';
-  takingKey.value = true;
+  takingKey.value = !takingKey.value;
 }
 onMounted(() => window.addEventListener('keydown', onKeyDown, true));
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown, true));
@@ -338,19 +352,28 @@ function startChange(binding: OverviewBinding): void {
     ...(binding.control?.kind === 'axis'
       ? { axis: binding.control.axis, invert: binding.inverted }
       : {}),
+    // A key row opens on its key, and changes that key only.
+    ...(binding.key ? { replaces: binding.key, ...binding.key } : {}),
     clear: false,
   };
-  void startListening();
+  if (!binding.key) void startListening();
 }
 function startClear(binding: OverviewBinding): void {
   savedMessage.value = '';
-  editing.value = { ...blank, key: binding.actionId, fromRow: true, clear: true };
+  editing.value = {
+    ...blank,
+    key: binding.actionId,
+    fromRow: true,
+    ...(binding.key ? { replaces: binding.key } : {}),
+    clear: true,
+  };
 }
 function startBind(): void {
   savedMessage.value = '';
   keyNote.value = '';
   editing.value = { ...blank, key: null, fromRow: false, clear: false };
-  void startListening();
+  // Controllers are listened to for a controller's dialog only.
+  if (!onKeyboard.value) void startListening();
 }
 function closeEdit(): void {
   takingKey.value = false;
@@ -630,7 +653,7 @@ const editTitle = computed(() => {
                   </td>
                   <td class="rr-mono rr-muted">{{ b.input }}</td>
                   <td v-if="changeable" class="nb-actions">
-                    <template v-if="canChange(b, takes)">
+                    <template v-if="canChange(b, offeredById)">
                       <v-btn
                         size="small"
                         variant="text"
@@ -721,7 +744,7 @@ const editTitle = computed(() => {
               prepend-icon="mdi-keyboard-outline"
               data-testid="nuclear-option-bindings-edit-press-key"
               @click="takeKey"
-              >{{ takingKey ? 'Press the key now…' : 'Press the key' }}</v-btn
+              >{{ takingKey ? 'Press the key now… (Esc stops)' : 'Press the key' }}</v-btn
             >
           </div>
           <div class="nb-mods mb-3">

@@ -43,75 +43,100 @@ describe('the bindings a search leaves', () => {
 });
 
 describe('a binding the page can change', () => {
-  const takes = new Map<string, 'button' | 'axis'>([
-    ['5', 'button'],
-    ['25', 'axis'],
-    ['25:+', 'button'],
-    ['25:-', 'button'],
+  const offered = new Map<string, { takes: 'button' | 'axis'; mapCategory: string }>([
+    ['5', { takes: 'button', mapCategory: 'Game' }],
+    ['25', { takes: 'axis', mapCategory: 'Game' }],
+    ['25:+', { takes: 'button', mapCategory: 'Game' }],
+    ['25:-', { takes: 'button', mapCategory: 'Game' }],
+    ['34', { takes: 'button', mapCategory: 'Chat' }],
   ]);
   const button = { kind: 'button', index: 3 } as const;
   const axis = { kind: 'axis', axis: 'X' } as const;
+  const space = { code: 'Space', ctrl: false, alt: false, shift: false };
 
-  it('is a key on what takes a button, whatever tab it is in and whatever is held with it', () => {
-    expect(canChange(binding('Fire', 'Space', { actionId: '5', kind: 'key' }), takes)).toBe(true);
+  it('is a key RigReady can number, on what takes a button, in the tab that action is saved under, whatever is held with it', () => {
+    expect(
+      canChange(binding('Fire', 'Space', { actionId: '5', kind: 'key', key: space }), offered)
+    ).toBe(true);
     expect(
       canChange(
         binding('Zoom In', 'E', {
           actionId: '25:+',
           kind: 'key',
           modifiers: ['Ctrl'],
-          mapCategory: 'Chat',
+          key: { code: 'KeyE', ctrl: true, alt: false, shift: false },
         }),
-        takes
+        offered
+      )
+    ).toBe(true);
+    expect(
+      canChange(
+        binding('Submit Chat', 'Enter', {
+          actionId: '34',
+          kind: 'key',
+          mapCategory: 'Chat',
+          key: { code: 'Enter', ctrl: false, alt: false, shift: false },
+        }),
+        offered
       )
     ).toBe(true);
   });
 
   it('is a button on a button action or on a side of an axis action, and a whole axis on an axis action', () => {
-    expect(canChange(binding('Fire', 'Button 3', { actionId: '5', control: button }), takes)).toBe(
-      true
-    );
     expect(
-      canChange(binding('Zoom In', 'Button 3', { actionId: '25:+', control: button }), takes)
+      canChange(binding('Fire', 'Button 3', { actionId: '5', control: button }), offered)
+    ).toBe(true);
+    expect(
+      canChange(binding('Zoom In', 'Button 3', { actionId: '25:+', control: button }), offered)
     ).toBe(true);
     expect(
       canChange(
         binding('Zoom View', 'X axis', { actionId: '25', kind: 'axis', control: axis }),
-        takes
+        offered
       )
     ).toBe(true);
   });
 
-  it('is not half an axis on a side, a key on a whole axis, a button with a modifier key, another tab’s button, an input RigReady does not understand, or an action it does not offer', () => {
+  it('is not a key in another tab than its action’s, a key RigReady cannot number, a key on a whole axis, half an axis on a side, a button with a modifier key or in another tab, an input it does not understand, or an action it does not offer', () => {
+    // A Game action's key found in the Chat tab: a change would go into the Game tab's map.
+    expect(
+      canChange(
+        binding('Fire', 'Space', { actionId: '5', kind: 'key', mapCategory: 'Chat', key: space }),
+        offered
+      )
+    ).toBe(false);
+    // No `key`: the overview could not say which of the game's keys this is.
+    expect(canChange(binding('Fire', 'Key 999', { actionId: '5', kind: 'key' }), offered)).toBe(
+      false
+    );
+    expect(
+      canChange(binding('Zoom View', 'Z', { actionId: '25', kind: 'key', key: space }), offered)
+    ).toBe(false);
     // Half an axis driving one side: the side takes a button.
     expect(
       canChange(
         binding('Zoom In', 'X axis', { actionId: '25:+', kind: 'axis', control: axis }),
-        takes
+        offered
       )
     ).toBe(false);
-    // A key on an axis action as a whole is not something the keyboard binds.
-    expect(canChange(binding('Zoom View', 'Z', { actionId: '25', kind: 'key' }), takes)).toBe(
-      false
-    );
     expect(
       canChange(
         binding('Fire', 'Button 3', { actionId: '5', control: button, modifiers: ['Ctrl'] }),
-        takes
+        offered
       )
     ).toBe(false);
     expect(
       canChange(
         binding('Fire', 'Button 3', { actionId: '5', control: button, mapCategory: 'Chat' }),
-        takes
+        offered
       )
     ).toBe(false);
     // An axis past the ones the controller reports has no control.
-    expect(canChange(binding('Zoom View', 'Axis 4', { actionId: '25', kind: 'axis' }), takes)).toBe(
-      false
-    );
-    expect(canChange(binding('New', 'Button 3', { actionId: '99', control: button }), takes)).toBe(
-      false
-    );
+    expect(
+      canChange(binding('Zoom View', 'Axis 4', { actionId: '25', kind: 'axis' }), offered)
+    ).toBe(false);
+    expect(
+      canChange(binding('New', 'Button 3', { actionId: '99', control: button }), offered)
+    ).toBe(false);
   });
 });

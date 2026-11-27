@@ -51,6 +51,12 @@ export interface BindingEdit {
    * (Rewired's numbers: 1 Control, 2 Alt, 3 Shift), at most three; null clears it.
    */
   key?: { element: number; keyCode: number; modifiers: number[] } | null;
+  /**
+   * With `key`: the one of the action's keys this is about, when it has more than one (the
+   * game's controls screen shows two): the key a row's Change or Clear was pressed on.
+   * Without it, a clear takes every key of the action and a bind adds one.
+   */
+  replaces?: { element: number; modifiers: number[] };
 }
 
 /** What an action, or a side of one, is on: a button (1 the first) or an axis (0 the first). */
@@ -71,6 +77,8 @@ export interface EditOutcome {
    * controls screen gives it ("Fire", "Zoom In"): one press, or one movement, will do those too.
    */
   alsoOn: string[];
+  /** For a key: every key the action has afterwards, when that is more than what was asked for. */
+  after?: BoundTo[];
 }
 
 const PLAIN = {
@@ -476,43 +484,80 @@ function editKey(map: ControllerMap, edit: BindingEdit): Edited {
     }
   }
   const contribution = side === '-' ? 1 : 0;
-  const mine = (e: ElementMap): boolean =>
+  // Every key the action, or this side of it, has. The game's screen shows two.
+  const ofAction = (e: ElementMap): boolean =>
     e.actionId === edit.actionId && (side === undefined || e.axisContribution === contribution);
-  const had = map.buttonMaps.filter(mine);
+  const all = map.buttonMaps.filter(ofAction);
   // A key binding as the game writes one: a key code, not half of anything, not reversed.
   const isPlainKey = (e: ElementMap): boolean =>
     e.elementType === 1 && e.keyboardKeyCode > 0 && e.axisRange === 0 && !e.invert;
-  if (had.some((e) => !isPlainKey(e)) || map.axisMaps.some((e) => e.actionId === edit.actionId)) {
+  if (all.some((e) => !isPlainKey(e)) || map.axisMaps.some((e) => e.actionId === edit.actionId)) {
     return err(
       'nuclear-option.edit.unknown',
       `${name} has a binding here that RigReady does not understand, so it was left alone.`
     );
   }
-  const held = (e: ElementMap): number[] => e.modifierKeys.filter((m) => m !== 0);
-  const before = had.map((e): BoundTo => ({
-    kind: 'key',
-    keyCode: e.keyboardKeyCode,
-    modifiers: held(e),
-  }));
-  const modifiers = key === null ? [] : [...key.modifiers].sort((a, b) => a - b);
-  const sameKey = (e: ElementMap): boolean =>
-    key !== null &&
-    e.elementIdentifierId === key.element &&
-    e.keyboardKeyCode === key.keyCode &&
-    JSON.stringify(held(e)) === JSON.stringify(modifiers);
-  const same =
-    key === null ? had.length === 0 : had.length === 1 && sameKey(had[0]!) && had[0]!.enabled;
+  // The modifier keys held with a key, in one order whatever order they are stored in.
+  const sorted = (modifiers: number[]): string =>
+    JSON.stringify(modifiers.filter((m) => m !== 0).sort((a, b) => a - b));
+  const isKey = (e: ElementMap, k: { element: number; modifiers: number[] }): boolean =>
+    e.elementIdentifierId === k.element && sorted(e.modifierKeys) === sorted(k.modifiers);
+  const boundTo = (list: ElementMap[]): BoundTo[] =>
+    list.map((e) => ({
+      kind: 'key',
+      keyCode: e.keyboardKeyCode,
+      modifiers: e.modifierKeys.filter((m) => m !== 0),
+    }));
+  const before = boundTo(all);
+
+  // Which of its keys this is about. A row's Change or Clear names the key it is on
+  // (`replaces`): only that one. With none named, a clear takes all of them and a bind adds
+  // a key beside what is there.
+  let mine: ElementMap[];
+  if (edit.replaces) {
+    const named = edit.replaces;
+    mine = all.filter((e) => isKey(e, named));
+    if (mine.length === 0) {
+      return err(
+        'nuclear-option.edit.gone',
+        `${name} is no longer on that key. Look at its bindings again.`
+      );
+    }
+  } else {
+    mine = key === null ? all : [];
+  }
+  const kept = all.filter((e) => !mine.includes(e));
+  const alreadyThere = key !== null && kept.some((e) => isKey(e, key) && e.enabled);
   const alsoOn =
     key === null
       ? []
       : [
           ...new Set(
-            map.buttonMaps.filter((e) => e.enabled && sameKey(e) && !mine(e)).map(doingOf)
+            map.buttonMaps.filter((e) => e.enabled && isKey(e, key) && !ofAction(e)).map(doingOf)
           ),
         ];
-  if (same) return ok({ map, text: serializeControllerMap(map), before, same, alsoOn });
-  const made: ElementMap | undefined =
+  const same =
     key === null
+      ? mine.length === 0
+      : mine.length === 0
+        ? alreadyThere
+        : mine.length === 1 &&
+          isKey(mine[0]!, key) &&
+          mine[0]!.keyboardKeyCode === key.keyCode &&
+          mine[0]!.enabled;
+  if (same) {
+    return ok({ map, text: serializeControllerMap(map), before, after: before, same, alsoOn });
+  }
+  if (key !== null && mine.length === 0 && kept.length >= 2) {
+    return err(
+      'nuclear-option.edit.twoKeys',
+      `${name} already has two keys, which is as many as the game’s controls screen shows. Change one of them.`
+    );
+  }
+  const modifiers = key === null ? [] : [...key.modifiers].sort((a, b) => a - b);
+  // Changed to the key its other binding already has: the one that is left is enough.
+  const made: ElementMap | undefined =
+    key === null || alreadyThere
       ? undefined
       : {
           actionCategoryId: 0,
@@ -526,8 +571,8 @@ function editKey(map: ControllerMap, edit: BindingEdit): Edited {
           modifierKeys: [modifiers[0] ?? 0, modifiers[1] ?? 0, modifiers[2] ?? 0],
           enabled: true,
         };
-  const buttonMaps = replaced(map.buttonMaps, mine, made);
-  return checked(
+  const buttonMaps = replaced(map.buttonMaps, (e) => mine.includes(e), made);
+  const result = checked(
     {
       ...map,
       buttonMaps,
@@ -536,6 +581,7 @@ function editKey(map: ControllerMap, edit: BindingEdit): Edited {
     before,
     alsoOn
   );
+  return result.ok ? ok({ ...result.value, after: boundTo(buttonMaps.filter(ofAction)) }) : result;
 }
 
 export interface ClearOutcome {
@@ -618,11 +664,11 @@ export function editMapText(document: string, edit: BindingEdit): Result<EditOut
   if (serializeControllerMap(map.value) !== document) {
     return err(
       'nuclear-option.edit.form',
-      'The game’s saved bindings for this controller are written in a form RigReady would not write back exactly, so it does not change them. Change the binding in the game.'
+      'The game’s saved bindings for this device are written in a form RigReady would not write back exactly, so it does not change them. Change the binding in the game.'
     );
   }
   const edited = editMap(map.value, edit);
   if (!edited.ok) return edited;
-  const { text, before, same, alsoOn } = edited.value;
-  return ok({ text, before, same, alsoOn });
+  const { text, before, same, alsoOn, after } = edited.value;
+  return ok({ text, before, same, alsoOn, ...(after ? { after } : {}) });
 }

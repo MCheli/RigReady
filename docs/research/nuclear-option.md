@@ -320,7 +320,9 @@ Not tried: an axis bound to an action that had none (only one reversed in place,
 
 **The writer against the game.** With the game closed, RigReady bound Toggle Engine to F7 on the owner's real keyboard map. The value it wrote is byte for byte the value the game had written for the same binding (16,284 bytes), and no other value changed; Undo put the map back. **[V]** 27 November 2026.
 
-Not tried: a key with Alt; a key on a side of an axis; a key in the Chat, Mission Editor or Debug tab; any key but F7 in the game; the game started on a map RigReady wrote (it is the same bytes the game wrote itself).
+An action can hold two keys (the game's screen has two keyboard columns): two elements of the same action in the list. RigReady changes or clears the one a row is on and adds a second beside the first; it does not write a third. **[I]** that a second key the player binds is written like the first: only one was bound in the game.
+
+Not tried: a key with Alt; a key on a side of an axis; a key in the Chat, Mission Editor or Debug tab; a second key for an action; any key but F7 in the game; the game started on a map RigReady wrote (it is the same bytes the game wrote itself).
 
 ### In a flight, 27 November 2026
 

@@ -67,11 +67,11 @@ The controller must be plugged in to bind an axis: the game numbers a controller
 
 ### A key
 
-On the **Keyboard** tab, **Change**, **Clear** and **Bind an action** work on keys. Choose the key in the list, or press **Press the key** and then the key itself; tick **Ctrl**, **Alt** or **Shift** for a key that is held with them (pressing the key with them held ticks them for you). The review says what else that key, with those modifier keys, already does. An axis action is bound on the keyboard by its two sides (Pitch Up, Pitch Down), a key each; the axis as a whole is for a controller.
+On the **Keyboard** tab, **Change**, **Clear** and **Bind an action** work on keys. Choose the key in the list, or press **Press the key** and then the key itself (Esc stops waiting); tick **Ctrl**, **Alt** or **Shift** for a key that is held with them (pressing the key with them held ticks them for you). The review says what else that key, with those modifier keys, already does. An axis action is bound on the keyboard by its two sides (Pitch Up, Pitch Down), a key each; the axis as a whole is for a controller.
 
 ![A key chosen by pressing it](../../../artifacts/screens/nuclear-option-bindings-keys/01-pressed.png)
 
-The game shows two keys for an action on its controls screen. RigReady binds one: changing an action that has two replaces both with the one you choose, and the review lists both under what it has now.
+An action can have two keys, as on the game's controls screen. **Change** and **Clear** on a row work on that row's key and leave the action's other key alone. **Bind an action** gives an action that has one key a second one; for one that already has two it says so, and you change one of them from its row.
 
 The keys RigReady can bind are the letters and digits, the numeric keypad, F1 to F12, the arrows and the keys above them, Space, Enter, Tab, Backspace, Esc, Delete, the punctuation keys of a US keyboard, and Shift, Ctrl and Alt on either side. For another key it says that it does not know how the game numbers it.
 
