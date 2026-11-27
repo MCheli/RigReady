@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
+import { streamedMessage } from '../../../../tests/aiStream';
 import type {
   AircraftList,
+  AppliedView,
   GuideGames,
   GuideView,
   NuclearOptionReviewView,
+  PlanView,
   Prepared,
   Sent,
 } from './model';
@@ -503,7 +506,210 @@ describe('the binding guide page’s data for Nuclear Option', () => {
     ).rejects.toThrow('has no such action');
   });
 
-  it('keeps the walkthrough’s progress, stages nothing, and neither suggests a setup nor drafts a guide', async () => {
+  it('with a key, suggests a setup: the answer is checked against the game and the controllers, reviewed as the bindings feature plans it, written as one change and undone', async () => {
+    const a = await start();
+    await a.invoke('settings:setAiKey', { key: 'sk-ant-api03-SECRETSECRETSECRET-abcdEFGH' });
+    const values = async (): Promise<Record<string, unknown>> => {
+      const all = await a.ports.registry.listValues('HKCU', 'Software\\Shockfront\\NuclearOption');
+      if (!all.ok) throw new Error(all.error.message);
+      return all.value;
+    };
+    const before = await values();
+    const prepared = await a.invoke<Prepared>('ai-assist:prepare', {
+      aircraftId: GUIDE,
+      kind: 'suggest',
+    });
+    expect(a.ports.http.calls).toEqual([]);
+    expect(prepared.body).toContain(
+      'Task: suggest how to bind Nuclear Option on these controllers.'
+    );
+    // The model is told what a suggestion does to the control it names, and what it may name.
+    expect(prepared.body).toContain('A suggested control is taken over');
+    expect(prepared.body).toContain('no hat, no key, no mouse button');
+    expect(prepared.body).toContain('named as in <devices> and <actions>');
+    expect(prepared.body).not.toContain('DCS');
+    expect(prepared.body).not.toContain('RewiredSaveData');
+
+    const item = (actionId: string, device: string, input: string) => ({
+      actionId,
+      device,
+      input,
+      priority: 'should',
+      reason: 'Under the finger.',
+    });
+    a.ports.http.respond(
+      'api.anthropic.com/v1/messages',
+      streamedMessage(
+        JSON.stringify({
+          summary: 'Lights on the trigger, zoom on the throttle.',
+          notes: [],
+          items: [
+            // The trigger does Fire now.
+            item('49', 'dev1', 'Button 1'),
+            // Bound so already: an axis by the name the bindings page gives it.
+            item('0', 'dev1', 'Y axis'),
+            item('38', 'dev2', 'Slider 1'),
+            // One side of an axis action, on the button Toggle Gear is on.
+            item('25:+', 'dev2', 'button 18'),
+            // None of these checks out.
+            item('5', 'dev1', 'JOY_BTN_POV1_U'),
+            item('5', 'keyboard', 'F'),
+            item('0', 'dev1', 'Button 2'),
+            item('11', 'dev2', 'Z rotation'),
+            item('2', 'dev1', 'Z rotation'),
+            item('999', 'dev1', 'Button 3'),
+            item('49', 'dev1', 'Button 77'),
+          ],
+        })
+      )
+    );
+    const sent = await a.invoke<Extract<Sent, { kind: 'suggest' }>>('ai-assist:send', {
+      requestId: prepared.requestId,
+    });
+    expect(JSON.stringify(JSON.parse(prepared.body))).toBe(a.ports.http.calls[0]!.body);
+    expect(
+      sent.suggestions.map((s) => [
+        s.dcsName,
+        s.deviceName,
+        s.inputLabel,
+        s.replaces,
+        s.already,
+        s.selected,
+      ])
+    ).toEqual([
+      ['Toggle Navigation Lights', 'Joystick - HOTAS Warthog', 'Button 1', ['Fire'], false, true],
+      ['Pitch Axis', 'Joystick - HOTAS Warthog', 'Y axis', [], true, false],
+      ['Custom Axis 1', 'Throttle - HOTAS Warthog', 'Slider 1', [], true, false],
+      ['Zoom In', 'Throttle - HOTAS Warthog', 'Button 18', ['Toggle Gear'], false, true],
+    ]);
+    expect(sent.dropped.map((d) => d.why)).toEqual([
+      'RigReady does not bind a hat in Nuclear Option; bind one in the game',
+      'no such controller',
+      'an axis action needs an axis',
+      'a button action cannot go on an axis',
+      'that controller has no such input',
+      'no such action in this game',
+      'that controller has no such input',
+    ]);
+    // No id of a controller in what comes back to the window.
+    const overview = await a.invoke<{ devices: { guid?: string }[] }>(
+      'nuclear-option-bindings:overview'
+    );
+    for (const device of overview.devices) {
+      if (device.guid) expect(prepared.body).not.toContain(device.guid);
+    }
+
+    // Nothing is written until reviewed: the review is the bindings feature's own plan.
+    const plan = await a.invoke<PlanView>('ai-assist:reviewSuggestions', {
+      roundId: sent.roundId,
+      selected: ['s1', 's2', 's4'],
+    });
+    expect(plan.summary).toBe('Bind 3 actions suggested by AI');
+    expect(plan.files.map((file) => [file.title, file.lines])).toEqual([
+      [
+        'Nuclear Option’s saved bindings for Joystick - HOTAS Warthog (registry)',
+        ['Toggle Navigation Lights: Button 1', 'Button 1 no longer does Fire'],
+      ],
+      [
+        'Nuclear Option’s saved bindings for Throttle - HOTAS Warthog (registry)',
+        ['Zoom In: Button 18 (was Button 7)', 'Button 18 no longer does Toggle Gear'],
+      ],
+    ]);
+    expect(plan.notes).toEqual(['1 of these is bound so already and is left as it is.']);
+    expect(await values()).toEqual(before);
+    await expect(
+      a.invoke('ai-assist:reviewSuggestions', { roundId: sent.roundId, selected: [] })
+    ).rejects.toThrow(/Tick at least one/);
+
+    const applied = await a.invoke<AppliedView>('ai-assist:applySuggestions', {
+      roundId: sent.roundId,
+      selected: ['s1', 's2', 's4'],
+    });
+    expect(applied).toMatchObject({ summary: 'Bind 3 actions suggested by AI', files: 2 });
+    const journal = await a.ports.files.journalGroups();
+    if (!journal.ok) throw new Error(journal.error.message);
+    expect(journal.value.map((g) => [g.id, g.reason, g.entries.length])).toEqual([
+      [applied.groupId, 'Nuclear Option bindings: Bind 3 actions suggested by AI', 2],
+    ]);
+    // The guide reads the new bindings: the lights are bound now.
+    expect(itemsOf(await guideOf(a)).find((i) => i.id === 'nav-lights')!.status).toBe('bound');
+    // The pitch axis, suggested where it is, kept the reversal the player gave it.
+    const now = await a.invoke<{
+      devices: { name: string; bindings: { action: string; inputLabel: string }[] }[];
+    }>('nuclear-option-bindings:overview');
+    const stick = now.devices.find((d) => d.name === 'Joystick - HOTAS Warthog')!;
+    expect(stick.bindings.find((b) => b.action === 'Pitch Axis')).toMatchObject({
+      inputLabel: 'Y axis',
+      inverted: true,
+    });
+    expect(stick.bindings.some((b) => b.action === 'Fire')).toBe(false);
+
+    // Undo is the Nuclear Option bindings feature's: refused while that game runs.
+    await mutate(a, [
+      { op: 'startProcess', name: 'NuclearOption.exe', path: 'C:/Games/NuclearOption.exe' },
+    ]);
+    await expect(a.invoke('ai-assist:undo', { groupId: applied.groupId })).rejects.toThrow(
+      'Close Nuclear Option first'
+    );
+    await mutate(a, [{ op: 'stopProcess', name: 'NuclearOption.exe' }]);
+    expect(await a.invoke('ai-assist:undo', { groupId: applied.groupId })).toEqual({
+      undone: true,
+    });
+    expect(await values()).toEqual(before);
+  });
+
+  it('a suggestion is not asked for with no controller of the game’s connected, and ticked ones that fight over a control are refused', async () => {
+    const a = await start();
+    await a.invoke('settings:setAiKey', { key: 'sk-ant-api03-SECRETSECRETSECRET-abcdEFGH' });
+    const item = (actionId: string, input: string) => ({
+      actionId,
+      device: 'dev1',
+      input,
+      priority: 'must',
+      reason: 'x',
+    });
+    a.ports.http.respond(
+      'api.anthropic.com/v1/messages',
+      streamedMessage(
+        JSON.stringify({
+          summary: 'Two on one button.',
+          notes: [],
+          items: [item('49', 'Button 12'), item('52', 'Button 12')],
+        })
+      )
+    );
+    const prepared = await a.invoke<Prepared>('ai-assist:prepare', {
+      aircraftId: GUIDE,
+      kind: 'suggest',
+    });
+    const sent = await a.invoke<Extract<Sent, { kind: 'suggest' }>>('ai-assist:send', {
+      requestId: prepared.requestId,
+    });
+    expect(sent.suggestions.map((s) => [s.clashesWith, s.selected])).toEqual([
+      [['s2'], false],
+      [['s1'], false],
+    ]);
+    await expect(
+      a.invoke('ai-assist:reviewSuggestions', { roundId: sent.roundId, selected: ['s1', 's2'] })
+    ).rejects.toThrow(/both use Button 12 on Joystick - HOTAS Warthog\. Untick one\./);
+    await expect(
+      a.invoke('ai-assist:applySuggestions', { roundId: sent.roundId, selected: ['s1', 's2'] })
+    ).rejects.toThrow(/Untick one/);
+    // With every controller unplugged there is nothing to suggest on, and no request is made.
+    const calls = a.ports.http.calls.length;
+    await mutate(a, [
+      { op: 'unplugDevice', match: { vendorId: '044F', productId: '0402' } },
+      { op: 'unplugDevice', match: { vendorId: '044F', productId: '0404' } },
+    ]);
+    await expect(
+      a.invoke('ai-assist:prepare', { aircraftId: GUIDE, kind: 'suggest' })
+    ).rejects.toThrow('No controller that Nuclear Option has saved bindings for is connected');
+    expect(a.ports.http.calls).toHaveLength(calls);
+    const journal = await a.ports.files.journalGroups();
+    expect(journal.ok && journal.value).toEqual([]);
+  });
+
+  it('keeps the walkthrough’s progress, stages nothing, and does not draft a guide', async () => {
     const a = await start();
     await a.invoke('ai-assist:setProgress', { aircraftId: GUIDE, itemId: 'fire', state: 'done' });
     expect((await guideOf(a)).progress.done).toEqual(['fire']);
@@ -515,10 +721,7 @@ describe('the binding guide page’s data for Nuclear Option', () => {
         input: 'JOY_BTN2',
       })
     ).rejects.toThrow('In Nuclear Option the guide binds one control at a time');
-    // Suggest a setup and a drafted guide are not for this game, said before any key is looked at.
-    await expect(
-      a.invoke('ai-assist:prepare', { kind: 'suggest', aircraftId: GUIDE })
-    ).rejects.toThrow('Suggest a setup is for DCS aircraft');
+    // A drafted guide is not for this game, said before any key is looked at.
     await expect(
       a.invoke('ai-assist:prepare', { kind: 'draft', aircraftId: GUIDE })
     ).rejects.toThrow('RigReady includes the guide for Nuclear Option');

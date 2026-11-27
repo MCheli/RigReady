@@ -4,9 +4,9 @@ import UsageLine from './UsageLine.vue';
 import { useAiStore } from './store';
 
 /**
- * AI help (only with a key): a suggested setup for this aircraft on the user's devices,
- * reviewed line by line; questions about the setup; a drafted guide for aircraft that
- * have none. Every request is shown exactly before it is sent.
+ * AI help (only with a key): a suggested setup for this aircraft, or for Nuclear Option, on
+ * the user's devices, reviewed line by line; questions about the setup; a drafted guide for
+ * aircraft that have none. Every request is shown exactly before it is sent.
  */
 const store = useAiStore();
 const question = ref('');
@@ -81,9 +81,18 @@ const selectedCount = computed(() => store.selected.size);
       {{ store.aiNote }}
     </v-alert>
 
-    <div v-if="!iracing && !nuclearOption" class="rr-panel ai-block">
+    <div v-if="!iracing" class="rr-panel ai-block">
       <div class="ai-block-head">
-        <div>
+        <div v-if="nuclearOption">
+          <div class="rr-row-title">Suggest a setup for Nuclear Option on my devices</div>
+          <div class="rr-row-sub">
+            The model sees your controllers (names, buttons, hats and axes), the game's actions with
+            what is bound now, and the guide. You see exactly what is sent before it goes, and
+            nothing is changed until you review and write it. It suggests buttons and axes of your
+            controllers; a key or a hat you bind yourself.
+          </div>
+        </div>
+        <div v-else>
           <div class="rr-row-title">
             Suggest a setup for the {{ guide.aircraftName }} on my devices
           </div>

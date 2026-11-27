@@ -34,6 +34,8 @@ function toggle(index: number): void {
 
 const fileName = (p: string): string => p.split(/[\\/]/).pop() ?? p;
 const folder = (p: string): string => p.split(/[\\/]/).slice(0, -1).join('\\');
+/** Nuclear Option keeps its bindings in the registry: values, not files in a folder. */
+const registry = computed(() => store.guide?.game === 'nuclear-option');
 const canApply = computed(
   () => plan.value !== undefined && !plan.value.blocked && plan.value.files.length > 0
 );
@@ -71,9 +73,17 @@ const canApply = computed(
         <div v-if="review.busy && !plan" class="rr-muted">Working out what would change…</div>
         <template v-if="plan">
           <p class="rv-lead">
-            <template v-if="plan.files.length > 0">
+            <template v-if="plan.files.length > 0 && registry">
+              This is everything that will be written to the bindings Nuclear Option saved in the
+              registry. Each controller's saved bindings are backed up first, and the whole change
+              can be undone from here or from the Safety page.
+            </template>
+            <template v-else-if="plan.files.length > 0">
               This is everything that will be written to DCS's binding files. Each file is backed up
               first, and the whole change can be undone from here or from the Safety page.
+            </template>
+            <template v-else-if="registry">
+              Nothing would change: the saved bindings already look like this.
             </template>
             <template v-else>Nothing would change: the files already look like this.</template>
           </p>
@@ -91,8 +101,10 @@ const canApply = computed(
               <span class="rv-chip">{{ ACTION[file.action] }}</span>
               <span class="rr-row-title">{{ file.title }}</span>
             </div>
-            <div class="rr-mono rr-muted rv-path">{{ fileName(file.path) }}</div>
-            <div class="rr-mono rr-muted rv-path">in {{ folder(file.path) }}</div>
+            <template v-if="!registry">
+              <div class="rr-mono rr-muted rv-path">{{ fileName(file.path) }}</div>
+              <div class="rr-mono rr-muted rv-path">in {{ folder(file.path) }}</div>
+            </template>
             <ul class="rv-lines">
               <li v-for="(line, n) in file.lines" :key="n">{{ line }}</li>
             </ul>
@@ -127,7 +139,9 @@ const canApply = computed(
           @click="store.applyReview()"
         >
           {{
-            plan && plan.files.length > 1 ? `Write ${plan.files.length} files` : 'Write the change'
+            plan && plan.files.length > 1 && !registry
+              ? `Write ${plan.files.length} files`
+              : 'Write the change'
           }}
         </v-btn>
       </v-card-actions>

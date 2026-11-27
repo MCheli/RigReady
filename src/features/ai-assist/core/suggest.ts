@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { describeInput, fits, hasInput } from './inputs';
+import { controlFromDirectInput, controlLabel, type BoundControl } from '../../../core/bindings';
+import { describeInput, fits, hasInput, type Controls } from './inputs';
 import { matchActions, TierSchema, type Tier } from './pack';
 import { contextText, devicesText, inputText, oneLine, type Snapshot } from './snapshot';
 
@@ -54,7 +55,11 @@ export const systemPrompt = (snapshot: Snapshot): string =>
 /** Upper bound on suggestions in one answer; more than this and the answer is refused. */
 export const MAX_SUGGESTIONS = 120;
 
-export function suggestionSchema(deviceRefs: string[]): Record<string, unknown> {
+export function suggestionSchema(
+  deviceRefs: string[],
+  game: Snapshot['game'] = 'dcs'
+): Record<string, unknown> {
+  const nuclearOption = game === 'nuclear-option';
   return {
     type: 'object',
     additionalProperties: false,
@@ -74,7 +79,12 @@ export function suggestionSchema(deviceRefs: string[]): Record<string, unknown> 
               description: 'An id from <actions>; writable must be yes.',
             },
             device: { type: 'string', enum: deviceRefs.length > 0 ? deviceRefs : ['none'] },
-            input: { type: 'string', description: 'A DCS input name the device has.' },
+            input: {
+              type: 'string',
+              description: nuclearOption
+                ? 'A button or an axis the device has, named as in <devices> and <actions>: "Button 5", "Y axis".'
+                : 'A DCS input name the device has.',
+            },
             priority: { type: 'string', enum: ['must', 'should', 'nice'] },
             reason: {
               type: 'string',
@@ -94,6 +104,19 @@ export function suggestionSchema(deviceRefs: string[]): Record<string, unknown> 
 }
 
 export function suggestionTask(snapshot: Snapshot): string {
+  if (snapshot.game === 'nuclear-option') {
+    return [
+      devicesText(snapshot),
+      '',
+      'Task: suggest how to bind Nuclear Option on these controllers.',
+      '- Put each important action where a player would want it: the flight axes on the stick, the throttle and the pedals; weapons, targeting and countermeasures on the buttons under the fingers; what is used once a flight on a panel or a base.',
+      '- An action whose kind is axis goes on an axis. An action whose kind is button, which includes each side of an axis action, goes on a button.',
+      '- Only buttons and axes of the devices dev1, dev2 and so on: no hat, no key, no mouse button.',
+      '- A suggested control is taken over: whatever else is on that button or axis of that device is taken off it. So respect what the player already bound (the "bound now" column); suggest a change only when it is clearly better, and do not put two actions on one input.',
+      "- Use the guide's tiers. Most important first.",
+      '- At most 80 items. Only actions whose writable column is yes.',
+    ].join('\n');
+  }
   return [
     devicesText(snapshot),
     '',
@@ -180,6 +203,31 @@ function guideLabels(snapshot: Snapshot): Map<string, string> {
   return labels;
 }
 
+/**
+ * Nuclear Option: an input as a request names it ("Button 5", "Y axis", "Slider 1") by the
+ * name the checks below know it under (JOY_BTN5, JOY_Y, JOY_SLIDER1). Undefined for
+ * anything that is not a button, or an axis this controller has.
+ */
+export function nuclearOptionInput(controls: Controls, text: string): string | undefined {
+  const asked = text.trim();
+  if (describeInput(asked)) return asked;
+  const button = /^button\s+([1-9]\d{0,2})$/i.exec(asked);
+  if (button) return `JOY_BTN${button[1]}`;
+  const axis = controls.axes.find(
+    (name) => controlLabel({ kind: 'axis', axis: name }).toLowerCase() === asked.toLowerCase()
+  );
+  return axis ? `JOY_${axis.toUpperCase()}` : undefined;
+}
+
+/** An input as the app shows it; an axis of Nuclear Option as its bindings page names it. */
+function labelOf(game: Snapshot['game'], input: string): string {
+  const info = describeInput(input);
+  if (game === 'nuclear-option' && info?.kind === 'axis' && info.axis) {
+    return controlLabel({ kind: 'axis', axis: info.axis });
+  }
+  return info?.label ?? input;
+}
+
 /** Checks a model's answer line by line against the aircraft and the controllers. */
 export function validatePlan(text: string, snapshot: Snapshot): Parsed<SuggestionPlan> {
   const json = parseJson(text.trim());
@@ -197,6 +245,7 @@ export function validatePlan(text: string, snapshot: Snapshot): Parsed<Suggestio
       why: `The answer suggested ${plan.data.items.length} changes, more than RigReady accepts in one go (${MAX_SUGGESTIONS}). Nothing from it was used.`,
     };
   }
+  const nuclearOption = snapshot.game === 'nuclear-option';
   const actions = new Map(snapshot.actions.map((a) => [a.id, a]));
   const controllers = new Map(snapshot.controllers.map((c) => [c.ref, c]));
   const labels = guideLabels(snapshot);
@@ -211,12 +260,16 @@ export function validatePlan(text: string, snapshot: Snapshot): Parsed<Suggestio
       dropped.push({ text: shown, why: 'not in the format asked for' });
       continue;
     }
-    const { actionId, device, input, priority, reason } = item.data;
+    const { actionId, device, priority, reason } = item.data;
+    let input = item.data.input;
     const action = actions.get(actionId);
     const controller = controllers.get(device);
     const what = `${clip(oneLine(actionId, 80), 80)} on ${clip(oneLine(device, 20), 20)} ${clip(oneLine(input, 30), 30)}`;
     if (!action) {
-      dropped.push({ text: what, why: 'no such action in this aircraft' });
+      dropped.push({
+        text: what,
+        why: nuclearOption ? 'no such action in this game' : 'no such action in this aircraft',
+      });
       continue;
     }
     if (!controller) {
@@ -225,6 +278,17 @@ export function validatePlan(text: string, snapshot: Snapshot): Parsed<Suggestio
         why: 'no such controller',
       });
       continue;
+    }
+    if (nuclearOption) {
+      const named = nuclearOptionInput(controller.controls, input);
+      if (named && describeInput(named)?.kind === 'hat') {
+        dropped.push({
+          text: `${action.name} on ${inputText(controller, named)}`,
+          why: 'RigReady does not bind a hat in Nuclear Option; bind one in the game',
+        });
+        continue;
+      }
+      if (named) input = named;
     }
     if (!describeInput(input) || !hasInput(controller.controls, input)) {
       dropped.push({
@@ -268,7 +332,7 @@ export function validatePlan(text: string, snapshot: Snapshot): Parsed<Suggestio
       deviceName: controller.givenName ?? controller.name,
       deviceGuid: controller.guid,
       input,
-      inputLabel: describeInput(input)!.label,
+      inputLabel: labelOf(snapshot.game, input),
       priority,
       reason: clip(oneLine(reason, 2000), 600),
       replaces: [],
@@ -291,6 +355,13 @@ export function validatePlan(text: string, snapshot: Snapshot): Parsed<Suggestio
 }
 
 /** What each change would take away, and changes in one batch that fight over an input. */
+function sameControl(a: BoundControl | undefined, b: BoundControl | undefined): boolean {
+  if (!a || !b) return false;
+  if (a.kind === 'button' && b.kind === 'button') return a.index === b.index;
+  if (a.kind === 'axis' && b.kind === 'axis') return a.axis.toUpperCase() === b.axis.toUpperCase();
+  return false;
+}
+
 export function markConflicts(
   changes: Pick<
     Suggestion,
@@ -304,8 +375,13 @@ export function markConflicts(
     const device = snapshot.bindings.devices.find(
       (d) => d.guid?.toUpperCase() === change.deviceGuid.toUpperCase()
     );
-    const here = (device?.bindings ?? []).filter(
-      (b) => b.input === change.input && b.modifiers.length === 0
+    // Nuclear Option's bindings carry the game's own numbering as their input; the control
+    // they are on says which button or axis it is.
+    const wanted = controlFromDirectInput(change.input);
+    const here = (device?.bindings ?? []).filter((b) =>
+      snapshot.game === 'nuclear-option'
+        ? sameControl(b.control, wanted)
+        : b.input === change.input && b.modifiers.length === 0
     );
     change.already = here.some((b) => b.actionId === change.actionId);
     change.replaces = [

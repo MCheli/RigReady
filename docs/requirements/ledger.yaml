@@ -5531,7 +5531,7 @@ requirements:
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#says of each item whether it is bound on a controller, from what the game saved"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#shows the change first, then saves it through the bindings feature, with Undo on the Safety page"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#is refused, with nothing written: the wrong kind of control for the action, an axis or a key the game has no number for, an action outside the guide, a controller the game saved nothing for, a map that changed, and while the game runs"
-      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#keeps the walkthrough’s progress, stages nothing, and neither suggests a setup nor drafts a guide"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#keeps the walkthrough’s progress, stages nothing, and does not draft a guide"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#reads the same whether the game is open or closed: it only reads"
       - "tests/unit/offeredByGame.test.ts#the binding guide is the one menu entry about a game, and it is about DCS, iRacing and Nuclear Option"
       - "tests/e2e/ai-assist-nuclear-option.e2e.ts#binding guide for nuclear option: the walkthrough binds a moved axis, a pressed button and a pressed key after a review; the priorities; Undo"
@@ -5569,17 +5569,50 @@ requirements:
     done_means:
       - "With an AI provider set up, the Binding guide page has its AI help tab for Nuclear Option and each action of the walkthrough has Explain. A question and an explanation are prepared from the game's own data: the game named as Nuclear Option, its actions with what each is bound to now, the connected controllers' product names and layout, and the shipped guide, said in the request to be unreviewed. No DCS wording, no device id, no registry value name."
       - "The request is shown in full before it is sent, as for the other games, and Settings' and the manual's account of what AI help sends names Nuclear Option and what is sent for it."
-      - "Suggest a setup and a drafted guide are refused for Nuclear Option before a provider or a key is looked at, each with its reason, and the page does not offer them."
+      - "A drafted guide is refused for Nuclear Option before a provider or a key is looked at, with its reason, and the page does not offer one. (Suggest a setup: AI-NO-004.)"
     status: done
     evidence:
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#with a key, explains an action and answers a question from the game’s own data: the game named, no device id, the guide said to be unreviewed"
-      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#keeps the walkthrough’s progress, stages nothing, and neither suggests a setup nor drafts a guide"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#keeps the walkthrough’s progress, stages nothing, and does not draft a guide"
       - "src/features/ai-assist/core/service.test.ts#says apart what the binding guide sends and what the assistant sends, and where it goes"
       - "tests/e2e/ai-assist.e2e.ts#ai-assist: the key is entered in Settings, tested, never shown again, and what is sent is stated"
-      - "tests/e2e/ai-assist-nuclear-option.e2e.ts#binding guide for nuclear option, with a key: questions and Explain are offered, a setup suggestion is not, and the request is shown first"
+      - "tests/e2e/ai-assist-nuclear-option.e2e.ts#binding guide for nuclear option, with a key: questions, Explain and a setup suggestion are offered, no drafted guide, and the request is shown first"
       - "artifacts/screens/ai-assist-nuclear-option-ai/01-ai-tab.png"
       - "artifacts/screens/ai-assist-nuclear-option-ai/02-request.png"
-    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does. Not done: Suggest a setup for Nuclear Option. For DCS a suggestion is applied by staging many bindings and writing them as one change; the Nuclear Option bindings feature changes one binding at a time, so it needs a many-at-once change there first. No request was sent to a real provider for this game: the tests answer from a script. Copilot could not review the pull request (no quota left); an independent review by a second Claude agent found no leak of an id or a path, and these, fixed before the merge: what an action is bound to was sent in the game's own numbering (its button 4 for the app's Button 5), a binding on the mouse was sent as none, every controller was sent as used as other, a Reversed tick could be overtaken by Save, and Settings said guides are drafted for this game."
+    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does. Suggest a setup followed as AI-NO-004. No request was sent to a real provider for this game: the tests answer from a script. Copilot could not review the pull request (no quota left); an independent review by a second Claude agent found no leak of an id or a path, and these, fixed before the merge: what an action is bound to was sent in the game's own numbering (its button 4 for the app's Button 5), a binding on the mouse was sent as none, every controller was sent as used as other, a Reversed tick could be overtaken by Save, and Settings said guides are drafted for this game."
+
+  - id: AI-NO-004
+    title: "Suggest a setup for Nuclear Option: checked, reviewed, written as one change, undone as one"
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "With an AI provider set up, the AI help tab offers Suggest a setup for Nuclear Option. The request is shown before it is sent; it names the game, says that a suggested control is taken over and that only buttons and axes of the listed controllers may be named, and holds no DCS wording, no device id and no registry value name."
+      - "Every line of the answer is checked against the game's actions and the connected controllers the game has saved bindings for: an unknown action or controller, an input the controller lacks, an axis for a button action or a button for an axis action, and a hat are left out and counted with the reason. A suggestion bound so already is marked and not ticked; one whose control does something else says what would stop; two that want one control are both unticked and cannot be reviewed together."
+      - "The Nuclear Option bindings feature takes the ticked suggestions as one proposal (the reader's proposals, as DCS's): each binding is the edit its page makes, folded into the controller's saved map, and what else was on the button or the axis is taken off it. The review says, controller by controller, what each action will be on and what each control stops doing, and writes nothing."
+      - "Writing goes through FileStore under one group: each saved map backed up, each value read back, one entry on the Safety page, the readers told. Undo from the guide or the Safety page puts every value back. Refused while the game runs (write and Undo), when the saved bindings changed after the review, and as a whole when one binding cannot be made. A failure after the first value was written says part is written and that Undo takes it out."
+      - "An axis the player reversed stays reversed. A key, a hat, a mouse button, a clear and a controller without saved bindings are refused with the reason."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/core/proposals.test.ts#shows every change first, device by device, and writes nothing"
+      - "src/features/nuclear-option-bindings/core/proposals.test.ts#writes them as one entry of the Safety page, the readers show them, and its Undo puts every value back"
+      - "src/features/nuclear-option-bindings/core/proposals.test.ts#writes each binding as the page writes one: the same bytes as the changes made one at a time"
+      - "src/features/nuclear-option-bindings/core/proposals.test.ts#is refused while the game runs, to write and to undo, and when the bindings changed after they were shown"
+      - "src/features/nuclear-option-bindings/core/proposals.test.ts#refuses the whole list when one change cannot be made, saying which and why"
+      - "src/features/nuclear-option-bindings/core/proposals.test.ts#a failure after the first value was written says that part is written, and Undo takes it out"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#takes what else is on the button off it, and nothing more: the same text as the plain change without that binding"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#a binding already in place still frees its control, and is \"the same\" only when nothing else is on it"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#frees an axis the same way, half an axis that is on it too, and a clear frees nothing"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#with a key, suggests a setup: the answer is checked against the game and the controllers, reviewed as the bindings feature plans it, written as one change and undone"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#a suggestion is not asked for with no controller of the game’s connected, and ticked ones that fight over a control are refused"
+      - "tests/e2e/ai-assist-nuclear-option.e2e.ts#binding guide for nuclear option: a suggested setup is shown before it is sent, checked, reviewed, written as one change and undone"
+      - "artifacts/screens/ai-assist-nuclear-option-suggest/01-request.png"
+      - "artifacts/screens/ai-assist-nuclear-option-suggest/02-suggestions.png"
+      - "artifacts/screens/ai-assist-nuclear-option-suggest/03-review.png"
+      - "artifacts/screens/ai-assist-nuclear-option-suggest/04-written.png"
+      - "artifacts/screens/ai-assist-nuclear-option-suggest/05-safety-page.png"
+      - "artifacts/screens/ai-assist-nuclear-option-suggest/06-undone.png"
+    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does. A suggested binding takes its control over, as in DCS; a single change on the bindings page still leaves the other action and says so. Not tried: a request to a real provider for this game (the tests answer from a script), and a proposal written to the real registry with the game started on it; the bytes are the writer's own, which the game has loaded. Not done: suggestions for keys, hats and mouse buttons."
 
   # ---------------------------------------------------------------------------
   # THE BUILT-IN ASSISTANT: app-wide, on the MCP catalogue and gate

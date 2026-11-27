@@ -1,6 +1,6 @@
 ---
 title: Binding guide for Nuclear Option
-description: One guide for every aircraft in Nuclear Option, with what to bind first in plain language and a walkthrough that binds buttons, axes and keys.
+description: One guide for every aircraft in Nuclear Option: what to bind first, a walkthrough that binds buttons, axes and keys, and a setup suggested by AI.
 order: 67
 ---
 
@@ -55,9 +55,27 @@ What the walkthrough says instead of offering it: an axis moved for a button act
 
 With an AI provider set up in **Settings** ([Choose who answers](../ai/providers.md)), the page has an **AI help** tab for questions about your Nuclear Option setup, and each action in the walkthrough has **Explain**. Before anything is sent a dialog shows the complete request. It holds the game's list of actions with what each is bound to now, the product names and layout of your connected controllers, the guide's text and your question; no file path, device id or serial number. The answer is the model's: the guide it reads was not reviewed by anyone who plays the game, and the request says so.
 
+### Suggest a setup
+
+**Suggest a setup** on the **AI help** tab asks the model where each important action belongs on the controllers you have plugged in. The request is shown first, like every other. The answer comes back as a list, one binding a line, each with its reason:
+
+![A suggested setup for Nuclear Option](../../../artifacts/screens/ai-assist-nuclear-option-suggest/02-suggestions.png)
+
+RigReady checks every line against the game and your controllers before you see it. A line that names an action the game does not have, a controller that is not plugged in, a button or an axis the controller lacks, an axis for a button action, or a hat, is left out and counted under the list, with the reason. A suggestion that is bound so already is marked and not ticked. Two suggestions that want the same control are both unticked until you choose one.
+
+A suggested binding takes its control over. If the button or the axis does something else now, the line says what, and that stops when you write the change. This differs from a single change on the [bindings page](nuclear-option-bindings.md), which leaves the other action on the control and tells you. An axis you reversed stays reversed.
+
+Tick what you want and press **Review**. The review lists, controller by controller, what each action will be on and what each control stops doing:
+
+![The review of a suggested setup](../../../artifacts/screens/ai-assist-nuclear-option-suggest/03-review.png)
+
+**Write the change** saves all of it as one entry on the **Safety** page, each controller's saved bindings backed up first. **Undo** on the guide page, or on the Safety page, puts every controller back. Nothing is written while Nuclear Option runs, and if the game's saved bindings changed after the review, RigReady says so and writes nothing.
+
+A suggestion uses buttons and axes of controllers the game has saved bindings for. It does not suggest keys, hats or mouse buttons.
+
 ## What RigReady does not do here
 
 - **Bind a hat switch or a mouse button.** Those are bound in the game, under Settings, then Controls.
-- **Suggest a setup with AI.** That is for DCS aircraft. Explain and the questions work here: see below.
+- **Suggest a key, a hat or a mouse button with AI.** A suggested setup uses buttons and axes of your controllers.
 - **A guide of your own.** RigReady uses the guide it includes; importing or writing one is for a DCS aircraft or an iRacing car without a guide.
 - **Plain names on the cheat sheets.** The game's own action names are already plain, so the cheat sheets keep them.

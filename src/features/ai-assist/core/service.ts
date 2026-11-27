@@ -158,8 +158,6 @@ const PROGRESS_EVERY_MS = 150;
 
 const GAME = 'dcs';
 
-const NUCLEAR_OPTION_NO_SUGGEST =
-  'Suggest a setup is for DCS aircraft. For Nuclear Option, ask a question, or bind with the walkthrough, one control at a time.';
 const NUCLEAR_OPTION_NO_DRAFT = 'RigReady includes the guide for Nuclear Option and uses that one.';
 
 const SettingsSchema = z.object({
@@ -1002,8 +1000,15 @@ export class AiAssist {
     });
   }
 
-  private proposals(): Result<NonNullable<BindingReader['proposals']>> {
-    const reader = this.reader();
+  /** The review-and-write path of the bindings feature whose game the aircraft id is of. */
+  private proposals(aircraftId?: string): Result<NonNullable<BindingReader['proposals']>> {
+    const nuclearOption = aircraftId !== undefined && isNuclearOptionId(aircraftId);
+    const found = nuclearOption ? this.ctx.bindings.get(NUCLEAR_OPTION) : undefined;
+    const reader = nuclearOption
+      ? found
+        ? ok(found)
+        : err('ai.noBindings', 'No Nuclear Option bindings feature is available.')
+      : this.reader();
     if (!reader.ok) return reader;
     const proposals = reader.value.proposals;
     return proposals
@@ -1034,7 +1039,11 @@ export class AiAssist {
   }
 
   async undo(groupId: string): Promise<Result<{ undone: boolean }>> {
-    const proposals = this.proposals();
+    // A change this wrote for Nuclear Option is undone by that game's bindings feature,
+    // which refuses while that game runs.
+    const proposals = this.proposals(
+      this.nuclearOptionGroups.has(groupId) ? NUCLEAR_OPTION_GUIDE : undefined
+    );
     if (!proposals.ok) return proposals;
     const undone = await proposals.value.undo(groupId);
     return undone.ok ? ok({ undone: true }) : undone;
@@ -1635,9 +1644,6 @@ export class AiAssist {
     actionId?: string;
   }): Promise<Result<Prepared>> {
     // Said before a provider or a key is looked at: no such request is ever made for it.
-    if (isNuclearOptionId(input.aircraftId) && input.kind === 'suggest') {
-      return err('ai.nuclearOptionSuggest', NUCLEAR_OPTION_NO_SUGGEST);
-    }
     if (isNuclearOptionId(input.aircraftId) && input.kind === 'draft') {
       return err('ai.guideShipped', NUCLEAR_OPTION_NO_DRAFT);
     }
@@ -1659,14 +1665,25 @@ export class AiAssist {
       );
     }
     if (input.kind === 'suggest') {
+      if (s.game === 'nuclear-option') {
+        // A suggestion is written by the bindings feature as one change; without that
+        // there would be nothing to do with the answer.
+        const able = this.proposals(input.aircraftId);
+        if (!able.ok) return able;
+      }
       if (s.controllers.length === 0) {
         return err(
           'ai.noControllers',
-          'No controller that DCS uses for this aircraft is connected.'
+          s.game === 'nuclear-option'
+            ? 'No controller that Nuclear Option has saved bindings for is connected. Plug one in, or start the game once with it plugged in.'
+            : 'No controller that DCS uses for this aircraft is connected.'
         );
       }
       task = suggestionTask(s);
-      schema = suggestionSchema(s.controllers.map((c) => c.ref));
+      schema = suggestionSchema(
+        s.controllers.map((c) => c.ref),
+        s.game
+      );
     } else if (input.kind === 'draft') {
       if (await this.ownGuideKept(input.aircraftId)) {
         return err(
@@ -1983,6 +2000,9 @@ export class AiAssist {
     return ok({ cancelled: true });
   }
 
+  /** The changes this wrote for Nuclear Option, by journal group: whose Undo is that game's. */
+  private readonly nuclearOptionGroups = new Set<string>();
+
   private proposalFromRound(roundId: string, selected: string[]): Result<BindingProposal> {
     const round = this.rounds.get(roundId);
     if (!round) return err('ai.expired', 'Those suggestions are no longer available. Ask again.');
@@ -2002,7 +2022,8 @@ export class AiAssist {
       inputs.set(key, s.label);
     }
     return ok({
-      aircraftId: round.aircraftId,
+      // The Nuclear Option bindings feature knows its one set of bindings as "all".
+      aircraftId: isNuclearOptionId(round.aircraftId) ? NUCLEAR_OPTION_SET : round.aircraftId,
       summary: `Bind ${chosen.length} ${chosen.length === 1 ? 'action' : 'actions'} suggested by AI`,
       changes: chosen.map((s) => ({
         op: 'bind',
@@ -2016,7 +2037,7 @@ export class AiAssist {
   async reviewSuggestions(roundId: string, selected: string[]): Promise<Result<PlanView>> {
     const proposal = this.proposalFromRound(roundId, selected);
     if (!proposal.ok) return proposal;
-    const proposals = this.proposals();
+    const proposals = this.proposals(this.rounds.get(roundId)?.aircraftId);
     if (!proposals.ok) return proposals;
     return proposals.value.plan(proposal.value);
   }
@@ -2024,9 +2045,17 @@ export class AiAssist {
   async applySuggestions(roundId: string, selected: string[]): Promise<Result<AppliedView>> {
     const proposal = this.proposalFromRound(roundId, selected);
     if (!proposal.ok) return proposal;
-    const proposals = this.proposals();
+    const aircraftId = this.rounds.get(roundId)?.aircraftId;
+    const proposals = this.proposals(aircraftId);
     if (!proposals.ok) return proposals;
-    return proposals.value.apply(proposal.value);
+    const applied = await proposals.value.apply(proposal.value);
+    if (applied.ok && aircraftId !== undefined && isNuclearOptionId(aircraftId)) {
+      this.nuclearOptionGroups.add(applied.value.groupId);
+      this.ctx.log.info(
+        `ai-assist: ${proposal.value.changes.length} suggested Nuclear Option bindings written`
+      );
+    }
+    return applied;
   }
 
   /**
