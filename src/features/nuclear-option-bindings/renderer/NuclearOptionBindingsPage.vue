@@ -21,6 +21,7 @@ import {
 import { controlLabel } from '../../../core/bindings';
 import { GAME_KEYS, keyName } from '../core/keys';
 import { canChange, shownBindings } from './rows';
+import SnapshotsPanel from './SnapshotsPanel.vue';
 
 /** The usual axes, in the order the game numbers them, for a controller that is not plugged in. */
 const USUAL_AXES = ['X', 'Y', 'Z', 'RX', 'RY', 'RZ', 'SLIDER1', 'SLIDER2'];
@@ -445,6 +446,17 @@ async function saveClearAll(): Promise<void> {
   await load();
 }
 
+// ---- Snapshots: named copies of all the bindings, taken and put back from a panel ----
+
+const showSnapshots = ref(false);
+const snapshotCount = ref<number>();
+/** A snapshot was put back (or failed part-way): the page reads the bindings again. */
+async function onRestored(message: string): Promise<void> {
+  // Empty when a restore starts or fails: an earlier "Restored" must not stay on the page.
+  savedMessage.value = message;
+  await load();
+}
+
 const editTitle = computed(() => {
   const e = editing.value;
   if (!e) return '';
@@ -467,6 +479,16 @@ const editTitle = computed(() => {
         </p>
       </div>
       <v-spacer />
+      <v-btn
+        v-if="overview?.saved"
+        :variant="showSnapshots ? 'tonal' : 'text'"
+        prepend-icon="mdi-camera-outline"
+        data-testid="nuclear-option-bindings-snapshots"
+        @click="showSnapshots = !showSnapshots"
+        >Snapshots<span v-if="snapshotCount" class="nb-count rr-muted">{{
+          snapshotCount
+        }}</span></v-btn
+      >
       <v-btn
         v-if="overview?.saved"
         variant="text"
@@ -533,6 +555,12 @@ const editTitle = computed(() => {
           @click:close="savedMessage = ''"
           >{{ savedMessage }}</v-alert
         >
+
+        <SnapshotsPanel
+          v-if="showSnapshots"
+          @restored="onRestored"
+          @count="snapshotCount = $event"
+        />
 
         <div class="rr-panel nb-note" data-testid="nuclear-option-bindings-note">
           <v-icon icon="mdi-pencil-outline" class="rr-muted" />
