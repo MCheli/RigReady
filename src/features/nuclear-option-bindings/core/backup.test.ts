@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { wiredApp, type WiredApp } from '../../../../tests/helpers';
-import { recordValues } from './backup';
+import type { CheckContext } from '../../../core/checks/registry';
+import { err } from '../../../core/result';
+import { nuclearOptionBackupSource, recordValues } from './backup';
 
 /**
  * What a full backup keeps of Nuclear Option: its registry values as a record, on
@@ -53,6 +55,32 @@ describe('Nuclear Option in a full backup', () => {
   it('keeps nothing when the game has saved nothing', async () => {
     app = await wiredApp('games-nuclear-option');
     expect(await source(app).records!(app.ctx)).toEqual({ ok: true, value: [] });
+  });
+
+  it('a registry that cannot be read is an error the backup hears, not an empty record list', async () => {
+    const failing = {
+      ports: {
+        registry: { listValues: async () => err('registry.read', 'Could not read the key.') },
+      },
+    } as unknown as CheckContext;
+    expect(await nuclearOptionBackupSource.records!(failing)).toEqual({
+      ok: false,
+      error: { code: 'registry.read', message: 'Could not read the key.' },
+    });
+  });
+
+  it('a string setting of eight bytes is shown as its text, not as a number', () => {
+    const text = (s: string): { type: 'binary'; value: string } => ({
+      type: 'binary',
+      value: Buffer.from(`${s}\0`, 'utf8').toString('hex'),
+    });
+    const zero = { type: 'binary' as const, value: '00'.repeat(8) };
+    const rows = recordValues({
+      Preset_h1: text('default'),
+      Name_h2: text('Viper'),
+      Volume_h3: zero,
+    }).map((v) => `${v.label} = ${v.value}`);
+    expect(rows).toEqual(['Name = Viper', 'Preset = default', 'Volume = 0']);
   });
 
   it('shows a float setting as a number, a map that cannot be read as such, and long data by its size', () => {

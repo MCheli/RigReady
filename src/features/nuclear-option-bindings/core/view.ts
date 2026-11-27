@@ -13,7 +13,7 @@ import type { GameRegistry } from '../../../core/games';
 import { err, ok, type Result } from '../../../core/result';
 import type { InputDevice } from '../../../shared/models';
 import type { Overview, OverviewBinding, OverviewDevice } from '../contract';
-import { ACTIONS, actionOf, bindingName, mapCategoryName } from './actions';
+import { ACTIONS, actionOf, bindingActionId, bindingName, mapCategoryName } from './actions';
 import { keyName, modifierName, mouseElementName } from './keys';
 import {
   parseControllerMap,
@@ -161,7 +161,7 @@ function joystickBinding(
         ? ' (negative half)'
         : '';
   return {
-    actionId: String(action.id),
+    actionId: bindingActionId(action, wholeAxis, element.axisContribution),
     action: bindingName(action, wholeAxis, element.axisContribution),
     category: action.category,
     mapCategory: mapCategoryName(mapCategory),
@@ -178,7 +178,7 @@ function keyBinding(element: ElementMap, mapCategory: number): OverviewBinding {
   const action = actionOf(element.actionId);
   const key = keyName(element.keyboardKeyCode);
   return {
-    actionId: String(action.id),
+    actionId: bindingActionId(action, false, element.axisContribution),
     action: bindingName(action, false, element.axisContribution),
     category: action.category,
     mapCategory: mapCategoryName(mapCategory),
@@ -194,7 +194,7 @@ function mouseBinding(element: ElementMap, mapCategory: number): OverviewBinding
   const action = actionOf(element.actionId);
   const name = mouseElementName(element.elementType, element.elementIdentifierId);
   return {
-    actionId: String(action.id),
+    actionId: bindingActionId(action, element.elementType === 0, element.axisContribution),
     action: bindingName(action, element.elementType === 0, element.axisContribution),
     category: action.category,
     mapCategory: mapCategoryName(mapCategory),
@@ -222,8 +222,8 @@ function sortBindings(bindings: OverviewBinding[]): OverviewBinding[] {
   const order = new Map(ACTIONS.map((a, i) => [String(a.id), i]));
   return [...bindings].sort(
     (a, b) =>
-      (order.get(a.actionId) ?? 999) - (order.get(b.actionId) ?? 999) ||
-      a.action.localeCompare(b.action)
+      (order.get(a.actionId.split(':')[0]!) ?? 999) -
+        (order.get(b.actionId.split(':')[0]!) ?? 999) || a.action.localeCompare(b.action)
   );
 }
 
@@ -315,7 +315,7 @@ export async function overview(ctx: BindingsContext): Promise<Result<Overview>> 
   const devices = devicesOf(saved.value, await liveControllers(ctx));
   return ok({
     installed: await installed(ctx),
-    saved: saved.value.maps.length > 0,
+    saved: saved.value.maps.length > 0 || saved.value.problems.length > 0,
     registryKey: `HKEY_CURRENT_USER\\${REGISTRY_KEY}`,
     devices,
     problems: saved.value.problems,
@@ -360,7 +360,7 @@ export function createBindingReader(ctx: BindingsContext): BindingReader {
     async available() {
       if (await installed(ctx)) return true;
       const saved = await readSaved(ctx);
-      return saved.ok && saved.value.maps.length > 0;
+      return saved.ok && (saved.value.maps.length > 0 || saved.value.problems.length > 0);
     },
     aircraft: async () => ok([AIRCRAFT]),
     async bindings(aircraftId): Promise<Result<AircraftBindings>> {
@@ -384,13 +384,23 @@ export function createBindingReader(ctx: BindingsContext): BindingReader {
         );
       }
       return ok(
-        ACTIONS.map((a) => ({
-          id: String(a.id),
-          name: a.name,
-          category: [a.category],
-          kind: a.kind,
-          editable: false,
-        }))
+        // An axis action is three things to bind: the axis, and each side for a button or a
+        // key, each under the id its bindings carry.
+        ACTIONS.flatMap((a): BoundAction[] => {
+          const whole: BoundAction = {
+            id: String(a.id),
+            name: a.name,
+            category: [a.category],
+            kind: a.kind,
+            editable: false,
+          };
+          if (a.kind !== 'axis') return [whole];
+          const side = (n: number, name: string | undefined): BoundAction[] =>
+            name
+              ? [{ ...whole, id: bindingActionId(a, false, n), name, kind: 'button' as const }]
+              : [];
+          return [whole, ...side(0, a.positive), ...side(1, a.negative)];
+        })
       );
     },
   };

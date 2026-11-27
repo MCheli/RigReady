@@ -19,13 +19,16 @@ function settingText(value: RegistryValue): string {
   if (value.type === 'number') return String(value.value);
   if (value.type === 'string') return value.value;
   if (value.type === 'strings') return value.value.join(', ');
+  // Unity stores a string as its bytes and a zero byte: looked for first, because a string
+  // of seven characters is eight bytes, as a float is.
+  const stored = textOfBinary(value.value);
+  const text = stored?.endsWith('\0') ? stored.slice(0, -1) : undefined;
+  if (text !== undefined && text.length > 0 && /^[\x20-\x7e]+$/.test(text)) {
+    return text.length > 80 ? `${text.slice(0, 80)}…` : text;
+  }
   if (value.value.length === 16) {
     const float = Buffer.from(value.value, 'hex').readDoubleLE(0);
     if (Number.isFinite(float)) return String(Number(float.toFixed(4)));
-  }
-  const text = textOfBinary(value.value)?.replace(/\0+$/, '');
-  if (text !== undefined && /^[\x20-\x7e]*$/.test(text)) {
-    return text.length > 80 ? `${text.slice(0, 80)}…` : text;
   }
   return `${value.value.length / 2} bytes`;
 }
@@ -83,7 +86,9 @@ export const nuclearOptionBackupSource: BackupSource = {
   suggest: async () => ok([]),
   async records(ctx) {
     const values = await ctx.ports.registry.listValues('HKCU', REGISTRY_KEY);
-    if (!values.ok || Object.keys(values.value).length === 0) return ok([]);
+    // Not readable is not the same as empty: the backup must hear about it.
+    if (!values.ok) return values;
+    if (Object.keys(values.value).length === 0) return ok([]);
     return ok([
       {
         id: 'registry',

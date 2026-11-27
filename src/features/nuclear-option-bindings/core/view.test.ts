@@ -214,7 +214,48 @@ describe('Nuclear Option bindings', () => {
     );
     const actions = await reader.actions!('all');
     if (!actions.ok) throw new Error(actions.error.message);
-    expect(actions.value).toHaveLength(61);
+    // 61 actions; each of the 17 axis actions is also its two sides, for a button or a key.
+    expect(actions.value).toHaveLength(95);
+    expect(new Set(actions.value.map((a) => a.id)).size).toBe(95);
+    expect(actions.value.filter((a) => a.id.startsWith('25'))).toEqual([
+      { id: '25', name: 'Zoom View', category: ['Camera Controls'], kind: 'axis', editable: false },
+      {
+        id: '25:+',
+        name: 'Zoom In',
+        category: ['Camera Controls'],
+        kind: 'button',
+        editable: false,
+      },
+      {
+        id: '25:-',
+        name: 'Zoom Out',
+        category: ['Camera Controls'],
+        kind: 'button',
+        editable: false,
+      },
+    ]);
+    // The two sides of one axis action are two actions to whoever asks what a button does:
+    // the trainer must not take the Zoom Out button as the answer to Zoom In.
+    const throttle = bound.value.devices.find((d) => d.name === 'Throttle - HOTAS Warthog')!;
+    expect(
+      throttle.bindings
+        .filter((b) => b.action.startsWith('Zoom'))
+        .map((b) => [b.action, b.actionId, b.inputLabel])
+    ).toEqual([
+      ['Zoom In', '25:+', 'Button 7'],
+      ['Zoom Out', '25:-', 'Button 8'],
+    ]);
+    const keyboard = bound.value.devices.find((d) => d.kind === 'keyboard')!;
+    expect(
+      keyboard.bindings
+        .filter((b) => b.action.startsWith('Pitch'))
+        .map((b) => [b.action, b.actionId])
+    ).toEqual([
+      ['Pitch Down', '0:-'],
+      ['Pitch Up', '0:+'],
+    ]);
+    // A whole axis keeps the action's own id.
+    expect(throttle.bindings.find((b) => b.action === 'Throttle Axis')?.actionId).toBe('4');
     expect(actions.value[0]).toEqual({
       id: '0',
       name: 'Pitch Axis',
@@ -238,7 +279,10 @@ describe('Nuclear Option bindings', () => {
         name: stick.name,
         value: {
           type: 'binary',
-          value: Buffer.from('<JoystickMap><buttonMaps><oops/>', 'utf8').toString('hex'),
+          value: Buffer.from(
+            '<JoystickMap><buttonMaps><oops/></buttonMaps></JoystickMap>',
+            'utf8'
+          ).toString('hex'),
         },
       },
     ]);
@@ -252,6 +296,30 @@ describe('Nuclear Option bindings', () => {
       'Keyboard',
       'Mouse',
     ]);
+  });
+
+  it('when no saved map can be read, the page still says the game has saved bindings and why they cannot be read', async () => {
+    app = await wiredApp('nuclear-option-bindings');
+    const values = JSON.parse(
+      await fs.readFile(path.join(fixtures, 'nuclear-option', 'values.json'), 'utf8')
+    ) as { name: string; file: string }[];
+    await mutate(
+      app,
+      values.map((v) => ({
+        op: 'setRegistryValue' as const,
+        hive: 'HKCU' as const,
+        key: REGISTRY_KEY,
+        name: v.name,
+        value: { type: 'binary' as const, value: Buffer.from('cut off', 'utf8').toString('hex') },
+      }))
+    );
+    const view = await overview(app);
+    expect(view.devices).toEqual([]);
+    expect(view.saved).toBe(true);
+    // Seven, not eight: the map an earlier build left for the stick is not looked at.
+    expect(view.problems).toHaveLength(7);
+    expect(view.problems[0]).toContain('could not be read');
+    expect(await app.wiring.context.bindings.get('nuclear-option')!.available()).toBe(true);
   });
 
   it('with the game installed but never run, and on a PC without the game, nothing is shown and nothing fails', async () => {

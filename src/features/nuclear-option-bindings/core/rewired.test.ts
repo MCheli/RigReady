@@ -105,6 +105,10 @@ describe('Rewired save data', () => {
       text.replace('<actionId>5</actionId>', '<actionId>five</actionId>'),
       text.replace('<enabled>true</enabled></ActionElementMap>', '</ActionElementMap>'),
       text.slice(0, text.indexOf('</buttonMaps>')),
+      // Cut off right after a complete list: not a map without axes.
+      text.slice(0, text.indexOf('</buttonMaps>') + '</buttonMaps>'.length),
+      text.slice(0, -1),
+      text.replace('</JoystickMap>', '</KeyboardMap>'),
       text.replace('<invert>false</invert>', '<invert>maybe</invert>'),
     ]) {
       const map = parseControllerMap(damaged);
