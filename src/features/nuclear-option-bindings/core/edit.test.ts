@@ -537,6 +537,72 @@ describe('changing one binding in a saved map', () => {
     });
   });
 
+  describe('a binding that takes its control over', () => {
+    const element = (text: string, actionId: number): string => {
+      const found = new RegExp(
+        `<ActionElementMap><actionCategoryId>-?[0-9]+</actionCategoryId><actionId>${actionId}</actionId>.*?</ActionElementMap>`
+      ).exec(text);
+      if (!found) throw new Error(`no binding of action ${actionId}`);
+      return found[0];
+    };
+
+    it('takes what else is on the button off it, and nothing more: the same text as the plain change without that binding', async () => {
+      const text = await fixture('stick.xml');
+      // Next Weapon (9) to button 1, where Fire (5) is.
+      const plain = ok(editMapText(text, { actionId: 9, button: 1 }));
+      const alone = ok(editMapText(text, { actionId: 9, button: 1, alone: true }));
+      expect(alone).toMatchObject({
+        before: [{ kind: 'button', button: 3 }],
+        same: false,
+        alsoOn: [],
+        tookOff: ['Fire'],
+      });
+      expect(alone.text).toBe(plain.text.replace(element(plain.text, 5), ''));
+      expect(ok(parseControllerMap(alone.text)).buttonMaps.some((e) => e.actionId === 5)).toBe(
+        false
+      );
+      // A plain change says nothing of taking off.
+      expect(plain.tookOff).toBeUndefined();
+    });
+
+    it('a binding already in place still frees its control, and is "the same" only when nothing else is on it', async () => {
+      const text = await fixture('stick.xml');
+      const there = ok(editMapText(text, { actionId: 5, button: 1, alone: true }));
+      expect(there).toMatchObject({ same: true, tookOff: [] });
+      expect(there.text).toBe(text);
+      // With Next Weapon on the trigger too, Fire taking it over takes that off.
+      const both = ok(editMapText(text, { actionId: 9, button: 1 }));
+      const freed = ok(editMapText(both.text, { actionId: 5, button: 1, alone: true }));
+      expect(freed).toMatchObject({ same: false, tookOff: ['Next Weapon'] });
+      expect(freed.text).toBe(both.text.replace(element(both.text, 9), ''));
+    });
+
+    it('frees an axis the same way, half an axis that is on it too, and a clear frees nothing', async () => {
+      const text = await fixture('throttle.xml');
+      // Custom Axis 1 (38) to the game's axis 2, where Throttle Axis (4) is.
+      const plain = ok(editMapText(text, { actionId: 38, axis: { index: 2, invert: false } }));
+      expect(plain.alsoOn).toEqual(['Throttle Axis']);
+      const alone = ok(
+        editMapText(text, { actionId: 38, axis: { index: 2, invert: false }, alone: true })
+      );
+      expect(alone).toMatchObject({ same: false, alsoOn: [], tookOff: ['Throttle Axis'] });
+      expect(alone.text).toBe(plain.text.replace(element(plain.text, 4), ''));
+      // Axis 3 has the positive half on Apply Brakes: it goes like a whole one.
+      const half = ok(
+        editMapText(text, { actionId: 38, axis: { index: 3, invert: false }, alone: true })
+      );
+      expect(half.tookOff).toEqual(['Apply Brakes']);
+      expect(ok(parseControllerMap(half.text)).axisMaps.map((e) => e.actionId)).toEqual([4, 38]);
+      // The buttons are as they were.
+      expect(ok(parseControllerMap(half.text)).buttonMaps).toEqual(
+        ok(parseControllerMap(text)).buttonMaps
+      );
+      const cleared = ok(editMapText(text, { actionId: 11, button: null, alone: true }));
+      expect(cleared.tookOff).toBeUndefined();
+      expect(cleared.text).toBe(ok(editMapText(text, { actionId: 11, button: null })).text);
+    });
+  });
+
   it('refuses what it has not seen the game write: an axis, a key, an unknown action, a button out of range, a damaged map', async () => {
     const stick = await fixture('stick.xml');
     const refused = (text: string, edit: BindingEdit): string => {
