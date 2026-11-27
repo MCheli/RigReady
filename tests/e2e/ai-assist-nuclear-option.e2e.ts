@@ -36,10 +36,10 @@ const stateOf = (c: Controller, buttons: number[] = [], axes: number[] = []) => 
 /**
  * The binding guide for Nuclear Option on fixtures/scenarios/nuclear-option-bindings.yaml:
  * one guide for every aircraft, with what the game has bound and what it has not. The
- * walkthrough binds a controller button with you: press it, look at the change, save it;
- * Undo is on the Safety page. An axis is bound in the game, and the page says so.
+ * walkthrough binds with you: press a button or a key, or move an axis, look at the change,
+ * save it; Undo is on the Safety page.
  */
-test('binding guide for nuclear option: the walkthrough binds a pressed button after a review, the priorities, and Undo', async ({
+test('binding guide for nuclear option: the walkthrough binds a moved axis, a pressed button and a pressed key after a review; the priorities; Undo', async ({
   rig,
 }) => {
   const run = await rig.launch('nuclear-option-bindings', 'ai-assist-nuclear-option');
@@ -58,43 +58,65 @@ test('binding guide for nuclear option: the walkthrough binds a pressed button a
   await expect(where).toContainText(
     'This guide works on the one set of bindings Nuclear Option has for every aircraft.'
   );
-  await expect(where).toContainText('The walkthrough binds a controller button with you');
+  await expect(where).toContainText('press a button or a key, or move an axis');
   // No AI help for this game, with or without a key.
   await expect(page.getByTestId('ai-tab-ai')).toHaveCount(0);
   await expect(page.locator('.v-alert.text-error, .v-alert.bg-error')).toHaveCount(0);
 
-  // 1. The first item is two axes: bound on the stick, and bound in the game itself.
+  // 1. The first item is two axes, bound on the stick; each can be bound again by moving one.
   const item = page.getByTestId('ai-current-item');
   await expect(item).toHaveAttribute('data-item', 'pitch-roll');
   await expect(page.getByTestId('ai-item-status')).toHaveText('Bound');
   await expect(item).toContainText('Joystick - HOTAS Warthog');
-  await expect(item.getByTestId('ai-bind')).toHaveCount(0);
-  await expect(page.getByTestId('ai-in-game')).toContainText(
-    'Bind this in the game: Settings, then Controls'
-  );
-  await expect(item.getByTestId('ai-not-writable').first()).toHaveText(
-    'An axis: bind it in the game, Settings, then Controls'
-  );
+  await expect(item.getByTestId('ai-bind')).toHaveCount(2);
+  await expect(page.getByTestId('ai-in-game')).toHaveCount(0);
   await shot('walkthrough');
+
+  // An axis nothing has yet: move the stick's X axis for Yaw, and have the game reverse it.
+  const all = await controllers(page);
+  const stick = all.find((c) => c.name === 'Joystick - HOTAS Warthog')!;
+  const dialog = page.getByTestId('ai-nuclear-option-save-confirm');
+  await page.getByTestId('ai-item-yaw').click();
+  await expect(item).toHaveAttribute('data-item', 'yaw');
+  // The unplugged pedals have it; the stick gets it too.
+  await expect(item).not.toContainText('Joystick - HOTAS Warthog');
+  await item.getByTestId('ai-bind').click();
+  await expect(page.getByTestId('ai-listening')).toContainText('Move the axis on a controller');
+  await run.sendInput([stateOf(stick)]);
+  // A button is not an axis: said, and nothing is offered.
+  await run.sendInput([stateOf(stick, [3])]);
+  await expect(page.getByTestId('ai-press-note')).toContainText('This action needs an axis');
+  await run.sendInput([stateOf(stick)]);
+  await run.sendInput([stateOf(stick, [], [1])]);
+  await expect(dialog).toContainText('Bind Yaw to X axis?');
+  await expect(page.getByTestId('ai-nuclear-option-conflict')).toContainText(
+    'X axis already does Roll Axis'
+  );
+  await page.getByTestId('ai-nuclear-option-invert').locator('input').check();
+  await expect(page.getByTestId('ai-nuclear-option-after')).toHaveText('X axis, reversed');
+  await shot('axis');
+  await run.sendInput([stateOf(stick)]);
+  await page.getByTestId('ai-nuclear-option-save-go').click();
+  await expect(page.getByTestId('ai-nuclear-option-saved')).toContainText(
+    'Saved: Yaw Axis is now on X axis, reversed of Joystick - HOTAS Warthog.'
+  );
+  await expect(item).toContainText('Joystick - HOTAS Warthog · X axis');
 
   // 2. An item nothing has yet: press a button on the stick to bind it.
   await page.getByTestId('ai-item-nav-lights').click();
   await expect(item).toHaveAttribute('data-item', 'nav-lights');
   await expect(page.getByTestId('ai-item-status')).toHaveText('Not bound on a controller');
   await item.getByTestId('ai-bind').click();
-  await expect(page.getByTestId('ai-listening')).toContainText('Press a button on the controller');
-  const all = await controllers(page);
-  const stick = all.find((c) => c.name === 'Joystick - HOTAS Warthog')!;
+  await expect(page.getByTestId('ai-listening')).toContainText('Press a button or a key');
   await run.sendInput([stateOf(stick)]);
   // An axis moved is not a button: said, and nothing is offered.
   await run.sendInput([stateOf(stick, [], [1])]);
   await expect(page.getByTestId('ai-press-note')).toContainText(
-    'This action needs a button; an axis is bound in the game.'
+    'This action needs a button or a key.'
   );
   await run.sendInput([stateOf(stick)]);
   // Button 1 is Fire: the review says one press would do both. Cancel writes nothing.
   await run.sendInput([stateOf(stick, [1])]);
-  const dialog = page.getByTestId('ai-nuclear-option-save-confirm');
   await expect(dialog).toContainText('Bind Navigation lights on or off to Button 1?');
   await expect(page.getByTestId('ai-nuclear-option-conflict')).toContainText(
     'Button 1 already does Fire. After saving, one press does both.'
@@ -125,6 +147,21 @@ test('binding guide for nuclear option: the walkthrough binds a pressed button a
   await expect(item).toContainText('Joystick - HOTAS Warthog · Button 12');
   await shot('bound');
 
+  // A key, pressed while the walkthrough listens: it goes into the keyboard's bindings.
+  await page.getByTestId('ai-item-engine').click();
+  await expect(item).toHaveAttribute('data-item', 'engine');
+  await item.getByTestId('ai-bind').click();
+  await expect(page.getByTestId('ai-listening')).toBeVisible();
+  await page.keyboard.press('Control+F7');
+  await expect(dialog).toContainText('Bind Engine on or off to Ctrl + F7?');
+  await expect(page.getByTestId('ai-nuclear-option-device')).toHaveText('the keyboard');
+  await shot('key');
+  await page.getByTestId('ai-nuclear-option-save-go').click();
+  await expect(page.getByTestId('ai-nuclear-option-saved')).toContainText(
+    'Saved: Toggle Engine is now on Ctrl + F7 of the keyboard.'
+  );
+  await expect(item).toContainText('Keyboard · Ctrl + F7');
+
   // 3. The priorities: every tier, each item with its state from what the game saved.
   await page.getByTestId('ai-tab-priorities').click();
   await expect(page.getByTestId('ai-priorities')).toBeVisible();
@@ -132,6 +169,8 @@ test('binding guide for nuclear option: the walkthrough binds a pressed button a
   const row = (id: string) => page.locator(`[data-testid="ai-priority-item"][data-item="${id}"]`);
   await expect(row('fire')).toHaveAttribute('data-status', 'bound');
   await expect(row('nav-lights')).toHaveAttribute('data-status', 'bound');
+  await expect(row('yaw')).toHaveAttribute('data-status', 'bound');
+  // A key does not make a panel item "bound on a controller".
   await expect(row('engine')).toHaveAttribute('data-status', 'unbound');
   await expect(page.locator('[data-testid="ai-priority-item"][data-status="missing"]')).toHaveCount(
     0

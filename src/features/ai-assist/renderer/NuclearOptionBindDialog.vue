@@ -4,9 +4,10 @@ import ConfirmChanges from '../../../renderer/components/ConfirmChanges.vue';
 import { useAiStore } from './store';
 
 /**
- * Nuclear Option, in the walkthrough: the button the user just pressed, as the Nuclear Option
- * bindings feature works it out (what the action is on now and would be on, what else that
- * button does, the saved bindings it changes), before anything is written. Save writes it
+ * Nuclear Option, in the walkthrough: the button or key the user just pressed, or the axis
+ * they moved, as the Nuclear Option bindings feature works it out (what the action is on now
+ * and would be on, what else that control does, the saved bindings it changes), before
+ * anything is written. Save writes it
  * through that feature, with a backup first and Undo on the Safety page.
  */
 const store = useAiStore();
@@ -42,6 +43,16 @@ const listed = (names: string[]): string =>
         <dt>After saving</dt>
         <dd data-testid="ai-nuclear-option-after">{{ review.after }}</dd>
       </dl>
+      <v-checkbox
+        v-if="current?.binding.kind === 'axis'"
+        :model-value="current.binding.invert"
+        label="Reversed"
+        density="compact"
+        hide-details
+        class="mt-2"
+        data-testid="ai-nuclear-option-invert"
+        @update:model-value="store.reverseNuclearOption($event === true)"
+      />
       <v-alert
         v-if="review.blocked"
         type="warning"

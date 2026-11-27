@@ -5517,7 +5517,7 @@ requirements:
       - "A test checks that every action the guide names is found among the actions RigReady reads from the game, and that the guide format takes game: nuclear-option with DCS's places and its own roles and refuses the racing ones."
       - "The Binding guide page lists Nuclear Option in its Game picker where the game has saved bindings, with one entry, All aircraft; the menu entry is offered where DCS World, iRacing or Nuclear Option is found. Walkthrough and Priorities show each item as bound, partly bound or not bound on a controller, from the same saved bindings as the Nuclear Option bindings page, and a change made there shows in the guide."
       - "The walkthrough binds a button-type action to the controller button the user presses: the change is shown first (the controller, what the action is on now and would be on, what else that button does, the saved bindings changed), and Save writes it through the Nuclear Option bindings feature's own change channel, so the backup, the Safety page entry and Undo are that feature's. Refused, with the reason and nothing written: while the game runs, when the saved bindings changed after the review, for an action outside the guide, and on a controller the game has saved nothing for."
-      - "An axis, and one side of an axis on a button, have no Bind: the walkthrough says they are bound in the game, an item made only of them is never marked done, and an axis or a hat pressed while it listens is said to be one. Staging a binding the DCS way is refused."
+      - "Superseded by AI-NO-002 the same day: an axis, and one side of an axis, had no Bind in the first version. Staging a binding the DCS way is refused."
       - "No AI request is made for Nuclear Option: there is no AI help tab, no Explain and no link to set AI help up, and a request for it is refused before a provider or key is looked at. A guide of the user's own is refused, because RigReady uses the one it includes."
     status: done
     evidence:
@@ -5526,21 +5526,40 @@ requirements:
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#refuses the racing places and roles, and `input`, in a Nuclear Option guide"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#names Nuclear Option as a game it has a guide for, where the game has saved bindings"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#where the game is installed but has saved no bindings yet, says so plainly instead of a walkthrough that cannot bind"
-      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#every action the walkthrough offers to bind is one the bindings feature takes on a button"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#every action the walkthrough offers to bind is one the bindings feature takes: an axis for an axis action, a button and a key for the rest"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#every action the guide names is one the game has: no item is missing, and each name is found"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#says of each item whether it is bound on a controller, from what the game saved"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#shows the change first, then saves it through the bindings feature, with Undo on the Safety page"
-      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#is refused, with nothing written: an axis, one side of an axis, an action outside the guide, a controller the game saved nothing for, a map that changed, and while the game runs"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#is refused, with nothing written: the wrong kind of control for the action, an axis or a key the game has no number for, an action outside the guide, a controller the game saved nothing for, a map that changed, and while the game runs"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#keeps the walkthrough’s progress, stages nothing, and makes no AI request"
       - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#reads the same whether the game is open or closed: it only reads"
       - "tests/unit/offeredByGame.test.ts#the binding guide is the one menu entry about a game, and it is about DCS, iRacing and Nuclear Option"
-      - "tests/e2e/ai-assist-nuclear-option.e2e.ts#binding guide for nuclear option: the walkthrough binds a pressed button after a review, the priorities, and Undo"
+      - "tests/e2e/ai-assist-nuclear-option.e2e.ts#binding guide for nuclear option: the walkthrough binds a moved axis, a pressed button and a pressed key after a review; the priorities; Undo"
       - "artifacts/screens/ai-assist-nuclear-option/01-walkthrough.png"
-      - "artifacts/screens/ai-assist-nuclear-option/02-review.png"
-      - "artifacts/screens/ai-assist-nuclear-option/03-bound.png"
-      - "artifacts/screens/ai-assist-nuclear-option/04-priorities.png"
-      - "artifacts/screens/ai-assist-nuclear-option/05-blocked.png"
+      - "artifacts/screens/ai-assist-nuclear-option/03-review.png"
+      - "artifacts/screens/ai-assist-nuclear-option/04-bound.png"
+      - "artifacts/screens/ai-assist-nuclear-option/06-priorities.png"
+      - "artifacts/screens/ai-assist-nuclear-option/07-blocked.png"
     notes: "Asked for by the owner on 2026-11-27. The guide's advice was written by Claude from general knowledge of the game and the names on its controls screen; nobody who plays the game has reviewed it, and the guide and the manual say so. The owner asked the same day for it to bind from the walkthrough as the other guides do, and for Nuclear Option to work as DCS does throughout; binding axes and keys, AI help and snapshots follow in their own entries. Not done here: AI help, a guide of the user's own, and plain names on the cheat sheets (the game's own names are plain). Binding from the walkthrough was tried in the scenario test, not yet on the owner's rig. Copilot could not review the pull request (no quota left); an independent review by a second Claude agent found no blocking defect and these, fixed before the merge: a save that finished after Cancel said nothing, an older preview could replace a newer one, and a game that was installed but never run got a walkthrough whose every Bind failed. Known and left: with two controllers of one model, which saved map belongs to which is inferred, never seen (docs/research/nuclear-option.md), and the dialog names both alike; a saved map RigReady cannot read is not mentioned on the guide page; that the AI help tab and Explain stay hidden with a key stored has no test (the scenario has no key)."
+
+  - id: AI-NO-002
+    title: The Nuclear Option walkthrough binds axes, the sides of an axis, and keys
+    job: configure
+    area: ai
+    priority: p2
+    done_means:
+      - "Every action of the Nuclear Option guide has Bind in the walkthrough. An axis action takes an axis of a controller, chosen by moving it, with a Reversed tick in the review; a button action and one side of an axis action take a controller button or a key, the key with Ctrl, Alt or Shift when they are held."
+      - "Each is shown first and saved through the Nuclear Option bindings feature's own change channel (the axis by the name the controller reports, the key by the browser's name for it, into the keyboard's saved bindings), so the review, the backup, the Safety page entry and Undo are that feature's."
+      - "The wrong kind of control is said and nothing is offered: a button or a key for an axis action, an axis for a button action, a hat switch. What the bindings feature refuses (an axis the controller does not have, a key it cannot number, a third key for an action, the game running) is shown as its own message."
+    status: done
+    evidence:
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#binds an axis by moving it, reversed or not, one side of an axis to a button, and a key"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#every action the walkthrough offers to bind is one the bindings feature takes: an axis for an axis action, a button and a key for the rest"
+      - "src/features/ai-assist/core/nuclearOptionGuide.test.ts#is refused, with nothing written: the wrong kind of control for the action, an axis or a key the game has no number for, an action outside the guide, a controller the game saved nothing for, a map that changed, and while the game runs"
+      - "tests/e2e/ai-assist-nuclear-option.e2e.ts#binding guide for nuclear option: the walkthrough binds a moved axis, a pressed button and a pressed key after a review; the priorities; Undo"
+      - "artifacts/screens/ai-assist-nuclear-option/02-axis.png"
+      - "artifacts/screens/ai-assist-nuclear-option/05-key.png"
+    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does: 'bind from the walkthrough just like everything else'. It needs BIND-NO-006 (axes and sides) and BIND-NO-007 (keys). Tried in the scenario test, not on the owner's rig. Not done: hat switches and mouse buttons (the bindings feature does not write them), AI help for this game."
 
   # ---------------------------------------------------------------------------
   # THE BUILT-IN ASSISTANT: app-wide, on the MCP catalogue and gate

@@ -31,12 +31,14 @@ import {
   type IracingWanted,
 } from './iracing';
 import {
+  actionAndSide,
   bindsHere,
   isNuclearOptionId,
   NUCLEAR_OPTION,
   NUCLEAR_OPTION_GUIDE,
   NUCLEAR_OPTION_SET,
   type NuclearOptionBindings,
+  type NuclearOptionRequest,
   type NuclearOptionWanted,
 } from './nuclearOption';
 import { guideProblem, MAX_GUIDE_BYTES, starterGuide } from './ownGuide';
@@ -612,8 +614,8 @@ export class AiAssist {
     const binds = this.ctx.nuclearOption !== undefined;
     return ok({
       ...taken.value,
-      // The reader writes nothing itself; the guide binds a button through the bindings
-      // feature, so here "editable" says what the walkthrough can bind with you.
+      // The reader writes nothing itself; the guide binds through the bindings feature, so
+      // here "editable" says what the walkthrough can bind with you.
       actions: taken.value.actions.map((a) => ({ ...a, editable: binds && bindsHere(a) })),
       game: NUCLEAR_OPTION,
       aircraftId: NUCLEAR_OPTION_GUIDE,
@@ -905,7 +907,7 @@ export class AiAssist {
     if (isNuclearOptionId(aircraftId)) {
       return err(
         'ai.nuclearOptionStage',
-        'In Nuclear Option the guide binds one button at a time: press it, look at the change, then save it.'
+        'In Nuclear Option the guide binds one control at a time: use it, look at the change, then save it.'
       );
     }
     const snapshot = await this.snapshot(aircraftId);
@@ -1049,7 +1051,9 @@ export class AiAssist {
     aircraftId: string,
     actionId: string,
     binding: NuclearOptionWanted
-  ): Promise<Result<{ source: NuclearOptionBindings; device: string; label: string }>> {
+  ): Promise<
+    Result<{ source: NuclearOptionBindings; request: NuclearOptionRequest; label: string }>
+  > {
     const source = this.ctx.nuclearOption;
     if (!isNuclearOptionId(aircraftId) || !source) {
       return err('ai.nuclearOptionOnly', 'This binds Nuclear Option actions only.');
@@ -1064,11 +1068,25 @@ export class AiAssist {
       : undefined;
     if (!action)
       return err('ai.nuclearOptionAction', 'That action is not in the guide shown here.');
-    if (!action.editable) {
+    const which = actionAndSide(actionId);
+    if (!action.editable || !which) {
       return err(
         'ai.nuclearOptionInGame',
-        `${action.label} is not something RigReady binds to a button. Bind it in the game: Settings, then Controls.`
+        `${action.label} is not something RigReady binds. Bind it in the game: Settings, then Controls.`
       );
+    }
+    // An axis action as a whole takes an axis; everything else a button or a key.
+    if ((action.kind === 'axis') !== (binding.kind === 'axis')) {
+      return err(
+        'ai.nuclearOptionKind',
+        action.kind === 'axis'
+          ? `${action.label} is an axis: move the lever, slider or stick you want for it.`
+          : `${action.label} needs a button or a key, not an axis.`
+      );
+    }
+    if (binding.kind === 'key') {
+      const { kind: _kind, ...key } = binding;
+      return ok({ source, request: { device: 'keyboard', ...which, key }, label: action.label });
     }
     const overview = await source.overview();
     if (!overview.ok) return overview;
@@ -1082,7 +1100,17 @@ export class AiAssist {
         'Nuclear Option has saved no bindings for that controller yet, so RigReady cannot bind on it. Start the game once with it plugged in.'
       );
     }
-    return ok({ source, device: device.id, label: action.label });
+    return ok({
+      source,
+      request: {
+        device: device.id,
+        ...which,
+        ...(binding.kind === 'axis'
+          ? { axis: { name: binding.axis, invert: binding.invert } }
+          : { button: binding.button }),
+      },
+      label: action.label,
+    });
   }
 
   /** What binding one action of the guide to this button would change. Writes nothing. */
@@ -1093,12 +1121,8 @@ export class AiAssist {
   ): Promise<Result<NuclearOptionReviewView>> {
     const target = await this.nuclearOptionTarget(aircraftId, actionId, binding);
     if (!target.ok) return target;
-    const { source, device, label } = target.value;
-    const review = await source.changePreview({
-      device,
-      actionId: Number(actionId),
-      button: binding.button,
-    });
+    const { source, request, label } = target.value;
+    const review = await source.changePreview(request);
     if (!review.ok) return review;
     const r = review.value;
     return ok({
@@ -1127,13 +1151,8 @@ export class AiAssist {
   ): Promise<Result<{ changed: boolean; message: string }>> {
     const target = await this.nuclearOptionTarget(aircraftId, actionId, binding);
     if (!target.ok) return target;
-    const { source, device } = target.value;
-    const changed = await source.change({
-      device,
-      actionId: Number(actionId),
-      button: binding.button,
-      seen,
-    });
+    const { source, request } = target.value;
+    const changed = await source.change({ ...request, seen });
     if (!changed.ok) return changed;
     this.ctx.log.info(
       `ai-assist: Nuclear Option action ${actionId} ${changed.value.changed ? 'bound' : 'left as it was'} from the guide`

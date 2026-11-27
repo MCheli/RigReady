@@ -15,7 +15,7 @@ const emit = defineEmits<{ open: [tab: string] }>();
 
 const guide = computed(() => store.guide!);
 const iracing = computed(() => guide.value.game === 'iracing');
-/** Nuclear Option: the walkthrough binds a controller button; the rest is bound in the game. */
+/** Nuclear Option: the walkthrough binds buttons, axes and keys, one at a time, after a review. */
 const nuclearOption = computed(() => guide.value.game === 'nuclear-option');
 const settled = computed(
   () => new Set([...guide.value.progress.done, ...guide.value.progress.skipped])
@@ -335,7 +335,9 @@ function next(): void {
                   iracing
                     ? 'Press a button or a key… Esc stops.'
                     : nuclearOption
-                      ? 'Press a button on the controller'
+                      ? a.kind === 'axis'
+                        ? 'Move the axis on a controller'
+                        : 'Press a button or a key… Esc stops.'
                       : 'Press the control'
                 }}
                 <v-btn

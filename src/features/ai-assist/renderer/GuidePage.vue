@@ -300,9 +300,9 @@ onBeforeUnmount(() => {
           </router-link>
         </p>
         <p class="guide-iracing-line rr-muted">
-          The walkthrough binds a controller button with you: press it, look at the change, then
-          save it. An axis or a key is bound in the game, under Settings, then Controls. Close the
-          game first: it reads its bindings when it starts.
+          The walkthrough binds with you: press a button or a key, or move an axis, look at the
+          change, then save it. A hat switch or a mouse button is bound in the game, under Settings,
+          then Controls. Close the game first: it reads its bindings when it starts.
         </p>
       </div>
 
