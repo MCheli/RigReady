@@ -1,0 +1,372 @@
+format: 1
+game: nuclear-option
+aircraft:
+  id: all
+  name: All aircraft
+summary: >-
+  Nuclear Option has one set of bindings for every aircraft, from the light attack jets to the
+  helicopter and the tiltwing. Put flying, shooting and targeting on the stick and throttle
+  first: that is enough for a first sortie. Then the radar, the countermeasure choice, the map
+  and the menus. The rest can live on a panel or stay on the keyboard.
+sources:
+  - >-
+    Written from general knowledge of the game and from the names on its own controls screen
+    (Early Access 0.34.6). Not reviewed by the game's developers or by an experienced player.
+  - >-
+    Every action is named as the game's controls screen names it and checked against the list
+    of actions RigReady reads from the game. A game update can add or rename actions.
+  - Not affiliated with or endorsed by Shockfront Studios.
+roles:
+  stick:
+    summary: >-
+      Pitch and roll, the trigger, and what you do with your eyes on a target: select it,
+      cancel it, change weapon, release countermeasures. A hat or spare buttons take the
+      menus and the view.
+    items:
+      - pitch-roll
+      - fire
+      - target-select
+      - next-weapon
+      - previous-weapon
+      - countermeasures
+      - radial-menu
+      - weapon-wheel
+      - free-look
+      - look-at-target
+  throttle:
+    summary: >-
+      The throttle itself, then the things you change without letting go of it: the radar,
+      which countermeasure is next, the map, the zoom, flight assist and the gear.
+    items:
+      - throttle
+      - gear
+      - radar
+      - next-countermeasure
+      - map
+      - zoom
+      - flight-assist
+      - custom-axis
+  pedals:
+    summary: Yaw on the rudder axis, and the brakes on a toe brake if you have one.
+    items:
+      - yaw
+      - brakes
+  panel:
+    summary: >-
+      Switches you use once or twice a sortie, and the one you must not hit by accident:
+      the engine, the lights, night vision, linking the guns, the turret, ejecting.
+    items:
+      - engine
+      - night-vision
+      - nav-lights
+      - link-guns
+      - turret
+      - eject
+  keyboard:
+    summary: What you use on the ground or outside a fight is fine on the keys the game gives it.
+    items:
+      - switch-view
+      - pause
+      - slow-motion
+      - chat
+items:
+  - id: pitch-roll
+    title: Pitch and roll
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      The stick: nose up and down, and rolling left and right. In the helicopter and in a
+      hover it tilts the aircraft the same way.
+    when: All the time.
+    note: >-
+      The game binds these to every controller it finds, also to panels and pedals. Clear
+      all on the Nuclear Option bindings page takes them off a controller you do not fly with.
+    actions:
+      - { name: Pitch Axis, label: Pitch }
+      - { name: Roll Axis, label: Roll }
+  - id: yaw
+    title: Yaw (rudder)
+    tier: must
+    place: hotas
+    role: pedals
+    what: >-
+      Swings the nose left and right. It steers on the ground, and turns the helicopter in a
+      hover.
+    when: Taxiing, lining up a gun pass, hovering.
+    note: Without pedals, a twist axis on the stick does the same.
+    actions:
+      - { name: Yaw Axis, label: Yaw }
+  - id: throttle
+    title: Throttle
+    tier: must
+    place: hotas
+    role: throttle
+    what: >-
+      Engine power. A setting in the game lets the same axis work as the collective in an
+      aircraft that hovers.
+    when: All the time.
+    actions:
+      - { name: Throttle Axis, label: Throttle }
+  - id: fire
+    title: Fire
+    tier: must
+    place: hotas
+    role: stick
+    what: Fires the selected weapon - the gun, or the missile or bomb that is selected.
+    when: When the target is in the weapon's range and the aiming cue says so.
+    actions:
+      - { name: Fire, label: Fire the selected weapon }
+  - id: target-select
+    title: Select and cancel a target
+    tier: must
+    place: hotas
+    role: stick
+    what: >-
+      Select locks the target you are looking at, so guided weapons know where to go. Cancel
+      drops what is selected.
+    when: Before every guided shot, and to move on to the next target.
+    actions:
+      - { name: Target Select, label: Select target }
+      - { name: Target Cancel, label: Cancel target }
+  - id: next-weapon
+    title: Next weapon
+    tier: must
+    place: hotas
+    role: stick
+    what: Steps to the next weapon the aircraft carries.
+    when: Between targets - a missile for the aircraft, a bomb for the vehicle, the gun up close.
+    actions:
+      - { name: Next Weapon, label: Next weapon }
+  - id: countermeasures
+    title: Countermeasures
+    tier: must
+    place: hotas
+    role: stick
+    what: Releases the selected countermeasure against a missile that is guiding on you.
+    when: When the missile warning sounds.
+    actions:
+      - { name: Countermeasures, label: Release countermeasures }
+  - id: gear
+    title: Landing gear
+    tier: must
+    place: hotas
+    role: throttle
+    what: Raises and lowers the landing gear.
+    when: After take-off and before landing.
+    actions:
+      - { name: Toggle Gear, label: Gear up or down }
+  - id: brakes
+    title: Brakes
+    tier: must
+    place: hotas
+    role: pedals
+    need: any
+    what: Slows the aircraft down, on the runway and in the air.
+    when: Landing, taxiing, and to lose speed quickly.
+    note: A toe brake axis or a button both work; one of them is enough.
+    actions:
+      - { name: Brake Axis, label: Brakes (axis) }
+      - { name: Apply Brakes, label: Brakes (button) }
+  - id: radar
+    title: Radar on and off
+    tier: should
+    place: hotas
+    role: throttle
+    what: >-
+      Switches the radar. With it on you see further, and others can tell that you are
+      there.
+    when: Off to stay unnoticed on the way in, on to find and engage.
+    actions:
+      - { name: Toggle Radar, label: Radar on or off }
+  - id: next-countermeasure
+    title: Next countermeasure
+    tier: should
+    place: hotas
+    role: throttle
+    what: Chooses which countermeasure the release button uses.
+    when: When the threat changes from heat-seeking to radar-guided missiles, or back.
+    actions:
+      - { name: Next Countermeasure, label: Next countermeasure }
+  - id: previous-weapon
+    title: Previous weapon
+    tier: should
+    place: hotas
+    role: stick
+    what: Steps back to the weapon before.
+    when: When you went one weapon too far.
+    actions:
+      - { name: Previous Weapon, label: Previous weapon }
+  - id: map
+    title: Map
+    tier: should
+    place: hotas
+    role: throttle
+    what: Opens and closes the map, where you see the battle and pick targets.
+    when: To find the fight, your base, or what is shooting at you.
+    actions:
+      - { name: Toggle Map, label: Map }
+  - id: radial-menu
+    title: Radial menu
+    tier: should
+    place: hotas
+    role: stick
+    what: Opens the game's radial menu for commands without the keyboard.
+    when: When you need one of its commands in flight.
+    actions:
+      - { name: Open Radial Menu, label: Radial menu }
+  - id: weapon-wheel
+    title: Weapon wheel
+    tier: should
+    place: hotas
+    role: stick
+    what: Opens a wheel of every weapon on board, to pick one directly.
+    when: When stepping through the weapons one by one takes too long.
+    actions:
+      - { name: Open Weapon Wheel, label: Weapon wheel }
+  - id: flight-assist
+    title: Flight assist
+    tier: should
+    place: hotas
+    role: throttle
+    what: Switches the game's flight assistance on and off.
+    when: Off when you want full control of the aircraft, on when you want it steadier.
+    actions:
+      - { name: Toggle Flight Assist, label: Flight assist on or off }
+  - id: zoom
+    title: Zoom
+    tier: should
+    place: hotas
+    role: throttle
+    need: any
+    what: Zooms the view in and out.
+    when: To tell what a distant target is before you shoot at it.
+    actions:
+      - { name: Zoom View, label: Zoom (axis) }
+      - { name: Zoom In, label: Zoom in }
+      - { name: Zoom Out, label: Zoom out }
+  - id: free-look
+    title: Free look and centre view
+    tier: should
+    place: hotas
+    role: stick
+    need: any
+    what: Free look lets you look around the cockpit; centre view looks straight ahead again.
+    when: Without a head tracker, to look for a target or check behind you.
+    note: With a head tracker you mostly need only the centre view.
+    actions:
+      - { name: Free Look, label: Free look }
+      - { name: Center View, label: Centre the view }
+  - id: night-vision
+    title: Night vision
+    tier: should
+    place: panel
+    role: panel
+    what: Switches night vision on and off.
+    when: Night missions.
+    actions:
+      - { name: Toggle Night Vision, label: Night vision on or off }
+  - id: eject
+    title: Eject
+    tier: should
+    place: panel
+    role: panel
+    what: Leaves the aircraft.
+    when: When it cannot be flown any more.
+    note: Put it where you cannot press it by accident - a guarded switch, or leave it on the keyboard.
+    actions:
+      - { name: Eject, label: Eject }
+  - id: engine
+    title: Engine on and off
+    tier: nice
+    place: panel
+    role: panel
+    what: Starts and stops the engine.
+    when: On the ground, before taxiing and after parking.
+    actions:
+      - { name: Toggle Engine, label: Engine on or off }
+  - id: nav-lights
+    title: Navigation lights
+    tier: nice
+    place: panel
+    role: panel
+    what: Switches the navigation lights.
+    when: On around the airfield so others see you; off on the way to a fight.
+    actions:
+      - { name: Toggle Navigation Lights, label: Navigation lights on or off }
+  - id: link-guns
+    title: Link guns
+    tier: nice
+    place: panel
+    role: panel
+    what: Makes the guns fire together, on aircraft with more than one.
+    when: For a heavier burst on a gun pass.
+    actions:
+      - { name: Link Guns, label: Link the guns }
+  - id: turret
+    title: Turret control
+    tier: nice
+    place: panel
+    role: panel
+    what: Takes and gives back control of the turret, on aircraft that have one.
+    when: When you want to aim the turret yourself.
+    actions:
+      - { name: Toggle Turret Control, label: Turret control on or off }
+  - id: look-at-target
+    title: Look at the target
+    tier: nice
+    place: hotas
+    role: stick
+    need: any
+    what: Turns the view to the selected target, or to the nearest enemy aircraft.
+    when: In a turning fight, to find the other aircraft again.
+    actions:
+      - { name: Look At Target, label: Look at the target }
+      - { name: Look At Enemy Aircraft, label: Look at the enemy aircraft }
+  - id: custom-axis
+    title: Custom axis 1
+    tier: nice
+    place: hotas
+    role: throttle
+    what: >-
+      An extra axis the game offers. Its controls screen names it only "Custom Axis 1";
+      RigReady does not know for certain what each aircraft uses it for.
+    when: If an aircraft you fly uses it - try it on a spare slider.
+    actions:
+      - { name: Custom Axis 1, label: Custom axis 1 }
+  - id: switch-view
+    title: Switch view
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Changes between the cockpit and the outside view.
+    when: To look at the aircraft from outside, or to check damage.
+    actions:
+      - { name: Switch View, label: Switch view }
+  - id: pause
+    title: Pause
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Pauses a single-player game.
+    when: When you need a moment.
+    actions:
+      - { name: Pause, label: Pause }
+  - id: slow-motion
+    title: Slow motion
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Runs a single-player game slower.
+    when: To watch what happened, or to catch your breath.
+    actions:
+      - { name: Toggle Slow Motion, label: Slow motion on or off }
+  - id: chat
+    title: Chat
+    tier: nice
+    place: keyboard
+    role: keyboard
+    what: Opens the chat in a multiplayer game.
+    when: To talk to the other players.
+    actions:
+      - { name: Open Chat, label: Open the chat }

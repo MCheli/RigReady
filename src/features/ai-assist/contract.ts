@@ -8,6 +8,7 @@ import {
   GuideGamesSchema,
   GuideViewSchema,
   IracingReviewViewSchema,
+  NuclearOptionReviewViewSchema,
   MonthBudgetSchema,
   PlanSchema,
   PreparedSchema,
@@ -31,6 +32,7 @@ import {
   AssistantProgressSchema,
 } from './core/assistantModel';
 import { IracingWantedSchema } from './core/iracing';
+import { NuclearOptionWantedSchema } from './core/nuclearOption';
 
 const By = z.string().trim().min(1).max(80).default('An assistant');
 const DraftId = z.object({ draftId: z.string().max(40) });
@@ -45,7 +47,7 @@ export const aiAssistContract = defineContract(
     /** The games the binding guide has guides for, and whether each is on this PC. */
     games: channel(noInput, GuideGamesSchema, {
       describe:
-        'The games the binding guide covers (DCS World and iRacing) and whether each is found on this PC. Pass a game id to ai-assist:aircraft.',
+        'The games the binding guide covers (DCS World, iRacing and Nuclear Option) and whether each is found on this PC. Pass a game id to ai-assist:aircraft.',
       tier: 'read',
     }),
     /** The aircraft DCS has bindings for, or iRacing's classes and cars, and which have a guide. */
@@ -54,7 +56,7 @@ export const aiAssistContract = defineContract(
       AircraftListSchema,
       {
         describe:
-          'What the binding guide lists for one game (dcs when no game is given): the aircraft DCS has bindings for, or for iracing the classes of car RigReady has guides for (GT3, GT4, LMDh and prototypes, formula, oval, dirt) and each car with controls of its own. The ids here are what the other ai-assist channels take as aircraftId.',
+          'What the binding guide lists for one game (dcs when no game is given): the aircraft DCS has bindings for, or for iracing the classes of car RigReady has guides for (GT3, GT4, LMDh and prototypes, formula, oval, dirt) and each car with controls of its own, or for nuclear-option the one entry for every aircraft. The ids here are what the other ai-assist channels take as aircraftId.',
         tier: 'read',
       }
     ),
@@ -142,6 +144,33 @@ export const aiAssistContract = defineContract(
       {
         describe:
           "Binds one action of an iRacing guide to a controller button or a key in iRacing's own file, through the iRacing bindings feature, after a backup. Refused while iRacing runs. Undo is on the Safety page. Only a window of the app does this.",
+        tier: 'off',
+      }
+    ),
+    /**
+     * Nuclear Option: what binding one action of the guide to a controller button would change,
+     * from the Nuclear Option bindings feature's own preview. Nothing is written.
+     */
+    nuclearOptionBindPreview: channel(
+      Aircraft.extend({ actionId: z.string().max(80), binding: NuclearOptionWantedSchema }),
+      NuclearOptionReviewViewSchema,
+      {
+        describe:
+          'Shows what binding one action of the Nuclear Option guide to a controller button would change in what the game saved, through the Nuclear Option bindings feature. Writes nothing. Only a window of the app binds by pressing.',
+        tier: 'off',
+      }
+    ),
+    /** Nuclear Option: writes it through the Nuclear Option bindings feature, a backup first. */
+    nuclearOptionBind: channel(
+      Aircraft.extend({
+        actionId: z.string().max(80),
+        binding: NuclearOptionWantedSchema,
+        seen: z.string().regex(/^[0-9a-f]{64}$/),
+      }),
+      z.object({ changed: z.boolean(), message: z.string() }),
+      {
+        describe:
+          'Binds one action of the Nuclear Option guide to a controller button in what the game saved, through the Nuclear Option bindings feature, after a backup. Refused while the game runs. Undo is on the Safety page. Only a window of the app does this.',
         tier: 'off',
       }
     ),
