@@ -120,6 +120,16 @@ export function bindingName(action: GameAction, wholeAxis: boolean, side: number
   return (side === 1 ? action.negative : action.positive) ?? action.name;
 }
 
+/**
+ * The id of what a binding does, for the rest of the app: the action's id, or for one side
+ * of an axis action that id with ":+" or ":-". Zoom In and Zoom Out are two things to bind
+ * and two things to ask in the trainer, though the game has them as one action.
+ */
+export function bindingActionId(action: GameAction, wholeAxis: boolean, side: number): string {
+  if (action.kind !== 'axis' || wholeAxis) return String(action.id);
+  return `${action.id}:${side === 1 ? '-' : '+'}`;
+}
+
 /** The categories a saved map belongs to, as the controls screen's tabs name them. */
 export const MAP_CATEGORIES: Record<number, string> = {
   0: 'Game',

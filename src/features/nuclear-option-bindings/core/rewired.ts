@@ -268,6 +268,12 @@ export function parseControllerMap(document: string): Result<ControllerMap> {
   const root = ROOT.exec(text);
   if (!root) return err('nuclear-option.map', 'This is not a controller map saved by Rewired.');
   const kind = root[1] as MapKind;
+  if (!text.trimEnd().endsWith(`</${kind}>`)) {
+    return err(
+      'nuclear-option.map',
+      'The saved map is cut off: it does not end the way Rewired ends one.'
+    );
+  }
 
   const buttons = readList(text, 'buttonMaps', root.index);
   if (!buttons.ok) return buttons;
