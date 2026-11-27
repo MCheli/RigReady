@@ -307,9 +307,13 @@ export const useAiStore = defineStore('ai-assist', () => {
     nuclearOptionSaved.value = undefined;
     const mine = ++listens;
     const iracing = iracingShown();
+    // In Nuclear Option a key goes on anything but an axis action as a whole.
+    const keyToo =
+      nuclearOptionShown() &&
+      item.value?.actions.find((a) => a.actionId === actionId)?.kind !== 'axis';
     // Set before the controllers answer, so that leaving the page meanwhile stops it.
     listeningFor.value = actionId;
-    if (iracing) window.addEventListener('keydown', onKey, true);
+    if (iracing || keyToo) window.addEventListener('keydown', onKey, true);
     const started = await api.listenStart();
     if (mine !== listens) {
       // Stopped while it started: main was already told to stop, but may have started after.
@@ -318,8 +322,8 @@ export const useAiStore = defineStore('ai-assist', () => {
     }
     if (!started.ok) {
       pressNote.value = errorText(started.error);
-      // In iRacing a key can still be bound without the controllers.
-      if (!iracing) {
+      // A key can still be bound without the controllers.
+      if (!iracing && !keyToo) {
         listens++;
         listeningFor.value = undefined;
       }
@@ -333,7 +337,7 @@ export const useAiStore = defineStore('ai-assist', () => {
     await api.listenStop();
   }
 
-  /** iRacing: a key pressed while the walkthrough listens is the binding asked for. */
+  /** iRacing and Nuclear Option: a key pressed while the walkthrough listens is the binding asked for. */
   function onKey(event: KeyboardEvent): void {
     if (!listeningFor.value) return;
     // Only for an action of the item on screen.
@@ -351,6 +355,26 @@ export const useAiStore = defineStore('ai-assist', () => {
     event.preventDefault();
     event.stopImmediatePropagation();
     if (event.repeat || MODIFIER_KEYS.has(event.key)) return;
+    if (nuclearOptionShown()) {
+      // A key the browser cannot name, or one held with the Windows key, is not a binding
+      // the game's screen offers: nothing is taken, and the walkthrough goes on listening.
+      if (!event.code || event.metaKey) {
+        pressNote.value = event.metaKey
+          ? 'The Windows key cannot be part of a binding. Press the key without it.'
+          : 'That key has no name RigReady can go by. Press another.';
+        return;
+      }
+      // AltGr reports itself as Ctrl and Alt together: it is neither, for a binding.
+      const altGr = event.getModifierState('AltGraph');
+      void previewNuclearOption(listeningFor.value, {
+        kind: 'key',
+        code: event.code,
+        ctrl: event.ctrlKey && !altGr,
+        alt: event.altKey && !altGr,
+        shift: event.shiftKey,
+      });
+      return;
+    }
     void previewIracing(listeningFor.value, {
       kind: 'keyPress',
       key: event.key,
@@ -469,6 +493,28 @@ export const useAiStore = defineStore('ai-assist', () => {
     await loadGuide(id);
   }
 
+  /** Nuclear Option: the axis shown is to be reversed, or not: the change is shown again. */
+  async function reverseNuclearOption(invert: boolean): Promise<void> {
+    const current = nuclearOptionBinding.value;
+    const id = aircraftId.value;
+    if (!current?.review || current.busy || current.binding.kind !== 'axis' || !id) return;
+    const binding = { ...current.binding, invert };
+    // Busy at once, with the review it had: the dialog stays open and Save is off until the
+    // change is shown again, so the un-reversed one cannot be saved in between.
+    const asking: NuclearOptionBinding = { ...current, binding, busy: true, error: undefined };
+    nuclearOptionBinding.value = asking;
+    const result = await api.nuclearOptionBindPreview({
+      aircraftId: id,
+      actionId: current.actionId,
+      binding,
+    });
+    if (toRaw(nuclearOptionBinding.value) !== asking || aircraftId.value !== id) return;
+    nuclearOptionBinding.value = result.ok
+      ? { actionId: current.actionId, binding, review: result.value, busy: false }
+      : // Not shown again: the dialog goes back to what it showed, and says why.
+        { ...current, busy: false, error: errorText(result.error) };
+  }
+
   function cancelNuclearOption(): void {
     nuclearOptionBinding.value = undefined;
   }
@@ -502,14 +548,30 @@ export const useAiStore = defineStore('ai-assist', () => {
     }
     if (nuclearOptionShown()) {
       const button = /^JOY_BTN(\d+)$/.exec(press.input);
-      if (press.kind === 'axis') {
-        pressNote.value = `That was an axis on ${press.deviceName}. This action needs a button; an axis is bound in the game.`;
+      if (action.kind === 'axis') {
+        // An axis action as a whole takes an axis of the controller.
+        if (press.kind !== 'axis') {
+          pressNote.value = `That was ${press.label} on ${press.deviceName}. This action needs an axis: move a lever, slider or stick.`;
+        } else {
+          await previewNuclearOption(actionId, {
+            kind: 'axis',
+            device: press.guid,
+            axis: press.input.replace(/^JOY_/, ''),
+            invert: false,
+          });
+        }
+      } else if (press.kind === 'axis') {
+        pressNote.value = `That was an axis on ${press.deviceName}. This action needs a button or a key.`;
       } else if (press.kind !== 'button' || !button) {
-        pressNote.value = `That was a hat switch on ${press.deviceName}. RigReady binds buttons in Nuclear Option. Bind a hat switch in the game: Settings, then Controls.`;
+        pressNote.value = `That was a hat switch on ${press.deviceName}. RigReady binds buttons, axes and keys in Nuclear Option. Bind a hat switch in the game: Settings, then Controls.`;
       } else if (Number(button[1]) > 128) {
         pressNote.value = 'A controller has buttons 1 to 128.';
       } else {
-        await previewNuclearOption(actionId, { device: press.guid, button: Number(button[1]) });
+        await previewNuclearOption(actionId, {
+          kind: 'button',
+          device: press.guid,
+          button: Number(button[1]),
+        });
       }
       return;
     }
@@ -746,6 +808,7 @@ export const useAiStore = defineStore('ai-assist', () => {
     nuclearOptionBinding,
     nuclearOptionSaved,
     saveNuclearOption,
+    reverseNuclearOption,
     cancelNuclearOption,
     selectGame,
     saveIracing,

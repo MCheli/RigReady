@@ -32,7 +32,7 @@ const gameItems = computed(() =>
     .map((g) => ({ title: g.name, value: g.id }))
 );
 const iracing = computed(() => store.game === 'iracing');
-/** Nuclear Option: one guide for every aircraft, and no AI help. */
+/** Nuclear Option: one guide for every aircraft. */
 const nuclearOption = computed(() => store.game === 'nuclear-option');
 
 /** The address keeps the game; the watch below follows it, so a link and the picker agree. */
@@ -44,7 +44,7 @@ function chooseGame(id: GuideGame): void {
 const tabs = computed(() => [
   { id: 'walkthrough', title: 'Walkthrough' },
   { id: 'priorities', title: 'Priorities' },
-  ...(store.aiReady && !nuclearOption.value ? [{ id: 'ai', title: 'AI help' }] : []),
+  ...(store.aiReady ? [{ id: 'ai', title: 'AI help' }] : []),
 ]);
 
 const tab = computed(() => {
@@ -300,9 +300,9 @@ onBeforeUnmount(() => {
           </router-link>
         </p>
         <p class="guide-iracing-line rr-muted">
-          The walkthrough binds a controller button with you: press it, look at the change, then
-          save it. An axis or a key is bound in the game, under Settings, then Controls. Close the
-          game first: it reads its bindings when it starts.
+          The walkthrough binds with you: press a button or a key, or move an axis, look at the
+          change, then save it. A hat switch or a mouse button is bound in the game, under Settings,
+          then Controls. Close the game first: it reads its bindings when it starts.
         </p>
       </div>
 
@@ -320,7 +320,7 @@ onBeforeUnmount(() => {
           </v-tab>
         </v-tabs>
         <router-link
-          v-if="store.status && !store.aiReady && !nuclearOption"
+          v-if="store.status && !store.aiReady"
           to="/configure/settings"
           class="guide-setup-ai"
           data-testid="ai-setup-link"
