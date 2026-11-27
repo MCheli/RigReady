@@ -1,3 +1,5 @@
+import { RegistryRawFs } from '../../core/files/registryValues';
+import { WindowsRegistryValues } from './registryValues';
 import { BackupFileStore } from '../../core/files/fileStore';
 import type { Logger } from '../../core/logger';
 import type {
@@ -74,7 +76,12 @@ export function createWindowsPorts(options: WindowsPlatformOptions): Ports {
     services: new WindowsServiceProvider(),
     audio: new WindowsAudioProvider(),
     registry,
-    files: new BackupFileStore(new NodeRawFs(), folders.dataRoot(), systemClock),
+    files: new BackupFileStore(
+      // Files as they are, and the bytes of a binary registry value at its FileStore address.
+      new RegistryRawFs(new NodeRawFs(), new WindowsRegistryValues()),
+      folders.dataRoot(),
+      systemClock
+    ),
     folders,
     shell,
     clock: systemClock,

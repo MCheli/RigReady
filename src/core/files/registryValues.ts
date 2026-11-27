@@ -1,0 +1,193 @@
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import type { RawFs, RawStat } from '../ports';
+import type { RegistryHive } from '../../shared/models';
+
+/**
+ * A registry value changed the way a file is: through FileStore, which copies it to
+ * <data root>/backups/auto first, writes the journal, and can undo it from the Safety page.
+ *
+ * Some games keep their settings in the registry and not in files (a Unity game's
+ * PlayerPrefs). RigReady's rule is that nothing outside its data folder changes without a
+ * backup and an entry the user can undo, and FileStore is the one place that does that.
+ * So a registry value gets an address FileStore can carry, `registryValuePath()`, and the
+ * raw file access under FileStore is wrapped by `RegistryRawFs`, which reads and writes
+ * such an address in the registry and everything else as a file.
+ *
+ * What it will do is deliberately narrow:
+ * - only HKEY_CURRENT_USER, only below `Software\`;
+ * - only a value that exists and holds binary data (REG_BINARY): its bytes are replaced,
+ *   its name and type stay. No value is created, renamed or deleted, no key is touched;
+ * - the Registry port features read with stays read-only: this is the only way in.
+ */
+
+/** Reads and replaces binary registry values. The platform implements it; only RegistryRawFs calls it. */
+export interface RegistryValueStore {
+  /** The names of the binary values of a key. Empty when the key does not exist. */
+  binaryNames(hive: RegistryHive, key: string): Promise<string[]>;
+  /** The bytes of a binary value; undefined when it does not exist or is not binary. */
+  read(hive: RegistryHive, key: string, name: string): Promise<Uint8Array | undefined>;
+  /** Replaces the bytes of an existing binary value. Throws when it cannot. */
+  replace(hive: RegistryHive, key: string, name: string, data: Uint8Array): Promise<void>;
+}
+
+const ROOT = '\\\\registry\\';
+const LEAF = /^[0-9a-f]{32}\.regvalue$/;
+
+/**
+ * A value's name as a file name. Value names can be longer than a file name may be and
+ * hold characters one may not, and FileStore names the backup after the last part of the
+ * path, so the address carries a digest of the name; RegistryRawFs finds the value by it.
+ */
+export function registryLeaf(name: string): string {
+  return `${createHash('sha256').update(name, 'utf8').digest('hex').slice(0, 32)}.regvalue`;
+}
+
+/** The address of a registry value for FileStore: `\\registry\HKCU\<key>\<digest>.regvalue`. */
+export function registryValuePath(hive: RegistryHive, key: string, name: string): string {
+  const cleanKey = key.replace(/^\\+|\\+$/g, '');
+  return `${ROOT}${hive}\\${cleanKey}\\${registryLeaf(name)}`;
+}
+
+export interface RegistryAddress {
+  hive: RegistryHive;
+  key: string;
+  /** The digest file name; empty for the address of a key. */
+  leaf: string;
+}
+
+/** Takes an address apart; undefined for a path that is a file. */
+export function parseRegistryPath(file: string): RegistryAddress | undefined {
+  const normal = file.replace(/\//g, '\\');
+  if (!normal.toLowerCase().startsWith(ROOT)) return undefined;
+  const parts = normal.slice(ROOT.length).split('\\').filter(Boolean);
+  const hive = parts[0]?.toUpperCase();
+  if (hive !== 'HKCU' && hive !== 'HKLM') return undefined;
+  const last = parts.at(-1) ?? '';
+  const isValue = LEAF.test(last.toLowerCase());
+  const keyParts = isValue ? parts.slice(1, -1) : parts.slice(1);
+  return { hive, key: keyParts.join('\\'), leaf: isValue ? last.toLowerCase() : '' };
+}
+
+/** True for a path that addresses the registry, whatever it names there. */
+export const isRegistryPath = (file: string): boolean =>
+  file.replace(/\//g, '\\').toLowerCase().startsWith(ROOT);
+
+const REFUSED = 'RigReady changes registry values only under HKEY_CURRENT_USER\\Software.';
+
+function writable(address: RegistryAddress): boolean {
+  return address.hive === 'HKCU' && /^software\\[^\\]/i.test(address.key);
+}
+
+/**
+ * The raw file access FileStore is given: files as before, and the bytes of a binary
+ * registry value at a `registryValuePath()` address.
+ */
+export class RegistryRawFs implements RawFs {
+  constructor(
+    private readonly files: RawFs,
+    private readonly values: RegistryValueStore
+  ) {}
+
+  private async nameOf(address: RegistryAddress): Promise<string | undefined> {
+    if (!address.leaf) return undefined;
+    const names = await this.values.binaryNames(address.hive, address.key);
+    return names.find((name) => registryLeaf(name) === address.leaf);
+  }
+
+  private async bytesOf(file: string, address: RegistryAddress): Promise<Uint8Array> {
+    const name = await this.nameOf(address);
+    const data =
+      name === undefined ? undefined : await this.values.read(address.hive, address.key, name);
+    if (data === undefined) throw new Error(`There is no such registry value: ${file}`);
+    return data;
+  }
+
+  async readText(file: string): Promise<string> {
+    const address = parseRegistryPath(file);
+    if (!address) return this.files.readText(file);
+    return Buffer.from(await this.bytesOf(file, address)).toString('utf8');
+  }
+
+  async readBytes(file: string): Promise<Uint8Array> {
+    const address = parseRegistryPath(file);
+    if (!address) return this.files.readBytes(file);
+    return this.bytesOf(file, address);
+  }
+
+  async writeBytes(file: string, data: Uint8Array | string): Promise<void> {
+    const address = parseRegistryPath(file);
+    if (!address) return this.files.writeBytes(file, data);
+    if (!writable(address)) throw new Error(REFUSED);
+    const name = await this.nameOf(address);
+    if (name === undefined) {
+      throw new Error(
+        'RigReady only replaces a registry value that is already there; it does not create one.'
+      );
+    }
+    const bytes = typeof data === 'string' ? Buffer.from(data, 'utf8') : data;
+    await this.values.replace(address.hive, address.key, name, bytes);
+  }
+
+  async appendText(file: string, text: string): Promise<void> {
+    if (isRegistryPath(file)) throw new Error('A registry value cannot be appended to.');
+    return this.files.appendText(file, text);
+  }
+
+  async exists(file: string): Promise<boolean> {
+    const address = parseRegistryPath(file);
+    if (!address) return isRegistryPath(file) ? false : this.files.exists(file);
+    if (!address.leaf) {
+      return (await this.values.binaryNames(address.hive, address.key)).length > 0;
+    }
+    return (await this.nameOf(address)) !== undefined;
+  }
+
+  async stat(file: string): Promise<RawStat | undefined> {
+    const address = parseRegistryPath(file);
+    if (!address) return isRegistryPath(file) ? undefined : this.files.stat(file);
+    if (!address.leaf) {
+      return (await this.exists(file)) ? { isDirectory: true, size: 0, mtimeMs: 0 } : undefined;
+    }
+    const name = await this.nameOf(address);
+    if (name === undefined) return undefined;
+    const data = await this.values.read(address.hive, address.key, name);
+    return data === undefined ? undefined : { isDirectory: false, size: data.length, mtimeMs: 0 };
+  }
+
+  async mkdirp(dir: string): Promise<void> {
+    // A key is never created: writing a value below a missing key is refused there.
+    if (isRegistryPath(dir)) return;
+    return this.files.mkdirp(dir);
+  }
+
+  async list(dir: string): Promise<string[]> {
+    const address = parseRegistryPath(dir);
+    if (!address) return isRegistryPath(dir) ? [] : this.files.list(dir);
+    if (address.leaf) return [];
+    return (await this.values.binaryNames(address.hive, address.key)).map(registryLeaf);
+  }
+
+  async copyFile(from: string, to: string): Promise<void> {
+    if (!isRegistryPath(from) && !isRegistryPath(to)) return this.files.copyFile(from, to);
+    // A backup of a value is a file with its bytes; putting it back writes those bytes.
+    const data = await this.readBytes(from);
+    if (!isRegistryPath(to)) await this.files.mkdirp(path.dirname(to));
+    await this.writeBytes(to, data);
+  }
+
+  async remove(file: string): Promise<void> {
+    if (isRegistryPath(file)) throw new Error('RigReady does not delete registry values.');
+    return this.files.remove(file);
+  }
+
+  async removeDir(dir: string): Promise<void> {
+    if (isRegistryPath(dir)) throw new Error('RigReady does not delete registry keys.');
+    return this.files.removeDir(dir);
+  }
+
+  async removeEmptyDir(dir: string): Promise<boolean> {
+    if (isRegistryPath(dir)) return false;
+    return this.files.removeEmptyDir(dir);
+  }
+}

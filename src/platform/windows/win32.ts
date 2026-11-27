@@ -112,6 +112,13 @@ export const RegEnumValueW = advapi32.func(
 export const RegQueryValueExW = advapi32.func(
   'int32_t RegQueryValueExW(uintptr_t key, const char16_t *name, void *reserved, _Out_ uint32_t *type, void *data, _Inout_ uint32_t *dataLength)'
 );
+/**
+ * The one registry write RigReady makes: the bytes of an existing binary value, through
+ * FileStore (src/core/files/registryValues.ts), never from a feature.
+ */
+export const RegSetValueExW = advapi32.func(
+  'int32_t RegSetValueExW(uintptr_t key, const char16_t *name, uint32_t reserved, uint32_t type, const void *data, uint32_t dataLength)'
+);
 
 // ---- advapi32: service control manager (read-only) ----
 export const OpenSCManagerW = advapi32.func(
