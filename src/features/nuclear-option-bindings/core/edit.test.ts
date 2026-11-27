@@ -51,7 +51,7 @@ describe('changing one binding in a saved map', () => {
     expect(edited.text).toContain(made(9, 32));
     expect(edited.text.replace(made(9, 32), '')).toBe(
       text.replace(
-        '<ActionElementMap><actionCategoryId>0</actionCategoryId><actionId>9</actionId><elementType>1</elementType><elementIdentifierId>34</elementIdentifierId><axisRange>0</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>0</modifierKey1><modifierKey2>0</modifierKey2><modifierKey3>0</modifierKey3><enabled>true</enabled></ActionElementMap>',
+        '<ActionElementMap><actionCategoryId>0</actionCategoryId><actionId>9</actionId><elementType>1</elementType><elementIdentifierId>34</elementIdentifierId><axisRange>1</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>0</modifierKey1><modifierKey2>0</modifierKey2><modifierKey3>0</modifierKey3><enabled>true</enabled></ActionElementMap>',
         ''
       )
     );
@@ -124,8 +124,8 @@ describe('changing one binding in a saved map', () => {
     expect(refused('not a map', { actionId: 49, button: 3 })).toContain('not a controller map');
     // An action bound here in a way this code never saw (a button with a modifier key).
     const odd = stick.replace(
-      '<actionId>43</actionId><elementType>1</elementType><elementIdentifierId>35</elementIdentifierId><axisRange>0</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>0<',
-      '<actionId>43</actionId><elementType>1</elementType><elementIdentifierId>35</elementIdentifierId><axisRange>0</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>1<'
+      '<actionId>43</actionId><elementType>1</elementType><elementIdentifierId>35</elementIdentifierId><axisRange>1</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>0<',
+      '<actionId>43</actionId><elementType>1</elementType><elementIdentifierId>35</elementIdentifierId><axisRange>1</axisRange><invert>false</invert><axisContribution>0</axisContribution><keyboardKeyCode>0</keyboardKeyCode><modifierKey1>1<'
     );
     expect(odd).not.toBe(stick);
     expect(refused(odd, { actionId: 43, button: 9 })).toContain('does not understand');

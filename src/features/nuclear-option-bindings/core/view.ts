@@ -59,6 +59,9 @@ interface SavedMap {
   productId?: string;
   /** Which unit of the same model: 0 the first. */
   duplicate: number;
+  /** The registry value the map was read from, and its text exactly as stored. */
+  valueName: string;
+  text: string;
 }
 
 interface Saved {
@@ -84,6 +87,7 @@ async function readSaved(ctx: BindingsContext): Promise<Result<Saved>> {
     const duplicate = Number(key.parts.duplicate ?? '0');
     return [
       {
+        name,
         value,
         type: key.parts.controllerMapType ?? 'a map',
         identity,
@@ -118,12 +122,52 @@ async function readSaved(ctx: BindingsContext): Promise<Result<Saved>> {
         ? { vendorId: entry.identity.vendorId, productId: entry.identity.productId }
         : {}),
       duplicate: entry.duplicate,
+      valueName: entry.name,
+      text,
     });
   }
   return ok(saved);
 }
 
 const unitOf = (m: SavedMap): string => `${m.vendorId ?? ''}:${m.productId ?? ''}:${m.duplicate}`;
+
+/** The id the page knows a controller by: one per unit of a model. */
+const controllerId = (entry: SavedMap): string =>
+  entry.vendorId
+    ? `controller:${unitOf(entry)}`
+    : `controller:${entry.map.hardwareName}:${entry.duplicate}`;
+
+/** A controller's saved map for the game's own category ("Game"), as stored: what a change edits. */
+export interface StoredMap {
+  valueName: string;
+  text: string;
+  map: ControllerMap;
+  /** The controller's name as the game saved it. */
+  deviceName: string;
+}
+
+export async function storedGameMap(
+  ctx: BindingsContext,
+  deviceId: string
+): Promise<Result<StoredMap>> {
+  const saved = await readSaved(ctx);
+  if (!saved.ok) return saved;
+  const found = saved.value.maps.find(
+    (m) => m.map.kind === 'JoystickMap' && m.map.categoryId === 0 && controllerId(m) === deviceId
+  );
+  if (!found) {
+    return err(
+      'nuclear-option.noMap',
+      'Nuclear Option has saved no bindings for this controller, so there is nothing to change. Start the game once with it plugged in.'
+    );
+  }
+  return ok({
+    valueName: found.valueName,
+    text: found.text,
+    map: found.map,
+    deviceName: found.map.hardwareName || 'the controller',
+  });
+}
 
 /** The control of a controller an element id means; undefined for one that is not understood. */
 export function controlOf(element: ElementMap, live?: InputDevice): BoundControl | undefined {
@@ -258,9 +302,7 @@ function devicesOf(saved: Saved, live: InputDevice[]): OverviewDevice[] {
       const connected = liveFor(entry, live);
       // One device per unit of a model, whichever identifier its maps were saved under; a
       // map whose identifier RigReady cannot read is told apart by the name inside it.
-      const id = entry.vendorId
-        ? `controller:${unitOf(entry)}`
-        : `controller:${map.hardwareName}:${entry.duplicate}`;
+      const id = controllerId(entry);
       add(
         id,
         () => ({

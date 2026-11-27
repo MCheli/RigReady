@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { HAT_DIRECTIONS } from '../../core/bindings';
+import { ChangePreviewSchema } from '../../shared/changePreview';
 import { channel, defineContract, noInput } from '../../shared/ipc';
 
 /** The control on the controller, in core's vocabulary (button 1 is the first button). */
@@ -61,7 +62,64 @@ const OverviewSchema = z.object({
 });
 export type Overview = z.infer<typeof OverviewSchema>;
 
+/** One binding of a controller to change: an action bound to a button, or cleared. */
+export const ChangeRequestSchema = z.object({
+  /** The controller, by its id in the overview. */
+  device: z.string().min(1).max(300),
+  /** The game's action id. */
+  actionId: z.number().int().min(0).max(100000),
+  /** The button, as RigReady numbers buttons (1 is the first); null clears the action. */
+  button: z.number().int().min(1).max(128).nullable(),
+  /**
+   * The saved map as the preview read it (`seen` of changePreview). With it, change writes
+   * nothing when the map is no longer that: what the user approved may not hold any more.
+   */
+  seen: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
+});
+export type ChangeRequest = z.infer<typeof ChangeRequestSchema>;
+
+/** One change as it would be, before anything is written. */
+export const ChangeReviewSchema = z.object({
+  /** The controller's name as the game saved it. */
+  device: z.string(),
+  action: z.string(),
+  /** What the action is on now: "Button 3", "Not bound". */
+  before: z.string(),
+  after: z.string(),
+  /** Nothing would change. */
+  same: z.boolean(),
+  /** Other actions already on the button: one press will do those too. */
+  alsoOnButton: z.array(z.string()),
+  /** Why it cannot be saved right now (the game is running), when it cannot. */
+  blocked: z.string().optional(),
+  preview: ChangePreviewSchema,
+  seen: z.string(),
+});
+export type ChangeReview = z.infer<typeof ChangeReviewSchema>;
+
+export const ChangeResultSchema = z.object({ changed: z.boolean(), message: z.string() });
+export type ChangeResult = z.infer<typeof ChangeResultSchema>;
+
+const ON_THE_PAGE =
+  'Changing a game binding is done on the Nuclear Option bindings page, where the person sees the change and presses Save.';
+
 export const nuclearOptionBindingsContract = defineContract('nuclear-option-bindings', {
+  /** One change as it would be: what the action is on now and would be on. Writes nothing. */
+  changePreview: channel(ChangeRequestSchema, ChangeReviewSchema, {
+    describe: `Shows what binding one Nuclear Option action to a controller button, or clearing it, would change. Writes nothing. ${ON_THE_PAGE}`,
+    tier: 'off',
+  }),
+  /**
+   * Binds or clears one action on one controller in what the game saved, through FileStore
+   * (a backup first, one entry on the Safety page). Refused while the game runs.
+   */
+  change: channel(ChangeRequestSchema, ChangeResultSchema, {
+    describe: `Binds one Nuclear Option action to a controller button, or clears it, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
+    tier: 'off',
+  }),
   overview: channel(noInput, OverviewSchema, {
     describe:
       'Nuclear Option’s bindings as the game saved them: every controller, the keyboard and the mouse, with the action each input does. Read from the registry; changes nothing. The game has one set of bindings for every aircraft.',
