@@ -8,7 +8,7 @@ import { sha256 } from '../../../core/files/fileStore';
 import { registryValuePath } from '../../../core/files/registryValues';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChangeRequest } from '../contract';
-import { actionOf, bindingName } from './actions';
+import { actionOf, bindingName, mapCategoryName, mapCategoryOf } from './actions';
 import { boundInWords, inWords, oneAtATime, resolve, whyBlocked } from './change';
 import { editMapText } from './edit';
 import { parseControllerMap } from './rewired';
@@ -72,6 +72,14 @@ async function planned(ctx: BindingsContext, proposal: BindingProposal): Promise
     }
     const side = parts[2] as '+' | '-' | undefined;
     const name = bindingName(action, side === undefined, side === '-' ? 1 : 0);
+    // A controller's bindings are changed in its map for the Game tab; an action of the Chat,
+    // Mission Editor or Debug tab belongs in that tab's own map, which a proposal does not touch.
+    if (mapCategoryOf(action) !== 0) {
+      return err(
+        'nuclear-option.proposal.tab',
+        `${name} belongs to the ${mapCategoryName(mapCategoryOf(action))} tab of the game’s controls screen. A proposed change binds the Game tab’s actions; bind this one on the Nuclear Option bindings page or in the game.`
+      );
+    }
     if (change.op !== 'bind') {
       return err(
         'nuclear-option.proposal.op',
@@ -152,8 +160,10 @@ async function planned(ctx: BindingsContext, proposal: BindingProposal): Promise
       ? boundInWords({ kind: 'axis', ...edit.axis }, axes)
       : `Button ${base.button}`;
     const before = inWords(edited.value.before, axes);
+    // Already there, and only what else was on the control goes.
+    const stays = edited.value.before.length === 1 && before === after;
     state.lines.push(
-      edited.value.same
+      stays
         ? `${name} stays on ${after}`
         : edited.value.before.length === 0
           ? `${name}: ${after}`
@@ -234,9 +244,16 @@ export function createProposals(ctx: BindingsContext, changed: () => void): Bind
     if (!made.ok) return made;
     const key = fingerprint(proposal);
     const shown = reviewed.get(key);
+    // Nothing is written that was not shown: a list never looked at is refused.
+    if (shown === undefined) {
+      return err(
+        'nuclear-option.proposal.unseen',
+        'These changes were not shown first, so nothing was written. Look at them, then write them.'
+      );
+    }
     // Worked out again from the values as they are now: when that is not what the review
     // showed, what the user approved may not hold.
-    if (shown !== undefined && shown !== made.value.seen) {
+    if (shown !== made.value.seen) {
       return err(
         'nuclear-option.edit.changed',
         'The game’s saved bindings changed after the changes were shown, so nothing was written. Look at them again.'

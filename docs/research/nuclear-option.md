@@ -340,7 +340,7 @@ Another feature (a setup suggested by AI) hands the bindings feature a list of b
 
 A proposed binding takes its control over (`alone` in `BindingEdit`): every other binding on that button, or that axis, of the controller's Game map is taken out, a half axis too. Nothing new is composed for that. Removing a binding is what the game does when the player clears one, and what clearing a controller does (above). A single change from the page does not do this; it leaves the other action and says so.
 
-An axis action that is on an axis reversed keeps the reversal when a proposal puts it on an axis. A hat, a key, a mouse button, a clear, and a controller without a saved map are refused with the reason, and one refusal refuses the whole list. The review is remembered by what it would write; a write after the saved maps changed is refused.
+An axis action that is on an axis reversed keeps the reversal when a proposal puts it on an axis. A hat, a key, a mouse button, a clear, and a controller without a saved map are refused with the reason, and one refusal refuses the whole list. An action of the Chat, Mission Editor or Debug tab is refused too: a controller's bindings are changed in its Game map, and such an action belongs in that tab's map. The review is remembered by what it would write; a write of a list that was not reviewed, or after the saved maps changed, is refused.
 
 Not tried on a rig: a proposal written to the real registry and the game started on it. The bytes are the writer's own (section 7), which the game has loaded.
 

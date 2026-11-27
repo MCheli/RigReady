@@ -250,12 +250,12 @@ export const aiAssistContract = defineContract(
     ),
     reviewSuggestions: channel(Round, PlanSchema, {
       describe:
-        'What the chosen AI suggestions of one round would write to the DCS bindings. roundId and suggestion ids come from an AI answer. Call it before applySuggestions.',
+        "What the chosen AI suggestions of one round would write to the game's bindings (DCS or Nuclear Option). roundId and suggestion ids come from an AI answer. Call it before applySuggestions.",
       tier: 'read',
     }),
     applySuggestions: channel(Round, AppliedSchema, {
       describe:
-        'Writes the chosen AI suggestions of one round to the DCS bindings as one change. Call reviewSuggestions first and show the user. Undo is on the Safety page.',
+        "Writes the chosen AI suggestions of one round to the game's bindings (DCS or Nuclear Option) as one change. Call reviewSuggestions first and show the user; for Nuclear Option a write that was not reviewed is refused. Undo is on the Safety page.",
       tier: 'change',
     }),
     deleteDraft: channel(Aircraft, z.object({ deleted: z.boolean() }), {

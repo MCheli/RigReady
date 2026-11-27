@@ -526,6 +526,7 @@ describe('the binding guide page’s data for Nuclear Option', () => {
     // The model is told what a suggestion does to the control it names, and what it may name.
     expect(prepared.body).toContain('A suggested control is taken over');
     expect(prepared.body).toContain('no hat, no key, no mouse button');
+    expect(prepared.body).toContain('Each action once, by its id.');
     expect(prepared.body).toContain('named as in <devices> and <actions>');
     expect(prepared.body).not.toContain('DCS');
     expect(prepared.body).not.toContain('RewiredSaveData');
@@ -554,11 +555,16 @@ describe('the binding guide page’s data for Nuclear Option', () => {
             // None of these checks out.
             item('5', 'dev1', 'JOY_BTN_POV1_U'),
             item('5', 'keyboard', 'F'),
-            item('0', 'dev1', 'Button 2'),
+            item('1', 'dev1', 'Button 2'),
             item('11', 'dev2', 'Z rotation'),
             item('2', 'dev1', 'Z rotation'),
             item('999', 'dev1', 'Button 3'),
-            item('49', 'dev1', 'Button 77'),
+            item('52', 'dev1', 'Button 77'),
+            // An action once: a second control for it is left out.
+            item('49', 'dev2', 'Button 9'),
+            // A hat named the app's way, and an action of the game's Chat tab.
+            item('5', 'dev1', 'Hat 1 up'),
+            item('34', 'dev2', 'Button 20'),
           ],
         })
       )
@@ -590,6 +596,9 @@ describe('the binding guide page’s data for Nuclear Option', () => {
       'that controller has no such input',
       'no such action in this game',
       'that controller has no such input',
+      'this action is suggested on another control above',
+      'RigReady does not bind a hat in Nuclear Option; bind one in the game',
+      'it belongs to another tab of the game’s controls screen; bind it on the bindings page',
     ]);
     // No id of a controller in what comes back to the window.
     const overview = await a.invoke<{ devices: { guid?: string }[] }>(

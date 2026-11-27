@@ -144,6 +144,7 @@ describe('several Nuclear Option bindings proposed as one change', () => {
       summary: 'Bind 2 actions suggested by AI',
       changes: [bind(STICK_GUID, 'JOY_BTN12', '49'), bind(STICK_GUID, 'JOY_BTN13', '52')],
     };
+    expect((await proposals(a).plan(proposal)).ok).toBe(true);
     const applied = await proposals(a).apply(proposal);
     expect(applied.ok).toBe(true);
     const together = await values(a);
@@ -201,9 +202,12 @@ describe('several Nuclear Option bindings proposed as one change', () => {
       const plan = await proposals(a).plan(proposal);
       const apply = await proposals(a).apply(proposal);
       if (plan.ok || apply.ok) throw new Error('not refused');
-      expect(apply.error.message).toBe(plan.error.message);
       return plan.error.message;
     };
+    // An action of another tab of the game's screen belongs in that tab's map.
+    expect(await refused([bind(THROTTLE_GUID, 'JOY_BTN20', '34')])).toMatch(
+      /^Submit Chat belongs to the Chat tab of the game’s controls screen\./
+    );
     const good = bind(STICK_GUID, 'JOY_BTN12', '49');
     expect(await refused([])).toBe('Nothing to change.');
     // A hat: how the game saves one is not known.
@@ -251,6 +255,41 @@ describe('several Nuclear Option bindings proposed as one change', () => {
     expect(await journal(a)).toEqual([]);
   });
 
+  it('writes nothing that was not shown first: a list never reviewed, and a list other than the one reviewed', async () => {
+    const a = await start();
+    const before = await values(a);
+    const unseen = await proposals(a).apply(SETUP);
+    expect(!unseen.ok && unseen.error.message).toBe(
+      'These changes were not shown first, so nothing was written. Look at them, then write them.'
+    );
+    // A review of one list does not cover another.
+    expect((await proposals(a).plan(SETUP)).ok).toBe(true);
+    const other = await proposals(a).apply({ ...SETUP, changes: SETUP.changes.slice(0, 1) });
+    expect(!other.ok && other.error.message).toContain('were not shown first');
+    expect(await values(a)).toEqual(before);
+    expect(await journal(a)).toEqual([]);
+  });
+
+  it('an action already on the control stays, and what else was on it goes', async () => {
+    const a = await start();
+    // Next Weapon joins Fire on the trigger, as a single change from the page leaves it.
+    await a.invoke('nuclear-option-bindings:change', { device: STICK, actionId: 9, button: 1 });
+    const proposal: BindingProposal = {
+      aircraftId: 'all',
+      summary: 'Bind 1 action suggested by AI',
+      changes: [bind(STICK_GUID, 'JOY_BTN1', '5')],
+    };
+    const plan = await proposals(a).plan(proposal);
+    expect(plan.ok && plan.value.files.map((f) => f.lines)).toEqual([
+      ['Fire stays on Button 1', 'Button 1 no longer does Next Weapon'],
+    ]);
+    expect(plan.ok && plan.value.notes).toEqual([]);
+    expect((await proposals(a).apply(proposal)).ok).toBe(true);
+    const stick = await rows(a, STICK);
+    expect(stick).toContain('Fire = Button 1');
+    expect(stick.some((r) => r.startsWith('Next Weapon'))).toBe(false);
+  });
+
   it('a failure after the first value was written says that part is written, and Undo takes it out', async () => {
     const a = await start();
     const before = await values(a);
@@ -261,6 +300,7 @@ describe('several Nuclear Option bindings proposed as one change', () => {
       ++writes === 2
         ? err('file.write', 'The value could not be written.')
         : write(...args)) as typeof write;
+    expect((await proposals(a).plan(SETUP)).ok).toBe(true);
     const applied = await proposals(a).apply(SETUP);
     files.write = write;
     expect(!applied.ok && applied.error.message).toBe(

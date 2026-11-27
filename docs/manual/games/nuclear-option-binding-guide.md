@@ -61,9 +61,9 @@ With an AI provider set up in **Settings** ([Choose who answers](../ai/providers
 
 ![A suggested setup for Nuclear Option](../../../artifacts/screens/ai-assist-nuclear-option-suggest/02-suggestions.png)
 
-RigReady checks every line against the game and your controllers before you see it. A line that names an action the game does not have, a controller that is not plugged in, a button or an axis the controller lacks, an axis for a button action, or a hat, is left out and counted under the list, with the reason. A suggestion that is bound so already is marked and not ticked. Two suggestions that want the same control are both unticked until you choose one.
+RigReady checks every line against the game and your controllers before you see it. A line that names an action the game does not have, a controller that is not plugged in, a button or an axis the controller lacks, an axis for a button action, a hat, an action of the game's Chat, Mission Editor or Debug tab, or a second control for an action already in the list, is left out and counted under the list, with the reason. A suggestion that is bound so already is marked and not ticked. Two suggestions that want the same control are both unticked until you choose one.
 
-A suggested binding takes its control over. If the button or the axis does something else now, the line says what, and that stops when you write the change. This differs from a single change on the [bindings page](nuclear-option-bindings.md), which leaves the other action on the control and tells you. An axis you reversed stays reversed.
+A suggested binding takes its control over. If the button or the axis does something else now, the line says what, and that stops when you write the change. This differs from a single change on the [bindings page](nuclear-option-bindings.md), which leaves the other action on the control and tells you. An axis you reversed stays reversed. Only the controller's bindings for the Game tab of the game's controls screen are changed.
 
 Tick what you want and press **Review**. The review lists, controller by controller, what each action will be on and what each control stops doing:
 
