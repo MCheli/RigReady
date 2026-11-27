@@ -4,6 +4,7 @@ import { mutate, wiredApp, type WiredApp } from '../../../tests/helpers';
 import {
   isRegistryPath,
   parseRegistryPath,
+  registryKeyPath,
   registryLeaf,
   registryValuePath,
 } from './registryValues';
