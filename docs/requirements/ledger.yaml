@@ -9250,6 +9250,27 @@ requirements:
       - "artifacts/screens/damaged-game-folders/06-iracing.png"
       - "artifacts/screens/damaged-game-vanishes/02-after.png"
 
+  - id: NFR-013
+    title: A registry value is changed only through FileStore, with a backup and Undo
+    job: platform
+    area: platform
+    priority: p1
+    done_means:
+      - "A binary registry value has an address FileStore carries (registryValuePath). A write to it copies the value's bytes to the automatic backups first, is in the journal under its group and reason, and Undo puts the bytes back; Undo is refused when the value was changed again since."
+      - "Only the bytes of an existing REG_BINARY value under HKEY_CURRENT_USER\\Software are replaced. Another hive, a key outside Software, a value that does not exist, a value of another type and a delete are refused, and nothing is changed by a refused write."
+      - "The registry port features read with has no write. Files are read and written exactly as before."
+      - "On real Windows, on a key the test makes and removes: the bytes are replaced, the value's type and the key's other value stay, Windows still reports REG_BINARY, and Undo restores the bytes."
+    status: done
+    evidence:
+      - "src/core/files/registryValues.test.ts#the address of a value is a path a file store can carry, with a short file name"
+      - "src/core/files/registryValues.test.ts#a write replaces the value’s bytes after a backup, is journaled with its reason, and Undo puts the bytes back"
+      - "src/core/files/registryValues.test.ts#Undo is refused when the value was changed again by something else"
+      - "src/core/files/registryValues.test.ts#refuses everything wider: another hive, outside Software, a value that is not there or not binary, a delete"
+      - "src/core/files/registryValues.test.ts#files are read and written exactly as before"
+      - "tests/rig/registryValues.rig.test.ts#replaces the bytes after a backup, keeps the type and the other value, and Undo restores them"
+      - "tests/rig/registryValues.rig.test.ts#refuses a value that is not binary, one that is not there, and a delete"
+    notes: "Built for Nuclear Option, which keeps its bindings in the registry (docs/research/nuclear-option.md). The rig test ran on the owner's PC on 2026-11-27 with RIGREADY_RIG_APPLY=1: 2 passed, and its key was gone afterwards. No feature uses the address yet in this change. Until now RigReady wrote nothing to the registry, and some pages say so; whether it should is the owner's decision, which is why this is a pull request of its own."
+
   - id: NFR-009
     title: Nothing hardcoded to the owner's rig
     job: platform

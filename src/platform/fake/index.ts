@@ -1,3 +1,4 @@
+import { RegistryRawFs, type RegistryValueStore } from '../../core/files/registryValues';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import * as yaml from 'js-yaml';
@@ -534,6 +535,35 @@ export class FakeRegistry implements Registry {
   ): Promise<Result<Record<string, RegistryValue>>> {
     const found = findRegistryKey(this.state.registry, registryKeyPath(hive, key));
     return ok(found ? structuredClone(this.state.registry[found]!) : {});
+  }
+}
+
+/** The binary values of the rig's registry for FileStore: read, and an existing one replaced. */
+export class FakeRegistryValues implements RegistryValueStore {
+  constructor(private readonly state: RigState) {}
+
+  private valuesOf(hive: RegistryHive, key: string): Record<string, RegistryValue> | undefined {
+    const found = findRegistryKey(this.state.registry, registryKeyPath(hive, key));
+    return found ? this.state.registry[found] : undefined;
+  }
+
+  async binaryNames(hive: RegistryHive, key: string): Promise<string[]> {
+    return Object.entries(this.valuesOf(hive, key) ?? {})
+      .filter(([, value]) => value.type === 'binary')
+      .map(([name]) => name);
+  }
+
+  async read(hive: RegistryHive, key: string, name: string): Promise<Uint8Array | undefined> {
+    const value = this.valuesOf(hive, key)?.[name];
+    return value?.type === 'binary' ? new Uint8Array(Buffer.from(value.value, 'hex')) : undefined;
+  }
+
+  async replace(hive: RegistryHive, key: string, name: string, data: Uint8Array): Promise<void> {
+    const values = this.valuesOf(hive, key);
+    if (values?.[name]?.type !== 'binary') {
+      throw new Error(`The registry value is not there or does not hold binary data: ${name}`);
+    }
+    values[name] = { type: 'binary', value: Buffer.from(data).toString('hex') };
   }
 }
 
@@ -1286,7 +1316,11 @@ export function createFakePorts(options: FakePlatformOptions): FakePorts {
     services: new FakeServiceProvider(state),
     audio: new FakeAudioProvider(state),
     registry,
-    files: new BackupFileStore(new SlowableRawFs(state), dataRoot, clock),
+    files: new BackupFileStore(
+      new RegistryRawFs(new SlowableRawFs(state), new FakeRegistryValues(state)),
+      dataRoot,
+      clock
+    ),
     folders,
     shell,
     clock,
