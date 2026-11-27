@@ -57,6 +57,8 @@ const OverviewSchema = z.object({
   /** Where the bindings were read from, in words. */
   registryKey: z.string(),
   devices: z.array(DeviceSchema),
+  /** The actions a controller button can be bound to here, in the game's own order. */
+  actions: z.array(z.object({ id: z.number().int(), name: z.string(), category: z.string() })),
   /** Saved maps that could not be read, in words. */
   problems: z.array(z.string()),
 });

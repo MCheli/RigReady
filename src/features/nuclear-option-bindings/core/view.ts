@@ -360,6 +360,11 @@ export async function overview(ctx: BindingsContext): Promise<Result<Overview>> 
     saved: saved.value.maps.length > 0,
     registryKey: `HKEY_CURRENT_USER\\${REGISTRY_KEY}`,
     devices,
+    actions: ACTIONS.filter((a) => a.kind === 'button').map((a) => ({
+      id: a.id,
+      name: a.name,
+      category: a.category,
+    })),
     problems: saved.value.problems,
   });
 }

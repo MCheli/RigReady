@@ -14,3 +14,17 @@ export function shownBindings(
     return words.every((w) => text.includes(w));
   });
 }
+
+/**
+ * A binding the page can change or clear: a plain button of the controller, in the game's own
+ * map category, on an action a button can be bound to (not one side of an axis).
+ */
+export function canChange(binding: OverviewBinding, buttonActions: ReadonlySet<number>): boolean {
+  return (
+    binding.kind === 'button' &&
+    binding.control?.kind === 'button' &&
+    binding.mapCategory === 'Game' &&
+    binding.modifiers.length === 0 &&
+    buttonActions.has(Number(binding.actionId))
+  );
+}
