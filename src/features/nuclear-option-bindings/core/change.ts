@@ -248,7 +248,7 @@ export async function reviewChange(
  */
 let queue: Promise<unknown> = Promise.resolve();
 
-function oneAtATime<T>(work: () => Promise<T>): Promise<T> {
+export function oneAtATime<T>(work: () => Promise<T>): Promise<T> {
   const next = queue.then(work, work);
   // The queue goes on whether this one succeeded or not.
   queue = next.catch(() => undefined);

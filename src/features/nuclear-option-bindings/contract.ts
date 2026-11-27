@@ -185,6 +185,40 @@ export const ClearDeviceReviewSchema = z.object({
 });
 export type ClearDeviceReview = z.infer<typeof ClearDeviceReviewSchema>;
 
+/** A named snapshot of the bindings, kept in RigReady's own folder. */
+export const SnapshotSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** When it was taken, as an ISO date. */
+  createdAt: z.string(),
+  /** How many saved maps it holds, and how many bindings in them. */
+  maps: z.number().int(),
+  bindings: z.number().int(),
+  /** What it has bindings for: each controller by name, "the keyboard", "the mouse". */
+  devices: z.array(z.string()),
+});
+export type Snapshot = z.infer<typeof SnapshotSchema>;
+
+/** Restoring a snapshot as it would be, before anything is written. */
+export const SnapshotRestoreReviewSchema = z.object({
+  name: z.string(),
+  /** Each device whose bindings would change: how many it has now, and in the snapshot. */
+  devices: z.array(z.object({ name: z.string(), now: z.number().int(), then: z.number().int() })),
+  /** Devices of the snapshot the game no longer has saved bindings for: not put back. */
+  gone: z.array(z.string()),
+  /** Devices the game has bindings for now that the snapshot does not hold: left as they are. */
+  newer: z.array(z.string()),
+  /** The bindings are already as in the snapshot. */
+  same: z.boolean(),
+  blocked: z.string().optional(),
+  preview: ChangePreviewSchema,
+  seen: z.string(),
+});
+export type SnapshotRestoreReview = z.infer<typeof SnapshotRestoreReviewSchema>;
+
+const SnapshotId = z.object({ id: z.string().min(1).max(100) });
+const SnapshotName = z.string().min(1).max(80);
+
 /** A controller button the user just pressed, while the page listens. */
 export const PressedSchema = z.object({
   /** The controller's DirectInput instance GUID. */
@@ -237,6 +271,48 @@ export const nuclearOptionBindingsContract = defineContract(
       describe: `Takes every Nuclear Option binding off one controller, buttons and axes, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
+    snapshots: channel(noInput, z.array(SnapshotSchema), {
+      describe:
+        'Lists the snapshots RigReady has kept of Nuclear Option’s bindings (named copies of what the game saved for every controller, the keyboard and the mouse). Ids for the other snapshot channels come from here. Changes nothing.',
+      tier: 'read',
+    }),
+    snapshotCreate: channel(z.object({ name: SnapshotName }), SnapshotSchema, {
+      describe:
+        "Takes a named snapshot of Nuclear Option's bindings as the game saved them, into RigReady's own folder. The game's values are only read.",
+      tier: 'change',
+    }),
+    snapshotRename: channel(SnapshotId.extend({ name: SnapshotName }), SnapshotSchema, {
+      describe:
+        'Gives a snapshot of Nuclear Option’s bindings a new name. id comes from nuclear-option-bindings:snapshots.',
+      tier: 'change',
+    }),
+    snapshotDelete: channel(SnapshotId, z.object({ deleted: z.boolean() }), {
+      describe:
+        "Deletes a snapshot of Nuclear Option's bindings from RigReady's folder. id comes from nuclear-option-bindings:snapshots. Ask the user first.",
+      tier: 'change',
+    }),
+    /** Restoring a snapshot as it would be: which devices change. Writes nothing. */
+    snapshotRestorePreview: channel(SnapshotId, SnapshotRestoreReviewSchema, {
+      describe: `Shows what putting a snapshot of Nuclear Option's bindings back would change. Writes nothing. ${ON_THE_PAGE}`,
+      tier: 'off',
+    }),
+    /**
+     * Puts a snapshot's bindings back into what the game saved, through FileStore (a backup
+     * first, one entry on the Safety page). Refused while the game runs.
+     */
+    snapshotRestore: channel(
+      SnapshotId.extend({
+        seen: z
+          .string()
+          .regex(/^[0-9a-f]{64}$/)
+          .optional(),
+      }),
+      ChangeResultSchema,
+      {
+        describe: `Puts a snapshot of Nuclear Option's bindings back into the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
+        tier: 'off',
+      }
+    ),
     overview: channel(noInput, OverviewSchema, {
       describe:
         'Nuclear Option’s bindings as the game saved them: every controller, the keyboard and the mouse, with the action each input does. Read from the registry; changes nothing. The game has one set of bindings for every aircraft.',
