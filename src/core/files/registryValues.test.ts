@@ -74,6 +74,11 @@ describe('registry values through FileStore', () => {
       leaf: '',
     });
     expect(isRegistryPath(address)).toBe(true);
+    // A key's address is the folder its values' addresses are in.
+    expect(registryKeyPath('HKCU', KEY)).toBe(
+      '\\\\registry\\HKCU\\Software\\Example Studio\\Example Game'
+    );
+    expect(address.startsWith(`${registryKeyPath('HKCU', KEY)}\\`)).toBe(true);
     for (const file of [
       'C:\\Users\\User\\file.txt',
       '\\\\server\\share\\file.txt',
