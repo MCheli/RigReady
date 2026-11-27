@@ -259,7 +259,13 @@ async function saveClearAll(): Promise<void> {
   const result = await api.clearDevice({ device: clearing.value, seen: clearReview.value.seen });
   saving.value = false;
   if (!result.ok) {
+    // Part of the controller may have been cleared before the failure. The review shown is
+    // then of bindings that are gone: it is dropped, so it cannot be confirmed again, and
+    // the page reads the bindings as they are now.
+    clearTurn++;
+    clearReview.value = undefined;
     clearError.value = errorText(result.error);
+    await load();
     return;
   }
   savedMessage.value = result.value.message;

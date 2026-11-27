@@ -39,7 +39,9 @@ export default defineFeatureMain({
         clearDevicePreview: (request) => reviewClearDevice(bctx, request),
         async clearDevice(request) {
           const cleared = await applyClearDevice(bctx, request);
-          if (cleared.ok && cleared.value.changed) ctx.bindings.notifyChanged({ game: GAME });
+          // Also after a failure: one of the controller's maps may have been cleared before
+          // it, and the cheat sheets and the overlay must not go on showing its bindings.
+          if (!cleared.ok || cleared.value.changed) ctx.bindings.notifyChanged({ game: GAME });
           return cleared;
         },
         async listenStart() {
