@@ -6653,7 +6653,7 @@ requirements:
       - "The page says that RigReady does not change these bindings and where it read them. Without the game it says so and where it looked; with the game installed but never run it says the game has saved none yet. A saved map that cannot be read is said so and the others are shown."
       - "The feature registers the game's BindingReader (one set for every aircraft), so a cheat sheet draws the bindings with no change to the cheat sheets feature."
       - "On a real rig with the game: the page agrees with the game's controls screen, a press of the Fire button and a move of the pitch axis light the right labels on the cheat sheet, the trainer counts a press, and the overlay names one."
-    status: in_progress
+    status: done
     evidence:
       - "src/features/nuclear-option-bindings/core/view.test.ts#shows each device the game has bindings for, the plugged-in controllers first"
       - "src/features/nuclear-option-bindings/core/view.test.ts#names the stick’s bindings: the game’s button 0 is button 1, and a binding switched off is left out"
@@ -6672,7 +6672,7 @@ requirements:
       - "artifacts/screens/nuclear-option-bindings/02-stick-search.png"
       - "artifacts/screens/nuclear-option-bindings/03-keyboard.png"
       - "artifacts/screens/nuclear-option-bindings/04-cheat-sheet.png"
-    notes: "Stage 2 of docs/contributing/add-game.md. On the owner's rig on 2026-11-26 the page listed the eleven controllers, the keyboard and the mouse, and the stick's ten bindings agreed with the game's controls screen; the first try there is how the game's shorter controller identifier was found. In progress until the rest of the proof on a rig in docs/research/nuclear-option.md is run: that a button and an axis are numbered the way Windows numbers them is inferred until a press and a move show it. Changing a binding is not part of this: it is a registry write, which RigReady cannot make undoable yet."
+    notes: "Stage 2 of docs/contributing/add-game.md. On the owner's rig on 2026-11-26 the page listed the eleven controllers, the keyboard and the mouse, and the stick's ten bindings agreed with the game's controls screen; the first try there is how the game's shorter controller identifier was found. The owner then reported, at the controls, that a press of the Fire button and a move of the pitch axis lit the right labels on the cheat sheet, that the trainer counted a press and that the overlay named one over the running game. Not tried: a second unit of one model, a gamepad, a hat, a press on a controller other than the stick. Changing a binding is not part of this: it is a registry write, which RigReady cannot make undoable yet."
 
   - id: RACE-IRACING-002
     title: iRacing config locations and tracked defaults

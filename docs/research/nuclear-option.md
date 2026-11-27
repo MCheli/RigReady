@@ -201,8 +201,8 @@ Every one agrees: the number on the screen is the saved id for an axis and the s
 `src/features/nuclear-option-bindings` reads the saved maps and registers a `BindingReader` for the game, so the bindings page, the cheat sheets, the trainer and the overlay show them. It only reads.
 
 - **The parser** (`core/rewired.ts`) takes a map document apart into its bindings and the text around them, and puts it together again. All 22 maps saved on the rig came back character for character **[V]**, as do the made-up maps in `fixtures/nuclear-option`. A document that is not a map, or holds a binding written another way, is refused with the reason, and damaged input never throws (`tests/unit/fuzzParsers.test.ts`).
-- **Buttons.** Element id 32 is shown as Button 1, 33 as Button 2, and so on: the game's own number plus one. **[I]** that the game's order is the order Windows numbers the buttons in.
-- **Axes.** Element id n is the nth axis the plugged-in controller reports (its `axisNames`, from DirectInput), or the nth of X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2 when the controller is not plugged in. **[I]**: Rewired reads the controller through Raw Input and its axis order is assumed to be the same. Where a controller reports its axes in another order through DirectInput, an axis would be named wrongly; a move of a known axis in the trainer or the input tester shows it.
+- **Buttons.** Element id 32 is shown as Button 1, 33 as Button 2, and so on: the game's own number plus one. **[V]** for the stick's Fire button, pressed on the cheat sheet on 26 Nov 2026; **[I]** for the other controllers.
+- **Axes.** Element id n is the nth axis the plugged-in controller reports (its `axisNames`, from DirectInput), or the nth of X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2 when the controller is not plugged in. **[V]** for the stick's pitch axis, moved on the cheat sheet on 26 Nov 2026. For other controllers **[I]**: Rewired reads the controller through Raw Input and its axis order is assumed to be the same. Where a controller reports its axes in another order through DirectInput, an axis would be named wrongly; a move of a known axis in the trainer or the input tester shows it.
 - **Two forms of the identifier** (section 4) are both read. A map an earlier build left behind is left out when a later one is there for the same controller and category, judged from the value names alone, so it is also left out when the later map cannot be read.
 - **An axis the plugged-in controller does not have** (an id past its axes) is shown by the game's number only, not by another axis's name. The game gives every controller the same default bindings, so a panel with four axes can have a binding on a fifth.
 - **Which unit.** A map names a model (vendor and product id), and `duplicate` the nth unit of it. RigReady takes the nth plugged-in controller of that model in the order Windows lists them. **[I]** for a second unit; one unit of a model needs no guess.
@@ -222,7 +222,7 @@ Run the branch as for stage 1, with the game closed or open (reading does not di
 | 6 | Start the trainer for Nuclear Option and answer one question by pressing the control | The press counts as right |
 | 7 | With the overlay on, start the game and press the Fire button | The overlay names Fire |
 
-### Results so far, 26 November 2026
+### Results, 26 November 2026
 
 On the owner's rig, the game running (build 26327221), this branch built and run as for stage 1.
 
@@ -230,7 +230,15 @@ On the owner's rig, the game running (build 26327221), this branch built and run
 |---|---|---|
 | 1 | Eleven controllers, the keyboard (51 bindings) and the mouse, each controller once and marked plugged in. The first try showed two controllers twice and most as not plugged in: that is how the shorter identifier was found, and the reader was changed | Pass, after the change |
 | 2 | The stick: Pitch Axis on axis 1 reversed, Roll Axis on axis 0, Fire 4, Target Select 31, Target Cancel 33, Next Weapon 37, Next Countermeasure 39, Open Radial Menu 5, Switch View 14, Open Weapon Wheel 13 in the game's column, the same as the game's controls screen read earlier that evening | Pass |
-| 3 to 7 | The cheat sheet, a press and a move on it, the trainer and the overlay | Not run yet: they need the owner's hands on the controls |
+| 3 | The cheat sheet for Nuclear Option, opened from the page | Pass, as the owner reported |
+| 4 | The owner pressed the Fire button with the cheat sheet open: the label that lit was Fire | Pass, as the owner reported |
+| 5 | The owner moved the stick forward and back: the label that lit was Pitch Axis | Pass, as the owner reported |
+| 6 | The trainer for Nuclear Option counted a press as the answer | Pass, as the owner reported |
+| 7 | With the overlay on and the game running, the overlay named the Fire press | Pass, as the owner reported |
+
+Steps 3 to 7 were done by the owner at the controls, who reported that all of them worked; no screenshot was kept. Steps 4 and 5 are what the numbering rests on: on this stick the game's button 4 is the device's fifth button, and the game's axis 1 is the axis Windows calls Y.
+
+Not tried: a second unit of one model, a controller Rewired has a definition of its own for (a gamepad), a binding on a hat, and a press on any controller other than the stick.
 
 ## Proof on a rig
 
