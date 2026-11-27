@@ -6844,6 +6844,25 @@ requirements:
       - "artifacts/screens/nuclear-option-bindings-edit/05-blocked.png"
     notes: "Stage 3 of docs/contributing/add-game.md; it needs NFR-013 (a registry value through FileStore). The second look on the owner's rig, 2026-11-26 (docs/research/nuclear-option.md, section 7): Toggle Navigation Lights bound to Button 12 of the stick by RigReady showed as button 11 on the game's controls screen (0.34.6), the game changed only Unity's session counters, and Undo restored every binding value; both rig steps passed. Driven overnight by Claude Code with the owner's permission, nobody at the controls. Not tried then: the button pressed in a flight, a move or a clear in the real game, another controller. 2026-11-27, the owner at the controls: Eject cleared and bound to Button 16 on the R-VPC panel, and the button worked in a flight. The button is chosen by pressing it or by typing its number; pressing is proven in the scenario test, and whether the owner pressed or typed was not recorded."
 
+  - id: BIND-NO-010
+    title: "Nuclear Option bindings: every action in one list with each place it is bound, those on several controllers marked"
+    job: configure
+    area: nuclear-option-bindings
+    priority: p2
+    done_means:
+      - "The Nuclear Option bindings page has an All actions tab: every action of the game, bound or not, with each place it is bound (device and input, a reversed axis and modifier keys said, an unplugged controller said)."
+      - "An action bound on more than one controller is marked with how many, the page says how many such actions there are, and a tick leaves only those. A search looks in the action, its group, the device names and the inputs."
+      - "A place leads to its device's tab with the action in the search box, where Change and Clear are."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/renderer/rows.test.ts#lists every action, bound or not, with each place in the page’s words, and counts the controllers"
+      - "src/features/nuclear-option-bindings/renderer/rows.test.ts#a search looks in the action, its group, the devices and the inputs; \"several\" leaves what is on more than one controller"
+      - "tests/e2e/nuclear-option-bindings-actions.e2e.ts#nuclear option bindings: every action with where it is bound, those on several controllers marked, and a place leads to its device"
+      - "artifacts/screens/nuclear-option-bindings-actions/01-all-actions.png"
+      - "artifacts/screens/nuclear-option-bindings-actions/02-on-several.png"
+      - "artifacts/screens/nuclear-option-bindings-actions/03-place-opened.png"
+    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does, whose bindings page has a list by action; and of his remark the same day that the game binds every controller it finds. Reads only; nothing is written from this list. Not tried on the rig."
+
   - id: BIND-NO-009
     title: "Axis tuning for Nuclear Option: dead zone, upper dead zone and sensitivity of an axis, with a preview and Undo"
     job: configure

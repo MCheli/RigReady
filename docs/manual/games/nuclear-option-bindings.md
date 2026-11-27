@@ -37,6 +37,18 @@ A controller that is not plugged in is still listed, marked **Not plugged in**. 
 
 ![The keyboard's bindings](../../../artifacts/screens/nuclear-option-bindings/03-keyboard.png)
 
+## Every action in one list
+
+**All actions**, the first tab above the devices, lists every action of the game, bound or not, with each place it is bound: the device and the button, axis or key.
+
+![Every action with where it is bound](../../../artifacts/screens/nuclear-option-bindings-actions/01-all-actions.png)
+
+Nuclear Option binds every controller it finds when it first sees it, so an action is often on several controllers at once, and each of them then drives it: a panel's unused axis can pull on the pitch. An action bound on more than one controller is marked **On 2 controllers** (or more), the line above the list says how many such actions there are, and **Only those on more than one controller** leaves just those.
+
+![An action on two controllers](../../../artifacts/screens/nuclear-option-bindings-actions/02-on-several.png)
+
+Choose a place to go to that device with the action in the search box; **Change** and **Clear** are on its row there. To take a controller out of the game altogether, use **Clear all** on its tab. The search box of this list looks in the action, its group, the device names and the inputs.
+
 ## Binding a controller's buttons and axes
 
 Close Nuclear Option first: the game reads its bindings when it starts and saves them itself, so RigReady refuses the change while the game runs, and says so.
