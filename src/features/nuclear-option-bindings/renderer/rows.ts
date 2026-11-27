@@ -1,4 +1,4 @@
-import type { OverviewBinding } from '../contract';
+import type { Overview, OverviewBinding } from '../contract';
 
 /** The bindings a search leaves: every word must be in the action, its group or the input. */
 export function shownBindings(
@@ -46,4 +46,66 @@ export function canChange(
     binding.modifiers.length === 0 &&
     entry.takes === binding.kind
   );
+}
+
+/** One place an action is bound: a device and the input on it, in the page's words. */
+export interface ActionPlace {
+  deviceId: string;
+  deviceName: string;
+  kind: 'controller' | 'keyboard' | 'mouse';
+  connected: boolean;
+  /** "Button 5", "Y axis · reversed", "Ctrl + E". */
+  input: string;
+}
+
+export interface ActionRow {
+  /** The binding id: "5", "25", "25:+". */
+  key: string;
+  name: string;
+  category: string;
+  places: ActionPlace[];
+  /** How many controllers it is bound on: more than one is usually the game's own doing. */
+  controllers: number;
+}
+
+/**
+ * Every action the game has, bound or not, with every place it is bound across the devices.
+ * A search leaves the actions whose name, group or any place has every word; "several" leaves
+ * only the ones bound on more than one controller.
+ */
+export function actionRows(
+  overview: Pick<Overview, 'actions' | 'devices'>,
+  search: string | null,
+  several = false
+): ActionRow[] {
+  const words = (search ?? '').toLowerCase().split(/\s+/).filter(Boolean);
+  const rows = overview.actions.map((action): ActionRow => {
+    const places = overview.devices.flatMap((d) =>
+      d.bindings
+        .filter((b) => b.actionId === action.key)
+        .map((b): ActionPlace => ({
+          deviceId: d.id,
+          deviceName: d.name,
+          kind: d.kind,
+          connected: d.connected,
+          input: [...b.modifiers, b.inputLabel].join(' + ') + (b.inverted ? ' · reversed' : ''),
+        }))
+    );
+    return {
+      key: action.key,
+      name: action.name,
+      category: action.category,
+      places,
+      controllers: new Set(places.filter((p) => p.kind === 'controller').map((p) => p.deviceId))
+        .size,
+    };
+  });
+  return rows.filter((row) => {
+    if (several && row.controllers < 2) return false;
+    if (words.length === 0) return true;
+    const text = [row.name, row.category, ...row.places.flatMap((p) => [p.deviceName, p.input])]
+      .join(' ')
+      .toLowerCase();
+    return words.every((w) => text.includes(w));
+  });
 }
