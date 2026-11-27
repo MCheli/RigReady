@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
-import type { ChangeResult, ChangeReview, Overview } from '../contract';
+import type { ChangeResult, ChangeReview, ClearDeviceReview, Overview } from '../contract';
 import { err, ok } from '../../../core/result';
 import { whyBlocked } from './change';
 import { REGISTRY_KEY, type BindingsContext } from './view';
@@ -260,6 +260,112 @@ describe('changing a Nuclear Option binding', () => {
     expect(now.ok && now.value).toEqual({ type: 'binary', value: bytes.toString('hex') });
     const journal = await a.ports.files.journalGroups();
     expect(journal.ok && journal.value).toEqual([]);
+  });
+
+  describe('every binding of one controller', () => {
+    const THROTTLE = 'controller:044F:0404:0';
+    const clearReview = (a: WiredApp, request: object): Promise<ClearDeviceReview> =>
+      a.invoke<ClearDeviceReview>('nuclear-option-bindings:clearDevicePreview', request);
+    const clear = (a: WiredApp, request: object): Promise<ChangeResult> =>
+      a.invoke<ChangeResult>('nuclear-option-bindings:clearDevice', request);
+    const bound = async (a: WiredApp, id: string): Promise<number> => {
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      return view.devices.find((d) => d.id === id)!.bindings.length;
+    };
+    const allValues = async (a: WiredApp): Promise<Record<string, unknown>> => {
+      const values = await a.ports.registry.listValues('HKCU', REGISTRY_KEY);
+      if (!values.ok) throw new Error(values.error.message);
+      return values.value;
+    };
+
+    it('is shown first, then cleared in one entry on the Safety page, and Undo puts every binding back', async () => {
+      const a = await start();
+      const before = await allValues(a);
+      expect(await bound(a, THROTTLE)).toBe(8);
+      const stickBound = await bound(a, STICK);
+
+      const shown = await clearReview(a, { device: THROTTLE });
+      expect(shown).toMatchObject({
+        device: 'Throttle - HOTAS Warthog',
+        bindings: 8,
+        same: false,
+      });
+      expect(shown.blocked).toBeUndefined();
+      // The throttle's Chat map has nothing bound, so only its Game map is written.
+      expect(shown.preview.files).toHaveLength(1);
+      expect(await allValues(a)).toEqual(before);
+
+      const result = await clear(a, { device: THROTTLE, seen: shown.seen });
+      expect(result).toEqual({
+        changed: true,
+        message:
+          'Saved: 8 bindings cleared on Throttle - HOTAS Warthog. Undo is on the Safety page.',
+      });
+      expect(await bound(a, THROTTLE)).toBe(0);
+      expect(await bound(a, STICK)).toBe(stickBound);
+      // Exactly one value differs, and it has no binding left in it.
+      const after = await allValues(a);
+      const differing = Object.keys(before).filter(
+        (name) => JSON.stringify(before[name]) !== JSON.stringify(after[name])
+      );
+      expect(Object.keys(after).sort()).toEqual(Object.keys(before).sort());
+      expect(differing).toHaveLength(1);
+      const value = after[differing[0]!] as { type: string; value: string };
+      const text = Buffer.from(value.value, 'hex').toString('utf8');
+      expect(text).toContain('<buttonMaps /><axisMaps />');
+      expect(text.endsWith('\0')).toBe(true);
+
+      const journal = await a.ports.files.journalGroups();
+      if (!journal.ok) throw new Error(journal.error.message);
+      expect(journal.value).toHaveLength(1);
+      expect(journal.value[0]!.reason).toBe(
+        'Nuclear Option bindings: all 8 bindings cleared on Throttle - HOTAS Warthog'
+      );
+      await a.invoke('safety:undo', { groupId: journal.value[0]!.id, force: false });
+      expect(await allValues(a)).toEqual(before);
+      expect(await bound(a, THROTTLE)).toBe(8);
+    });
+
+    it('a controller with nothing bound is left alone, and says so', async () => {
+      const a = await start();
+      await clear(a, { device: THROTTLE });
+      const again = await clearReview(a, { device: THROTTLE });
+      expect(again).toMatchObject({ bindings: 0, same: true });
+      expect(again.preview.files).toEqual([]);
+      expect(await clear(a, { device: THROTTLE })).toEqual({
+        changed: false,
+        message: 'Nothing was changed: nothing is bound on Throttle - HOTAS Warthog.',
+      });
+      const journal = await a.ports.files.journalGroups();
+      expect(journal.ok && journal.value).toHaveLength(1);
+    });
+
+    it('is refused while the game runs, when the bindings changed since it was shown, and for the keyboard', async () => {
+      const a = await start();
+      const before = await allValues(a);
+      const shown = await clearReview(a, { device: THROTTLE });
+      await mutate(a, [
+        { op: 'startProcess', name: 'NuclearOption.exe', path: 'C:/Games/NuclearOption.exe' },
+      ]);
+      expect((await clearReview(a, { device: THROTTLE })).blocked).toContain(
+        'Close Nuclear Option first'
+      );
+      await expect(clear(a, { device: THROTTLE, seen: shown.seen })).rejects.toThrow(
+        'Close Nuclear Option first'
+      );
+      await mutate(a, [{ op: 'stopProcess', name: 'NuclearOption.exe' }]);
+      // A binding saved on the throttle meanwhile: what was shown no longer holds.
+      await change(a, { device: THROTTLE, actionId: 49, button: 30 });
+      const changed = await allValues(a);
+      await expect(clear(a, { device: THROTTLE, seen: shown.seen })).rejects.toThrow(
+        'changed after the change was shown'
+      );
+      expect(await allValues(a)).toEqual(changed);
+      expect(changed).not.toEqual(before);
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      const keyboard = view.devices.find((d) => d.kind === 'keyboard')!;
+      await expect(clear(a, { device: keyboard.id })).rejects.toThrow('nothing to clear');
+    });
   });
 
   it('writes nothing when the saved bindings changed after the change was shown', async () => {

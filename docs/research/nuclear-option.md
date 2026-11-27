@@ -252,7 +252,7 @@ A binding the player made on the game's controls screen is one `ActionElementMap
 
 - **Bind** an action that has no binding on the controller: one such element is added at the end of `buttonMaps`. **[I]** that the game adds one at the end; the order has no meaning to Rewired that was seen.
 - **Move**: the action's element is replaced in place by one for the new button. A default binding (`actionCategoryId` 0) that is moved becomes one written as the player's (-1). **[I]** that the game does the same.
-- **Clear**: the element is taken out. A list that loses its last element is written `<buttonMaps />`, as the game writes an empty one. **[V]** the form; **[?]** whether the game, finding a default action with no binding, puts its default back.
+- **Clear**: the element is taken out. A list that loses its last element is written `<buttonMaps />`, as the game writes an empty one. **[V]** the form. The game, finding a default action with no binding, does not put its default back: **[V]** for a whole controller ("Clearing a whole controller" below).
 - Everything else in the document stays character for character, including the zero byte at the end.
 
 Refused, with the reason: an axis action, one side of an axis action on a button, a key, a mouse button, an action not in the table, an action that already has a binding the writer does not understand (a button with a modifier key, an axis), a controller with no saved map, a button outside 1 to 128. The writer parses its own result and checks it is the map it meant before it returns it.
@@ -284,6 +284,28 @@ On the owner's rig, the game (0.34.6, build 26327221) from Steam, this branch bu
 The steps were driven by Claude Code on the owner's PC overnight, with the owner's permission; nobody was at the controls.
 
 Not tried: pressing the button in a flight to see the lights toggle (the game's controls screen showing the binding is the evidence that the game read it); moving or clearing a binding in the real game (only binding an unbound action); a controller other than the stick; an action added by a game update.
+
+### In a flight, 27 November 2026
+
+The owner, at the controls, with the same build: Eject cleared on the R-VPC panel and bound to its Button 16 on the Bindings page (two entries on the Safety page), then the game started and the button pressed in a flight. It worked. **[V]** by the owner. That is a clear and a bind in the real game, on a second controller, and the press that the second look left out.
+
+### Clearing a whole controller
+
+The game binds its defaults to every controller it sees for the first time: on the owner's rig, pitch, roll, yaw, throttle, Fire and eight more on each of the MFD panels, the ICP, the UFC and both switch panels. **[V]** `clearMapText` in `core/edit.ts` takes every `ActionElementMap` out of a saved joystick map and writes both lists as `<buttonMaps /><axisMaps />`. Nothing is composed: the result is the map as the game itself saves one with nothing bound, which it does for a controller's Chat, Mission Editor and Debug maps. **[V]** on the rig: each of the ten controller maps with bindings, cleared on a copy, has no binding left, and the pedals' is the text of the pedals' own empty maps except for the category, the map's number and whether the map is switched on (`enabled` is true on the Game map and false on the others).
+
+A controller has a map for each tab of the game's controls screen. Every one with bindings is cleared, under one entry on the Safety page; when one of them cannot be (the same refusals as for one binding: bytes that are not the text, a form this code would not write back, a controller Rewired has a definition for), none is.
+
+**The game does not put its defaults back.** This was the open question under "Clear" above. **[V]** on 27 November 2026, on the owner's rig (0.34.6, build 26327221), driven by Claude Code with the owner's permission:
+
+| Step | What was done | What was seen | Result |
+|---|---|---|---|
+| Before | `reg export` of the key; `RIGREADY_RIG_NUCLEAR_OPTION=before` (read-only) | Ten controller maps cleared on a copy as described above | Pass |
+| The clear | With the game closed: Bindings, WINWING MFD1-L, **Clear all**; the review said "11 bindings" to "Nothing bound", one value changed; **Clear all** | "Saved: 11 bindings cleared on WINWING MFD1-L." `RIGREADY_RIG_NUCLEAR_OPTION=cleared`: one value differed from the snapshot, and it was that map with nothing bound | Pass |
+| In the game | Started the game, Settings, the control bindings menu, WINWING MFD1-L, the whole list scrolled | The controller is still among the assigned controllers and has nothing in the Controller column; WINWING MFD1-R beside it still has its axes | Pass |
+| The game closes | Closed the game without changing anything there, then the `cleared` step again | Still only that value differed from the snapshot: the game had not written the controller's defaults again | Pass |
+| Undo | Safety page, **Undo** on the entry | Every value equal to the export from before, except Unity's two counters | Pass |
+
+Not tried: a controller with bindings in the Chat, Mission Editor or Debug tab (none on the rig has any); the game started a second time; whether a controller unplugged and plugged in again, or a game update, makes the game bind its defaults again; **Restore Defaults** in the game after a clear.
 
 ## Proof on a rig
 

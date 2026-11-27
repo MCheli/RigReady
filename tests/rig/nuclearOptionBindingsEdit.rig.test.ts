@@ -5,6 +5,8 @@
  *
  *   before            reads every saved map, checks each comes back character for character,
  *                     tries the change on a copy in memory, and keeps a snapshot of the values
+ *   cleared           compares the registry with the snapshot after "Clear all": only maps of
+ *                     one controller differ, each the map it was with nothing bound
  *   after:<actionId>  compares the registry with the snapshot: only one controller map
  *                     differs, only in that action, exactly as the writer composes it
  *
@@ -15,7 +17,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { nullLogger } from '../../src/core/logger';
-import { editMapText } from '../../src/features/nuclear-option-bindings/core/edit';
+import { clearMapText, editMapText } from '../../src/features/nuclear-option-bindings/core/edit';
 import {
   parseControllerMap,
   parseSaveKey,
@@ -119,6 +121,80 @@ describe.skipIf(!step.startsWith('after:'))(
       const button = mine[0] ? Number(/<elementIdentifierId>(\d+)</.exec(mine[0])![1]) - 31 : null;
       const composed = editMapText(was, { actionId, button });
       expect(composed.ok && composed.value.text).toBe(is);
+    });
+  }
+);
+
+/** The text without the two numbers that tell one saved map of a controller from another. */
+const sameButForIds = (text: string): string =>
+  text
+    .replace(/<sourceMapId>-?\d+<\/sourceMapId>/, '')
+    .replace(/<categoryId>-?\d+<\/categoryId>/, '')
+    // Whether the map is switched on: the Game map is, the maps of the other tabs may not be.
+    .replace(/<enabled>(true|false)<\/enabled><buttonMaps/, '<buttonMaps');
+
+describe.skipIf(step !== 'before')(
+  'Nuclear Option bindings, clearing a controller (read-only)',
+  () => {
+    it('a controller map cleared on a copy is the map as the game itself saves one with nothing bound', async () => {
+      const maps = mapsOf(await values());
+      // The game's own maps with nothing bound, by the controller's name.
+      const empty = new Map<string, string>();
+      for (const text of maps.values()) {
+        const map = parseControllerMap(text);
+        if (!map.ok || map.value.kind !== 'JoystickMap') continue;
+        if (map.value.buttonMaps.length + map.value.axisMaps.length === 0) {
+          empty.set(map.value.hardwareName, text);
+        }
+      }
+      let cleared = 0;
+      let compared = 0;
+      for (const [name, text] of maps) {
+        const map = parseControllerMap(text);
+        if (!map.ok || map.value.kind !== 'JoystickMap') continue;
+        const result = clearMapText(text);
+        expect(result.ok, name).toBe(true);
+        if (!result.ok || result.value.removed === 0) continue;
+        cleared++;
+        expect(elements(result.value.text), name).toEqual([]);
+        const own = empty.get(map.value.hardwareName);
+        if (!own) continue;
+        compared++;
+        expect(sameButForIds(result.value.text), name).toBe(sameButForIds(own));
+      }
+      expect(cleared).toBeGreaterThan(0);
+      console.log(
+        `cleared on a copy: ${cleared} maps, ${compared} compared with the game's own empty map`
+      );
+    });
+  }
+);
+
+describe.skipIf(step !== 'cleared')(
+  'Nuclear Option bindings, after a controller was cleared (read-only)',
+  () => {
+    it('only maps of one controller differ from the snapshot, and each is the map it was with nothing bound', async () => {
+      const before = JSON.parse(await fs.readFile(SNAPSHOT, 'utf8')) as Record<
+        string,
+        RegistryValue
+      >;
+      const now = await values();
+      const own = (name: string): boolean => name.startsWith('unity.player_session');
+      const differing = [...new Set([...Object.keys(before), ...Object.keys(now)])].filter(
+        (name) => !own(name) && JSON.stringify(before[name]) !== JSON.stringify(now[name])
+      );
+      expect(differing.length).toBeGreaterThan(0);
+      const names = new Set<string>();
+      for (const name of differing) {
+        const was = mapsOf(before).get(name)!;
+        const is = mapsOf(now).get(name)!;
+        const map = parseControllerMap(was);
+        expect(map.ok && map.value.kind, name).toBe('JoystickMap');
+        if (map.ok) names.add(map.value.hardwareName);
+        const composed = clearMapText(was);
+        expect(composed.ok && composed.value.text, name).toBe(is);
+      }
+      expect([...names]).toHaveLength(1);
     });
   }
 );

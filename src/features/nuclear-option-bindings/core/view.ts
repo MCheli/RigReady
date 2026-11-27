@@ -26,8 +26,8 @@ import {
 
 /**
  * Nuclear Option's bindings as the game saved them, read from the registry values the
- * Rewired library writes (HKEY_CURRENT_USER\Software\Shockfront\NuclearOption). Read
- * only: nothing here, or anywhere in this feature, writes to the registry.
+ * Rewired library writes (HKEY_CURRENT_USER\Software\Shockfront\NuclearOption). This
+ * file only reads; what the feature writes goes through FileStore, in change.ts.
  *
  * What is verified and what is inferred: docs/research/nuclear-option.md, section 4.
  */
@@ -167,6 +167,37 @@ export async function storedGameMap(
     map: found.map,
     deviceName: found.map.hardwareName || 'the controller',
   });
+}
+
+/**
+ * Every saved map of a controller, as stored: the Game category's and the other
+ * categories' (Chat, Mission Editor, Debug). What clearing a controller empties.
+ */
+export async function storedControllerMaps(
+  ctx: BindingsContext,
+  deviceId: string
+): Promise<Result<StoredMap[]>> {
+  const saved = await readSaved(ctx);
+  if (!saved.ok) return saved;
+  const found = saved.value.maps.filter(
+    (m) => m.map.kind === 'JoystickMap' && controllerId(m) === deviceId
+  );
+  if (found.length === 0) {
+    return err(
+      'nuclear-option.noMap',
+      'Nuclear Option has saved no bindings for this controller, so there is nothing to clear.'
+    );
+  }
+  return ok(
+    found
+      .sort((a, b) => a.map.categoryId - b.map.categoryId)
+      .map((m) => ({
+        valueName: m.valueName,
+        text: m.text,
+        map: m.map,
+        deviceName: m.map.hardwareName || 'the controller',
+      }))
+  );
 }
 
 /** The control of a controller an element id means; undefined for one that is not understood. */

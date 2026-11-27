@@ -10,6 +10,7 @@ import { onMachineChanged } from '../../../renderer/machine';
 import {
   nuclearOptionBindingsContract,
   type ChangeReview,
+  type ClearDeviceReview,
   type Overview,
   type OverviewBinding,
   type OverviewDevice,
@@ -19,8 +20,9 @@ import { canChange, shownBindings } from './rows';
 
 /**
  * Nuclear Option's bindings as the game saved them, one device at a time. A button of a
- * controller can be bound, moved or cleared here: the change is shown first, and only Save
- * writes it (through FileStore: a backup, the Safety page, Undo).
+ * controller can be bound, moved or cleared here, and a controller's bindings cleared all at
+ * once: the change is shown first, and only Save writes it (through FileStore: a backup, the
+ * Safety page, Undo).
  */
 const api = useClient(nuclearOptionBindingsContract);
 const route = useRoute();
@@ -225,6 +227,46 @@ async function save(): Promise<void> {
   await load();
 }
 
+// ---- Every binding of the controller cleared at once: the same review first ----
+
+/** The controller being cleared, by its id; unset while the dialog is closed. */
+const clearing = ref<string>();
+const clearReview = ref<ClearDeviceReview>();
+const clearError = ref('');
+let clearTurn = 0;
+
+async function startClearAll(): Promise<void> {
+  if (!device.value) return;
+  const mine = ++clearTurn;
+  savedMessage.value = '';
+  clearReview.value = undefined;
+  clearError.value = '';
+  clearing.value = device.value.id;
+  const result = await api.clearDevicePreview({ device: device.value.id });
+  if (mine !== clearTurn) return;
+  if (result.ok) clearReview.value = result.value;
+  else clearError.value = errorText(result.error);
+}
+function closeClearAll(): void {
+  clearTurn++;
+  clearing.value = undefined;
+  clearReview.value = undefined;
+  clearError.value = '';
+}
+async function saveClearAll(): Promise<void> {
+  if (!clearing.value || !clearReview.value) return;
+  saving.value = true;
+  const result = await api.clearDevice({ device: clearing.value, seen: clearReview.value.seen });
+  saving.value = false;
+  if (!result.ok) {
+    clearError.value = errorText(result.error);
+    return;
+  }
+  savedMessage.value = result.value.message;
+  closeClearAll();
+  await load();
+}
+
 const editTitle = computed(() => {
   const e = editing.value;
   if (!e) return '';
@@ -315,9 +357,10 @@ const editTitle = computed(() => {
         <div class="rr-panel nb-note" data-testid="nuclear-option-bindings-note">
           <v-icon icon="mdi-pencil-outline" class="rr-muted" />
           <div>
-            You can bind a controller’s button to an action here, move it or clear it. RigReady
-            shows what will change and writes nothing until you press Save; it backs the saved
-            bindings up first, and Undo is on the
+            You can bind a controller’s button to an action here, move it or clear it, or clear
+            everything the game bound on a controller you do not use for it. RigReady shows what
+            will change and writes nothing until you press Save; it backs the saved bindings up
+            first, and Undo is on the
             <router-link to="/configure/safety">Safety page</router-link>. An axis, a key or a mouse
             button is bound in the game, under Settings, then Controls. The bindings are in
             <span class="rr-mono">{{ overview.registryKey }}</span>.
@@ -367,6 +410,15 @@ const editTitle = computed(() => {
               data-testid="nuclear-option-bindings-bind"
               @click="startBind"
               >Bind an action</v-btn
+            >
+            <v-btn
+              v-if="device.kind === 'controller'"
+              variant="text"
+              prepend-icon="mdi-eraser"
+              :disabled="device.bindings.length === 0"
+              data-testid="nuclear-option-bindings-clear-all"
+              @click="startClearAll"
+              >Clear all</v-btn
             >
             <v-text-field
               v-model="search"
@@ -539,6 +591,51 @@ const editTitle = computed(() => {
           >
             <v-icon icon="mdi-alert-outline" size="small" class="rr-warn" />
             <span>{{ review.blocked }}</span>
+          </div>
+        </div>
+      </template>
+    </ConfirmChanges>
+
+    <ConfirmChanges
+      :open="clearing !== undefined"
+      :title="`Clear every binding on ${device?.name ?? 'this controller'}?`"
+      confirm-text="Clear all"
+      :preview="clearReview && !clearReview.same ? clearReview.preview : undefined"
+      :error="clearError"
+      :busy="saving"
+      :blocked="clearReview?.blocked !== undefined"
+      testid="nuclear-option-bindings-clear-all-dialog"
+      @cancel="closeClearAll"
+      @confirm="saveClearAll"
+    >
+      <template v-if="clearing && device">
+        <div
+          v-if="clearReview"
+          class="nb-review"
+          data-testid="nuclear-option-bindings-clear-all-review"
+        >
+          <div v-if="clearReview.same" class="rr-muted">
+            Nothing is bound on <strong>{{ clearReview.device }}</strong>: nothing to clear.
+          </div>
+          <template v-else>
+            <div>
+              <strong>{{ clearReview.device }}</strong>:
+              {{ clearReview.bindings === 1 ? '1 binding' : `${clearReview.bindings} bindings` }}
+              <v-icon icon="mdi-arrow-right" size="small" />
+              Nothing bound
+            </div>
+            <div class="rr-muted">
+              Its buttons and its axes, in what Nuclear Option saved. Your other controllers, the
+              keyboard and the mouse are not changed. The game reads it the next time it starts.
+            </div>
+          </template>
+          <div
+            v-if="clearReview.blocked"
+            class="nb-also"
+            data-testid="nuclear-option-bindings-clear-all-blocked"
+          >
+            <v-icon icon="mdi-alert-outline" size="small" class="rr-warn" />
+            <span>{{ clearReview.blocked }}</span>
           </div>
         </div>
       </template>
