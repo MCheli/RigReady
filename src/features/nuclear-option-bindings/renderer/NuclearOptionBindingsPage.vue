@@ -20,7 +20,7 @@ import {
 } from '../contract';
 import { controlLabel } from '../../../core/bindings';
 import { GAME_KEYS, keyName } from '../core/keys';
-import { canChange, shownBindings } from './rows';
+import { actionRows, canChange, gameActionCount, shownBindings } from './rows';
 import AxisTuningPanel from './AxisTuningPanel.vue';
 import SnapshotsPanel from './SnapshotsPanel.vue';
 
@@ -48,6 +48,29 @@ const device = computed<OverviewDevice | undefined>(
 const rows = computed(() =>
   device.value ? shownBindings(device.value.bindings, search.value) : []
 );
+/** The list of every action with where it is bound, in place of one device's bindings. */
+const byAction = ref(false);
+/** In that list: only the actions bound on more than one controller. */
+const onlySeveral = ref(false);
+/** The list's own search: a device's stays what it was. */
+const actionSearch = ref('');
+const allActions = computed(() =>
+  overview.value ? actionRows(overview.value, actionSearch.value, onlySeveral.value) : []
+);
+/** The game's actions (an axis with its sides once) that more than one controller drives. */
+const severalCount = computed(() =>
+  overview.value ? gameActionCount(actionRows(overview.value, '', true)) : 0
+);
+const actionCount = computed(() =>
+  overview.value ? gameActionCount(actionRows(overview.value, '')) : 0
+);
+/** From a place in that list to the device it is on, with the action in the search box. */
+function openPlace(deviceId: string, action: string): void {
+  selected.value = deviceId;
+  search.value = action;
+  byAction.value = false;
+}
+
 /** What the page offers to bind, by its binding id ("5", "25", "25:+"). */
 const offeredById = computed(
   () => new Map((overview.value?.actions ?? []).map((a) => [a.key, a] as const))
@@ -81,7 +104,10 @@ watch(
   () => route.query.guid,
   () => {
     const wanted = overview.value ? fromLink(overview.value) : undefined;
-    if (wanted) selected.value = wanted;
+    if (wanted) {
+      selected.value = wanted;
+      byAction.value = false;
+    }
   }
 );
 
@@ -585,23 +611,141 @@ const editTitle = computed(() => {
 
         <div class="nb-devices" role="tablist" aria-label="Devices">
           <v-btn
+            role="tab"
+            :aria-selected="byAction"
+            :variant="byAction ? 'tonal' : 'text'"
+            prepend-icon="mdi-format-list-bulleted"
+            class="nb-device"
+            data-testid="nuclear-option-bindings-by-action"
+            @click="byAction = true"
+          >
+            All actions
+            <span class="nb-count rr-muted">{{ actionCount }}</span>
+          </v-btn>
+          <v-btn
             v-for="d in overview.devices"
             :key="d.id"
             role="tab"
-            :aria-selected="d.id === device?.id"
-            :variant="d.id === device?.id ? 'tonal' : 'text'"
+            :aria-selected="!byAction && d.id === device?.id"
+            :variant="!byAction && d.id === device?.id ? 'tonal' : 'text'"
             :prepend-icon="deviceIcon(d)"
             class="nb-device"
             data-testid="nuclear-option-bindings-device"
             :data-device="d.name"
-            @click="selected = d.id"
+            @click="
+              selected = d.id;
+              byAction = false;
+            "
           >
             {{ d.name }}
             <span class="nb-count rr-muted">{{ d.bindings.length }}</span>
           </v-btn>
         </div>
 
-        <template v-if="device">
+        <template v-if="byAction">
+          <div class="nb-device-head">
+            <h2 class="rr-section-title">All actions</h2>
+            <span class="rr-muted nb-state" data-testid="nuclear-option-bindings-several-count">
+              {{
+                severalCount === 0
+                  ? 'No action is on more than one controller'
+                  : severalCount === 1
+                    ? '1 action is on more than one controller'
+                    : `${severalCount} actions are on more than one controller`
+              }}
+            </span>
+            <v-spacer />
+            <v-checkbox
+              v-model="onlySeveral"
+              density="compact"
+              hide-details
+              label="Only those on more than one controller"
+              data-testid="nuclear-option-bindings-only-several"
+            />
+            <v-text-field
+              v-model="actionSearch"
+              density="compact"
+              variant="outlined"
+              hide-details
+              clearable
+              prepend-inner-icon="mdi-magnify"
+              label="Find an action, device or input"
+              class="nb-search"
+              data-testid="nuclear-option-bindings-action-search"
+            />
+          </div>
+          <p class="rr-muted nb-hint">
+            Every action of the game with each place it is bound. The game binds every controller it
+            finds when it first sees it, so an action is often on several at once: every one of them
+            then drives it. An axis action is listed with each of its two sides, and the three are
+            counted together. Choose a place to go to that device, where it is changed or cleared.
+          </p>
+          <div class="rr-panel">
+            <table class="nb-table" data-testid="nuclear-option-bindings-actions-table">
+              <thead>
+                <tr>
+                  <th scope="col">Action</th>
+                  <th scope="col">Group</th>
+                  <th scope="col">Bound on</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in allActions"
+                  :key="row.key"
+                  data-testid="nuclear-option-bindings-action-row"
+                  :data-action="row.name"
+                >
+                  <td class="nb-action">
+                    {{ row.name }}
+                    <div
+                      v-if="row.controllers > 1"
+                      class="rr-warn nb-several"
+                      data-testid="nuclear-option-bindings-several"
+                    >
+                      <v-icon icon="mdi-alert-outline" size="x-small" />
+                      {{
+                        row.withFamily
+                          ? `With its axis and sides: on ${row.controllers} controllers`
+                          : `On ${row.controllers} controllers`
+                      }}
+                    </div>
+                  </td>
+                  <td class="rr-muted">{{ row.category }}</td>
+                  <td>
+                    <span v-if="row.places.length === 0" class="rr-muted">Not bound</span>
+                    <v-btn
+                      v-for="(place, i) in row.places"
+                      :key="`${place.deviceId}-${place.input}-${i}`"
+                      size="small"
+                      variant="text"
+                      class="nb-place"
+                      :aria-label="`Show ${row.name} on ${place.deviceName}`"
+                      data-testid="nuclear-option-bindings-place"
+                      @click="openPlace(place.deviceId, row.name)"
+                    >
+                      {{ place.deviceName }} · {{ place.input }}
+                      <span v-if="place.kind === 'controller' && !place.connected" class="rr-muted">
+                        &nbsp;(not plugged in)</span
+                      >
+                    </v-btn>
+                  </td>
+                </tr>
+                <tr v-if="allActions.length === 0">
+                  <td
+                    colspan="3"
+                    class="rr-muted"
+                    data-testid="nuclear-option-bindings-actions-none"
+                  >
+                    No action matches.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+
+        <template v-else-if="device">
           <div class="nb-device-head">
             <h2 class="rr-section-title" data-testid="nuclear-option-bindings-device-title">
               {{ device.name }}
@@ -977,6 +1121,19 @@ const editTitle = computed(() => {
 }
 .nb-device {
   text-transform: none;
+}
+.nb-place {
+  text-transform: none;
+  justify-content: flex-start;
+  display: flex;
+  height: auto;
+  min-height: 28px;
+  white-space: normal;
+  text-align: left;
+}
+.nb-several {
+  font-size: var(--rr-text-xs);
+  font-weight: 400;
 }
 .nb-count {
   margin-left: 8px;

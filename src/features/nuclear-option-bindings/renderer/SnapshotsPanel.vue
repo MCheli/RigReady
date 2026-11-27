@@ -295,7 +295,28 @@ const listed = (names: string[]): string =>
                 :key="d.name"
                 data-testid="nuclear-option-snapshot-device"
               >
-                <td>{{ d.name }}</td>
+                <td>
+                  {{ d.name }}
+                  <div
+                    v-if="d.back.length + d.goes.length === 0"
+                    class="rr-muted snap-detail"
+                    data-testid="nuclear-option-snapshot-same-bindings"
+                  >
+                    The same bindings, saved differently (their order, or one that is switched off)
+                  </div>
+                  <details v-else class="snap-detail" data-testid="nuclear-option-snapshot-detail">
+                    <summary>
+                      {{ d.back.length }} {{ d.back.length === 1 ? 'comes' : 'come' }} back,
+                      {{ d.goes.length }} {{ d.goes.length === 1 ? 'goes' : 'go' }}
+                    </summary>
+                    <div v-for="(words, i) in d.back" :key="`b${i}`" class="snap-back">
+                      + {{ words }}
+                    </div>
+                    <div v-for="(words, i) in d.goes" :key="`g${i}`" class="snap-goes">
+                      − {{ words }}
+                    </div>
+                  </details>
+                </td>
                 <td>{{ d.now }}</td>
                 <td>{{ d.then }}</td>
               </tr>
@@ -332,6 +353,17 @@ const listed = (names: string[]): string =>
 </template>
 
 <style scoped>
+.snap-detail {
+  font-size: 13px;
+  margin-top: 4px;
+}
+.snap-detail summary {
+  cursor: pointer;
+  color: var(--rr-muted);
+}
+.snap-goes {
+  color: var(--rr-muted);
+}
 .snap {
   padding: 16px;
   margin-bottom: 16px;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { OverviewBinding } from '../contract';
-import { canChange, shownBindings } from './rows';
+import { actionRows, canChange, gameActionCount, shownBindings } from './rows';
 
 const binding = (
   action: string,
@@ -138,5 +138,120 @@ describe('a binding the page can change', () => {
     expect(
       canChange(binding('New', 'Button 3', { actionId: '99', control: button }), offered)
     ).toBe(false);
+  });
+});
+
+describe('every action with where it is bound', () => {
+  const device = (
+    id: string,
+    name: string,
+    kind: 'controller' | 'keyboard' | 'mouse',
+    bindings: OverviewBinding[],
+    connected = true
+  ) => ({ id, name, kind, connected, bindings });
+  const action = (key: string, name: string, category = 'Flight Controls') => ({
+    id: Number(key.split(':')[0]),
+    key,
+    name,
+    category,
+    mapCategory: 'Game',
+    takes: 'button' as const,
+  });
+  const overview = {
+    actions: [
+      action('5', 'Fire'),
+      action('0', 'Pitch Axis'),
+      action('25:+', 'Zoom In', 'Camera Controls'),
+      action('49', 'Toggle Navigation Lights', 'Gameplay'),
+    ],
+    devices: [
+      device('c1', 'Stick', 'controller', [
+        binding('5', 'Button 1'),
+        binding('0', 'Y axis', { kind: 'axis', inverted: true }),
+      ]),
+      device(
+        'c2',
+        'Panel',
+        'controller',
+        [binding('5', 'Button 1'), binding('0', 'X axis')],
+        false
+      ),
+      device('keyboard', 'Keyboard', 'keyboard', [
+        binding('5', 'Space', { kind: 'key' }),
+        binding('25:+', 'E', { kind: 'key', modifiers: ['Ctrl'] }),
+      ]),
+    ],
+  };
+
+  it('lists every action, bound or not, with each place in the page’s words, and counts the controllers', () => {
+    const rows = actionRows(overview, '');
+    expect(
+      rows.map((r) => [r.name, r.controllers, r.places.map((p) => `${p.deviceName}: ${p.input}`)])
+    ).toEqual([
+      ['Fire', 2, ['Stick: Button 1', 'Panel: Button 1', 'Keyboard: Space']],
+      ['Pitch Axis', 2, ['Stick: Y axis · reversed', 'Panel: X axis']],
+      ['Zoom In', 0, ['Keyboard: Ctrl + E']],
+      ['Toggle Navigation Lights', 0, []],
+    ]);
+    expect(rows[0]!.places[1]).toMatchObject({
+      deviceId: 'c2',
+      kind: 'controller',
+      connected: false,
+    });
+  });
+
+  it('a search looks in the action, its group, the devices and the inputs; "several" leaves what is on more than one controller', () => {
+    expect(actionRows(overview, 'panel').map((r) => r.name)).toEqual(['Fire', 'Pitch Axis']);
+    expect(actionRows(overview, 'camera').map((r) => r.name)).toEqual(['Zoom In']);
+    expect(actionRows(overview, 'ctrl e').map((r) => r.name)).toEqual(['Zoom In']);
+    expect(actionRows(overview, 'lights').map((r) => r.name)).toEqual(['Toggle Navigation Lights']);
+    expect(actionRows(overview, null, true).map((r) => r.name)).toEqual(['Fire', 'Pitch Axis']);
+    expect(actionRows(overview, 'axis', true).map((r) => r.name)).toEqual(['Pitch Axis']);
+    expect(actionRows(overview, 'nothing like it')).toEqual([]);
+  });
+
+  it('an axis and its sides count together: the pedals’ brake axis and a button for the brake on the throttle are two controllers', () => {
+    const brakes = {
+      actions: [action('6', 'Brake Axis'), action('6:+', 'Apply Brakes'), action('5', 'Fire')],
+      devices: [
+        device('pedals', 'Pedals', 'controller', [binding('6', 'Z axis', { kind: 'axis' })]),
+        device('throttle', 'Throttle', 'controller', [
+          binding('6:+', 'Button 3'),
+          binding('5', 'Button 1'),
+        ]),
+      ],
+    };
+    const rows = actionRows(brakes, '');
+    expect(rows.map((r) => [r.name, r.controllers, r.withFamily])).toEqual([
+      ['Brake Axis', 2, true],
+      ['Apply Brakes', 2, true],
+      ['Fire', 1, false],
+    ]);
+    // Both rows stay under "several", and they are one action of the game.
+    const several = actionRows(brakes, '', true);
+    expect(several.map((r) => r.name)).toEqual(['Brake Axis', 'Apply Brakes']);
+    expect(gameActionCount(several)).toBe(1);
+    expect(gameActionCount(rows)).toBe(2);
+  });
+
+  it('what is bound to an action RigReady has no name for is listed under the name its bindings carry', () => {
+    const later = {
+      actions: [action('5', 'Fire')],
+      devices: [
+        device('c1', 'Stick', 'controller', [
+          binding('99', 'Button 9', { action: 'Action 99', category: 'Not known to RigReady' }),
+        ]),
+        device('c2', 'Panel', 'controller', [
+          binding('99', 'Button 2', { action: 'Action 99', category: 'Not known to RigReady' }),
+        ]),
+      ],
+    };
+    expect(
+      actionRows(later, '').map((r) => [r.name, r.category, r.controllers, r.places.length])
+    ).toEqual([
+      ['Fire', 'Flight Controls', 0, 0],
+      ['Action 99', 'Not known to RigReady', 2, 2],
+    ]);
+    expect(actionRows(later, '', true).map((r) => r.name)).toEqual(['Action 99']);
   });
 });

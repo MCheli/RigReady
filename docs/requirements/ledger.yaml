@@ -6844,6 +6844,27 @@ requirements:
       - "artifacts/screens/nuclear-option-bindings-edit/05-blocked.png"
     notes: "Stage 3 of docs/contributing/add-game.md; it needs NFR-013 (a registry value through FileStore). The second look on the owner's rig, 2026-11-26 (docs/research/nuclear-option.md, section 7): Toggle Navigation Lights bound to Button 12 of the stick by RigReady showed as button 11 on the game's controls screen (0.34.6), the game changed only Unity's session counters, and Undo restored every binding value; both rig steps passed. Driven overnight by Claude Code with the owner's permission, nobody at the controls. Not tried then: the button pressed in a flight, a move or a clear in the real game, another controller. 2026-11-27, the owner at the controls: Eject cleared and bound to Button 16 on the R-VPC panel, and the button worked in a flight. The button is chosen by pressing it or by typing its number; pressing is proven in the scenario test, and whether the owner pressed or typed was not recorded."
 
+  - id: BIND-NO-010
+    title: "Nuclear Option bindings: every action in one list with each place it is bound, those on several controllers marked"
+    job: configure
+    area: nuclear-option-bindings
+    priority: p2
+    done_means:
+      - "The Nuclear Option bindings page has an All actions tab: every action of the game, bound or not, with each place it is bound (device and input, a reversed axis and modifier keys said, an unplugged controller said)."
+      - "An action bound on more than one controller is marked with how many, the page says how many such actions there are, and a tick leaves only those. An axis action and its two sides are counted together. What is bound to an action RigReady has no name for is listed by its number. A search looks in the action, its group, the device names and the inputs."
+      - "A place leads to its device's tab with the action in the search box, where Change and Clear are."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/renderer/rows.test.ts#lists every action, bound or not, with each place in the page’s words, and counts the controllers"
+      - "src/features/nuclear-option-bindings/renderer/rows.test.ts#a search looks in the action, its group, the devices and the inputs; \"several\" leaves what is on more than one controller"
+      - "src/features/nuclear-option-bindings/renderer/rows.test.ts#an axis and its sides count together: the pedals’ brake axis and a button for the brake on the throttle are two controllers"
+      - "src/features/nuclear-option-bindings/renderer/rows.test.ts#what is bound to an action RigReady has no name for is listed under the name its bindings carry"
+      - "tests/e2e/nuclear-option-bindings-actions.e2e.ts#nuclear option bindings: every action with where it is bound, those on several controllers marked, and a place leads to its device"
+      - "artifacts/screens/nuclear-option-bindings-actions/01-all-actions.png"
+      - "artifacts/screens/nuclear-option-bindings-actions/02-on-several.png"
+      - "artifacts/screens/nuclear-option-bindings-actions/03-place-opened.png"
+    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does, whose bindings page has a list by action; and of his remark the same day that the game binds every controller it finds. Reads only; nothing is written from this list. Not tried on the rig. Copilot could not review the pull request (no quota left); an independent review by a second Claude agent found these, fixed before the merge: bindings of an action RigReady has no name for were left out of the list; an axis and its sides were counted apart, so the brake on the pedals and on a throttle button was not marked; a link to a controller did not leave the list; the list and a device shared one search box. In the snapshot review a device that differs only in how the same bindings are saved now says so. Left as it is: two controllers of one model share a name in the snapshot review, and a key held with a modifier RigReady does not know reads as the key alone."
+
   - id: BIND-NO-009
     title: "Axis tuning for Nuclear Option: dead zone, upper dead zone and sensitivity of an axis, with a preview and Undo"
     job: configure
@@ -6886,6 +6907,7 @@ requirements:
     priority: p2
     done_means:
       - "On the Nuclear Option bindings page a named snapshot is taken of every binding the game has saved (all controllers, the keyboard, the mouse) into RigReady's own folder; the game's values are only read. Snapshots are listed newest first with when they were taken and what they hold, and can be renamed and deleted."
+      - "For each device that would change the review lists, binding by binding in the page's words, what comes back and what goes (added 2026-11-27, as DCS's snapshots can be compared)."
       - "Restore shows first which devices would change, with their bindings now and in the snapshot; nothing is written until it is confirmed. Only the values that differ are written, through FileStore under one entry on the Safety page, each read back; Undo takes the restore out again; the cheat sheets, the trainer and the overlay are told."
       - "A device of the snapshot the game no longer has saved bindings for is not put back, and one the game has only now is left as it is; the review says both, and the result never says the snapshot is back without saying what was not put back. Only the maps the game uses are kept and restored, not one an earlier build left behind."
       - "A snapshot file is untrusted: bytes are written only when they are a saved map of the same kind, controller and tab as the value they replace. A file with half a byte, bytes that are no map, a value named twice, another device's map, or one changed after the review, has nothing written from it; it is listed as damaged and can be deleted."

@@ -7,7 +7,7 @@ import { err, ok, type Result } from '../../../core/result';
 import type { ChangeResult, Snapshot, SnapshotRestoreReview } from '../contract';
 import { oneAtATime, whyBlocked } from './change';
 import { parseControllerMap, parseSaveKey, textOfBinary, type ControllerMap } from './rewired';
-import { GAME_NAME, mapsInUse, REGISTRY_KEY, type BindingsContext } from './view';
+import { bindingsInWords, GAME_NAME, mapsInUse, REGISTRY_KEY, type BindingsContext } from './view';
 
 /**
  * Named snapshots of Nuclear Option's bindings, kept in RigReady's own folder
@@ -248,7 +248,7 @@ async function planRestore(ctx: BindingsContext, id: string): Promise<Result<Res
   const used = await mapsInUse(ctx);
   if (!used.ok) return used;
   const writes: RestorePlan['writes'] = [];
-  const devices = new Map<string, { now: number; then: number }>();
+  const devices = new Map<string, { now: number; then: number; back: string[]; goes: string[] }>();
   const gone: string[] = [];
   const kept = new Set<string>();
   for (const entry of file.value.maps) {
@@ -274,8 +274,24 @@ async function planRestore(ctx: BindingsContext, id: string): Promise<Result<Res
     ) {
       return err('nuclear-option.snapshot.invalid', DAMAGED);
     }
-    const count = devices.get(owner) ?? { now: 0, then: 0 };
-    devices.set(owner, { now: count.now + inUse.bindings, then: count.then + bindingsOf(then) });
+    const count = devices.get(owner) ?? { now: 0, then: 0, back: [], goes: [] };
+    // Binding by binding: what the snapshot has that is not there now, and the other way.
+    const before = bindingsInWords(then, inUse.live);
+    const less = (from: string[], take: string[]): string[] => {
+      const left = [...take];
+      return from.filter((words) => {
+        const at = left.indexOf(words);
+        if (at < 0) return true;
+        left.splice(at, 1);
+        return false;
+      });
+    };
+    devices.set(owner, {
+      now: count.now + inUse.bindings,
+      then: count.then + bindingsOf(then),
+      back: [...count.back, ...less(before, inUse.words)],
+      goes: [...count.goes, ...less(inUse.words, before)],
+    });
     writes.push({
       valueName: entry.valueName,
       address: registryValuePath('HKCU', REGISTRY_KEY, entry.valueName),
