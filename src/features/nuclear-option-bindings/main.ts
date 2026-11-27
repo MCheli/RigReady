@@ -51,6 +51,15 @@ export default defineFeatureMain({
           if (mine !== listenTurn) return ok({ listening: false });
           stopListening?.();
           stopListening = listenForPresses(ctx.ports.input, (press) => {
+            if (press.kind === 'axis') {
+              // "JOY_RZ": the axis by the name the controller gives it.
+              ctx.emit(nuclearOptionBindingsContract, 'moved', {
+                device: press.device.guid,
+                deviceName: press.device.name.trim(),
+                axis: press.input.replace(/^JOY_/, ''),
+              });
+              return;
+            }
             const button = Number(/^JOY_BTN(\d+)$/.exec(press.input)?.[1]);
             if (press.kind !== 'button' || !Number.isInteger(button)) return;
             ctx.emit(nuclearOptionBindingsContract, 'pressed', {

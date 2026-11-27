@@ -1,10 +1,10 @@
 ---
 title: Nuclear Option bindings
-description: What each control does in Nuclear Option, per device, as the game saved it; binding a controller button, clearing a controller; cheat sheets and the trainer.
+description: What each control does in Nuclear Option, per device, as the game saved it; binding a controller's buttons and axes, clearing a controller; cheat sheets.
 order: 66
 ---
 
-The Nuclear Option bindings page shows what the game has bound on each controller, on the keyboard and on the mouse. RigReady reads this from what the game itself saved. It can bind a button of a controller to an action, move it or clear it, and clear everything on one controller at once; an axis, a key or a mouse button is bound in the game's own Settings, then Controls.
+The Nuclear Option bindings page shows what the game has bound on each controller, on the keyboard and on the mouse. RigReady reads this from what the game itself saved. It can bind a button or an axis of a controller to an action, move it or clear it, and clear everything on one controller at once; a key or a mouse button is bound in the game's own Settings, then Controls.
 
 Open it with **Configure > Bindings** and choose **Nuclear Option** in the **Game** picker above the page, or with [the command palette](../app/command-palette.md): press **Ctrl+K** and type "Nuclear Option bindings".
 
@@ -37,13 +37,15 @@ A controller that is not plugged in is still listed, marked **Not plugged in**. 
 
 ![The keyboard's bindings](../../../artifacts/screens/nuclear-option-bindings/03-keyboard.png)
 
-## Binding a controller button
+## Binding a controller's buttons and axes
 
 Close Nuclear Option first: the game reads its bindings when it starts and saves them itself, so RigReady refuses the change while the game runs, and says so.
 
-- **Change** on a row moves that action to another button of the same controller.
+- **Change** on a row moves that action to another button, or another axis, of the same controller.
 - **Clear** on a row takes the binding away.
-- **Bind an action** above the list binds an action that has none on this controller: choose the action, then the button.
+- **Bind an action** above the list binds an action that has none on this controller: choose the action, then the button or the axis.
+
+An axis action is offered three ways, as on the game's own controls screen: as a whole, for an axis of the controller ("Zoom View"), and by each of its two sides, for a button each ("Zoom In", "Zoom Out").
 
 Press the button on the controller, or type its number: the one on the controller's [cheat sheet](../controls/cheat-sheets.md) and in the **Input** column (the first button is 1). A press on another controller is not taken; the dialog says which controller it was. A controller that is not plugged in can only have the number typed. RigReady shows the change before anything is written: what the action is on now and will be on, anything else that button already does ("One press will do both"), and the saved bindings it will change. Only **Save** writes.
 
@@ -55,7 +57,15 @@ RigReady copies the saved bindings of that controller first. The change is one e
 
 The game picks the change up the next time it starts; its own controls screen then shows it. The game counts buttons from 0, so Button 12 here is "11" there.
 
-What RigReady will not do here, and says so when asked: bind an axis, a key or a mouse button; bind one side of an axis action (Zoom In) to a button; change a binding it does not understand; bind anything on a controller the game has saved no bindings for yet.
+### An axis
+
+For an axis action the dialog asks for the axis instead of a button. Move the axis on the controller, or choose it in the list; the names are the ones on the controller's cheat sheet and in the **Input** column ("X axis", "Z rotation"). Tick **Reversed** to have the game turn it round. **Change** on an axis row opens on what the action has, so that reversing an axis is one tick. The review says what else that axis already does: one movement will do both.
+
+![An axis chosen by moving it](../../../artifacts/screens/nuclear-option-bindings-axes/02-moved.png)
+
+The controller must be plugged in to bind an axis: the game numbers a controller's axes in the controller's own order, and RigReady asks the controller for it. For one that is not plugged in the review says so and nothing can be saved; clearing an axis binding works either way. Once an axis is chosen, moving another does not change it: clear the field to move another.
+
+What RigReady will not do here, and says so when asked: bind a key or a mouse button; bind half an axis to one side of an action; bind a hat switch; change a binding it does not understand, such as an axis the controller does not report; bind anything on a controller the game has saved no bindings for yet.
 
 ## Clearing a controller
 
@@ -83,7 +93,7 @@ The same bindings are what the [cheat sheets](../controls/cheat-sheets.md) draw 
 
 ## What RigReady does not do
 
-- **Bind an axis, a key or a mouse button.** Those are bound in the game.
+- **Bind a key, a mouse button or a hat switch.** Those are bound in the game.
 - **Put the bindings back from a backup.** Every full backup keeps the game's registry values, bindings included, as a record you can read on the backup's page ([Backups](../protect/backups.md)). RigReady cannot write them back to the registry, so a restore does not include them.
 - **Show a binding on a hat switch by its direction.** How the game saves one is not known to RigReady yet; such a binding may be shown as a button.
 - **Know an action a game update added.** It is listed as "Action" and its number until RigReady learns its name.
