@@ -1,10 +1,10 @@
 ---
 title: Binding guide for Nuclear Option
-description: One guide for every aircraft in Nuclear Option, with what to bind first in plain language and a walkthrough that binds buttons with you.
+description: One guide for every aircraft in Nuclear Option, with what to bind first in plain language and a walkthrough that binds buttons, axes and keys.
 order: 67
 ---
 
-**Configure > Binding guide** explains what matters when you fly Nuclear Option, in plain language and in priority order, and walks you through binding it. The page is in the menu when DCS World, iRacing or Nuclear Option is found on this PC. Choose **Nuclear Option** in the **Game** picker at the top. Nothing on it needs an AI key.
+**Configure > Binding guide** explains what matters when you fly Nuclear Option, in plain language and in priority order, and walks you through binding it. The page is in the menu when DCS World, iRacing or Nuclear Option is found on this PC. Choose **Nuclear Option** in the **Game** picker at the top. Nothing on the Walkthrough and Priorities tabs needs an AI key.
 
 The guides for DCS aircraft and for iRacing are described in [Binding guide and AI help](../dcs/binding-guide-and-ai.md) and [Binding guide for iRacing](iracing-binding-guide.md).
 
@@ -28,33 +28,36 @@ The guide was written from general knowledge of the game and from the names on i
 
 The guide reads what the game saved, the same bindings the [Nuclear Option bindings page](nuclear-option-bindings.md) shows; **See them all** at the top opens that page. An item is **Bound** when the game has it on a controller (or anywhere, for an item that is fine on the keyboard), **Partly bound** when some of its actions are, and **Not bound on a controller** otherwise. The **Priorities** tab shows the whole guide at a glance, with a plan for the stick, the throttle, the pedals, a panel and the keyboard.
 
-![The priorities for Nuclear Option](../../../artifacts/screens/ai-assist-nuclear-option/04-priorities.png)
+![The priorities for Nuclear Option](../../../artifacts/screens/ai-assist-nuclear-option/06-priorities.png)
 
 ## Binding from the walkthrough
 
 The walkthrough goes through the items one at a time. Close Nuclear Option first: the game reads its bindings when it starts and saves them itself, so RigReady saves nothing while it runs, and says so.
 
-Press **Bind** beside an action, then press the button you want on a controller. RigReady shows the change before anything is written: the controller, what the action is on now and will be on, anything else that button already does ("one press does both"), and the saved bindings it will change. **Save** writes it; **Cancel** writes nothing.
+Press **Bind** beside an action, then use the control you want for it:
 
-![The review before a pressed button is saved](../../../artifacts/screens/ai-assist-nuclear-option/02-review.png)
+- **A button of a controller, or a key**, for an action that is a button, and for one side of an axis (Zoom In, Apply Brakes). A key can be held with Ctrl, Alt or Shift; Esc stops waiting.
+- **An axis of a controller**, for an axis: move the stick, the lever or the slider. In the review, tick **Reversed** to have the game turn it round.
 
-The save is the same one the Nuclear Option bindings page makes: the controller's saved bindings are copied first, the change is one entry on the [Safety page](../protect/safety-page.md), and **Undo** there puts them back. The game picks the change up the next time it starts.
+RigReady shows the change before anything is written: the device, what the action is on now and will be on, anything else that control already does ("one press does both"), and the saved bindings it will change. **Save** writes it; **Cancel** writes nothing.
 
-![The item after the save](../../../artifacts/screens/ai-assist-nuclear-option/03-bound.png)
+![The review before an axis is saved](../../../artifacts/screens/ai-assist-nuclear-option/02-axis.png)
 
-What is bound in the game itself, under Settings, then Controls, and the walkthrough says so beside it:
+The save is the same one the [Nuclear Option bindings page](nuclear-option-bindings.md) makes: the saved bindings are copied first, the change is one entry on the [Safety page](../protect/safety-page.md), and **Undo** there puts them back. The game picks the change up the next time it starts.
 
-- **An axis**: the stick, the throttle, the rudder, a toe brake. An item made only of these has no **Bind** and is never marked done; its state is what the game saved.
-- **One side of an axis on a button**: Zoom In, Apply Brakes.
-- **A key or a hat switch.** A hat pressed while the walkthrough listens is said to be a hat, and nothing is offered.
+![The item after a button was saved](../../../artifacts/screens/ai-assist-nuclear-option/04-bound.png)
 
-A controller the game has saved no bindings for yet cannot be bound from RigReady: start the game once with it plugged in.
+What the walkthrough says instead of offering it: an axis moved for a button action, or a button pressed for an axis, is said to be the wrong kind of control; a hat switch is said to be one, and is bound in the game. A controller the game has saved no bindings for yet cannot be bound from RigReady: start the game once with it plugged in. A key bound for an action that belongs on a controller is saved, and the item still says "Not bound on a controller".
 
 **Done, next** and **Skip** keep your place, and the progress is saved as you go.
 
+## AI help
+
+With an AI provider set up in **Settings** ([Choose who answers](../ai/providers.md)), the page has an **AI help** tab for questions about your Nuclear Option setup, and each action in the walkthrough has **Explain**. Before anything is sent a dialog shows the complete request. It holds the game's list of actions with what each is bound to now, the product names and layout of your connected controllers, the guide's text and your question; no file path, device id or serial number. The answer is the model's: the guide it reads was not reviewed by anyone who plays the game, and the request says so.
+
 ## What RigReady does not do here
 
-- **Bind an axis, a key or a hat switch.** Those are bound in the game.
-- **AI help.** Suggest a setup, Explain and the questions are for DCS aircraft and iRacing cars. The built-in assistant in the app bar is not affected.
+- **Bind a hat switch or a mouse button.** Those are bound in the game, under Settings, then Controls.
+- **Suggest a setup with AI.** That is for DCS aircraft. Explain and the questions work here: see below.
 - **A guide of your own.** RigReady uses the guide it includes; importing or writing one is for a DCS aircraft or an iRacing car without a guide.
 - **Plain names on the cheat sheets.** The game's own action names are already plain, so the cheat sheets keep them.

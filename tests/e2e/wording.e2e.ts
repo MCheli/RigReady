@@ -20,7 +20,7 @@ test('wording: on a PC whose only game is iRacing, the shared pages speak of any
     'the assistant answers questions about your rig, proposes setups and drafts scripts, whatever you play.'
   );
   await expect(who).toContainText(
-    'For DCS aircraft and iRacing cars, the Binding guide page can also'
+    'For DCS aircraft, iRacing cars and Nuclear Option, the Binding guide page can also'
   );
   await shot('settings-ai');
 

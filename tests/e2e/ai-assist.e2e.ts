@@ -179,7 +179,7 @@ test('ai-assist: the key is entered in Settings, tested, never shown again, and 
   );
   // What AI is for, said for every game first, and the binding guide's games named as such.
   await expect(page.getByTestId('ai-who-answers')).toContainText(
-    'With it, the assistant answers questions about your rig, proposes setups and drafts scripts, whatever you play. For DCS aircraft and iRacing cars, the Binding guide page can also explain actions and draft guides, and for DCS suggest bindings on your devices.'
+    'With it, the assistant answers questions about your rig, proposes setups and drafts scripts, whatever you play. For DCS aircraft, iRacing cars and Nuclear Option, the Binding guide page can also explain actions and answer questions; for an aircraft or a car without a guide it drafts one, and for DCS it suggests bindings on your devices.'
   );
   await page.getByTestId('ai-settings').scrollIntoViewIfNeeded();
   expect(await page.content()).not.toContain(KEY);
@@ -192,7 +192,7 @@ test('ai-assist: the key is entered in Settings, tested, never shown again, and 
 
   // "Exactly what is sent", use by use, readable for someone who only plays iRacing: the
   // assistant first, which is for any game, then AI help in the binding guide, which is for
-  // DCS aircraft and iRacing cars. No key is stored at this point, so the picture holds no key hint.
+  // DCS aircraft, iRacing cars and Nuclear Option. No key is stored at this point, so the picture holds no key hint.
   const sent = page.getByTestId('ai-what-is-sent');
   const parts = sent.getByTestId('ai-what-is-sent-part');
   await expect(parts).toHaveCount(3);
@@ -201,10 +201,10 @@ test('ai-assist: the key is entered in Settings, tested, never shown again, and 
     'It works the same whatever you play: a racing sim such as iRacing, a flight sim such as DCS, or anything else.'
   );
   await expect(parts.nth(1)).toContainText(
-    'AI help in the binding guide (DCS aircraft and iRacing cars)'
+    'AI help in the binding guide (DCS aircraft, iRacing cars and Nuclear Option)'
   );
   await expect(parts.nth(1)).toContainText(
-    'If you play neither, nothing in this list is ever sent.'
+    'If you play none of them, nothing in this list is ever sent.'
   );
   await expect(parts.nth(2)).toContainText('Where it goes');
   // The whole list in one picture: its last line at the foot of the window, its heading above.

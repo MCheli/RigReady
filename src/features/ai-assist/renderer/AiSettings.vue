@@ -370,10 +370,11 @@ watch(
           <div class="rr-row-title">Who answers</div>
           <div class="rr-row-sub" data-testid="ai-who-answers">
             Optional. With it, the assistant answers questions about your rig, proposes setups and
-            drafts scripts, whatever you play. For DCS aircraft and iRacing cars, the Binding guide
-            page can also explain actions and draft guides, and for DCS suggest bindings on your
-            devices. Everything else works without AI. You use your own key; RigReady has no account
-            or server of its own.
+            drafts scripts, whatever you play. For DCS aircraft, iRacing cars and Nuclear Option,
+            the Binding guide page can also explain actions and answer questions; for an aircraft or
+            a car without a guide it drafts one, and for DCS it suggests bindings on your devices.
+            Everything else works without AI. You use your own key; RigReady has no account or
+            server of its own.
           </div>
         </div>
         <v-select
