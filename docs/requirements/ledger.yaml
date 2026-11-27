@@ -6735,6 +6735,31 @@ requirements:
       - "artifacts/screens/nuclear-option-bindings-edit/05-blocked.png"
     notes: "Stage 3 of docs/contributing/add-game.md; it needs NFR-013 (a registry value through FileStore). The second look on the owner's rig, 2026-11-26 (docs/research/nuclear-option.md, section 7): Toggle Navigation Lights bound to Button 12 of the stick by RigReady showed as button 11 on the game's controls screen (0.34.6), the game changed only Unity's session counters, and Undo restored every binding value; both rig steps passed. Driven overnight by Claude Code with the owner's permission, nobody at the controls. Not tried then: the button pressed in a flight, a move or a clear in the real game, another controller. 2026-11-27, the owner at the controls: Eject cleared and bound to Button 16 on the R-VPC panel, and the button worked in a flight. The button is chosen by pressing it or by typing its number; pressing is proven in the scenario test, and whether the owner pressed or typed was not recorded."
 
+  - id: BIND-NO-008
+    title: Snapshots of Nuclear Option's bindings, taken and put back with a preview and Undo
+    job: configure
+    area: nuclear-option-bindings
+    priority: p2
+    done_means:
+      - "On the Nuclear Option bindings page a named snapshot is taken of every binding the game has saved (all controllers, the keyboard, the mouse) into RigReady's own folder; the game's values are only read. Snapshots are listed newest first with when they were taken and what they hold, and can be renamed and deleted."
+      - "Restore shows first which devices would change, with their bindings now and in the snapshot; nothing is written until it is confirmed. Only the values that differ are written, through FileStore under one entry on the Safety page, each read back; Undo takes the restore out again; the cheat sheets, the trainer and the overlay are told."
+      - "A device of the snapshot the game no longer has saved bindings for is not put back, and one the game has only now is left as it is; the review says both."
+      - "Refused, with the reason and nothing written: while the game runs, and when the saved bindings changed after the review. An id that is not a snapshot of RigReady's own is refused."
+      - "On the real saved bindings: after a controller was cleared and the snapshot restored, every value is byte for byte as when the snapshot was taken."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/core/snapshots.test.ts#takes a snapshot of every saved map without changing the game’s values, and lists it"
+      - "src/features/nuclear-option-bindings/core/snapshots.test.ts#restores after a review: only what differs is written, in one entry on the Safety page, and Undo takes it out again"
+      - "src/features/nuclear-option-bindings/core/snapshots.test.ts#is refused while the game runs and when the bindings changed after the review; nothing is written"
+      - "src/features/nuclear-option-bindings/core/snapshots.test.ts#does not make a value the game no longer has, and leaves alone one it has only now; it says both"
+      - "src/features/nuclear-option-bindings/core/snapshots.test.ts#renames and deletes a snapshot, and refuses an id that is not one of its own"
+      - "tests/e2e/nuclear-option-bindings-snapshots.e2e.ts#nuclear option bindings: a snapshot is taken, renamed, put back after a review, and deleted"
+      - "artifacts/screens/nuclear-option-bindings-snapshots/01-taken.png"
+      - "artifacts/screens/nuclear-option-bindings-snapshots/02-review.png"
+      - "artifacts/screens/nuclear-option-bindings-snapshots/03-restored.png"
+      - "artifacts/screens/nuclear-option-bindings-snapshots/04-blocked.png"
+    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does (DCS has binding snapshots). Proof on the owner's rig the same day (docs/research/nuclear-option.md, 'Snapshots'): a snapshot taken, a panel cleared of 14 bindings, the snapshot restored, and every value of the key byte for byte as before. Driven by Claude Code with the owner's permission. Unlike DCS's, a snapshot is not compared action by action with another, and is not moved to another PC's controller ids: the game knows a controller by its model, not by a per-PC id. A failure after part of a restore was written is covered by the message only, as for clearing a controller."
+
   - id: BIND-NO-007
     title: Bind, change or clear a key of the keyboard in Nuclear Option
     job: configure

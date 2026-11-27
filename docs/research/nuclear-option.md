@@ -322,6 +322,14 @@ Not tried: an axis bound to an action that had none (only one reversed in place,
 
 Not tried: a key with Alt; a key on a side of an axis; a key in the Chat, Mission Editor or Debug tab; any key but F7 in the game; the game started on a map RigReady wrote (it is the same bytes the game wrote itself).
 
+### Snapshots
+
+A snapshot (`core/snapshots.ts`) is every `ControllerMap` value of the key, name and bytes, in a file under RigReady's data folder. Restoring writes back, through FileStore, the values whose bytes differ and that the key still has. It cannot bring back a value the game has since dropped: its name carries a hash only Unity computes, and RigReady replaces values, it does not make them (section 5); the review names such a device. A value the key has now that the snapshot does not hold is left as it is.
+
+On the owner's rig, 27 November 2026 (driven by Claude Code, with the owner's permission, the game closed): a snapshot of all 145 values' 69 saved maps was taken; a panel the game had bound by itself was cleared of its 14 bindings; the review of the restore named that one device, 0 bindings now and 14 in the snapshot; after **Restore** every value of the key was byte for byte as before, except Unity's two session counters. **[V]**
+
+Not tried: a restore after the game ran in between; a snapshot restored on another PC or after the game renamed a controller's value; Undo of a restore on the rig (it is tested on the scenario).
+
 ### In a flight, 27 November 2026
 
 The owner, at the controls, with the same build: Eject cleared on the R-VPC panel and bound to its Button 16 on the Bindings page (two entries on the Safety page), then the game started and the button pressed in a flight. It worked. **[V]** by the owner. That is a clear and a bind in the real game, on a second controller, and the press that the second look left out.
