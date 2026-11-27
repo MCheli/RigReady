@@ -302,6 +302,10 @@ export class BackupFileStore implements FileStore {
     if (!path.isAbsolute(file)) return err('file.relative', `The path must be absolute: ${file}`);
     const target = path.resolve(file);
     try {
+      // Asked before the backup and the journal: a change that will be refused must not
+      // leave an entry for something that never happened.
+      const refused = await this.raw.refuses?.(file, action === 'remove' ? 'remove' : 'write');
+      if (refused) return err('file.refused', refused);
       if (isWithin(this.dataRoot, target) && !options.journal) {
         await perform();
         return ok(null);

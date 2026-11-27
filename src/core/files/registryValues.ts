@@ -74,6 +74,24 @@ export const isRegistryPath = (file: string): boolean =>
   file.replace(/\//g, '\\').toLowerCase().startsWith(ROOT);
 
 const REFUSED = 'RigReady changes registry values only under HKEY_CURRENT_USER\\Software.';
+const NOT_AN_ADDRESS =
+  'This is not a registry address RigReady understands, so nothing was read or written there.';
+const NOT_PLAIN =
+  'This registry address has parts that Windows would read as another place ("." or ".."), so it was refused.';
+
+/**
+ * True when the address means the same place however a path is normalised: no empty, "."
+ * or ".." part. FileStore backs up the normalised path, so one that changes under
+ * normalisation could back up one value and replace another.
+ */
+function plain(file: string): boolean {
+  const normal = file.replace(/\//g, '\\');
+  const parts = normal.slice(ROOT.length).split('\\');
+  return (
+    parts.every((part) => part !== '' && part !== '.' && part !== '..') &&
+    path.win32.normalize(normal) === normal
+  );
+}
 
 function writable(address: RegistryAddress): boolean {
   return address.hive === 'HKCU' && /^software\\[^\\]/i.test(address.key);
@@ -88,6 +106,31 @@ export class RegistryRawFs implements RawFs {
     private readonly files: RawFs,
     private readonly values: RegistryValueStore
   ) {}
+
+  /**
+   * What a path is: a file, a registry address, or something in the registry's namespace
+   * that is not an address (another hive, a part Windows would read as another place). The
+   * last is never handed to the file system, where it would be a network path.
+   */
+  private route(file: string): RegistryAddress | 'file' | 'invalid' {
+    if (!isRegistryPath(file)) return 'file';
+    const address = parseRegistryPath(file);
+    return address && plain(file) ? address : 'invalid';
+  }
+
+  /** Why a change will not be made; FileStore asks before it backs up or journals. */
+  async refuses(file: string, action: 'write' | 'remove'): Promise<string | undefined> {
+    const where = this.route(file);
+    if (where === 'file') return this.files.refuses?.(file, action);
+    if (where === 'invalid')
+      return isRegistryPath(file) && !plain(file) ? NOT_PLAIN : NOT_AN_ADDRESS;
+    if (action === 'remove') return 'RigReady does not delete registry values.';
+    if (!writable(where)) return REFUSED;
+    if (!where.leaf || (await this.nameOf(where)) === undefined) {
+      return 'RigReady only replaces a binary registry value that is already there; it does not create one.';
+    }
+    return undefined;
+  }
 
   private async nameOf(address: RegistryAddress): Promise<string | undefined> {
     if (!address.leaf) return undefined;
@@ -104,20 +147,24 @@ export class RegistryRawFs implements RawFs {
   }
 
   async readText(file: string): Promise<string> {
-    const address = parseRegistryPath(file);
-    if (!address) return this.files.readText(file);
+    const address = this.route(file);
+    if (address === 'file') return this.files.readText(file);
+    if (address === 'invalid') throw new Error(NOT_AN_ADDRESS);
     return Buffer.from(await this.bytesOf(file, address)).toString('utf8');
   }
 
   async readBytes(file: string): Promise<Uint8Array> {
-    const address = parseRegistryPath(file);
-    if (!address) return this.files.readBytes(file);
+    const address = this.route(file);
+    if (address === 'file') return this.files.readBytes(file);
+    if (address === 'invalid') throw new Error(NOT_AN_ADDRESS);
     return this.bytesOf(file, address);
   }
 
   async writeBytes(file: string, data: Uint8Array | string): Promise<void> {
-    const address = parseRegistryPath(file);
-    if (!address) return this.files.writeBytes(file, data);
+    const address = this.route(file);
+    if (address === 'file') return this.files.writeBytes(file, data);
+    // Checked again here, last: FileStore asks refuses() first, but nothing is written on trust.
+    if (address === 'invalid') throw new Error(NOT_AN_ADDRESS);
     if (!writable(address)) throw new Error(REFUSED);
     const name = await this.nameOf(address);
     if (name === undefined) {
@@ -135,8 +182,9 @@ export class RegistryRawFs implements RawFs {
   }
 
   async exists(file: string): Promise<boolean> {
-    const address = parseRegistryPath(file);
-    if (!address) return isRegistryPath(file) ? false : this.files.exists(file);
+    const address = this.route(file);
+    if (address === 'file') return this.files.exists(file);
+    if (address === 'invalid') return false;
     if (!address.leaf) {
       return (await this.values.binaryNames(address.hive, address.key)).length > 0;
     }
@@ -144,8 +192,9 @@ export class RegistryRawFs implements RawFs {
   }
 
   async stat(file: string): Promise<RawStat | undefined> {
-    const address = parseRegistryPath(file);
-    if (!address) return isRegistryPath(file) ? undefined : this.files.stat(file);
+    const address = this.route(file);
+    if (address === 'file') return this.files.stat(file);
+    if (address === 'invalid') return undefined;
     if (!address.leaf) {
       return (await this.exists(file)) ? { isDirectory: true, size: 0, mtimeMs: 0 } : undefined;
     }
@@ -162,9 +211,9 @@ export class RegistryRawFs implements RawFs {
   }
 
   async list(dir: string): Promise<string[]> {
-    const address = parseRegistryPath(dir);
-    if (!address) return isRegistryPath(dir) ? [] : this.files.list(dir);
-    if (address.leaf) return [];
+    const address = this.route(dir);
+    if (address === 'file') return this.files.list(dir);
+    if (address === 'invalid' || address.leaf) return [];
     return (await this.values.binaryNames(address.hive, address.key)).map(registryLeaf);
   }
 
