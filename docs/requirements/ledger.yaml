@@ -6735,6 +6735,43 @@ requirements:
       - "artifacts/screens/nuclear-option-bindings-edit/05-blocked.png"
     notes: "Stage 3 of docs/contributing/add-game.md; it needs NFR-013 (a registry value through FileStore). The second look on the owner's rig, 2026-11-26 (docs/research/nuclear-option.md, section 7): Toggle Navigation Lights bound to Button 12 of the stick by RigReady showed as button 11 on the game's controls screen (0.34.6), the game changed only Unity's session counters, and Undo restored every binding value; both rig steps passed. Driven overnight by Claude Code with the owner's permission, nobody at the controls. Not tried then: the button pressed in a flight, a move or a clear in the real game, another controller. 2026-11-27, the owner at the controls: Eject cleared and bound to Button 16 on the R-VPC panel, and the button worked in a flight. The button is chosen by pressing it or by typing its number; pressing is proven in the scenario test, and whether the owner pressed or typed was not recorded."
 
+  - id: BIND-NO-006
+    title: Bind, move or clear an axis of a controller, and a button on one side of an axis, in Nuclear Option
+    job: configure
+    area: nuclear-option-bindings
+    priority: p2
+    done_means:
+      - "On the Nuclear Option bindings page an axis action is bound to an axis of a controller (chosen by moving it or from the list, by the names on the cheat sheet), reversed or not, moved to another axis, or cleared; Change on an axis row opens on what it has. The review says what the action is on now and will be on and what else that axis already does; nothing is written until Save."
+      - "An axis action is also offered by its two sides (Zoom In, Zoom Out), each bound to a button, moved and cleared on its own, with or without the whole axis bound beside them."
+      - "What is written is what the game writes for a binding the player made: a whole axis as one element in the axis list with its number and its reverse flag, a side as a button element with the side it drives. Every other character of the saved map stays."
+      - "Refused, with the reason and nothing written: an axis the controller does not have, a new axis binding on a controller that is not plugged in (its own order of axes is what the game numbers them by), an axis on a button action, a button on an axis action without a side, half an axis, a side while half an axis drives the action, and everything the single-button change already refuses (the game running, a changed map, a map it would not write back exactly)."
+      - "Save writes only what the review showed: the review's token covers the bytes that would be written, so a save whose plan came out differently (the controller unplugged since, another change reviewed) is refused."
+      - "In the real game: an axis RigReady reversed and a button it put on a negative side show on the game's own controls screen at its next start, the game leaves them alone, and Undo puts the saved bindings back."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#binds an axis action that had none: one binding added at the end of the axes, nothing else changed"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#moves an axis action to another axis in place, reversed or not, and says what else is on that axis"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#clears an axis binding, and the list that loses its last one is written as the game writes an empty one"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#leaves alone an axis action bound to half an axis"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#binds each side on its own: the positive side as the game writes it, the negative with what tells it apart"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#a side and the whole axis are bound side by side"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#changing or clearing the whole axis leaves the buttons on its sides as they are, character for character"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#leaves a side alone when half an axis drives the action, or when the side has a binding it does not understand"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#\"already so\" means every field as it would be written: a binding that differs in one is written again"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#numbers an axis by the controller’s own list of axes, not by the usual order"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#a controller that is not plugged in gets no new axis binding, only a clear; and one unplugged after the review is refused at Save"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#what the review showed would be written is part of what Save checks"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#offers each axis action as a whole and by its two sides, and each button action once"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#binds an axis by the name RigReady shows it under, reversed or not, and clears it; Undo puts it back"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#binds a button to one side of an axis action under the side’s own name"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#refuses an axis the controller does not have, a request with neither or both, and an axis on a button action"
+      - "tests/e2e/nuclear-option-bindings-axes.e2e.ts#nuclear option bindings: an axis is reversed, bound by moving it and cleared, and a button goes on one side of an axis"
+      - "artifacts/screens/nuclear-option-bindings-axes/01-reverse.png"
+      - "artifacts/screens/nuclear-option-bindings-axes/02-moved.png"
+      - "artifacts/screens/nuclear-option-bindings-axes/03-side.png"
+      - "artifacts/screens/nuclear-option-bindings-axes/04-safety-page.png"
+    notes: "Part of the owner's ask of 2026-11-27 that Nuclear Option work in RigReady as DCS does. Proof on the owner's rig the same day (docs/research/nuclear-option.md, 'Axes and axis sides in the game'): Pitch Axis reversed and Zoom Out on Button 20 of the WINWING ICP showed on the game's controls screen (0.34.6), the game left the map as RigReady wrote it, and Undo restored it. Driven by Claude Code with the owner's permission. Not tried on the rig: a new axis binding, an axis moved, choosing the axis by moving it (proven in the scenario test). Not done: half an axis, hat switches (how the game saves one is still unknown), keys and mouse buttons. Copilot could not review the pull request (no quota left); an independent review by a second Claude agent found that an axis asked for by name could become another number when the controller was unplugged between review and Save, and five smaller points, all fixed before the merge."
+
   - id: BIND-NO-005
     title: Clear every binding of one controller in Nuclear Option, with a preview and Undo
     job: configure

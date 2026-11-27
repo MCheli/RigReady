@@ -228,6 +228,24 @@ export async function storedControllerMaps(
   );
 }
 
+/**
+ * The axes of a controller by the names RigReady shows them under, in the order the game
+ * numbers them (0 first): the plugged-in controller's own, or the usual order when it is not
+ * plugged in or reports none.
+ */
+export async function axisNamesOf(
+  ctx: BindingsContext,
+  deviceId: string
+): Promise<Result<{ names: string[]; asked: boolean }>> {
+  const view = await overview(ctx);
+  if (!view.ok) return view;
+  const device = view.value.devices.find((d) => d.id === deviceId);
+  const live = device?.connected ? (device.controls?.axes ?? []) : [];
+  // `asked`: the controller is plugged in and said which axes it has. Otherwise the names
+  // are the usual order, good enough to name what is bound, not to choose where to bind.
+  return ok(live.length > 0 ? { names: live, asked: true } : { names: AXIS_ORDER, asked: false });
+}
+
 /** The control of a controller an element id means; undefined for one that is not understood. */
 export function controlOf(element: ElementMap, live?: InputDevice): BoundControl | undefined {
   const id = element.elementIdentifierId;
@@ -419,11 +437,22 @@ export async function overview(ctx: BindingsContext): Promise<Result<Overview>> 
     saved: saved.value.maps.length > 0 || saved.value.problems.length > 0,
     registryKey: `HKEY_CURRENT_USER\\${REGISTRY_KEY}`,
     devices,
-    actions: ACTIONS.filter((a) => a.kind === 'button').map((a) => ({
-      id: a.id,
-      name: a.name,
-      category: a.category,
-    })),
+    actions: ACTIONS.flatMap((a) => {
+      const entry = (takes: 'button' | 'axis', name: string, side?: '+' | '-') => ({
+        id: a.id,
+        ...(side ? { side } : {}),
+        key: side ? `${a.id}:${side}` : String(a.id),
+        name,
+        category: a.category,
+        takes,
+      });
+      if (a.kind !== 'axis') return [entry('button', a.name)];
+      return [
+        entry('axis', a.name),
+        ...(a.positive ? [entry('button', a.positive, '+')] : []),
+        ...(a.negative ? [entry('button', a.negative, '-')] : []),
+      ];
+    }),
     problems: saved.value.problems,
   });
 }

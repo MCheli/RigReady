@@ -192,7 +192,8 @@ describe('changing a Nuclear Option binding', () => {
     const a = await start();
     const first = await review(a, { device: STICK, actionId: 49, button: 12 });
     const second = await review(a, { device: STICK, actionId: 52, button: 13 });
-    expect(second.seen).toBe(first.seen);
+    // Both were shown the same map; each also holds what it would write.
+    expect(second.seen).not.toBe(first.seen);
     const results = await Promise.allSettled([
       change(a, { device: STICK, actionId: 49, button: 12, seen: first.seen }),
       change(a, { device: STICK, actionId: 52, button: 13, seen: second.seen }),
@@ -260,6 +261,244 @@ describe('changing a Nuclear Option binding', () => {
     expect(now.ok && now.value).toEqual({ type: 'binary', value: bytes.toString('hex') });
     const journal = await a.ports.files.journalGroups();
     expect(journal.ok && journal.value).toEqual([]);
+  });
+
+  describe('an axis, and a button on one side of an axis', () => {
+    const stickAxes = async (a: WiredApp): Promise<string[]> => {
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      return view.devices.find((d) => d.id === STICK)!.controls!.axes;
+    };
+
+    it('offers each axis action as a whole and by its two sides, and each button action once', async () => {
+      const a = await start();
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      const zoom = view.actions.filter((x) => x.id === 25);
+      expect(zoom).toEqual([
+        { id: 25, key: '25', name: 'Zoom View', category: 'Camera Controls', takes: 'axis' },
+        {
+          id: 25,
+          side: '+',
+          key: '25:+',
+          name: 'Zoom In',
+          category: 'Camera Controls',
+          takes: 'button',
+        },
+        {
+          id: 25,
+          side: '-',
+          key: '25:-',
+          name: 'Zoom Out',
+          category: 'Camera Controls',
+          takes: 'button',
+        },
+      ]);
+      expect(view.actions.filter((x) => x.id === 49)).toEqual([
+        {
+          id: 49,
+          key: '49',
+          name: 'Toggle Navigation Lights',
+          category: 'Flight Controls',
+          takes: 'button',
+        },
+      ]);
+      expect(new Set(view.actions.map((x) => x.key)).size).toBe(view.actions.length);
+    });
+
+    it('binds an axis by the name RigReady shows it under, reversed or not, and clears it; Undo puts it back', async () => {
+      const a = await start();
+      const before = await stickValue(a);
+      const axes = await stickAxes(a);
+      expect(axes.length).toBeGreaterThan(0);
+      // The first axis, where Roll Axis already is.
+      const first = axes[0]!;
+      // Yaw Axis (2) has nothing on the stick.
+      const shown = await review(a, {
+        device: STICK,
+        actionId: 2,
+        axis: { name: first, invert: true },
+      });
+      expect(shown).toMatchObject({
+        action: 'Yaw Axis',
+        before: 'Not bound',
+        same: false,
+        alsoOnButton: ['Roll Axis'],
+      });
+      expect(shown.after).toMatch(/, reversed$/);
+      expect((await stickValue(a)).text).toBe(before.text);
+
+      const saved = await change(a, {
+        device: STICK,
+        actionId: 2,
+        axis: { name: first, invert: true },
+        seen: shown.seen,
+      });
+      expect(saved).toEqual({
+        changed: true,
+        message: `Saved: Yaw Axis is now on ${shown.after} of Joystick - HOTAS Warthog. Undo is on the Safety page.`,
+      });
+      // The value holds the axis by its number, as the game writes one the player made.
+      expect((await stickValue(a)).text).toContain(
+        '<actionCategoryId>-1</actionCategoryId><actionId>2</actionId><elementType>0</elementType><elementIdentifierId>0</elementIdentifierId><axisRange>0</axisRange><invert>true</invert>'
+      );
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      const yaw = view.devices
+        .find((d) => d.id === STICK)!
+        .bindings.find((b) => b.action === 'Yaw Axis')!;
+      expect(yaw).toMatchObject({ kind: 'axis', inverted: true });
+      expect(yaw.control).toEqual({ kind: 'axis', axis: first });
+
+      // Pitch Axis is on the second axis: putting it on the first says what is there already.
+      const also = await review(a, {
+        device: STICK,
+        actionId: 0,
+        axis: { name: first, invert: false },
+      });
+      expect(also.alsoOnButton).toEqual(['Roll Axis', 'Yaw Axis']);
+
+      const cleared = await change(a, { device: STICK, actionId: 2, axis: null });
+      expect(cleared.message).toBe(
+        'Saved: Yaw Axis is no longer bound on Joystick - HOTAS Warthog. Undo is on the Safety page.'
+      );
+      expect((await stickValue(a)).text).toBe(before.text);
+      const journal = await a.ports.files.journalGroups();
+      if (!journal.ok) throw new Error(journal.error.message);
+      expect(journal.value.map((g) => g.reason).sort()).toEqual([
+        `Nuclear Option bindings: Yaw Axis bound to ${shown.after} on Joystick - HOTAS Warthog`,
+        'Nuclear Option bindings: Yaw Axis cleared on Joystick - HOTAS Warthog',
+      ]);
+    });
+
+    it('numbers an axis by the controller’s own list of axes, not by the usual order', async () => {
+      const a = await start();
+      const THROTTLE = 'controller:044F:0404:0';
+      const view = await a.invoke<Overview>('nuclear-option-bindings:overview');
+      // The scenario's throttle has X, Y, Z, RZ and SLIDER1: its slider is the fifth axis
+      // (number 4), though in the usual order a first slider is the seventh (6).
+      expect(view.devices.find((d) => d.id === THROTTLE)!.controls!.axes).toEqual([
+        'X',
+        'Y',
+        'Z',
+        'RZ',
+        'SLIDER1',
+      ]);
+      await change(a, {
+        device: THROTTLE,
+        actionId: 2,
+        axis: { name: 'SLIDER1', invert: false },
+      });
+      const after = await a.ports.registry.listValues('HKCU', REGISTRY_KEY);
+      if (!after.ok) throw new Error(after.error.message);
+      const text = Object.entries(after.value)
+        .filter(([name]) => /JoystickMap\|categoryId=0\|.*Throttle/.test(name))
+        .map(([, v]) => Buffer.from((v as { value: string }).value, 'hex').toString('utf8'))
+        .join('');
+      expect(text).toContain(
+        '<actionId>2</actionId><elementType>0</elementType><elementIdentifierId>4</elementIdentifierId>'
+      );
+      // RZ is the fourth (3), not the sixth (5).
+      const rz = await review(a, {
+        device: THROTTLE,
+        actionId: 0,
+        axis: { name: 'rz', invert: false },
+      });
+      expect(rz.after).toBe('Z rotation');
+    });
+
+    it('a controller that is not plugged in gets no new axis binding, only a clear; and one unplugged after the review is refused at Save', async () => {
+      const a = await start();
+      const THROTTLE = 'controller:044F:0404:0';
+      const values = async (): Promise<string> =>
+        JSON.stringify((await a.ports.registry.listValues('HKCU', REGISTRY_KEY)) as unknown);
+      // Shown while plugged in: SLIDER1 is the throttle's axis number 4.
+      const shown = await review(a, {
+        device: THROTTLE,
+        actionId: 2,
+        axis: { name: 'SLIDER1', invert: false },
+      });
+      const before = await values();
+      await mutate(a, [{ op: 'unplugDevice', match: { name: 'Throttle - HOTAS Warthog' } }]);
+      // At Save the controller cannot say which axes it has: the number would be a guess.
+      await expect(
+        change(a, {
+          device: THROTTLE,
+          actionId: 2,
+          axis: { name: 'SLIDER1', invert: false },
+          seen: shown.seen,
+        })
+      ).rejects.toThrow('Plug this controller in to bind an axis');
+      await expect(
+        review(a, { device: THROTTLE, actionId: 2, axis: { name: 'X', invert: false } })
+      ).rejects.toThrow('Plug this controller in to bind an axis');
+      expect(await values()).toBe(before);
+      // Clearing needs no number, and a button is a button whether plugged in or not.
+      const throttleAxis = await review(a, { device: THROTTLE, actionId: 4, axis: null });
+      expect(throttleAxis.after).toBe('Not bound');
+      expect(throttleAxis.same).toBe(false);
+      expect((await review(a, { device: THROTTLE, actionId: 49, button: 30 })).after).toBe(
+        'Button 30'
+      );
+    });
+
+    it('what the review showed would be written is part of what Save checks', async () => {
+      const a = await start();
+      const one = await review(a, { device: STICK, actionId: 49, button: 12 });
+      const other = await review(a, { device: STICK, actionId: 49, button: 13 });
+      // The same map, another change: a Save of one with the other's review is refused.
+      expect(one.seen).not.toBe(other.seen);
+      await expect(
+        change(a, { device: STICK, actionId: 49, button: 12, seen: other.seen })
+      ).rejects.toThrow('changed after the change was shown');
+      expect(
+        (await change(a, { device: STICK, actionId: 49, button: 12, seen: one.seen })).changed
+      ).toBe(true);
+    });
+
+    it('binds a button to one side of an axis action under the side’s own name', async () => {
+      const a = await start();
+      const shown = await review(a, { device: STICK, actionId: 25, side: '+', button: 20 });
+      expect(shown).toMatchObject({ action: 'Zoom In', before: 'Not bound', after: 'Button 20' });
+      const saved = await change(a, {
+        device: STICK,
+        actionId: 25,
+        side: '+',
+        button: 20,
+        seen: shown.seen,
+      });
+      expect(saved.message).toBe(
+        'Saved: Zoom In is now on Button 20 of Joystick - HOTAS Warthog. Undo is on the Safety page.'
+      );
+      await change(a, { device: STICK, actionId: 25, side: '-', button: 21 });
+      const rows = await stickRows(a);
+      expect(rows).toContain('Zoom In = Button 20');
+      expect(rows).toContain('Zoom Out = Button 21');
+      expect(
+        (await change(a, { device: STICK, actionId: 25, side: '-', button: null })).message
+      ).toBe(
+        'Saved: Zoom Out is no longer bound on Joystick - HOTAS Warthog. Undo is on the Safety page.'
+      );
+      expect(await stickRows(a)).toContain('Zoom In = Button 20');
+    });
+
+    it('refuses an axis the controller does not have, a request with neither or both, and an axis on a button action', async () => {
+      const a = await start();
+      const before = await stickValue(a);
+      await expect(
+        review(a, { device: STICK, actionId: 2, axis: { name: 'NOPE', invert: false } })
+      ).rejects.toThrow('This controller has no axis called NOPE');
+      await expect(review(a, { device: STICK, actionId: 2 })).rejects.toThrow(
+        'Give a button or an axis: one of them, not both.'
+      );
+      await expect(
+        review(a, { device: STICK, actionId: 2, button: 3, axis: { name: 'X', invert: false } })
+      ).rejects.toThrow('Give a button or an axis: one of them, not both.');
+      await expect(
+        review(a, { device: STICK, actionId: 49, axis: { name: 'X', invert: false } })
+      ).rejects.toThrow('Toggle Navigation Lights is a button');
+      await expect(review(a, { device: STICK, actionId: 0, button: 3 })).rejects.toThrow(
+        'Pitch Axis is an axis'
+      );
+      expect((await stickValue(a)).text).toBe(before.text);
+    });
   });
 
   describe('every binding of one controller', () => {
