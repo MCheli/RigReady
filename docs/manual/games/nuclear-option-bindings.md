@@ -63,6 +63,10 @@ The same bindings are what the [cheat sheets](../controls/cheat-sheets.md) draw 
 
 ![A cheat sheet with Nuclear Option's bindings](../../../artifacts/screens/nuclear-option-bindings/04-cheat-sheet.png)
 
+## The binding guide
+
+**Configure > Binding guide** has a guide for Nuclear Option: what to bind first, in plain language, with what is bound now. See [Binding guide for Nuclear Option](nuclear-option-binding-guide.md).
+
 ## What RigReady does not do
 
 - **Bind an axis, a key or a mouse button.** Those are bound in the game.

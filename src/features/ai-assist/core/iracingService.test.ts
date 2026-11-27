@@ -70,6 +70,7 @@ describe('the binding guide for iRacing: classes and cars', () => {
     expect((await none.invoke<GuideGames>('ai-assist:games')).games).toEqual([
       { id: 'dcs', name: 'DCS World', available: false },
       { id: 'iracing', name: 'iRacing', available: false },
+      { id: 'nuclear-option', name: 'Nuclear Option', available: false },
     ]);
     expect(
       await none.invoke<AircraftList>('ai-assist:aircraft', { game: 'iracing' })

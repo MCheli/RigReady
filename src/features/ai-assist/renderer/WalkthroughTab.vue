@@ -5,7 +5,8 @@ import GuideFile from './GuideFile.vue';
 import { useAiStore } from './store';
 
 /**
- * "Bind this aircraft": tier by tier, one item at a time. Shows what the item does, when
+ * "Bind this aircraft": tier by tier, one item at a time. (For Nuclear Option it goes
+ * through the items and says where each is bound; nothing is bound from here.) Shows what the item does, when
  * you use it and where it belongs, what it is bound to now, and lets the user press the
  * control they want. Presses are staged; nothing is written until the review.
  */
@@ -14,6 +15,8 @@ const emit = defineEmits<{ open: [tab: string] }>();
 
 const guide = computed(() => store.guide!);
 const iracing = computed(() => guide.value.game === 'iracing');
+/** Nuclear Option: the walkthrough goes through the items; binding is done elsewhere. */
+const nuclearOption = computed(() => guide.value.game === 'nuclear-option');
 const settled = computed(
   () => new Set([...guide.value.progress.done, ...guide.value.progress.skipped])
 );
@@ -30,7 +33,9 @@ const doneCount = computed(
 );
 const item = computed(() => store.item);
 const stagedFor = (actionId: string) => guide.value.staged.find((s) => s.actionId === actionId);
-const gameName = computed(() => (iracing.value ? 'iRacing' : 'DCS'));
+const gameName = computed(() =>
+  iracing.value ? 'iRacing' : nuclearOption.value ? 'Nuclear Option' : 'DCS'
+);
 
 const STATUS = computed<Record<ItemView['status'], string>>(() => ({
   bound: 'Bound',
@@ -60,7 +65,13 @@ const position = computed(() => {
 });
 
 /** The words beside an action RigReady does not bind here. */
-function cannot(kind: 'button' | 'axis'): string {
+function cannot(kind: 'button' | 'axis', actionId: string): string {
+  if (nuclearOption.value) {
+    // One side of an axis ("Zoom In", id "25:+") on a button is bound in the game too.
+    return kind === 'axis' || actionId.includes(':')
+      ? 'Bind it in the game: Settings, then Controls'
+      : 'A controller button: bind it on the Nuclear Option bindings page';
+  }
   if (!iracing.value) return 'Bind in DCS: RigReady cannot write this one yet';
   return kind === 'axis'
     ? 'An axis: bind it in iRacing, Options, then Controls'
@@ -69,6 +80,7 @@ function cannot(kind: 'button' | 'axis'): string {
 
 function bindingTitle(b: { ignored: boolean; source: string }): string {
   if (iracing.value) return 'In iRacing’s file';
+  if (nuclearOption.value) return 'In what Nuclear Option saved';
   return b.ignored
     ? 'On a device marked as not used in DCS'
     : b.source === 'default'
@@ -241,7 +253,13 @@ function next(): void {
               <div class="rr-row-title">{{ a.label }}</div>
               <div
                 class="rr-mono rr-muted walk-dcs"
-                :title="iracing ? 'iRacing’s own id' : 'DCS\'s own name'"
+                :title="
+                  iracing
+                    ? 'iRacing’s own id'
+                    : nuclearOption
+                      ? 'The name on the game’s controls screen'
+                      : 'DCS\'s own name'
+                "
               >
                 {{ a.dcsName }}
               </div>
@@ -275,7 +293,7 @@ function next(): void {
               </p>
             </div>
             <v-btn
-              v-if="store.aiReady && !store.explanations[a.actionId]"
+              v-if="store.aiReady && !nuclearOption && !store.explanations[a.actionId]"
               size="small"
               variant="text"
               prepend-icon="mdi-creation-outline"
@@ -310,7 +328,7 @@ function next(): void {
               </div>
             </template>
             <span v-else class="rr-muted walk-cannot" data-testid="ai-not-writable">
-              {{ cannot(a.kind) }}
+              {{ cannot(a.kind, a.actionId) }}
             </span>
           </div>
         </div>

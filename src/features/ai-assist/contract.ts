@@ -45,7 +45,7 @@ export const aiAssistContract = defineContract(
     /** The games the binding guide has guides for, and whether each is on this PC. */
     games: channel(noInput, GuideGamesSchema, {
       describe:
-        'The games the binding guide covers (DCS World and iRacing) and whether each is found on this PC. Pass a game id to ai-assist:aircraft.',
+        'The games the binding guide covers (DCS World, iRacing and Nuclear Option) and whether each is found on this PC. Pass a game id to ai-assist:aircraft.',
       tier: 'read',
     }),
     /** The aircraft DCS has bindings for, or iRacing's classes and cars, and which have a guide. */
@@ -54,7 +54,7 @@ export const aiAssistContract = defineContract(
       AircraftListSchema,
       {
         describe:
-          'What the binding guide lists for one game (dcs when no game is given): the aircraft DCS has bindings for, or for iracing the classes of car RigReady has guides for (GT3, GT4, LMDh and prototypes, formula, oval, dirt) and each car with controls of its own. The ids here are what the other ai-assist channels take as aircraftId.',
+          'What the binding guide lists for one game (dcs when no game is given): the aircraft DCS has bindings for, or for iracing the classes of car RigReady has guides for (GT3, GT4, LMDh and prototypes, formula, oval, dirt) and each car with controls of its own, or for nuclear-option the one entry for every aircraft. The ids here are what the other ai-assist channels take as aircraftId.',
         tier: 'read',
       }
     ),

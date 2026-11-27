@@ -140,6 +140,20 @@ const PROGRESS_EVERY_MS = 150;
 
 const GAME = 'dcs';
 
+/**
+ * Nuclear Option: one set of bindings for every aircraft, read through the bindings registry
+ * like DCS's. The guide shows what is bound and what is not; a binding is changed on the
+ * Nuclear Option bindings page or in the game, not from here.
+ */
+const NUCLEAR_OPTION = 'nuclear-option';
+/** The one entry the guide lists for it, and the reader's id for the one set of bindings. */
+const NUCLEAR_OPTION_GUIDE = `${NUCLEAR_OPTION}:all`;
+const NUCLEAR_OPTION_SET = 'all';
+const isNuclearOptionId = (id: string): boolean =>
+  id.toLowerCase().startsWith(`${NUCLEAR_OPTION}:`);
+const NUCLEAR_OPTION_NO_AI =
+  'AI help is for DCS aircraft and iRacing cars. For Nuclear Option the guide and the walkthrough work without it.';
+
 const SettingsSchema = z.object({
   provider: z.enum(PROVIDER_IDS).default('anthropic'),
   /** The Anthropic model (its name from before there were other providers). */
@@ -393,9 +407,11 @@ export class AiAssist {
     if (shippedPack(aircraftId)) {
       return err(
         'ai.guideShipped',
-        isIracingId(aircraftId)
-          ? 'RigReady includes a guide for this class and uses that one. A guide of your own is for one car with controls of its own in iRacing.'
-          : 'RigReady includes a guide for this aircraft and uses that one.'
+        isNuclearOptionId(aircraftId)
+          ? 'RigReady includes the guide for Nuclear Option and uses that one.'
+          : isIracingId(aircraftId)
+            ? 'RigReady includes a guide for this class and uses that one. A guide of your own is for one car with controls of its own in iRacing.'
+            : 'RigReady includes a guide for this aircraft and uses that one.'
       );
     }
     if (await this.ctx.ports.files.exists(this.draftPath(aircraftId))) {
@@ -514,7 +530,12 @@ export class AiAssist {
       GUIDE_GAMES.map(async (id) => ({
         id,
         name: GUIDE_GAME_NAMES[id],
-        available: id === 'dcs' ? await this.dcsAvailable() : await this.iracingAvailable(),
+        available:
+          id === 'dcs'
+            ? await this.dcsAvailable()
+            : id === 'iracing'
+              ? await this.iracingAvailable()
+              : await this.nuclearOptionAvailable(),
       }))
     );
     return ok({ games });
@@ -531,8 +552,57 @@ export class AiAssist {
     return overview?.ok === true && overview.value.installed;
   }
 
+  /** Nuclear Option counts as found once it has saved bindings: the guide works on those. */
+  private async nuclearOptionAvailable(): Promise<boolean> {
+    const reader = this.ctx.bindings.get(NUCLEAR_OPTION);
+    return reader !== undefined && (await reader.available());
+  }
+
+  /** One entry: the game has one set of bindings for every aircraft. */
+  private async nuclearOptionList(): Promise<Result<AircraftList>> {
+    const gameName = GUIDE_GAME_NAMES[NUCLEAR_OPTION];
+    if (!(await this.nuclearOptionAvailable())) {
+      return ok({ game: NUCLEAR_OPTION, available: false, gameName, aircraft: [] });
+    }
+    const pack = shippedPack(NUCLEAR_OPTION_GUIDE);
+    return ok({
+      game: NUCLEAR_OPTION,
+      available: true,
+      gameName,
+      aircraft: [
+        {
+          id: NUCLEAR_OPTION_GUIDE,
+          name: pack?.aircraft.name ?? 'All aircraft',
+          hasUserBindings: true,
+          guide: pack ? ('shipped' as const) : null,
+        },
+      ],
+    });
+  }
+
+  private async nuclearOptionSnapshot(aircraftId: string): Promise<Result<Snapshot>> {
+    const reader = this.ctx.bindings.get(NUCLEAR_OPTION);
+    if (!reader || aircraftId.toLowerCase() !== NUCLEAR_OPTION_GUIDE) {
+      return err(
+        'ai.nuclearOptionEntry',
+        'Nuclear Option has one set of bindings for every aircraft, and the guide is for that one.'
+      );
+    }
+    const found = await this.guideFor(NUCLEAR_OPTION_GUIDE);
+    const taken = await takeSnapshot(reader, NUCLEAR_OPTION_SET, found?.pack);
+    if (!taken.ok) return taken;
+    return ok({
+      ...taken.value,
+      game: NUCLEAR_OPTION,
+      aircraftId: NUCLEAR_OPTION_GUIDE,
+      aircraftName: found?.pack.aircraft.name ?? 'All aircraft',
+      ...(found ? { guideKind: found.kind } : {}),
+    });
+  }
+
   async aircraft(game: GuideGame = 'dcs'): Promise<Result<AircraftList>> {
     if (game === 'iracing') return this.iracingList();
+    if (game === NUCLEAR_OPTION) return this.nuclearOptionList();
     const reader = this.ctx.bindings.get(GAME);
     if (!reader || !(await reader.available())) {
       return ok({
@@ -608,6 +678,7 @@ export class AiAssist {
 
   private async snapshot(aircraftId: string): Promise<Result<Snapshot>> {
     if (isIracingId(aircraftId)) return this.iracingSnapshot(aircraftId);
+    if (isNuclearOptionId(aircraftId)) return this.nuclearOptionSnapshot(aircraftId);
     const reader = this.reader();
     if (!reader.ok) return reader;
     const found = await this.guideFor(aircraftId);
@@ -807,6 +878,12 @@ export class AiAssist {
       return err(
         'ai.iracingStage',
         'In iRacing the guide binds one action at a time: press the control, look at the change, then save it.'
+      );
+    }
+    if (isNuclearOptionId(aircraftId)) {
+      return err(
+        'ai.nuclearOptionStage',
+        'The guide does not bind in Nuclear Option. Bind a button on the Nuclear Option bindings page, and an axis in the game.'
       );
     }
     const snapshot = await this.snapshot(aircraftId);
@@ -1409,6 +1486,8 @@ export class AiAssist {
     question?: string;
     actionId?: string;
   }): Promise<Result<Prepared>> {
+    // Said before a provider or a key is looked at: no request is ever made for it.
+    if (isNuclearOptionId(input.aircraftId)) return err('ai.nuclearOptionAi', NUCLEAR_OPTION_NO_AI);
     const provider = await this.provider();
     if (!provider.ok) return provider;
     const key = await this.keyFor(provider.value);

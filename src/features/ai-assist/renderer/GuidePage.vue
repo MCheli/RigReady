@@ -31,6 +31,8 @@ const gameItems = computed(() =>
     .map((g) => ({ title: g.name, value: g.id }))
 );
 const iracing = computed(() => store.game === 'iracing');
+/** Nuclear Option: one guide for every aircraft, no AI help, and no binding from this page. */
+const nuclearOption = computed(() => store.game === 'nuclear-option');
 
 /** The address keeps the game; the watch below follows it, so a link and the picker agree. */
 function chooseGame(id: GuideGame): void {
@@ -41,7 +43,7 @@ function chooseGame(id: GuideGame): void {
 const tabs = computed(() => [
   { id: 'walkthrough', title: 'Walkthrough' },
   { id: 'priorities', title: 'Priorities' },
-  ...(store.aiReady ? [{ id: 'ai', title: 'AI help' }] : []),
+  ...(store.aiReady && !nuclearOption.value ? [{ id: 'ai', title: 'AI help' }] : []),
 ]);
 
 const tab = computed(() => {
@@ -118,13 +120,17 @@ onBeforeUnmount(() => {
           For iRacing: what matters in each class of car, in plain language and in priority order,
           and a walkthrough that binds it with you.
         </p>
+        <p v-else-if="nuclearOption" class="rr-page-sub">
+          For Nuclear Option: what matters when you fly it, in plain language and in priority order,
+          with what is bound now and what is not.
+        </p>
         <p v-else-if="store.game === 'dcs'" class="rr-page-sub">
           For DCS World: what matters in each aircraft, in plain language and in priority order, and
           a walkthrough that binds it with you.
         </p>
         <p v-else class="rr-page-sub">
-          For DCS World and iRacing: what matters in each aircraft or class of car, in plain
-          language and in priority order, and a walkthrough that binds it with you.
+          What matters in each aircraft or class of car, in plain language and in priority order,
+          and a walkthrough that goes through it with you.
         </p>
         <v-btn
           v-if="store.aiReady"
@@ -167,10 +173,25 @@ onBeforeUnmount(() => {
 
     <div v-else-if="!store.game" class="rr-panel rr-empty" data-testid="ai-no-game">
       <v-icon icon="mdi-controller-off" size="36" class="mb-3" />
-      <div class="rr-row-title">Neither DCS World nor iRacing was found on this PC</div>
+      <div class="rr-row-title">
+        None of DCS World, iRacing and Nuclear Option was found on this PC
+      </div>
       <div class="rr-row-sub">
         The binding guide works on the games’ own lists of actions. Install one of them and start it
         once.
+      </div>
+    </div>
+
+    <div
+      v-else-if="store.list && !store.list.available && nuclearOption"
+      class="rr-panel rr-empty"
+      data-testid="ai-no-nuclear-option"
+    >
+      <v-icon icon="mdi-airplane-off" size="36" class="mb-3" />
+      <div class="rr-row-title">Nuclear Option’s bindings were not found on this PC</div>
+      <div class="rr-row-sub">
+        The binding guide works on the bindings the game saves the first time it runs. Install
+        Nuclear Option and start it once.
       </div>
     </div>
 
@@ -259,6 +280,21 @@ onBeforeUnmount(() => {
         </p>
       </div>
 
+      <div v-if="nuclearOption" class="guide-iracing" data-testid="ai-nuclear-option-where">
+        <p class="guide-iracing-line">
+          <v-icon icon="mdi-airplane" size="16" class="rr-muted" />
+          This guide works on the one set of bindings Nuclear Option has for every aircraft.
+          <router-link to="/configure/nuclear-option-bindings" data-testid="ai-nuclear-option-page">
+            See them all
+          </router-link>
+        </p>
+        <p class="guide-iracing-line rr-muted">
+          The guide shows what is bound and what is not. To bind a controller button, use the
+          Nuclear Option bindings page; an axis or a key is bound in the game, under Settings, then
+          Controls.
+        </p>
+      </div>
+
       <div class="guide-tabbar">
         <v-tabs
           :model-value="tab"
@@ -273,7 +309,7 @@ onBeforeUnmount(() => {
           </v-tab>
         </v-tabs>
         <router-link
-          v-if="store.status && !store.aiReady"
+          v-if="store.status && !store.aiReady && !nuclearOption"
           to="/configure/settings"
           class="guide-setup-ai"
           data-testid="ai-setup-link"
