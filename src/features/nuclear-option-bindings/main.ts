@@ -3,13 +3,13 @@ import { listenForPresses } from '../../core/inputPresses';
 import { ok } from '../../core/result';
 import { nuclearOptionBindingsContract } from './contract';
 import { nuclearOptionBackupSource } from './core/backup';
-import { applyChange, reviewChange } from './core/change';
+import { applyChange, applyClearDevice, reviewChange, reviewClearDevice } from './core/change';
 import { createBindingReader, GAME, overview, type BindingsContext } from './core/view';
 
 /**
  * Nuclear Option's bindings, read from the registry values the game saves. The reader it
  * registers is what the cheat sheets, the trainer, the overlay and the input tester draw
- * from. Nothing is written: the registry port only reads.
+ * from. A change to a controller's bindings is written through FileStore (core/change.ts).
  */
 /** Stops reporting controller presses to the page; set while the page listens. */
 let stopListening: (() => void) | undefined;
@@ -35,6 +35,14 @@ export default defineFeatureMain({
           // The cheat sheets, the trainer and the overlay read the same saved bindings.
           if (changed.ok && changed.value.changed) ctx.bindings.notifyChanged({ game: GAME });
           return changed;
+        },
+        clearDevicePreview: (request) => reviewClearDevice(bctx, request),
+        async clearDevice(request) {
+          const cleared = await applyClearDevice(bctx, request);
+          // Also after a failure: one of the controller's maps may have been cleared before
+          // it, and the cheat sheets and the overlay must not go on showing its bindings.
+          if (!cleared.ok || cleared.value.changed) ctx.bindings.notifyChanged({ game: GAME });
+          return cleared;
         },
         async listenStart() {
           const mine = ++listenTurn;

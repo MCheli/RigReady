@@ -105,6 +105,33 @@ export type ChangeReview = z.infer<typeof ChangeReviewSchema>;
 export const ChangeResultSchema = z.object({ changed: z.boolean(), message: z.string() });
 export type ChangeResult = z.infer<typeof ChangeResultSchema>;
 
+/** A controller whose bindings are all to be cleared. */
+export const ClearDeviceRequestSchema = z.object({
+  /** The controller, by its id in the overview. */
+  device: z.string().min(1).max(300),
+  /** The saved maps as the preview read them (`seen` of clearDevicePreview). */
+  seen: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
+});
+export type ClearDeviceRequest = z.infer<typeof ClearDeviceRequestSchema>;
+
+/** Clearing a controller as it would be, before anything is written. */
+export const ClearDeviceReviewSchema = z.object({
+  /** The controller's name as the game saved it. */
+  device: z.string(),
+  /** How many bindings would go: buttons and axes, in every tab of the game's controls screen. */
+  bindings: z.number().int(),
+  /** Nothing is bound on it: nothing would change. */
+  same: z.boolean(),
+  /** Why it cannot be saved right now (the game is running), when it cannot. */
+  blocked: z.string().optional(),
+  preview: ChangePreviewSchema,
+  seen: z.string(),
+});
+export type ClearDeviceReview = z.infer<typeof ClearDeviceReviewSchema>;
+
 /** A controller button the user just pressed, while the page listens. */
 export const PressedSchema = z.object({
   /** The controller's DirectInput instance GUID. */
@@ -132,6 +159,19 @@ export const nuclearOptionBindingsContract = defineContract(
      */
     change: channel(ChangeRequestSchema, ChangeResultSchema, {
       describe: `Binds one Nuclear Option action to a controller button, or clears it, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
+      tier: 'off',
+    }),
+    /** Clearing one controller as it would be: how many bindings would go. Writes nothing. */
+    clearDevicePreview: channel(ClearDeviceRequestSchema, ClearDeviceReviewSchema, {
+      describe: `Shows what taking every Nuclear Option binding off one controller would change. Writes nothing. ${ON_THE_PAGE}`,
+      tier: 'off',
+    }),
+    /**
+     * Takes every binding off one controller in what the game saved, through FileStore (a
+     * backup first, one entry on the Safety page). Refused while the game runs.
+     */
+    clearDevice: channel(ClearDeviceRequestSchema, ChangeResultSchema, {
+      describe: `Takes every Nuclear Option binding off one controller, buttons and axes, in the game's saved bindings, after a backup. Refused while the game runs. ${ON_THE_PAGE}`,
       tier: 'off',
     }),
     overview: channel(noInput, OverviewSchema, {

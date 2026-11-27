@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { editMapText } from './edit';
+import { clearMapText, editMapText } from './edit';
 import { parseControllerMap } from './rewired';
 
 /**
@@ -126,6 +126,46 @@ describe('changing one binding in a saved map', () => {
       expect(definition.error.code).toBe('nuclear-option.edit.definition');
       expect(definition.error.message).toContain('a definition of its own');
     }
+  });
+
+  it('clears a whole controller: what is left is the map as the game saves one with nothing bound', async () => {
+    const throttle = await fixture('throttle.xml');
+    const cleared = ok(clearMapText(throttle));
+    expect(cleared.removed).toBe(8);
+    expect(cleared.text).not.toContain('ActionElementMap');
+    // The game's own empty map of the same controller (its Chat map) differs in the
+    // category and the map's number only.
+    const chat = await fixture('throttle-chat.xml');
+    const sameButForIds = (text: string): string =>
+      text
+        .replace(/<sourceMapId>\d+<\/sourceMapId>/, '')
+        .replace(/<categoryId>\d+<\/categoryId>/, '');
+    expect(sameButForIds(cleared.text)).toBe(sameButForIds(chat));
+    // A map with nothing bound is left as it is.
+    expect(ok(clearMapText(chat))).toEqual({ text: chat, removed: 0 });
+    expect(ok(clearMapText(cleared.text))).toEqual({ text: cleared.text, removed: 0 });
+  });
+
+  it('does not clear the keyboard, the mouse, a controller the game has a definition for, or a map it would not write back exactly', async () => {
+    for (const name of ['keyboard.xml', 'mouse.xml']) {
+      const refused = clearMapText(await fixture(name));
+      expect(refused.ok).toBe(false);
+      if (!refused.ok) expect(refused.error.code).toBe('nuclear-option.edit.kind');
+    }
+    const stick = await fixture('stick.xml');
+    const known = clearMapText(
+      stick
+        .split('00000000-0000-0000-0000-000000000000')
+        .join('d74a350e-fe8b-4e9e-bbcd-efff16d34115')
+    );
+    expect(known.ok).toBe(false);
+    if (!known.ok) expect(known.error.code).toBe('nuclear-option.edit.definition');
+    const padded = clearMapText(
+      stick.replace('<actionId>5</actionId>', '<actionId>005</actionId>')
+    );
+    expect(padded.ok).toBe(false);
+    if (!padded.ok) expect(padded.error.code).toBe('nuclear-option.edit.form');
+    expect(clearMapText('not a map').ok).toBe(false);
   });
 
   it('refuses what it has not seen the game write: an axis, a key, an unknown action, a button out of range, a damaged map', async () => {

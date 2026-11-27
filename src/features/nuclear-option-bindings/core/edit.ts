@@ -181,6 +181,76 @@ export function editMap(
   return ok({ map: changed, text, before, same, alsoOnButton });
 }
 
+export interface ClearOutcome {
+  /** The document to store; the same text as before when the map had no bindings. */
+  text: string;
+  /** How many bindings were taken out: buttons and axes. */
+  removed: number;
+}
+
+/**
+ * Every binding of a controller's saved map taken out: buttons and axes. What is left is
+ * the map as the game itself saves one with nothing bound (`<buttonMaps /><axisMaps />`),
+ * which it does for a controller's Chat, Mission Editor and Debug maps. Nothing is composed,
+ * so a binding written in a way RigReady does not understand goes like the others.
+ */
+export function clearMapText(document: string): Result<ClearOutcome> {
+  const parsed = parseControllerMap(document);
+  if (!parsed.ok) return parsed;
+  const map = parsed.value;
+  if (map.kind !== 'JoystickMap') {
+    return err(
+      'nuclear-option.edit.kind',
+      'RigReady clears the bindings of a controller only. Change the keyboard’s or the mouse’s in the game.'
+    );
+  }
+  if (!/^[0-]+$/.test(map.hardwareGuid)) {
+    return err(
+      'nuclear-option.edit.definition',
+      'The game knows this controller by a definition of its own, and RigReady has not seen how it saves that one with nothing bound. Clear its bindings in the game.'
+    );
+  }
+  // The same rule as for one binding: a document this code would not write back character
+  // for character has parts it did not understand, so it is left alone.
+  if (serializeControllerMap(map) !== document) {
+    return err(
+      'nuclear-option.edit.form',
+      'The game’s saved bindings for this controller are written in a form RigReady would not write back exactly, so it does not change them. Clear them in the game.'
+    );
+  }
+  const removed = map.buttonMaps.length + map.axisMaps.length;
+  if (removed === 0) return ok({ text: document, removed });
+  const closed = (form: ControllerMap['source']['buttons']): ControllerMap['source']['buttons'] =>
+    form === 'absent' ? 'absent' : 'self-closed';
+  const text = serializeControllerMap({
+    ...map,
+    buttonMaps: [],
+    axisMaps: [],
+    source: {
+      ...map.source,
+      buttons: closed(map.source.buttons),
+      axes: closed(map.source.axes),
+    },
+  });
+  // Its own check: what was written reads back as the same map with nothing bound, and
+  // nothing but bindings went.
+  const again = parseControllerMap(text);
+  if (
+    !again.ok ||
+    again.value.buttonMaps.length !== 0 ||
+    again.value.axisMaps.length !== 0 ||
+    again.value.source.head !== map.source.head ||
+    again.value.source.tail !== map.source.tail ||
+    text.includes('ActionElementMap')
+  ) {
+    return err(
+      'nuclear-option.edit.check',
+      'The cleared map did not read back as intended, so nothing was changed.'
+    );
+  }
+  return ok({ text, removed });
+}
+
 /** Applies one edit to the stored text of a map. */
 export function editMapText(document: string, edit: BindingEdit): Result<EditOutcome> {
   const map = parseControllerMap(document);
