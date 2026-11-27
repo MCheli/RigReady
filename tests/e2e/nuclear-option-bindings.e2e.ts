@@ -16,7 +16,7 @@ test('nuclear option bindings: each device’s bindings as the game saved them, 
   await expect(page.getByTestId('nuclear-option-bindings-page')).toBeVisible();
   await expect(page.getByTestId('bindings-game')).toContainText('Nuclear Option');
   await expect(page.getByTestId('nuclear-option-bindings-note')).toContainText(
-    'RigReady shows these bindings and does not change them'
+    'writes nothing until you press Save'
   );
   const devices = page.getByTestId('nuclear-option-bindings-device');
   await expect(devices).toHaveCount(5);

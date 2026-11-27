@@ -11,7 +11,7 @@ Everything here was learned read-only: by listing folders and registry value nam
 - **Found and launched like any Steam game.** Steam app 2168680, program `NuclearOption.exe` in the game folder. The game module (`src/features/games/nuclear-option/module.ts`) does this today.
 - **Its settings and bindings are registry values, not files.** The game is a Unity game and keeps everything in Unity's PlayerPrefs, which on Windows is `HKEY_CURRENT_USER\Software\Shockfront\NuclearOption`. There is no settings file to back up. RigReady's backup works on files, and its registry port is read-only, so the module offers nothing for backup and says so.
 - **The bindings can be read.** They are stored by the Rewired input library as one XML document per controller and map category, in a format that is plain to read. The action names are in the game's data files. Reading them (stage 2) needs no change outside a feature folder.
-- **Changing them (stage 3) is a different kind of write.** It is a registry value, not a file, so it cannot go through `FileStore`, and RigReady has no journaled, undoable registry write. That is a deliberate change to `src/core` and `src/platform`, to be decided before stage 3 starts.
+- **One controller button can be bound, moved or cleared (stage 3).** The value is replaced through `FileStore`, which got an address for a registry value for this (`src/core/files/registryValues.ts`): a backup first, the Safety page, Undo. The game showed a binding RigReady wrote, left it alone, and Undo put the saved bindings back byte for byte (section 7).
 
 ## 1. The install
 
@@ -190,7 +190,7 @@ Every one agrees: the number on the screen is the saved id for an axis and the s
 3. Answered: build 26327221 reads these keys (the table above).
 4. A controller Rewired does know (a gamepad) has a non-zero `hardwareGuid` and its own element ids; none is on this rig.
 
-## 5. Changing the bindings (stage 3): what stands in the way
+## 5. Changing the bindings: what stood in the way before stage 3
 
 - The write is a registry value. `FileStore` backs up, journals and undoes files; the `Registry` port (`src/core/ports/index.ts`) can only read. A backed-up, journaled, undoable registry write is a new piece of shared code.
 - Whether the game takes an edited value at its next start is not documented by Rewired. It has to be proven in the game before anything is called supported.
@@ -241,6 +241,49 @@ On the owner's rig, the game running (build 26327221), this branch built and run
 Steps 3 to 7 were done by the owner at the controls, who reported that all of them worked; no screenshot was kept. Steps 4 and 5 are what the numbering rests on: on this stick the game's button 4 is the device's fifth button, and the game's axis 1 is the axis Windows calls Y.
 
 Not tried: a second unit of one model, a controller Rewired has a definition of its own for (a gamepad), a binding on a hat, and a press on any controller other than the stick.
+
+## 7. The writer (stage 3)
+
+### What it writes
+
+`core/edit.ts` changes one thing in a saved joystick map: the binding of a button-type action to a button of that controller. It composes only what the game itself was seen to write.
+
+A binding the player made on the game's controls screen is one `ActionElementMap` with `actionCategoryId` -1, `elementType` 1, `elementIdentifierId` 32 plus the game's button number, `axisRange` 1, `invert` false, `axisContribution` 0, `keyboardKeyCode` 0, the three modifier keys 0, `enabled` true. **[V]** four such bindings on the stick (Target Select, Target Cancel, Next Weapon, Next Countermeasure), which the owner made in the game; the game's own default bindings differ only in `actionCategoryId` 0.
+
+- **Bind** an action that has no binding on the controller: one such element is added at the end of `buttonMaps`. **[I]** that the game adds one at the end; the order has no meaning to Rewired that was seen.
+- **Move**: the action's element is replaced in place by one for the new button. A default binding (`actionCategoryId` 0) that is moved becomes one written as the player's (-1). **[I]** that the game does the same.
+- **Clear**: the element is taken out. A list that loses its last element is written `<buttonMaps />`, as the game writes an empty one. **[V]** the form; **[?]** whether the game, finding a default action with no binding, puts its default back.
+- Everything else in the document stays character for character, including the zero byte at the end.
+
+Refused, with the reason: an axis action, one side of an axis action on a button, a key, a mouse button, an action not in the table, an action that already has a binding the writer does not understand (a button with a modifier key, an axis), a controller with no saved map, a button outside 1 to 128. The writer parses its own result and checks it is the map it meant before it returns it.
+
+Also refused, each because the result could not be trusted: a saved map whose bytes are not the UTF-8 of the text read from them (writing the text back would lose a byte); a map this code would not write back character for character as it stands (a number written "005"), since a save writes every binding again; and a controller Rewired has a definition of its own for (a `hardwareGuid` that is not all zeros), whose buttons are numbered by that definition. Saves run one at a time, each reading, checking and writing on its own, so two at once cannot both start from the same map.
+
+The game's registry key is listed among the game module's settings locations. That is what tells the Safety page that Nuclear Option holds these values: Undo there is refused while the game runs, as it is for a game's files.
+
+### Is writing safe?
+
+- **The game reads the value at start.** **[V]** in the proof below: a binding written while the game was closed was on the game's controls screen at its next start.
+- **The game did not rewrite the bindings on its own.** Started, taken to its controls screen and closed, it changed only Unity's two session counters. **[V]** It does save when the player changes a binding there, which is why Undo checks that the value is still what RigReady wrote, and why a change is refused while the game runs.
+- **Only an existing value is replaced.** A controller the game has never saved a map for cannot be bound from RigReady: that would mean a new value, whose name carries a hash only Unity computes (section 5).
+- **`ControllerMap_KnownActionIds` is not touched.** It lists the action ids the game knew when it saved; binding an action whose id is already in it needs no change. **[I]** An action added by a game update after the map was saved has not been tried.
+
+### The second look, 26 November 2026
+
+On the owner's rig, the game (0.34.6, build 26327221) from Steam, this branch built and run with a data folder of its own. A copy of the whole key was exported with `reg export` first.
+
+| Step | What was done | What was seen | Result |
+|---|---|---|---|
+| Before | `RIGREADY_RIG_NUCLEAR_OPTION=before` (read-only) | Every saved map read and put together again character for character; a trial change on a copy differed in one binding | Pass |
+| The change | With the game closed: Bindings, the Orion stick, **Bind an action**, Toggle Navigation Lights, button 12, the review, **Save** | "Saved: Toggle Navigation Lights is now on Button 12 …". In the registry one value differed, by one added element (action 49 on element 43, written as above) | Pass |
+| In the game | Started the game, Settings, Controls, the control bindings menu, the Orion stick | Toggle Navigation Lights showed controller button 11, the game's number for Button 12 | Pass |
+| The game closes | Closed the game without changing anything there | Only `unity.player_session_count` and `unity.player_sessionid` differed from what RigReady left | Pass |
+| Undo | Safety page, **Undo** on the entry | Every value equal to the copy from before, except Unity's two counters | Pass |
+| After | The change made a second time, then `RIGREADY_RIG_NUCLEAR_OPTION=after:49` (read-only), then Undo again | One controller map differed from the snapshot, only in that action, exactly as the writer composes it; after Undo the bindings were as at the start | Pass |
+
+The steps were driven by Claude Code on the owner's PC overnight, with the owner's permission; nobody was at the controls.
+
+Not tried: pressing the button in a flight to see the lights toggle (the game's controls screen showing the binding is the evidence that the game read it); moving or clearing a binding in the real game (only binding an unbound action); a controller other than the stick; an action added by a game update.
 
 ## Proof on a rig
 

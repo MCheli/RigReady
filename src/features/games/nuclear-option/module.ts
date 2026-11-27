@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { CheckContext } from '../../../core/checks/registry';
+import { registryKeyPath } from '../../../core/files/registryValues';
 import { simpleGame } from '../core/simpleGame';
 
 /**
@@ -34,6 +35,14 @@ const { module, extras } = simpleGame({
         label: 'AppData\\LocalLow\\Shockfront\\NuclearOption (logs)',
         path: dataFolder(ctx),
       },
+      // Where the settings and bindings really are. Listed as a location so that the
+      // Safety page knows the game holds them: an Undo of a changed binding is refused
+      // while the game runs, as it is for a game's files.
+      {
+        id: 'registry',
+        label: 'Registry: HKEY_CURRENT_USER\\Software\\Shockfront\\NuclearOption',
+        path: registryKeyPath('HKCU', 'Software\\Shockfront\\NuclearOption'),
+      },
     ];
   },
 
@@ -45,7 +54,7 @@ const { module, extras } = simpleGame({
   noFiles: 'Nothing: Nuclear Option has no settings file. Its settings are in the registry.',
   manualLabel: 'the Nuclear Option folder (it contains NuclearOption.exe)',
   notes: [
-    'Nuclear Option keeps its settings and bindings in the Windows registry, not in files. RigReady shows the bindings on the Bindings page. A full backup keeps the registry values to read back; a restore cannot put them back.',
+    'Nuclear Option keeps its settings and bindings in the Windows registry, not in files. RigReady shows the bindings on the Bindings page and can bind a controller button there. A full backup keeps the registry values to read back; a restore cannot put them back.',
   ],
 });
 

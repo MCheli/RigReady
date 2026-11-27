@@ -6695,6 +6695,46 @@ requirements:
       - "src/features/backup/core/sources.test.ts#keeps the Fanatec driver settings from the registry as a record that is shown and never restored"
     notes: "The record goes through the backup feature's existing path for registry records (the Fanatec test above is that path's evidence). Not tried: opening such a record on the owner's rig."
 
+  - id: BIND-NO-004
+    title: Bind, move or clear one controller button in Nuclear Option, with a preview and Undo
+    job: configure
+    area: nuclear-option-bindings
+    priority: p2
+    done_means:
+      - "On the Nuclear Option bindings page a button-type action is bound to a button of a controller (chosen by pressing it or by typing its number), moved to another, or cleared. The review shows what the action is on now and will be on, anything else that button already does, and what will be changed; nothing is written until Save."
+      - "The change replaces the controller's saved map in the registry through FileStore: its bytes are copied to the automatic backups first, the change is one entry on the Safety page with a reason a person can read, and Undo puts the bytes back. The value is read back before success is reported, and the cheat sheets, the trainer and the overlay are told."
+      - "Only that binding changes in the saved map, written as the game writes a binding the player made; every other character stays, the zero byte included."
+      - "It is refused, with the reason and with nothing written: while the game runs or when the programs cannot be listed; when the saved bindings changed after the review; for an axis, a key, the mouse, an action RigReady does not know, a binding it does not understand, and a controller the game has saved nothing for."
+      - "In the real game: a binding RigReady wrote is on the game's own controls screen at its next start, the game leaves it alone, and Undo puts the saved bindings back byte for byte."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#binds an action that was not bound: one binding added at the end of the buttons, nothing else changed"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#moves an action to another button in place, and says what else is on that button"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#clears a binding by taking it out, and an emptied list is written as the game writes an empty one"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#changes nothing when the action is already there, or already unbound"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#keeps the zero byte the game ends the value with"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#refuses what it has not seen the game write: an axis, a key, an unknown action, a button out of range, a damaged map"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#shows the change first and writes nothing: what the action is on now and would be on, and what else is on that button"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#saves the change after a backup, the page and the readers show it, and Undo on the Safety page puts it back"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#moves and clears a binding, and says so when nothing had to change"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#is refused while the game runs, and when the programs cannot be listed, and writes nothing"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#writes nothing when the saved bindings changed after the change was shown"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#refuses an axis, an action it does not know, a controller without saved bindings, and the keyboard"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#the one list of programs that was read decides whether the game is open"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#two saves at once do not lose one: the second is refused, because the map it was shown is gone"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#Undo on the Safety page is refused while the game runs, and works once it is closed"
+      - "src/features/nuclear-option-bindings/core/change.test.ts#saved bindings with a byte that is not UTF-8 are not changed: the text made from them would lose it"
+      - "src/features/nuclear-option-bindings/core/edit.test.ts#leaves alone a map it would not write back exactly, and a controller the game has a definition of its own for"
+      - "tests/e2e/nuclear-option-bindings-edit.e2e.ts#nuclear option bindings: bind, move and clear a button after a review, undo it, and refused while the game runs"
+      - "tests/rig/nuclearOptionBindingsEdit.rig.test.ts#every saved map is read and put together again character for character, and a change on a copy differs in one binding only"
+      - "tests/rig/nuclearOptionBindingsEdit.rig.test.ts#only one controller map differs from the snapshot, only in the named action, as the writer composes it"
+      - "artifacts/screens/nuclear-option-bindings-edit/01-review.png"
+      - "artifacts/screens/nuclear-option-bindings-edit/02-saved.png"
+      - "artifacts/screens/nuclear-option-bindings-edit/03-pressed.png"
+      - "artifacts/screens/nuclear-option-bindings-edit/04-safety-page.png"
+      - "artifacts/screens/nuclear-option-bindings-edit/05-blocked.png"
+    notes: "Stage 3 of docs/contributing/add-game.md; it needs NFR-013 (a registry value through FileStore). The second look on the owner's rig, 2026-11-26 (docs/research/nuclear-option.md, section 7): Toggle Navigation Lights bound to Button 12 of the stick by RigReady showed as button 11 on the game's controls screen (0.34.6), the game changed only Unity's session counters, and Undo restored every binding value; both rig steps passed. Driven overnight by Claude Code with the owner's permission, nobody at the controls. Not tried: the button pressed in a flight, a move or a clear in the real game, another controller. The button is chosen by pressing it or by typing its number; pressing is proven in the scenario test, not on the rig."
+
   - id: RACE-IRACING-002
     title: iRacing config locations and tracked defaults
     job: configure

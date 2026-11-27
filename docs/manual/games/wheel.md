@@ -98,7 +98,7 @@ See [Checks and fixes](../setups/checks.md).
 
 Where a brand keeps its profiles in plain files, the page lists them and whether they are on this PC, and the **Backups** section keeps copies:
 
-- **Fanatec**: the Fanatec App's settings file (`shared_preferences.json`), and the Fanatec Service registry settings as a record. RigReady never writes the registry, so a restore puts back the App's file and shows the registry values for you to compare.
+- **Fanatec**: the Fanatec App's settings file (`shared_preferences.json`), and the Fanatec Service registry settings as a record. RigReady does not write these settings back to the registry, so a restore puts back the App's file and shows the registry values for you to compare.
 - **Logitech**: G HUB's `settings.db` in `%LOCALAPPDATA%\LGHUB`. G HUB keeps it open, so a restore closes G HUB first (when you agree) and starts it again.
 - **Simucube**: Tuner's profiles in `Documents\Simucube 2\cachedprofiles`.
 
