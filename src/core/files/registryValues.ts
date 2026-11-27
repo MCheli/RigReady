@@ -45,8 +45,16 @@ export function registryLeaf(name: string): string {
 
 /** The address of a registry value for FileStore: `\\registry\HKCU\<key>\<digest>.regvalue`. */
 export function registryValuePath(hive: RegistryHive, key: string, name: string): string {
-  const cleanKey = key.replace(/^\\+|\\+$/g, '');
-  return `${ROOT}${hive}\\${cleanKey}\\${registryLeaf(name)}`;
+  return `${registryKeyPath(hive, key)}\\${registryLeaf(name)}`;
+}
+
+/**
+ * The address of a registry key: the folder its values' addresses are in. A game module lists
+ * it among its settings locations, so that the Safety page knows the game holds the values
+ * and refuses an Undo while the game runs, as it does for the game's files.
+ */
+export function registryKeyPath(hive: RegistryHive, key: string): string {
+  return `${ROOT}${hive}\\${key.replace(/^\\+|\\+$/g, '')}`;
 }
 
 export interface RegistryAddress {
