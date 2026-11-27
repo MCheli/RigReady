@@ -49,6 +49,12 @@ test('nuclear option bindings: a snapshot is taken, renamed, put back after a re
   await expect(device.locator('td').nth(2)).toHaveText('8');
   await expect(dialog).toContainText('Each file is backed up first; Undo is on the Safety page.');
   await expect(go).toBeEnabled();
+  // Binding by binding: what comes back and what goes.
+  const detail = page.getByTestId('nuclear-option-snapshot-detail');
+  await expect(detail).toContainText('8 come back, 0 go');
+  await detail.locator('summary').click();
+  await expect(detail).toContainText('+ Toggle Gear = Button 18');
+  await expect(detail).toContainText('+ Custom Axis 1 = Slider 1');
   await shot('review');
   // Cancel writes nothing.
   await page.getByTestId('nuclear-option-snapshot-restore-dialog-cancel').click();

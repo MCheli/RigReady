@@ -130,7 +130,7 @@ A snapshot is a named copy of every binding the game has saved: all controllers,
 ![A snapshot taken](../../../artifacts/screens/nuclear-option-bindings-snapshots/01-taken.png)
 
 - **Take a snapshot** needs a name. It only reads what the game saved and keeps the copy in RigReady's own folder.
-- **Restore…** shows first what would change: each device whose bindings differ now, with how many bindings it has now and in the snapshot. Nothing is written until **Restore** in that dialog. Close the game first, as for every change here.
+- **Restore…** shows first what would change: each device whose bindings differ now, with how many bindings it has now and in the snapshot. Under a device's name, a line such as "8 come back, 0 go" opens the list, binding by binding: what the restore brings back and what it takes away again. Nothing is written until **Restore** in that dialog. Close the game first, as for every change here.
 - **Rename** and **Delete** work on RigReady's copy only.
 
 ![The review before a snapshot is put back](../../../artifacts/screens/nuclear-option-bindings-snapshots/02-review.png)

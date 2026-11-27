@@ -603,6 +603,30 @@ export interface MapInUse {
   hardwareName: string;
   categoryId: number;
   bindings: number;
+  /** Each binding of the map in words, as `bindingsInWords` gives them. */
+  words: string[];
+  /** The plugged-in controller the map is of, when it is plugged in: it names its own axes. */
+  live?: InputDevice;
+}
+
+/**
+ * Each binding of a saved map in words: "Fire = Button 1", "Pitch Axis = Y axis, reversed",
+ * "Eject = Ctrl + Shift + E", with the tab for a map that is not the Game tab's. A
+ * controller's axes go by the names the plugged-in controller gives them, as on the page; by
+ * the usual order when it is not plugged in.
+ */
+export function bindingsInWords(map: ControllerMap, live?: InputDevice): string[] {
+  const tab = map.categoryId === 0 ? '' : ` (${mapCategoryName(map.categoryId)})`;
+  return enabledOf(map).map((element) => {
+    const b =
+      map.kind === 'KeyboardMap'
+        ? keyBinding(element, map.categoryId)
+        : map.kind === 'MouseMap'
+          ? mouseBinding(element, map.categoryId)
+          : joystickBinding(element, map.categoryId, live);
+    const input = [...b.modifiers, b.inputLabel].join(' + ');
+    return `${b.action} = ${input}${b.inverted ? ', reversed' : ''}${tab}`;
+  });
 }
 
 /**
@@ -613,17 +637,23 @@ export interface MapInUse {
 export async function mapsInUse(ctx: BindingsContext): Promise<Result<Map<string, MapInUse>>> {
   const saved = await readSaved(ctx);
   if (!saved.ok) return saved;
+  const connected = await liveControllers(ctx);
   return ok(
     new Map(
-      saved.value.maps.map((m) => [
-        m.valueName,
-        {
-          kind: m.map.kind,
-          hardwareName: m.map.hardwareName,
-          categoryId: m.map.categoryId,
-          bindings: m.map.buttonMaps.length + m.map.axisMaps.length,
-        },
-      ])
+      saved.value.maps.map((m) => {
+        const live = m.map.kind === 'JoystickMap' ? liveFor(m, connected) : undefined;
+        return [
+          m.valueName,
+          {
+            kind: m.map.kind,
+            hardwareName: m.map.hardwareName,
+            categoryId: m.map.categoryId,
+            bindings: m.map.buttonMaps.length + m.map.axisMaps.length,
+            words: bindingsInWords(m.map, live),
+            ...(live ? { live } : {}),
+          },
+        ] as const;
+      })
     )
   );
 }

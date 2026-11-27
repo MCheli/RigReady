@@ -91,8 +91,31 @@ describe('snapshots of Nuclear Option’s bindings', () => {
     expect(shown.same).toBe(false);
     expect(shown.devices).toEqual([
       // Counted as the saved maps hold them: every element, also one the page folds into another.
-      { name: 'Joystick - HOTAS Warthog', now: 9, then: 8 },
-      { name: 'Throttle - HOTAS Warthog', now: 0, then: 8 },
+      // Binding by binding: what a restore takes away again, and what it brings back, with
+      // the axes named as the plugged-in controller names them.
+      {
+        name: 'Joystick - HOTAS Warthog',
+        now: 9,
+        then: 8,
+        back: [],
+        goes: ['Toggle Navigation Lights = Button 12'],
+      },
+      {
+        name: 'Throttle - HOTAS Warthog',
+        now: 0,
+        then: 8,
+        back: [
+          'Throttle Axis = Z axis, reversed',
+          'Custom Axis 1 = Slider 1',
+          'Apply Brakes = Z rotation (positive half)',
+          'Toggle Gear = Button 18',
+          'Eject = Button 32',
+          'Zoom In = Button 7',
+          'Zoom Out = Button 8',
+          'Action 99 = Button 9',
+        ],
+        goes: [],
+      },
     ]);
     expect(shown.preview.files).toHaveLength(2);
     expect(await values(a)).toEqual(changed);

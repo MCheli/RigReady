@@ -280,7 +280,17 @@ export type Snapshot = z.infer<typeof SnapshotSchema>;
 export const SnapshotRestoreReviewSchema = z.object({
   name: z.string(),
   /** Each device whose bindings would change: how many it has now, and in the snapshot. */
-  devices: z.array(z.object({ name: z.string(), now: z.number().int(), then: z.number().int() })),
+  devices: z.array(
+    z.object({
+      name: z.string(),
+      now: z.number().int(),
+      then: z.number().int(),
+      /** Bindings the snapshot has that the device lacks now, in words: they come back. */
+      back: z.array(z.string()),
+      /** Bindings the device has now that the snapshot lacks, in words: they go. */
+      goes: z.array(z.string()),
+    })
+  ),
   /** Devices of the snapshot the game no longer has, or no longer uses, saved bindings for: not put back. */
   gone: z.array(z.string()),
   /** Devices the game has bindings for now that the snapshot does not hold: left as they are. */
