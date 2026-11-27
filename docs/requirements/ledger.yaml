@@ -6675,6 +6675,23 @@ requirements:
       - "artifacts/screens/nuclear-option-bindings/04-cheat-sheet.png"
     notes: "Stage 2 of docs/contributing/add-game.md. On the owner's rig on 2026-11-26 the page listed the eleven controllers, the keyboard and the mouse, and the stick's ten bindings agreed with the game's controls screen; the first try there is how the game's shorter controller identifier was found. The owner then reported, at the controls, that a press of the Fire button and a move of the pitch axis lit the right labels on the cheat sheet, that the trainer counted a press and that the overlay named one over the running game. Not tried: a second unit of one model, a gamepad, a hat, a press on a controller other than the stick. Changing a binding is not part of this: it is a registry write, which RigReady cannot make undoable yet."
 
+  - id: BIND-NO-003
+    title: A full backup keeps Nuclear Option's registry values to read back
+    job: configure
+    area: nuclear-option-bindings
+    priority: p3
+    done_means:
+      - "Every full backup holds one record with every value of HKEY_CURRENT_USER\\Software\\Shockfront\\NuclearOption exactly as read, when the game has saved any; none when it has not."
+      - "The record has a table a person can read: each saved map by controller and category with its number of bindings, the game's own settings by name with a float shown as a number, and other input data by its size. A map that cannot be read is said so."
+      - "The game is offered no file for backup, and nothing restores the record: the registry port only reads."
+    status: done
+    evidence:
+      - "src/features/nuclear-option-bindings/core/backup.test.ts#keeps every registry value of the game as one record, with a table a person can read"
+      - "src/features/nuclear-option-bindings/core/backup.test.ts#keeps nothing when the game has saved nothing"
+      - "src/features/nuclear-option-bindings/core/backup.test.ts#shows a float setting as a number, a map that cannot be read as such, and long data by its size"
+      - "src/features/backup/core/sources.test.ts#keeps the Fanatec driver settings from the registry as a record that is shown and never restored"
+    notes: "The record goes through the backup feature's existing path for registry records (the Fanatec test above is that path's evidence). Not tried: opening such a record on the owner's rig."
+
   - id: RACE-IRACING-002
     title: iRacing config locations and tracked defaults
     job: configure

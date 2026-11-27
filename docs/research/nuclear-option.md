@@ -208,6 +208,8 @@ Every one agrees: the number on the screen is the saved id for an axis and the s
 - **Which unit.** A map names a model (vendor and product id), and `duplicate` the nth unit of it. RigReady takes the nth plugged-in controller of that model in the order Windows lists them. **[I]** for a second unit; one unit of a model needs no guess.
 - **A binding that is switched off** (`enabled` false) is left out. **A hat direction** has not been seen and may show as a button. **An action not in the table** shows as "Action" and its number.
 
+- **In a full backup.** The feature registers a backup source with no files and one record: every value of the game's registry key as read, with a table for reading (each saved map by controller and category with its number of bindings, then the game's own settings). It is the same mechanism as the Fanatec driver settings: shown on the backup's page, never restored.
+
 ### Proof on a rig, stage 2
 
 Run the branch as for stage 1, with the game closed or open (reading does not disturb it).

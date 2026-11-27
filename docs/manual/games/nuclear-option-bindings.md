@@ -46,7 +46,7 @@ The same bindings are what the [cheat sheets](../controls/cheat-sheets.md) draw 
 ## What RigReady does not do
 
 - **Change a binding.** The page only shows them.
-- **Back the bindings up.** RigReady's backups hold files, and these are registry values.
+- **Put the bindings back from a backup.** Every full backup keeps the game's registry values, bindings included, as a record you can read on the backup's page ([Backups](../protect/backups.md)). RigReady cannot write them back to the registry, so a restore does not include them.
 - **Show a binding on a hat switch by its direction.** How the game saves one is not known to RigReady yet; such a binding may be shown as a button.
 - **Know an action a game update added.** It is listed as "Action" and its number until RigReady learns its name.
 
