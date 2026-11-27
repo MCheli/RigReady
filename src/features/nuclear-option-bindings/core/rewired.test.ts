@@ -54,7 +54,7 @@ describe('Rewired save data', () => {
       actionId: 25,
       elementType: 1,
       elementIdentifierId: 39,
-      axisRange: 0,
+      axisRange: 1,
       invert: false,
       axisContribution: 1,
       keyboardKeyCode: 0,
