@@ -137,6 +137,8 @@ const elsewhere = ref('');
 let offPressed: (() => void) | undefined;
 /** Counts the starts and stops: an answer to a start that was cut short is dropped. */
 let listens = 0;
+/** Main was asked to listen and has not been told to stop since. */
+let listenAsked = false;
 
 function onPressed(press: Pressed): void {
   const e = editing.value;
@@ -156,6 +158,7 @@ async function startListening(): Promise<void> {
   if (!device.value?.connected) return;
   offPressed?.();
   offPressed = api.on('pressed', onPressed);
+  listenAsked = true;
   const started = await api.listenStart();
   if (mine !== listens) return;
   listening.value = started.ok && started.value.listening;
@@ -170,7 +173,10 @@ async function stopListening(): Promise<void> {
   offPressed?.();
   offPressed = undefined;
   elsewhere.value = '';
-  if (!listening.value) return;
+  // Always told to stop, also while a start is still under way: main counts starts and
+  // stops, and a start that was not answered yet would otherwise go on listening.
+  if (!listenAsked) return;
+  listenAsked = false;
   listening.value = false;
   await api.listenStop();
 }

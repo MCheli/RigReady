@@ -3,7 +3,9 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { mutate, wiredApp, type WiredApp } from '../../../../tests/helpers';
 import type { ChangeResult, ChangeReview, Overview } from '../contract';
-import { REGISTRY_KEY } from './view';
+import { err, ok } from '../../../core/result';
+import { whyBlocked } from './change';
+import { REGISTRY_KEY, type BindingsContext } from './view';
 
 /**
  * One binding changed in what Nuclear Option saved, on
@@ -163,6 +165,99 @@ describe('changing a Nuclear Option binding', () => {
       'Close Nuclear Option first'
     );
     expect((await stickValue(a)).text).toBe(before.text);
+    const journal = await a.ports.files.journalGroups();
+    expect(journal.ok && journal.value).toEqual([]);
+  });
+
+  it('the one list of programs that was read decides whether the game is open', async () => {
+    const game = { processes: ['NuclearOption.exe'] };
+    const context = (lists: unknown[]): BindingsContext => {
+      let call = 0;
+      return {
+        ports: { processes: { list: async () => lists[Math.min(call++, lists.length - 1)] } },
+        games: { get: () => game },
+      } as unknown as BindingsContext;
+    };
+    const running = ok([{ name: 'nuclearoption.exe', pid: 1 }]);
+    const failed = err('processes.list', 'no list');
+    // Open in the list that was read: refused, whatever a second read would say.
+    expect(await whyBlocked(context([running, failed]))).toContain('Close Nuclear Option first');
+    expect(await whyBlocked(context([running, ok([])]))).toContain('Close Nuclear Option first');
+    // Closed in the list that was read: a second read that fails is never asked for.
+    expect(await whyBlocked(context([ok([]), failed]))).toBeUndefined();
+    expect(await whyBlocked(context([failed]))).toContain('could not see which programs');
+  });
+
+  it('two saves at once do not lose one: the second is refused, because the map it was shown is gone', async () => {
+    const a = await start();
+    const first = await review(a, { device: STICK, actionId: 49, button: 12 });
+    const second = await review(a, { device: STICK, actionId: 52, button: 13 });
+    expect(second.seen).toBe(first.seen);
+    const results = await Promise.allSettled([
+      change(a, { device: STICK, actionId: 49, button: 12, seen: first.seen }),
+      change(a, { device: STICK, actionId: 52, button: 13, seen: second.seen }),
+    ]);
+    expect(results[0]).toMatchObject({ status: 'fulfilled', value: { changed: true } });
+    expect(results[1].status).toBe('rejected');
+    expect(String((results[1] as PromiseRejectedResult).reason)).toContain(
+      'changed after the change was shown'
+    );
+    // The first save's binding is there, and only that one entry is on the Safety page.
+    const rows = await stickRows(a);
+    expect(rows).toContain('Toggle Navigation Lights = Button 12');
+    expect(rows.some((row) => row.startsWith('Link Guns'))).toBe(false);
+    const journal = await a.ports.files.journalGroups();
+    expect(journal.ok && journal.value).toHaveLength(1);
+  });
+
+  it('Undo on the Safety page is refused while the game runs, and works once it is closed', async () => {
+    const a = await start();
+    const before = await stickValue(a);
+    expect((await change(a, { device: STICK, actionId: 49, button: 12 })).changed).toBe(true);
+    const after = await stickValue(a);
+    const journal = await a.ports.files.journalGroups();
+    if (!journal.ok) throw new Error(journal.error.message);
+    const groupId = journal.value[0]!.id;
+    await mutate(a, [
+      { op: 'startProcess', name: 'NuclearOption.exe', path: 'C:/Games/NuclearOption.exe' },
+    ]);
+    await expect(a.invoke('safety:undo', { groupId, force: false })).rejects.toThrow(
+      /Nuclear Option is running.*Nothing was undone/
+    );
+    // "Undo anyway" is for a file changed since, not a way past a running game.
+    await expect(a.invoke('safety:undo', { groupId, force: true })).rejects.toThrow(
+      /Nuclear Option is running/
+    );
+    expect((await stickValue(a)).text).toBe(after.text);
+    await mutate(a, [{ op: 'stopProcess', name: 'NuclearOption.exe' }]);
+    await a.invoke('safety:undo', { groupId, force: false });
+    expect((await stickValue(a)).text).toBe(before.text);
+  });
+
+  it('saved bindings with a byte that is not UTF-8 are not changed: the text made from them would lose it', async () => {
+    const a = await start();
+    const stick = await stickValue(a);
+    const bytes = Buffer.from(stick.text, 'utf8');
+    // One byte of the controller's name replaced by one that is not valid UTF-8.
+    const at = bytes.indexOf(Buffer.from('HOTAS', 'utf8'));
+    bytes[at] = 0xff;
+    await mutate(a, [
+      {
+        op: 'setRegistryValue',
+        hive: 'HKCU',
+        key: REGISTRY_KEY,
+        name: stick.name,
+        value: { type: 'binary', value: bytes.toString('hex') },
+      },
+    ]);
+    await expect(review(a, { device: STICK, actionId: 49, button: 12 })).rejects.toThrow(
+      'cannot write back exactly'
+    );
+    await expect(change(a, { device: STICK, actionId: 49, button: 12 })).rejects.toThrow(
+      'cannot write back exactly'
+    );
+    const now = await a.ports.registry.getValue('HKCU', REGISTRY_KEY, stick.name);
+    expect(now.ok && now.value).toEqual({ type: 'binary', value: bytes.toString('hex') });
     const journal = await a.ports.files.journalGroups();
     expect(journal.ok && journal.value).toEqual([]);
   });

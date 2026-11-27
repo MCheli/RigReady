@@ -77,6 +77,14 @@ export function editMap(
       'RigReady changes bindings on a controller only. Change a key or a mouse button in the game.'
     );
   }
+  // A controller Rewired has a definition of its own for (a gamepad) carries that
+  // definition's id here and numbers its buttons its own way, which RigReady has not seen.
+  if (!/^[0-]+$/.test(map.hardwareGuid)) {
+    return err(
+      'nuclear-option.edit.definition',
+      'The game knows this controller by a definition of its own, and RigReady does not know how it numbers the buttons there. Change the binding in the game.'
+    );
+  }
   if (map.source.buttons === 'absent') {
     return err(
       'nuclear-option.edit.shape',
@@ -177,6 +185,15 @@ export function editMap(
 export function editMapText(document: string, edit: BindingEdit): Result<EditOutcome> {
   const map = parseControllerMap(document);
   if (!map.ok) return map;
+  // Writing a map writes every binding in it again. A document this code would not write
+  // back character for character as it stands (a number written "005", say) would have
+  // bindings changed that nobody asked to change, so it is left alone.
+  if (serializeControllerMap(map.value) !== document) {
+    return err(
+      'nuclear-option.edit.form',
+      'The game’s saved bindings for this controller are written in a form RigReady would not write back exactly, so it does not change them. Change the binding in the game.'
+    );
+  }
   const edited = editMap(map.value, edit);
   if (!edited.ok) return edited;
   const { text, before, same, alsoOnButton } = edited.value;

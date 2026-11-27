@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { CheckContext } from '../../../core/checks/registry';
+import { registryKeyPath } from '../../../core/files/registryValues';
 import { simpleGame } from '../core/simpleGame';
 
 /**
@@ -33,6 +34,14 @@ const { module, extras } = simpleGame({
         id: 'data',
         label: 'AppData\\LocalLow\\Shockfront\\NuclearOption (logs)',
         path: dataFolder(ctx),
+      },
+      // Where the settings and bindings really are. Listed as a location so that the
+      // Safety page knows the game holds them: an Undo of a changed binding is refused
+      // while the game runs, as it is for a game's files.
+      {
+        id: 'registry',
+        label: 'Registry: HKEY_CURRENT_USER\\Software\\Shockfront\\NuclearOption',
+        path: registryKeyPath('HKCU', 'Software\\Shockfront\\NuclearOption'),
       },
     ];
   },

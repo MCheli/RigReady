@@ -103,6 +103,31 @@ describe('changing one binding in a saved map', () => {
     expect(edited.text.endsWith('</JoystickMap>\0')).toBe(true);
   });
 
+  it('leaves alone a map it would not write back exactly, and a controller the game has a definition of its own for', async () => {
+    const stick = await fixture('stick.xml');
+    // Another action's number written another way: the parser reads it, and writing the map
+    // again would change that binding's text though nobody asked.
+    const padded = stick.replace('<actionId>5</actionId>', '<actionId>005</actionId>');
+    expect(padded).not.toBe(stick);
+    const form = editMapText(padded, { actionId: 49, button: 12 });
+    expect(form.ok).toBe(false);
+    if (!form.ok) {
+      expect(form.error.code).toBe('nuclear-option.edit.form');
+      expect(form.error.message).toContain('would not write back exactly');
+    }
+    // A gamepad Rewired knows: its buttons are numbered by Rewired's definition, not from 32.
+    const known = stick
+      .split('00000000-0000-0000-0000-000000000000')
+      .join('d74a350e-fe8b-4e9e-bbcd-efff16d34115');
+    expect(known).not.toBe(stick);
+    const definition = editMapText(known, { actionId: 49, button: 12 });
+    expect(definition.ok).toBe(false);
+    if (!definition.ok) {
+      expect(definition.error.code).toBe('nuclear-option.edit.definition');
+      expect(definition.error.message).toContain('a definition of its own');
+    }
+  });
+
   it('refuses what it has not seen the game write: an axis, a key, an unknown action, a button out of range, a damaged map', async () => {
     const stick = await fixture('stick.xml');
     const refused = (text: string, edit: { actionId: number; button: number | null }): string => {

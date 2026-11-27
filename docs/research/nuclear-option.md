@@ -257,6 +257,10 @@ A binding the player made on the game's controls screen is one `ActionElementMap
 
 Refused, with the reason: an axis action, one side of an axis action on a button, a key, a mouse button, an action not in the table, an action that already has a binding the writer does not understand (a button with a modifier key, an axis), a controller with no saved map, a button outside 1 to 128. The writer parses its own result and checks it is the map it meant before it returns it.
 
+Also refused, each because the result could not be trusted: a saved map whose bytes are not the UTF-8 of the text read from them (writing the text back would lose a byte); a map this code would not write back character for character as it stands (a number written "005"), since a save writes every binding again; and a controller Rewired has a definition of its own for (a `hardwareGuid` that is not all zeros), whose buttons are numbered by that definition. Saves run one at a time, each reading, checking and writing on its own, so two at once cannot both start from the same map.
+
+The game's registry key is listed among the game module's settings locations. That is what tells the Safety page that Nuclear Option holds these values: Undo there is refused while the game runs, as it is for a game's files.
+
 ### Is writing safe?
 
 - **The game reads the value at start.** **[V]** in the proof below: a binding written while the game was closed was on the game's controls screen at its next start.

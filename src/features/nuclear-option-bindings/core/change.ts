@@ -1,12 +1,10 @@
 import { sha256 } from '../../../core/files/fileStore';
 import { changePreview } from '../../../core/files/preview';
 import { registryValuePath } from '../../../core/files/registryValues';
-import { gameRunning } from '../../../core/games';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChangeRequest, ChangeResult, ChangeReview } from '../contract';
 import { actionOf } from './actions';
-import { editMap } from './edit';
-import { textOfBinary } from './rewired';
+import { editMapText } from './edit';
 import { GAME, GAME_NAME, REGISTRY_KEY, storedGameMap, type BindingsContext } from './view';
 
 /**
@@ -23,14 +21,16 @@ const WHY_CLOSED =
 
 /**
  * Why nothing can be written right now, when it cannot. Not knowing whether the game is
- * open is not the same as "closed": nothing is written on a guess.
+ * open is not the same as "closed": nothing is written on a guess. The one list of
+ * programs that was read is the one that decides.
  */
 export async function whyBlocked(ctx: BindingsContext): Promise<string | undefined> {
   const list = await ctx.ports.processes.list();
   if (!list.ok) {
     return 'RigReady could not see which programs are running, so it cannot tell whether Nuclear Option is open.';
   }
-  return (await gameRunning(ctx, ctx.games.get(GAME))) ? WHY_CLOSED : undefined;
+  const names = new Set((ctx.games.get(GAME)?.processes ?? []).map((name) => name.toLowerCase()));
+  return list.value.some((p) => names.has(p.name.toLowerCase())) ? WHY_CLOSED : undefined;
 }
 
 const buttonsInWords = (buttons: number[]): string =>
@@ -56,15 +56,28 @@ interface Plan {
 async function plan(ctx: BindingsContext, request: ChangeRequest): Promise<Result<Plan>> {
   const stored = await storedGameMap(ctx, request.device);
   if (!stored.ok) return stored;
-  const edited = editMap(stored.value.map, { actionId: request.actionId, button: request.button });
+  // The value's own bytes, not the text made from them: bytes that are not UTF-8 read as
+  // text with a replacement character, and writing that text back would lose them for good.
+  const raw = await ctx.ports.registry.getValue('HKCU', REGISTRY_KEY, stored.value.valueName);
+  if (!raw.ok) return raw;
+  const text = Buffer.from(stored.value.text, 'utf8');
+  if (raw.value?.type !== 'binary' || raw.value.value.toLowerCase() !== text.toString('hex')) {
+    return err(
+      'nuclear-option.edit.bytes',
+      'The game’s saved bindings for this controller hold bytes RigReady cannot write back exactly, so it does not change them. Change the binding in the game.'
+    );
+  }
+  const edited = editMapText(stored.value.text, {
+    actionId: request.actionId,
+    button: request.button,
+  });
   if (!edited.ok) return edited;
-  const current = Buffer.from(stored.value.text, 'utf8');
   return ok({
     valueName: stored.value.valueName,
     address: registryValuePath('HKCU', REGISTRY_KEY, stored.value.valueName),
     bytes: new Uint8Array(Buffer.from(edited.value.text, 'utf8')),
     // What the preview was made from: the value's name and its bytes.
-    seen: sha256(`${stored.value.valueName}\n${sha256(current)}`),
+    seen: sha256(`${stored.value.valueName}\n${sha256(text)}`),
     deviceName: stored.value.deviceName,
     actionName: actionOf(request.actionId).name,
     before: buttonsInWords(edited.value.before),
@@ -103,10 +116,32 @@ export async function reviewChange(
 }
 
 /**
+ * One change at a time. A save replaces a controller's whole saved map, so two saves that
+ * both planned from the same map would each pass the "is it still what was shown" check and
+ * the later one would drop the earlier one's binding. Each save waits for the one before it
+ * and then reads, checks and writes on its own.
+ */
+let queue: Promise<unknown> = Promise.resolve();
+
+function oneAtATime<T>(work: () => Promise<T>): Promise<T> {
+  const next = queue.then(work, work);
+  // The queue goes on whether this one succeeded or not.
+  queue = next.catch(() => undefined);
+  return next;
+}
+
+/**
  * Writes one change: refused while the game runs, a backup first, and the value is read
  * back before anything is called done. The page calls this only from the review's Save.
  */
-export async function applyChange(
+export function applyChange(
+  ctx: BindingsContext,
+  request: ChangeRequest
+): Promise<Result<ChangeResult>> {
+  return oneAtATime(() => applyNow(ctx, request));
+}
+
+async function applyNow(
   ctx: BindingsContext,
   request: ChangeRequest
 ): Promise<Result<ChangeResult>> {
@@ -147,8 +182,7 @@ export async function applyChange(
   if (!back.ok) return back;
   const kept =
     back.value?.type === 'binary' &&
-    back.value.value.toLowerCase() === Buffer.from(p.bytes).toString('hex') &&
-    textOfBinary(back.value.value) !== undefined;
+    back.value.value.toLowerCase() === Buffer.from(p.bytes).toString('hex');
   if (!kept) {
     return err('nuclear-option.edit.notKept', 'The registry did not keep the change.');
   }
