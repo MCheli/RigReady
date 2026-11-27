@@ -47,9 +47,9 @@ describe('snapshots of Nuclear Option’s bindings', () => {
     const taken = await take(a, '  Before the patch  ');
     expect(taken).toMatchObject({ name: 'Before the patch' });
     expect(taken.id).toMatch(/^\d{14}-before-the-patch$/);
-    // The scenario's values: the stick (two forms), the throttle (two tabs), the pedals, the
-    // keyboard (two tabs) and the mouse.
-    expect(taken.maps).toBe(8);
+    // The scenario's values the game uses: the stick (not the map an earlier build left
+    // behind beside it), the throttle (two tabs), the pedals, the keyboard (two tabs), the mouse.
+    expect(taken.maps).toBe(7);
     expect(taken.bindings).toBeGreaterThan(20);
     expect(taken.devices).toEqual([
       'Joystick - HOTAS Warthog',
@@ -100,7 +100,7 @@ describe('snapshots of Nuclear Option’s bindings', () => {
     const result = await restore(a, taken.id, shown.seen);
     expect(result).toEqual({
       changed: true,
-      message: 'Restored: “Clean” is back, on 2 devices. Undo is on the Safety page.',
+      message: 'Restored: “Clean” is back on 2 devices. Undo is on the Safety page.',
     });
     expect(await values(a)).toEqual(before);
     expect(await bound(a, THROTTLE)).toBe(8);
@@ -152,7 +152,7 @@ describe('snapshots of Nuclear Option’s bindings', () => {
       file,
       kept.value
         .split(JSON.stringify(pedals).slice(1, -1))
-        .join('RewiredSaveData|dataType=ControllerMap|gone_h1'),
+        .join(JSON.stringify(pedals.replace('duplicate=0', 'duplicate=7')).slice(1, -1)),
       { reason: 'test' }
     );
     if (!edited.ok) throw new Error(edited.error.message);
@@ -184,8 +184,183 @@ describe('snapshots of Nuclear Option’s bindings', () => {
       gone: ['T-Rudder'],
       newer: ['New Panel', 'T-Rudder'],
     });
-    expect((await restore(a, taken.id)).changed).toBe(false);
+    // It does not say the snapshot is back when part of it was not put back.
+    expect(await restore(a, taken.id)).toEqual({
+      changed: false,
+      message:
+        'Nothing was changed: what the game still has is as it was in “With the pedals”. Not put back: T-Rudder, which the game no longer has saved bindings for.',
+    });
     expect(await values(a)).toEqual(before);
+  });
+
+  describe('a snapshot file that was changed or cut short', () => {
+    /** The snapshot's file, read, changed and written back as someone or something might. */
+    const tamper = async (
+      a: WiredApp,
+      id: string,
+      change: (file: { name: string; maps: { valueName: string; hex: string }[] }) => unknown
+    ): Promise<void> => {
+      const file = path.join(
+        a.ports.folders.dataRoot(),
+        'snapshots',
+        'nuclear-option',
+        `${id}.json`
+      );
+      const text = await a.ports.files.readText(file);
+      if (!text.ok) throw new Error(text.error.message);
+      const changed = change(JSON.parse(text.value));
+      const written = await a.ports.files.write(
+        file,
+        typeof changed === 'string' ? changed : JSON.stringify(changed),
+        { reason: 'test' }
+      );
+      if (!written.ok) throw new Error(written.error.message);
+    };
+    const mapOf = (file: { maps: { valueName: string; hex: string }[] }, part: string) =>
+      file.maps.find((m) => m.valueName.includes(part))!;
+
+    it('is never written from: half a byte, bytes that are no map, another device’s map, a value named twice, or no snapshot at all', async () => {
+      const a = await start();
+      const cases: [string, (file: Parameters<Parameters<typeof tamper>[2]>[0]) => unknown][] = [
+        ['half a byte', (f) => ((mapOf(f, 'Throttle').hex += 'a'), f)],
+        ['an empty value', (f) => ((mapOf(f, 'Throttle').hex = ''), f)],
+        ['bytes that are no map', (f) => ((mapOf(f, 'Throttle').hex = '6e6f'), f)],
+        // The keyboard's bytes under a controller's value: the kinds do not agree.
+        [
+          'the keyboard’s map in a controller’s value',
+          (f) => ((mapOf(f, 'JoystickMap|categoryId=0').hex = mapOf(f, 'KeyboardMap').hex), f),
+        ],
+        ['a value named twice', (f) => (f.maps.push({ ...f.maps[0]! }), f)],
+        [
+          'a value that is not a saved map',
+          (f) => ((f.maps[0]!.valueName = 'UnitySelectMonitor_h1'), f),
+        ],
+        ['not JSON', () => '{ "format": 1,'],
+        ['another kind of file', () => ({ hello: 'world' })],
+      ];
+      for (const [what, change] of cases) {
+        const taken = await take(a, `Case ${what}`);
+        await a.invoke('nuclear-option-bindings:clearDevice', { device: THROTTLE });
+        const before = await values(a);
+        await tamper(a, taken.id, change);
+        await expect(review(a, taken.id), what).rejects.toThrow('That snapshot’s file is damaged');
+        await expect(restore(a, taken.id), what).rejects.toThrow('That snapshot’s file is damaged');
+        expect(await values(a), what).toEqual(before);
+        // It is listed as damaged, cannot be renamed, and can be deleted.
+        const listedNow = (await list(a)).find((s) => s.id === taken.id)!;
+        expect(listedNow, what).toMatchObject({ damaged: true, bindings: 0 });
+        await expect(
+          a.invoke('nuclear-option-bindings:snapshotRename', { id: taken.id, name: 'x' }),
+          what
+        ).rejects.toThrow('damaged');
+        expect(
+          await a.invoke('nuclear-option-bindings:snapshotDelete', { id: taken.id }),
+          what
+        ).toEqual({ deleted: true });
+        // Back to the scenario's bindings for the next case.
+        const journal = await a.ports.files.journalGroups();
+        if (!journal.ok) throw new Error(journal.error.message);
+        await a.invoke('safety:undo', { groupId: journal.value[0]!.id, force: false });
+      }
+    });
+
+    it('one controller’s map is not written into another controller’s value', async () => {
+      const a = await start();
+      const taken = await take(a, 'Swapped');
+      await a.invoke('nuclear-option-bindings:clearDevice', { device: THROTTLE });
+      const before = await values(a);
+      // The stick's bytes under the throttle's value: both are controller maps.
+      await tamper(a, taken.id, (f) => {
+        const throttle = f.maps.find((m) =>
+          /JoystickMap\|categoryId=0\|.*Throttle/.test(m.valueName)
+        )!;
+        const stick = f.maps.find((m) =>
+          /JoystickMap\|categoryId=0\|.*Joystick/.test(m.valueName)
+        )!;
+        throttle.hex = stick.hex;
+        return f;
+      });
+      await expect(review(a, taken.id)).rejects.toThrow('That snapshot’s file is damaged');
+      await expect(restore(a, taken.id)).rejects.toThrow('That snapshot’s file is damaged');
+      expect(await values(a)).toEqual(before);
+    });
+
+    it('a review is of the file as it was: one changed since is refused at Restore', async () => {
+      const a = await start();
+      const taken = await take(a, 'Reviewed');
+      await a.invoke('nuclear-option-bindings:clearDevice', { device: THROTTLE });
+      const shown = await review(a, taken.id);
+      const before = await values(a);
+      // Still a good snapshot, but not the one that was shown: the stick's map taken out.
+      await tamper(a, taken.id, (f) => {
+        f.maps = f.maps.filter((m) => !/JoystickMap\|categoryId=0\|.*Joystick/.test(m.valueName));
+        return f;
+      });
+      await expect(restore(a, taken.id, shown.seen)).rejects.toThrow(
+        'changed after the change was shown'
+      );
+      expect(await values(a)).toEqual(before);
+    });
+  });
+
+  it('a failure after the first value was put back says that part is back, and Undo takes it out', async () => {
+    const a = await start();
+    const taken = await take(a, 'Two devices');
+    const original = await values(a);
+    await a.invoke('nuclear-option-bindings:clearDevice', { device: THROTTLE });
+    await a.invoke('nuclear-option-bindings:clearDevice', { device: STICK });
+    const cleared = await values(a);
+    const files = a.ports.files;
+    const write = files.write.bind(files);
+    let writes = 0;
+    files.write = (async (...args: Parameters<typeof write>) =>
+      ++writes === 2
+        ? { ok: false, error: { code: 'file.write', message: 'The value could not be written.' } }
+        : write(...args)) as typeof write;
+    await expect(restore(a, taken.id)).rejects.toThrow(
+      /The value could not be written\. Part of the snapshot was already put back; Undo on the Safety page takes it out again\./
+    );
+    files.write = write;
+    // One of the two is back, the other is still cleared.
+    const after = await values(a);
+    expect(after).not.toEqual(cleared);
+    expect(after).not.toEqual(original);
+    const journal = await a.ports.files.journalGroups();
+    if (!journal.ok) throw new Error(journal.error.message);
+    const group = journal.value.find((g) => g.reason.includes('snapshot “Two devices” restored'))!;
+    expect(group.entries).toHaveLength(1);
+    await a.invoke('safety:undo', { groupId: group.id, force: false });
+    expect(await values(a)).toEqual(cleared);
+  });
+
+  it('keeps only the maps the game uses, and leaves a map an earlier build left behind out of a restore', async () => {
+    const a = await start();
+    const all = await values(a);
+    // The scenario's stick has two saved maps: the one the game uses, and an older one beside it.
+    const sticks = Object.keys(all).filter((name) =>
+      /JoystickMap\|categoryId=0\|.*Joystick-HOTASWarthog/.test(name)
+    );
+    expect(sticks).toHaveLength(2);
+    const taken = await take(a, 'In use');
+    const file = path.join(
+      a.ports.folders.dataRoot(),
+      'snapshots',
+      'nuclear-option',
+      `${taken.id}.json`
+    );
+    const text = await a.ports.files.readText(file);
+    if (!text.ok) throw new Error(text.error.message);
+    const kept = (JSON.parse(text.value) as { maps: { valueName: string }[] }).maps.map(
+      (m) => m.valueName
+    );
+    expect(kept.filter((name) => sticks.includes(name))).toHaveLength(1);
+    // Clearing the stick changes the map in use; the restore writes that one value only.
+    await a.invoke('nuclear-option-bindings:clearDevice', { device: STICK });
+    const shown = await review(a, taken.id);
+    expect(shown.preview.files).toHaveLength(1);
+    expect(shown.gone).toEqual([]);
+    await restore(a, taken.id, shown.seen);
+    expect(await values(a)).toEqual(all);
   });
 
   it('renames and deletes a snapshot, and refuses an id that is not one of its own', async () => {

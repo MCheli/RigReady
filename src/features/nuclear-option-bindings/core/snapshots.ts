@@ -6,27 +6,38 @@ import { registryValuePath } from '../../../core/files/registryValues';
 import { err, ok, type Result } from '../../../core/result';
 import type { ChangeResult, Snapshot, SnapshotRestoreReview } from '../contract';
 import { oneAtATime, whyBlocked } from './change';
-import { parseControllerMap, parseSaveKey, textOfBinary } from './rewired';
-import { GAME_NAME, REGISTRY_KEY, type BindingsContext } from './view';
+import { parseControllerMap, parseSaveKey, textOfBinary, type ControllerMap } from './rewired';
+import { GAME_NAME, mapsInUse, REGISTRY_KEY, type BindingsContext } from './view';
 
 /**
  * Named snapshots of Nuclear Option's bindings, kept in RigReady's own folder
  * (<data root>/snapshots/nuclear-option/<id>.json): every saved map of every controller,
  * the keyboard and the mouse, as the bytes the registry held.
  *
- * Restoring puts the bytes back into the values that are still there, through FileStore (a
- * backup first, one entry on the Safety page, Undo). A value the game no longer has cannot be
- * put back: RigReady replaces a value, it does not make one (src/core/files/registryValues.ts).
+ * Restoring puts the bytes back into the values the game still uses, through FileStore (a
+ * backup first, one entry on the Safety page, Undo). A value the game no longer has, or no
+ * longer uses, cannot be put back: RigReady replaces a value, it does not make one
+ * (src/core/files/registryValues.ts).
+ *
+ * A snapshot file is read as untrusted: only bytes that are a saved map, of the same kind and
+ * the same controller as the value they would replace, are ever written.
  */
 
 const FileSchema = z.object({
   format: z.literal(1),
   name: z.string().min(1).max(80),
   createdAt: z.string(),
-  /** The saved maps: the registry value's name and its bytes as hex. */
-  maps: z.array(z.object({ valueName: z.string().min(1), hex: z.string().regex(/^[0-9a-f]*$/) })),
+  /** The saved maps: the registry value's name and its bytes as hex, whole bytes, at least one. */
+  maps: z.array(
+    z.object({
+      valueName: z.string().min(1),
+      hex: z.string().regex(/^([0-9a-f]{2})+$/),
+    })
+  ),
 });
 type SnapshotFile = z.infer<typeof FileSchema>;
+
+const DAMAGED = 'That snapshot’s file is damaged, so RigReady does not use it. It can be deleted.';
 
 const root = (ctx: BindingsContext): string =>
   path.join(ctx.ports.folders.dataRoot(), 'snapshots', 'nuclear-option');
@@ -43,21 +54,22 @@ function slug(name: string): string {
   return base || 'snapshot';
 }
 
-/** What a saved map is of, in words: the controller's name, the keyboard, the mouse. */
-function ownerOf(hex: string): string {
+/** The saved map a snapshot's bytes are; undefined when they are not one. */
+function mapOf(hex: string): ControllerMap | undefined {
   const text = textOfBinary(hex);
   const map = text === undefined ? undefined : parseControllerMap(text);
-  if (!map?.ok) return 'a map RigReady cannot read';
-  if (map.value.kind === 'KeyboardMap') return 'the keyboard';
-  if (map.value.kind === 'MouseMap') return 'the mouse';
-  return map.value.hardwareName || 'a controller';
+  return map?.ok ? map.value : undefined;
 }
 
-function bindingsIn(hex: string): number {
-  const text = textOfBinary(hex);
-  const map = text === undefined ? undefined : parseControllerMap(text);
-  return map?.ok ? map.value.buttonMaps.length + map.value.axisMaps.length : 0;
+/** What a saved map is of, in words: the controller's name, the keyboard, the mouse. */
+function ownerOf(map: Pick<ControllerMap, 'kind' | 'hardwareName'>): string {
+  if (map.kind === 'KeyboardMap') return 'the keyboard';
+  if (map.kind === 'MouseMap') return 'the mouse';
+  return map.hardwareName || 'a controller';
 }
+
+const bindingsOf = (map: ControllerMap | undefined): number =>
+  map ? map.buttonMaps.length + map.axisMaps.length : 0;
 
 /** The saved maps the registry holds now: every ControllerMap value stored as bytes. */
 async function mapsNow(ctx: BindingsContext): Promise<Result<Map<string, string>>> {
@@ -72,19 +84,22 @@ async function mapsNow(ctx: BindingsContext): Promise<Result<Map<string, string>
 }
 
 function view(id: string, file: SnapshotFile): Snapshot {
-  const owners = [
-    ...new Set(file.maps.filter((m) => bindingsIn(m.hex) > 0).map((m) => ownerOf(m.hex))),
-  ];
+  const maps = file.maps.map((m) => mapOf(m.hex));
+  const owners = [...new Set(maps.flatMap((m) => (m && bindingsOf(m) > 0 ? [ownerOf(m)] : [])))];
   return {
     id,
     name: file.name,
     createdAt: file.createdAt,
     maps: file.maps.length,
-    bindings: file.maps.reduce((sum, m) => sum + bindingsIn(m.hex), 0),
+    bindings: maps.reduce((sum, m) => sum + bindingsOf(m), 0),
     devices: owners.sort((a, b) => a.localeCompare(b)),
   };
 }
 
+/**
+ * A snapshot's file as RigReady wrote it. Damaged: not JSON, not the format, a value named
+ * twice, or bytes that are not a saved map of the kind the value's own name says.
+ */
 async function read(ctx: BindingsContext, id: string): Promise<Result<SnapshotFile>> {
   if (!ID.test(id)) return err('nuclear-option.snapshot.missing', 'There is no such snapshot.');
   const text = await ctx.ports.files.readText(fileOf(ctx, id));
@@ -93,12 +108,25 @@ async function read(ctx: BindingsContext, id: string): Promise<Result<SnapshotFi
   try {
     raw = JSON.parse(text.value);
   } catch {
-    return err('nuclear-option.snapshot.invalid', 'That snapshot’s file is damaged.');
+    return err('nuclear-option.snapshot.invalid', DAMAGED);
   }
   const parsed = FileSchema.safeParse(raw);
-  return parsed.success
-    ? ok(parsed.data)
-    : err('nuclear-option.snapshot.invalid', 'That snapshot’s file is damaged.');
+  if (!parsed.success) return err('nuclear-option.snapshot.invalid', DAMAGED);
+  const names = new Set<string>();
+  for (const entry of parsed.data.maps) {
+    const key = parseSaveKey(entry.valueName);
+    const map = mapOf(entry.hex);
+    if (
+      names.has(entry.valueName) ||
+      key?.dataType !== 'ControllerMap' ||
+      !map ||
+      map.kind !== key.parts.controllerMapType
+    ) {
+      return err('nuclear-option.snapshot.invalid', DAMAGED);
+    }
+    names.add(entry.valueName);
+  }
+  return ok(parsed.data);
 }
 
 async function store(ctx: BindingsContext, id: string, file: SnapshotFile): Promise<Result<void>> {
@@ -110,49 +138,66 @@ async function store(ctx: BindingsContext, id: string, file: SnapshotFile): Prom
   return written.ok ? ok(undefined) : written;
 }
 
-/** The snapshots kept, newest first. A file that cannot be read is left out. */
+/**
+ * The snapshots kept, newest first. A file that cannot be used is listed as damaged, by its
+ * file's name, so that it can be seen and deleted.
+ */
 export async function listSnapshots(ctx: BindingsContext): Promise<Result<Snapshot[]>> {
   const names = await ctx.ports.files.list(root(ctx));
   if (!names.ok) return names;
   const snapshots: Snapshot[] = [];
   for (const name of names.value.filter((n) => n.endsWith('.json'))) {
     const id = name.slice(0, -'.json'.length);
+    if (!ID.test(id)) continue;
     const file = await read(ctx, id);
-    if (file.ok) snapshots.push(view(id, file.value));
+    snapshots.push(
+      file.ok
+        ? view(id, file.value)
+        : { id, name: id, createdAt: '', maps: 0, bindings: 0, devices: [], damaged: true }
+    );
   }
   return ok(snapshots.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
 }
 
 /** Keeps the bindings as the registry holds them now, under a name. The registry is only read. */
-export async function createSnapshot(
-  ctx: BindingsContext,
-  name: string
-): Promise<Result<Snapshot>> {
-  const trimmed = name.trim();
-  if (!trimmed) return err('nuclear-option.snapshot.name', 'Give the snapshot a name.');
-  const now = await mapsNow(ctx);
-  if (!now.ok) return now;
-  if (now.value.size === 0) {
-    return err(
-      'nuclear-option.snapshot.nothing',
-      'Nuclear Option has saved no bindings yet, so there is nothing to keep.'
-    );
-  }
-  const createdAt = ctx.ports.clock.now().toISOString();
-  const stamp = createdAt.replace(/[^0-9]/g, '').slice(0, 14);
-  let id = `${stamp}-${slug(trimmed)}`;
-  // Two taken in the same second under the same name are both kept.
-  for (let n = 2; await ctx.ports.files.exists(fileOf(ctx, id)); n++) {
-    id = `${stamp}-${slug(trimmed)}-${n}`;
-  }
-  const file: SnapshotFile = {
-    format: 1,
-    name: trimmed.slice(0, 80),
-    createdAt,
-    maps: [...now.value].map(([valueName, hex]) => ({ valueName, hex })),
-  };
-  const stored = await store(ctx, id, file);
-  return stored.ok ? ok(view(id, file)) : stored;
+export function createSnapshot(ctx: BindingsContext, name: string): Promise<Result<Snapshot>> {
+  // One at a time, with the saves: two taken at once under one name must not share a file.
+  return oneAtATime(async (): Promise<Result<Snapshot>> => {
+    const trimmed = name.trim();
+    if (!trimmed) return err('nuclear-option.snapshot.name', 'Give the snapshot a name.');
+    const now = await mapsNow(ctx);
+    if (!now.ok) return now;
+    const used = await mapsInUse(ctx);
+    if (!used.ok) return used;
+    // The maps the game uses now and RigReady can read: a map an earlier build left behind
+    // is not the game's bindings, and the file must be usable when it is read back.
+    const maps = [...now.value]
+      .filter(([valueName, hex]) => {
+        const map = mapOf(hex);
+        return (
+          used.value.has(valueName) &&
+          map !== undefined &&
+          map.kind === parseSaveKey(valueName)?.parts.controllerMapType
+        );
+      })
+      .map(([valueName, hex]) => ({ valueName, hex }));
+    if (maps.length === 0) {
+      return err(
+        'nuclear-option.snapshot.nothing',
+        'Nuclear Option has saved no bindings yet, so there is nothing to keep.'
+      );
+    }
+    const createdAt = ctx.ports.clock.now().toISOString();
+    const stamp = createdAt.replace(/[^0-9]/g, '').slice(0, 14);
+    let id = `${stamp}-${slug(trimmed)}`;
+    // Two taken in the same second under the same name are both kept.
+    for (let n = 2; await ctx.ports.files.exists(fileOf(ctx, id)); n++) {
+      id = `${stamp}-${slug(trimmed)}-${n}`;
+    }
+    const file: SnapshotFile = { format: 1, name: trimmed.slice(0, 80), createdAt, maps };
+    const stored = await store(ctx, id, file);
+    return stored.ok ? ok(view(id, file)) : stored;
+  });
 }
 
 export async function renameSnapshot(
@@ -169,26 +214,28 @@ export async function renameSnapshot(
   return stored.ok ? ok(view(id, renamed)) : stored;
 }
 
+/** Deletes a snapshot's file, also one that is damaged: it is RigReady's own, by its name. */
 export async function deleteSnapshot(
   ctx: BindingsContext,
   id: string
 ): Promise<Result<{ deleted: boolean }>> {
-  const file = await read(ctx, id);
-  if (!file.ok) return file;
+  if (!ID.test(id) || !(await ctx.ports.files.exists(fileOf(ctx, id)))) {
+    return err('nuclear-option.snapshot.missing', 'There is no such snapshot.');
+  }
   const removed = await ctx.ports.files.remove(fileOf(ctx, id), {
-    reason: `Delete the snapshot “${file.value.name}” of ${GAME_NAME}’s bindings`,
+    reason: `Delete a snapshot of ${GAME_NAME}’s bindings`,
   });
   return removed.ok ? ok({ deleted: true }) : removed;
 }
 
 interface RestorePlan {
   name: string;
-  /** The values that differ from the snapshot and are still there, each with what it becomes. */
+  /** The values that differ from the snapshot and that the game still uses, each with what it becomes. */
   writes: { valueName: string; address: string; bytes: Uint8Array; owner: string }[];
   devices: SnapshotRestoreReview['devices'];
-  /** Saved maps of the snapshot the game no longer has a value for, by what they were of. */
+  /** Saved maps of the snapshot the game no longer has, or no longer uses, by what they were of. */
   gone: string[];
-  /** Saved maps the game has now that the snapshot does not hold: left as they are. */
+  /** Saved maps the game uses now that the snapshot does not hold: left as they are. */
   newer: string[];
   seen: string;
 }
@@ -198,34 +245,47 @@ async function planRestore(ctx: BindingsContext, id: string): Promise<Result<Res
   if (!file.ok) return file;
   const now = await mapsNow(ctx);
   if (!now.ok) return now;
+  const used = await mapsInUse(ctx);
+  if (!used.ok) return used;
   const writes: RestorePlan['writes'] = [];
   const devices = new Map<string, { now: number; then: number }>();
   const gone: string[] = [];
   const kept = new Set<string>();
-  for (const map of file.value.maps) {
-    kept.add(map.valueName);
-    const current = now.value.get(map.valueName);
-    const owner = ownerOf(map.hex);
-    if (current === undefined) {
-      if (bindingsIn(map.hex) > 0) gone.push(owner);
+  for (const entry of file.value.maps) {
+    kept.add(entry.valueName);
+    const then = mapOf(entry.hex)!;
+    const owner = ownerOf(then);
+    const inUse = used.value.get(entry.valueName);
+    const current = now.value.get(entry.valueName);
+    // As it was: nothing to do, whether the game still uses the value or not.
+    if (current === entry.hex) continue;
+    // No such value any more, or one the game left behind and no longer reads (or that
+    // RigReady cannot read now): writing it would change nothing the game uses.
+    if (current === undefined || !inUse) {
+      if (bindingsOf(then) > 0) gone.push(owner);
       continue;
     }
-    if (current === map.hex) continue;
+    // The bytes must be a map of what the value is a map of: the same kind, the same
+    // controller, the same tab. Anything else is not this value's snapshot.
+    if (
+      inUse.kind !== then.kind ||
+      inUse.hardwareName !== then.hardwareName ||
+      inUse.categoryId !== then.categoryId
+    ) {
+      return err('nuclear-option.snapshot.invalid', DAMAGED);
+    }
     const count = devices.get(owner) ?? { now: 0, then: 0 };
-    devices.set(owner, {
-      now: count.now + bindingsIn(current),
-      then: count.then + bindingsIn(map.hex),
-    });
+    devices.set(owner, { now: count.now + inUse.bindings, then: count.then + bindingsOf(then) });
     writes.push({
-      valueName: map.valueName,
-      address: registryValuePath('HKCU', REGISTRY_KEY, map.valueName),
-      bytes: new Uint8Array(Buffer.from(map.hex, 'hex')),
+      valueName: entry.valueName,
+      address: registryValuePath('HKCU', REGISTRY_KEY, entry.valueName),
+      bytes: new Uint8Array(Buffer.from(entry.hex, 'hex')),
       owner,
     });
   }
-  const newer = [...now.value]
-    .filter(([name, hex]) => !kept.has(name) && bindingsIn(hex) > 0)
-    .map(([, hex]) => ownerOf(hex));
+  const newer = [...used.value]
+    .filter(([name, map]) => !kept.has(name) && map.bindings > 0)
+    .map(([, map]) => ownerOf(map));
   return ok({
     name: file.value.name,
     writes,
@@ -234,15 +294,27 @@ async function planRestore(ctx: BindingsContext, id: string): Promise<Result<Res
       .sort((a, b) => a.name.localeCompare(b.name)),
     gone: [...new Set(gone)].sort(),
     newer: [...new Set(newer)].sort(),
-    // What the preview was made from: every saved map as the registry holds it now.
+    // What the preview was made from: every saved map as the registry holds it now, and the
+    // snapshot's own maps, so that neither can change between the review and the restore.
     seen: sha256(
-      [...now.value]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([name, hex]) => `${name}\n${hex}`)
-        .join('\n')
+      JSON.stringify([
+        [...now.value].sort(([a], [b]) => a.localeCompare(b)),
+        file.value.maps.map((m) => [m.valueName, m.hex]),
+      ])
     ),
   });
 }
+
+const listed = (names: string[]): string =>
+  names.length <= 1
+    ? (names[0] ?? '')
+    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
+/** What was left out, said with every result: a restore never claims more than it did. */
+const notPutBack = (gone: string[]): string =>
+  gone.length === 0
+    ? ''
+    : ` Not put back: ${listed(gone)}, which the game no longer has saved bindings for.`;
 
 /** Restoring a snapshot as it would be. Writes nothing. */
 export async function reviewRestore(
@@ -297,7 +369,10 @@ export function applyRestore(
     if (p.writes.length === 0) {
       return ok({
         changed: false,
-        message: `Nothing was changed: the bindings are as they were in “${p.name}”.`,
+        message:
+          p.gone.length === 0
+            ? `Nothing was changed: the bindings are as they were in “${p.name}”.`
+            : `Nothing was changed: what the game still has is as it was in “${p.name}”.${notPutBack(p.gone)}`,
       });
     }
     const group = ctx.ports.files.beginGroup(
@@ -327,7 +402,7 @@ export function applyRestore(
     const devices = p.devices.length === 1 ? '1 device' : `${p.devices.length} devices`;
     return ok({
       changed: true,
-      message: `Restored: “${p.name}” is back, on ${devices}. Undo is on the Safety page.`,
+      message: `Restored: “${p.name}” is back on ${devices}.${notPutBack(p.gone)} Undo is on the Safety page.`,
     });
   });
 }

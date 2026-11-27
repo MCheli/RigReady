@@ -68,8 +68,9 @@ async function rename(): Promise<void> {
 async function remove(id: string): Promise<void> {
   deleting.value = undefined;
   const result = await api.snapshotDelete({ id });
-  if (!result.ok) error.value = errorText(result.error);
   await load();
+  // Said after the list was read again, which clears what was said before.
+  if (!result.ok) error.value = errorText(result.error);
 }
 
 // ---- Putting one back: the review first, and only its Restore writes ----
@@ -81,6 +82,9 @@ const saving = ref(false);
 let turn = 0;
 
 async function startRestore(snapshot: Snapshot): Promise<void> {
+  if (saving.value) return;
+  // What an earlier restore said is no longer the news.
+  emit('restored', '');
   const mine = ++turn;
   restoring.value = snapshot;
   review.value = undefined;
@@ -91,13 +95,15 @@ async function startRestore(snapshot: Snapshot): Promise<void> {
   else reviewError.value = errorText(result.error);
 }
 function closeRestore(): void {
+  // While it is being written the dialog stays: what happens is said in it.
+  if (saving.value) return;
   turn++;
   restoring.value = undefined;
   review.value = undefined;
   reviewError.value = '';
 }
 async function restore(): Promise<void> {
-  if (!restoring.value || !review.value) return;
+  if (!restoring.value || !review.value || saving.value) return;
   saving.value = true;
   const result = await api.snapshotRestore({ id: restoring.value.id, seen: review.value.seen });
   saving.value = false;
@@ -196,6 +202,12 @@ const listed = (names: string[]): string =>
             <v-btn size="small" variant="text" @click="renaming = undefined">Cancel</v-btn>
           </form>
         </template>
+        <template v-else-if="s.damaged">
+          <div class="rr-row-title">{{ s.name }}</div>
+          <div class="rr-row-sub rr-warn" data-testid="nuclear-option-snapshot-damaged">
+            This snapshot’s file is damaged, so RigReady does not use it. It can be deleted.
+          </div>
+        </template>
         <template v-else>
           <div class="rr-row-title">{{ s.name }}</div>
           <div class="rr-row-sub">
@@ -217,6 +229,7 @@ const listed = (names: string[]): string =>
       </template>
       <template v-else-if="renaming?.id !== s.id">
         <v-btn
+          v-if="!s.damaged"
           size="small"
           variant="tonal"
           prepend-icon="mdi-restore"
@@ -225,6 +238,7 @@ const listed = (names: string[]): string =>
           >Restore…</v-btn
         >
         <v-btn
+          v-if="!s.damaged"
           size="small"
           variant="text"
           data-testid="nuclear-option-snapshot-rename"
@@ -255,7 +269,11 @@ const listed = (names: string[]): string =>
     >
       <div v-if="review" class="snap-review" data-testid="nuclear-option-snapshot-review">
         <div v-if="review.same" class="rr-muted">
-          The bindings are already as they were in this snapshot: nothing to restore.
+          {{
+            review.gone.length
+              ? 'What the game still has saved bindings for is already as in this snapshot: nothing to restore.'
+              : 'The bindings are already as they were in this snapshot: nothing to restore.'
+          }}
         </div>
         <template v-else>
           <p>
@@ -288,9 +306,9 @@ const listed = (names: string[]): string =>
           <v-icon icon="mdi-information-outline" size="small" class="rr-muted" />
           <span
             >Not put back: {{ listed(review.gone) }}. The game no longer has saved bindings for
-            {{ review.gone.length === 1 ? 'it' : 'them' }}, and RigReady cannot make new ones. Start
-            the game once with {{ review.gone.length === 1 ? 'it' : 'them' }} plugged in, then
-            restore again.</span
+            {{ review.gone.length === 1 ? 'it' : 'them' }} under the name the snapshot holds, and
+            RigReady cannot make new ones. If the game has bindings for
+            {{ review.gone.length === 1 ? 'it' : 'them' }} now, they are left as they are.</span
           >
         </div>
         <div

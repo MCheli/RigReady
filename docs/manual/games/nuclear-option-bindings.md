@@ -105,7 +105,9 @@ A snapshot is a named copy of every binding the game has saved: all controllers,
 
 A restore is one entry on the [Safety page](../protect/safety-page.md), and **Undo** there takes it out again. Only what differs is written; a device whose bindings are as in the snapshot is not touched.
 
-Two things a restore does not do, and the review says so when they apply. It does not bring back the bindings of a controller the game no longer has saved bindings for (RigReady replaces what the game saved; it cannot make it): start the game once with that controller plugged in, then restore again. And it leaves alone a controller the game has bindings for now that the snapshot does not hold.
+Two things a restore does not do, and the review and the result say so when they apply. It does not bring back the bindings of a controller the game no longer has saved bindings for under the name the snapshot holds (RigReady replaces what the game saved; it cannot make it). And it leaves alone a controller the game has bindings for now that the snapshot does not hold. A snapshot keeps the bindings the game uses; a map an earlier version of the game left behind is not among them.
+
+A snapshot whose file was changed or cut short is listed as damaged. RigReady writes nothing from it; it can be deleted.
 
 ## Cheat sheets, the trainer and the overlay
 

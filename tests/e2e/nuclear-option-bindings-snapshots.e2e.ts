@@ -59,7 +59,7 @@ test('nuclear option bindings: a snapshot is taken, renamed, put back after a re
   await expect(go).toBeEnabled();
   await go.click();
   await expect(page.getByTestId('nuclear-option-bindings-saved')).toHaveText(
-    /Restored: “Before I tidy up” is back, on 1 device\. Undo is on the Safety page\./
+    /Restored: “Before I tidy up” is back on 1 device\. Undo is on the Safety page\./
   );
   await expect(rows).toHaveCount(8);
   await shot('restored');

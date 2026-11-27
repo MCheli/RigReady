@@ -210,6 +210,8 @@ export const SnapshotSchema = z.object({
   bindings: z.number().int(),
   /** What it has bindings for: each controller by name, "the keyboard", "the mouse". */
   devices: z.array(z.string()),
+  /** Its file cannot be used (it was changed or cut short): it can only be deleted. */
+  damaged: z.boolean().optional(),
 });
 export type Snapshot = z.infer<typeof SnapshotSchema>;
 
@@ -218,7 +220,7 @@ export const SnapshotRestoreReviewSchema = z.object({
   name: z.string(),
   /** Each device whose bindings would change: how many it has now, and in the snapshot. */
   devices: z.array(z.object({ name: z.string(), now: z.number().int(), then: z.number().int() })),
-  /** Devices of the snapshot the game no longer has saved bindings for: not put back. */
+  /** Devices of the snapshot the game no longer has, or no longer uses, saved bindings for: not put back. */
   gone: z.array(z.string()),
   /** Devices the game has bindings for now that the snapshot does not hold: left as they are. */
   newer: z.array(z.string()),

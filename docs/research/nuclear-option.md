@@ -326,7 +326,9 @@ Not tried: a key with Alt; a key on a side of an axis; a key in the Chat, Missio
 
 ### Snapshots
 
-A snapshot (`core/snapshots.ts`) is every `ControllerMap` value of the key, name and bytes, in a file under RigReady's data folder. Restoring writes back, through FileStore, the values whose bytes differ and that the key still has. It cannot bring back a value the game has since dropped: its name carries a hash only Unity computes, and RigReady replaces values, it does not make them (section 5); the review names such a device. A value the key has now that the snapshot does not hold is left as it is.
+A snapshot (`core/snapshots.ts`) is every `ControllerMap` value of the key, name and bytes, in a file under RigReady's data folder. Restoring writes back, through FileStore, the values whose bytes differ and that the key still has. It cannot bring back a value the game has since dropped: its name carries a hash only Unity computes, and RigReady replaces values, it does not make them (section 5); the review and the result name such a device. A value the key has now that the snapshot does not hold is left as it is. Only the maps the game uses are kept and written: a map left behind under the older identifier (section 4) is neither.
+
+The file is read as untrusted. Its bytes are written only when they are a saved map of the same kind, controller and tab as the value they replace; a file with half a byte, bytes that are no map, a value named twice or another device's map is damaged, and nothing is written from it.
 
 On the owner's rig, 27 November 2026 (driven by Claude Code, with the owner's permission, the game closed): a snapshot of the 46 saved maps among the key's 145 values was taken; a panel the game had bound by itself was cleared of its 14 bindings; the review of the restore named that one device, 0 bindings now and 14 in the snapshot; after **Restore** every value of the key was byte for byte as before, except Unity's two session counters. **[V]**
 

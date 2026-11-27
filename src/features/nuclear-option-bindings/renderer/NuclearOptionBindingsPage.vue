@@ -452,7 +452,8 @@ const showSnapshots = ref(false);
 const snapshotCount = ref<number>();
 /** A snapshot was put back (or failed part-way): the page reads the bindings again. */
 async function onRestored(message: string): Promise<void> {
-  if (message) savedMessage.value = message;
+  // Empty when a restore starts or fails: an earlier "Restored" must not stay on the page.
+  savedMessage.value = message;
   await load();
 }
 
